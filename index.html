@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주식 분석 리포트 뷰어</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .date-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .date-selector label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 1.1em;
+        }
+
+        .date-selector select {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .date-selector select:hover {
+            border-color: #667eea;
+        }
+
+        .date-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-load {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-load:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-load:active {
+            transform: translateY(0);
+        }
+
+        .pdf-viewer {
+            padding: 30px;
+            min-height: 600px;
+            background: white;
+        }
+
+        .pdf-container {
+            width: 100%;
+            height: 800px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .pdf-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+
+        .loading .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .info {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            color: #0c5460;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .label {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-item .value {
+            color: #667eea;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .date-selector {
+                flex-direction: column;
+            }
+
+            .date-selector select {
+                width: 100%;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .pdf-container {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 주식 분석 리포트 뷰어</h1>
+            <p>날짜를 선택하여 투자 분석 리포트를 확인하세요</p>
+        </div>
+
+        <div class="controls">
+            <div class="date-selector">
+                <label for="reportDate">📅 리포트 날짜:</label>
+                <select id="reportDate">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport()">리포트 불러오기</button>
+            </div>
+        </div>
+
+        <div class="pdf-viewer">
+            <div id="pdfContent" class="info">
+                <h3>👋 환영합니다!</h3>
+                <p>위에서 날짜를 선택하고 "리포트 불러오기" 버튼을 클릭하세요.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PDF 파일 목록 (날짜: 파일명 매핑)
+        const reportFiles = {
+            '2026-02-10': 'reports/2026-02-10_analysis.pdf',
+            '2026-02-09': 'reports/2026-02-09_analysis.pdf',
+            '2026-02-08': 'reports/2026-02-08_analysis.pdf',
+            // 새로운 리포트 추가 시 여기에 계속 추가
+        };
+
+        // 페이지 로드 시 날짜 목록 생성
+        window.onload = function() {
+            const dateSelect = document.getElementById('reportDate');
+            const dates = Object.keys(reportFiles).sort().reverse(); // 최신 날짜가 위로
+
+            dates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = formatDate(date);
+                dateSelect.appendChild(option);
+            });
+
+            // URL 파라미터에서 날짜 확인
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+            if (dateParam && reportFiles[dateParam]) {
+                dateSelect.value = dateParam;
+                loadReport();
+            }
+        };
+
+        // 날짜 포맷팅
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+            return `${year}년 ${month}월 ${day}일 (${weekday})`;
+        }
+
+        // 리포트 로드
+        function loadReport() {
+            const dateSelect = document.getElementById('reportDate');
+            const selectedDate = dateSelect.value;
+            const pdfContent = document.getElementById('pdfContent');
+
+            if (!selectedDate) {
+                pdfContent.innerHTML = `
+                    <div class="error">
+                        ⚠️ 날짜를 선택해주세요.
+                    </div>
+                `;
+                return;
+            }
+
+            const pdfFile = reportFiles[selectedDate];
+            
+            if (!pdfFile) {
+                pdfContent.innerHTML = `
+                    <div class="error">
+                        ❌ 해당 날짜의 리포트를 찾을 수 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            // 로딩 표시
+            pdfContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>리포트를 불러오는 중...</p>
+                </div>
+            `;
+
+            // URL 업데이트 (브라우저 히스토리)
+            const newUrl = `${window.location.pathname}?date=${selectedDate}`;
+            window.history.pushState({date: selectedDate}, '', newUrl);
+
+            // PDF 표시
+            setTimeout(() => {
+                pdfContent.innerHTML = `
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="label">선택한 날짜</div>
+                            <div class="value">${formatDate(selectedDate)}</div>
+                        </div>
+                    </div>
+                    <div class="pdf-container">
+                        <iframe src="${pdfFile}" type="application/pdf"></iframe>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px; color: #6c757d;">
+                        <p>💡 PDF가 보이지 않으면 <a href="${pdfFile}" target="_blank" style="color: #667eea; font-weight: 600;">여기</a>를 클릭하여 새 탭에서 열어보세요.</p>
+                    </div>
+                `;
+            }, 500);
+        }
+
+        // 뒤로가기 지원
+        window.onpopstate = function(event) {
+            if (event.state && event.state.date) {
+                document.getElementById('reportDate').value = event.state.date;
+                loadReport();
+            }
+        };
+    </script>
+</body>
+</html>
