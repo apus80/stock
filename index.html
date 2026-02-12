@@ -176,6 +176,11 @@
             background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
         }
 
+        .category-section.news {
+            border: 3px solid #28a745;
+            background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+        }
+
         .category-header {
             display: flex;
             align-items: center;
@@ -202,6 +207,11 @@
             font-weight: 700;
         }
 
+        .category-title.news h3 {
+            color: #28a745;
+            font-weight: 700;
+        }
+
         .category-title p {
             color: #6c757d;
             font-size: 0.9em;
@@ -216,6 +226,10 @@
             font-size: 0.75em;
             font-weight: 600;
             margin-left: 10px;
+        }
+
+        .badge.news {
+            background: #28a745;
         }
 
         .selector-row {
@@ -553,24 +567,24 @@
                                 "title": "S&P 500"
                             },
                             {
-                                "description": "S&P 500 Futures",
-                                "proName": "CME_MINI:ES1!"
+                                "description": "S&P 500 선물",
+                                "proName": "CAPITALCOM:US500"
                             },
                             {
                                 "proName": "FOREXCOM:DJI",
                                 "title": "Dow Jones"
                             },
                             {
-                                "description": "Dow Futures",
-                                "proName": "CBOT_MINI:YM1!"
+                                "description": "Dow 선물",
+                                "proName": "CAPITALCOM:US30"
                             },
                             {
                                 "proName": "NASDAQ:NDX",
                                 "title": "NASDAQ 100"
                             },
                             {
-                                "description": "NASDAQ Futures",
-                                "proName": "CME_MINI:NQ1!"
+                                "description": "NASDAQ 선물",
+                                "proName": "CAPITALCOM:US100"
                             }
                         ],
                         "showSymbolLogo": true,
@@ -602,6 +616,29 @@
                             <option value="">날짜를 선택하세요...</option>
                         </select>
                         <button class="btn-load" onclick="loadReport('stocks')">불러오기</button>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 종목 뉴스 -->
+                <div class="category-section news">
+                    <div class="category-header">
+                        <span class="category-icon">📰</span>
+                        <div class="category-title news">
+                            <h3>
+                                종목 뉴스
+                                <span class="badge news">NEW</span>
+                            </h3>
+                            <p>주요 종목 뉴스 및 시장 동향</p>
+                        </div>
+                    </div>
+                    <div class="selector-row">
+                        <label for="dateNews">📅 날짜:</label>
+                        <select id="dateNews">
+                            <option value="">날짜를 선택하세요...</option>
+                        </select>
+                        <button class="btn-load" onclick="loadReport('news')">불러오기</button>
                     </div>
                 </div>
 
@@ -686,6 +723,7 @@
                     <p style="margin-top: 10px;">위에서 카테고리와 날짜를 선택한 후 "불러오기" 버튼을 클릭하세요.</p>
                     <ul style="margin-top: 15px;">
                         <li><strong>추천 종목:</strong> 투자 추천 및 매매 전략</li>
+                        <li><strong>종목 뉴스:</strong> 주요 종목 뉴스 및 시장 동향 <span style="color: #28a745; font-weight: 700;">NEW!</span></li>
                         <li><strong>분석1:</strong> 미국 시장 유동성 및 자산 배분</li>
                         <li><strong>분석2:</strong> ETF 자금 흐름 및 섹터 로테이션</li>
                         <li><strong>분석3:</strong> 내부자 매수 시그널</li>
@@ -772,6 +810,9 @@
                 '2026-02-09': 'reports/2026-02-09_analysis.pdf',
                 '2026-02-06': 'reports/2026-02-06_analysis.pdf',
             },
+            news: {
+                '2026-02-12': 'reports/news/2026-02-12_news.pdf',
+            },
             analysis1: {
                 '2026-03-02': 'reports/analysis1/2026-03-02_liquidity.pdf',
                 '2026-02-10': 'reports/analysis1/2026-02-10_liquidity.pdf',
@@ -796,6 +837,11 @@
                 name: '추천 종목 리포트', 
                 icon: '🎯',
                 selectId: 'dateStocks'
+            },
+            'news': { 
+                name: '종목 뉴스', 
+                icon: '📰',
+                selectId: 'dateNews'
             },
             'analysis1': { 
                 name: '미국 시장 유동성 메커니즘', 
