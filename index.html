@@ -397,129 +397,20 @@
             margin: 30px 0;
         }
 
-        /* 미국 지수 전광판 - 컴팩트 버전 */
-        .market-ticker {
+        /* TradingView 전광판 */
+        .tradingview-ticker-container {
             background: white;
-            padding: 12px 20px;
             border-bottom: 2px solid #e9ecef;
         }
 
-        .ticker-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .ticker-item {
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 10px 12px;
-            transition: all 0.3s;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-
-        .ticker-item:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .ticker-item.positive {
-            border-color: #dc3545;
-            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
-        }
-
-        .ticker-item.negative {
-            border-color: #0066ff;
-            background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
-        }
-
-        .ticker-header {
-            font-size: 0.7em;
-            color: #6c757d;
-            margin-bottom: 4px;
-            font-weight: 600;
-        }
-
-        .ticker-price {
-            font-size: 1.3em;
-            font-weight: 700;
-            color: #212529;
-            margin-bottom: 3px;
-            font-family: 'Courier New', monospace;
-        }
-
-        .ticker-change {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            margin-bottom: 6px;
-        }
-
-        .change-value {
-            font-size: 0.75em;
-            font-weight: 600;
-        }
-
-        .ticker-item.positive .change-value {
-            color: #dc3545;
-        }
-
-        .ticker-item.negative .change-value {
-            color: #0066ff;
-        }
-
-        .ticker-chart {
+        .tradingview-widget-container {
             width: 100%;
-            height: 25px;
-            margin-top: 5px;
+            height: 46px;
         }
 
-        .ticker-update {
-            text-align: center;
-            margin-top: 8px;
-            font-size: 0.7em;
-            color: #6c757d;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ticker-note {
-            font-size: 0.9em;
-            opacity: 0.7;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .ticker-price.updating {
-            animation: pulse 1s ease-in-out;
-        }
-
-        @media (max-width: 768px) {
-            .ticker-container {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
-
-            .ticker-item {
-                padding: 8px 10px;
-            }
-
-            .ticker-price {
-                font-size: 1.1em;
-            }
-
-            .ticker-update {
-                flex-direction: column;
-                gap: 3px;
-            }
+        .tradingview-widget-container__widget {
+            width: 100%;
+            height: 100%;
         }
 
         .footer {
@@ -650,66 +541,45 @@
                 <p>추천 종목부터 시장 분석까지, 모든 리포트를 한 곳에서</p>
             </div>
 
-            <!-- 미국 지수 전광판 -->
-            <div class="market-ticker">
-                <div class="ticker-container">
-                    <div class="ticker-item" id="spx-ticker">
-                        <div class="ticker-header">S&P 500</div>
-                        <div class="ticker-price" id="spx-price">---</div>
-                        <div class="ticker-change" id="spx-change">
-                            <span class="change-value">---</span>
-                        </div>
-                        <canvas id="spx-chart" class="ticker-chart"></canvas>
-                    </div>
-                    
-                    <div class="ticker-item" id="spx-fut-ticker">
-                        <div class="ticker-header">S&P 500 선물</div>
-                        <div class="ticker-price" id="spx-fut-price">---</div>
-                        <div class="ticker-change" id="spx-fut-change">
-                            <span class="change-value">---</span>
-                        </div>
-                        <canvas id="spx-fut-chart" class="ticker-chart"></canvas>
-                    </div>
-                    
-                    <div class="ticker-item" id="dji-ticker">
-                        <div class="ticker-header">다우존스</div>
-                        <div class="ticker-price" id="dji-price">---</div>
-                        <div class="ticker-change" id="dji-change">
-                            <span class="change-value">---</span>
-                        </div>
-                        <canvas id="dji-chart" class="ticker-chart"></canvas>
-                    </div>
-                    
-                    <div class="ticker-item" id="dji-fut-ticker">
-                        <div class="ticker-header">다우존스 선물</div>
-                        <div class="ticker-price" id="dji-fut-price">---</div>
-                        <div class="ticker-change" id="dji-fut-change">
-                            <span class="change-value">---</span>
-                        </div>
-                        <canvas id="dji-fut-chart" class="ticker-chart"></canvas>
-                    </div>
-                    
-                    <div class="ticker-item" id="ndx-ticker">
-                        <div class="ticker-header">나스닥</div>
-                        <div class="ticker-price" id="ndx-price">---</div>
-                        <div class="ticker-change" id="ndx-change">
-                            <span class="change-value">---</span>
-                        </div>
-                        <canvas id="ndx-chart" class="ticker-chart"></canvas>
-                    </div>
-                    
-                    <div class="ticker-item" id="ndx-fut-ticker">
-                        <div class="ticker-header">나스닥 선물</div>
-                        <div class="ticker-price" id="ndx-fut-price">---</div>
-                        <div class="ticker-change" id="ndx-fut-change">
-                            <span class="change-value">---</span>
-                        </div>
-                        <canvas id="ndx-fut-chart" class="ticker-chart"></canvas>
-                    </div>
-                </div>
-                <div class="ticker-update">
-                    <span id="ticker-time">업데이트 중...</span>
-                    <span class="ticker-note">※ 데이터는 약간의 지연이 있을 수 있습니다</span>
+            <!-- TradingView 실시간 전광판 -->
+            <div class="tradingview-ticker-container">
+                <div class="tradingview-widget-container">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+                    {
+                        "symbols": [
+                            {
+                                "proName": "FOREXCOM:SPXUSD",
+                                "title": "S&P 500"
+                            },
+                            {
+                                "description": "S&P 500 Futures",
+                                "proName": "CME_MINI:ES1!"
+                            },
+                            {
+                                "proName": "FOREXCOM:DJI",
+                                "title": "Dow Jones"
+                            },
+                            {
+                                "description": "Dow Futures",
+                                "proName": "CBOT_MINI:YM1!"
+                            },
+                            {
+                                "proName": "NASDAQ:NDX",
+                                "title": "NASDAQ 100"
+                            },
+                            {
+                                "description": "NASDAQ Futures",
+                                "proName": "CME_MINI:NQ1!"
+                            }
+                        ],
+                        "showSymbolLogo": true,
+                        "colorTheme": "light",
+                        "isTransparent": false,
+                        "displayMode": "adaptive",
+                        "locale": "kr"
+                    }
+                    </script>
                 </div>
             </div>
 
@@ -1059,195 +929,6 @@
                 document.getElementById(category.selectId).value = event.state.date;
                 loadReport(event.state.category);
             }
-        };
-
-        // ============================================
-        // 📊 미국 지수 전광판
-        // ============================================
-        
-        let tickerCharts = {};
-        
-        // 미니 차트 초기화
-        function initTickerCharts() {
-            const chartIds = ['spx-chart', 'spx-fut-chart', 'dji-chart', 'dji-fut-chart', 'ndx-chart', 'ndx-fut-chart'];
-            
-            chartIds.forEach(id => {
-                const canvas = document.getElementById(id);
-                const ctx = canvas.getContext('2d');
-                
-                // 캔버스 크기 설정
-                canvas.width = canvas.offsetWidth * 2;
-                canvas.height = 50;
-                
-                tickerCharts[id] = { canvas, ctx, data: [] };
-            });
-        }
-        
-        // 미니 차트 그리기
-        function drawMiniChart(chartId, data, isPositive) {
-            const chart = tickerCharts[chartId];
-            if (!chart || !data || data.length === 0) return;
-            
-            const { canvas, ctx } = chart;
-            const width = canvas.width;
-            const height = canvas.height;
-            
-            // 캔버스 초기화
-            ctx.clearRect(0, 0, width, height);
-            
-            // 데이터 정규화
-            const max = Math.max(...data);
-            const min = Math.min(...data);
-            const range = max - min || 1;
-            
-            // 선 그리기
-            ctx.beginPath();
-            ctx.strokeStyle = isPositive ? '#dc3545' : '#0066ff';
-            ctx.lineWidth = 2;
-            
-            data.forEach((value, index) => {
-                const x = (index / (data.length - 1)) * width;
-                const y = height - ((value - min) / range) * height * 0.8 - height * 0.1;
-                
-                if (index === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-            
-            ctx.stroke();
-            
-            // 그라데이션 영역
-            ctx.lineTo(width, height);
-            ctx.lineTo(0, height);
-            ctx.closePath();
-            
-            const gradient = ctx.createLinearGradient(0, 0, 0, height);
-            gradient.addColorStop(0, isPositive ? 'rgba(220, 53, 69, 0.2)' : 'rgba(0, 102, 255, 0.2)');
-            gradient.addColorStop(1, isPositive ? 'rgba(220, 53, 69, 0)' : 'rgba(0, 102, 255, 0)');
-            
-            ctx.fillStyle = gradient;
-            ctx.fill();
-        }
-        
-        // 지수 데이터 업데이트
-        async function updateMarketTicker() {
-            try {
-                // 임시 모의 데이터 (실제로는 API에서 가져옴)
-                const mockData = {
-                    spx: {
-                        price: 6960.50,
-                        change: 17.00,
-                        changePercent: 0.24,
-                        chartData: generateMockChartData(6940, 6970, 20)
-                    },
-                    'spx-fut': {
-                        price: 6977.50,
-                        change: 19.25,
-                        changePercent: 0.28,
-                        chartData: generateMockChartData(6950, 6980, 20)
-                    },
-                    dji: {
-                        price: 45078.45,
-                        change: -45.30,
-                        changePercent: -0.10,
-                        chartData: generateMockChartData(45050, 45100, 20)
-                    },
-                    'dji-fut': {
-                        price: 45123.75,
-                        change: -42.15,
-                        changePercent: -0.09,
-                        chartData: generateMockChartData(45100, 45150, 20)
-                    },
-                    ndx: {
-                        price: 25288.50,
-                        change: 22.00,
-                        changePercent: 0.09,
-                        chartData: generateMockChartData(25260, 25300, 20)
-                    },
-                    'ndx-fut': {
-                        price: 25310.50,
-                        change: 24.75,
-                        changePercent: 0.10,
-                        chartData: generateMockChartData(25280, 25320, 20)
-                    }
-                };
-                
-                // 데이터 표시
-                updateTickerDisplay('spx', mockData.spx);
-                updateTickerDisplay('spx-fut', mockData['spx-fut']);
-                updateTickerDisplay('dji', mockData.dji);
-                updateTickerDisplay('dji-fut', mockData['dji-fut']);
-                updateTickerDisplay('ndx', mockData.ndx);
-                updateTickerDisplay('ndx-fut', mockData['ndx-fut']);
-                
-                // 업데이트 시간 표시
-                const now = new Date();
-                const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-                document.getElementById('ticker-time').textContent = `최종 업데이트: ${timeStr}`;
-                
-            } catch (error) {
-                console.error('지수 데이터 업데이트 실패:', error);
-                document.getElementById('ticker-time').textContent = '업데이트 실패 - 재시도 중...';
-            }
-        }
-        
-        // 티커 표시 업데이트
-        function updateTickerDisplay(symbol, data) {
-            const priceEl = document.getElementById(`${symbol}-price`);
-            const changeEl = document.getElementById(`${symbol}-change`);
-            const tickerEl = document.getElementById(`${symbol}-ticker`);
-            
-            // 가격 업데이트
-            priceEl.textContent = data.price.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            priceEl.classList.add('updating');
-            setTimeout(() => priceEl.classList.remove('updating'), 1000);
-            
-            // 변동 업데이트
-            const isPositive = data.change >= 0;
-            const arrow = isPositive ? '▲' : '▼';
-            const changeText = `${arrow} ${Math.abs(data.change).toFixed(2)}(${Math.abs(data.changePercent).toFixed(2)}%)`;
-            
-            changeEl.innerHTML = `<span class="change-value">${changeText}</span>`;
-            
-            // 스타일 업데이트
-            tickerEl.className = 'ticker-item ' + (isPositive ? 'positive' : 'negative');
-            
-            // 차트 업데이트
-            drawMiniChart(`${symbol}-chart`, data.chartData, isPositive);
-        }
-        
-        // 모의 차트 데이터 생성
-        function generateMockChartData(min, max, points) {
-            const data = [];
-            let current = (min + max) / 2;
-            
-            for (let i = 0; i < points; i++) {
-                const change = (Math.random() - 0.5) * (max - min) * 0.1;
-                current = Math.max(min, Math.min(max, current + change));
-                data.push(current);
-            }
-            
-            return data;
-        }
-        
-        // 페이지 로드 시 전광판 초기화
-        const originalShowMainContent = showMainContent;
-        showMainContent = function() {
-            originalShowMainContent();
-            
-            // 차트 초기화
-            setTimeout(() => {
-                initTickerCharts();
-                updateMarketTicker();
-                
-                // 5분마다 자동 업데이트
-                setInterval(updateMarketTicker, 5 * 60 * 1000);
-            }, 100);
         };
     </script>
 </body>
