@@ -806,14 +806,19 @@
         // PDF 파일 목록
         const reportFiles = {
             stocks: {
-                '2026-02-15': 'reports/2026-02-14_analysis.pdf',
-                '2026-02-14': 'reports/2026-02-14_catalyst.pdf',
                 '2026-02-12': 'reports/2026-02-12_catalyst.pdf',
                 '2026-02-09': 'reports/2026-02-09_analysis.pdf',
                 '2026-02-06': 'reports/2026-02-06_analysis.pdf',
             },
             news: {
-                '2026-02-12': 'reports/news/2026-02-12_news.pdf',
+                '2026-02-15': {
+                    file: 'reports/news/memory_supercycle.pdf',
+                    title: '메모리 사업의 전망'
+                },
+                '2026-02-12': {
+                    file: 'reports/news/2026-02-12_news.pdf',
+                    title: '주간 시장 동향'
+                }
             },
             analysis1: {
                 '2026-03-02': 'reports/analysis1/2026-03-02_liquidity.pdf',
@@ -876,7 +881,15 @@
                 dates.forEach(date => {
                     const option = document.createElement('option');
                     option.value = date;
-                    option.textContent = formatDate(date);
+                    
+                    // News 카테고리는 제목 추가
+                    if (categoryKey === 'news') {
+                        const newsData = reportFiles[categoryKey][date];
+                        option.textContent = `${formatDate(date)}: ${newsData.title}`;
+                    } else {
+                        option.textContent = formatDate(date);
+                    }
+                    
                     dateSelect.appendChild(option);
                 });
             });
@@ -915,7 +928,14 @@
                 return;
             }
 
-            const pdfFile = reportFiles[categoryKey][selectedDate];
+            // News 카테고리는 객체에서 file 가져오기
+            let pdfFile;
+            if (categoryKey === 'news') {
+                const newsData = reportFiles[categoryKey][selectedDate];
+                pdfFile = newsData ? newsData.file : null;
+            } else {
+                pdfFile = reportFiles[categoryKey][selectedDate];
+            }
             
             if (!pdfFile) {
                 pdfContent.innerHTML = `
@@ -981,4 +1001,3 @@
     </script>
 </body>
 </html>
-
