@@ -642,6 +642,18 @@
                             <p>주요 종목 뉴스 및 시장 동향</p>
                         </div>
                     </div>
+<li class="dropdown-header">주요 보고서</li>
+
+<li style="list-style:none;">
+  - 
+  <a href="#" onclick="openMemoryReport(); return false;">
+    메모리 사업의 전망 
+    <span style="color:#888; font-size:12px;">
+      (상세한 내용은 하단 2월 16일 보고서(pdf) 참조 )
+    </span>
+  </a>
+</li>
+
                     <div class="selector-row">
                         <label for="dateNews">📅 날짜:</label>
                         <select id="dateNews">
@@ -1029,6 +1041,13 @@
                 document.getElementById(category.selectId).value = event.state.date;
                loadReport(event.state.category);
             }
+function openMemoryReport() {
+  window.open(
+    "memory_report.html",
+    "_blank",
+    "width=1100,height=800,scrollbars=yes,resizable=yes"
+  );
+}
         };
     </script>
 </body>
