@@ -932,7 +932,7 @@
             
             if (categoryParam && dateParam && categories[categoryParam]) {
                 document.getElementById(categories[categoryParam].selectId).value = dateParam;
-                (categoryParam);
+                loadReport(categoryParam);
             }
         }
 
@@ -945,7 +945,7 @@
             return `${year}년 ${month}월 ${day}일 (${weekday})`;
         }
 
-        function (categoryKey) {
+        function loadReport(categoryKey) {
             const category = categories[categoryKey];
             const dateSelect = document.getElementById(category.selectId);
             const selectedDate = dateSelect.value;
@@ -1027,7 +1027,7 @@
             if (event.state && event.state.category && event.state.date) {
                 const category = categories[event.state.category];
                 document.getElementById(category.selectId).value = event.state.date;
-                (event.state.category);
+               loadReport(event.state.category);
             }
         };
     </script>
