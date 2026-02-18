@@ -624,7 +624,7 @@
                         <select id="dateStocks">
                             <option value="">날짜를 선택하세요...</option>
                         </select>
-                        <button class="btn-load" onclick="loadReport('stocks')">불러오기</button>
+                        <button class="btn-load" onclick="loadReport('recommendation')">불러오기</button>
                     </div>
                 </div>
 
@@ -867,7 +867,7 @@
 
         // 카테고리 정보
         const categories = {
-            'stocks': { 
+            'recommendation': { 
                 name: '추천 종목 리포트', 
                 icon: '🎯',
                 selectId: 'dateStocks'
@@ -932,7 +932,7 @@
             
             if (categoryParam && dateParam && categories[categoryParam]) {
                 document.getElementById(categories[categoryParam].selectId).value = dateParam;
-                loadReport(categoryParam);
+                (categoryParam);
             }
         }
 
@@ -945,7 +945,7 @@
             return `${year}년 ${month}월 ${day}일 (${weekday})`;
         }
 
-        function loadReport(categoryKey) {
+        function (categoryKey) {
             const category = categories[categoryKey];
             const dateSelect = document.getElementById(category.selectId);
             const selectedDate = dateSelect.value;
@@ -1027,7 +1027,7 @@
             if (event.state && event.state.category && event.state.date) {
                 const category = categories[event.state.category];
                 document.getElementById(category.selectId).value = event.state.date;
-                loadReport(event.state.category);
+                (event.state.category);
             }
         };
     </script>
