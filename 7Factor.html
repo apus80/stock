@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7-Factor Convergence System — 급등종목 예측 방법론</title>
+<style>
+  :root {
+    --dp: #4A148C;
+    --p:  #7B1FA2;
+    --mp: #9C27B0;
+    --lp: #F3E5F5;
+    --mlp:#E1BEE7;
+    --teal:#00897B;
+    --lteal:#E0F2F1;
+    --red: #C62828;
+    --lred:#FFEBEE;
+    --ora: #E65100;
+    --lora:#FFF3E0;
+    --blu: #1565C0;
+    --lblu:#E3F2FD;
+    --gray:#F5F5F5;
+    --dgray:#546E7A;
+    --text:#1A1A2E;
+    --white:#FFFFFF;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: #FAFAFA;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* ── Hero ───────────────────────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, var(--dp) 0%, var(--mp) 60%, #BA68C8 100%);
+    padding: 56px 40px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #E1BEE7;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 16px;
+    border-radius: 20px;
+    margin-bottom: 18px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+  }
+  .hero h1 span { color: #CE93D8; }
+  .hero p {
+    font-size: 15px;
+    color: #E1BEE7;
+    max-width: 600px;
+    margin: 0 auto 24px;
+  }
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .hero-meta span {
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    background: rgba(255,255,255,0.08);
+    padding: 4px 14px;
+    border-radius: 12px;
+  }
+
+  /* ── Layout ─────────────────────────────────────────────────────────── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 48px 0 20px;
+  }
+  .section-label .bar {
+    width: 5px; height: 28px;
+    background: linear-gradient(180deg, var(--dp), var(--mp));
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .section-label h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--dp);
+  }
+  .section-label p {
+    font-size: 13px;
+    color: var(--dgray);
+    margin-left: auto;
+  }
+
+  /* ── Intro cards ─────────────────────────────────────────────────────── */
+  .intro-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .intro-card {
+    background: var(--white);
+    border: 1px solid var(--mlp);
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid var(--mp);
+    transition: transform .18s, box-shadow .18s;
+  }
+  .intro-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(123,31,162,.1);
+  }
+  .intro-card .ic-icon { font-size: 24px; margin-bottom: 8px; }
+  .intro-card h4 { font-size: 13px; font-weight: 700; color: var(--dp); margin-bottom: 4px; }
+  .intro-card p  { font-size: 12px; color: var(--dgray); line-height: 1.55; }
+
+  /* ── Score overview ──────────────────────────────────────────────────── */
+  .score-overview {
+    background: linear-gradient(135deg, var(--dp) 0%, var(--p) 100%);
+    border-radius: 16px;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .score-total { color: white; }
+  .score-total .num { font-size: 64px; font-weight: 900; line-height: 1; color: #CE93D8; }
+  .score-total .lbl { font-size: 14px; color: rgba(255,255,255,.75); margin-top: 2px; }
+  .score-bars {
+    flex: 1; min-width: 260px;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .sbar { display: flex; align-items: center; gap: 10px; }
+  .sbar .name { font-size: 11.5px; color: rgba(255,255,255,.85); width: 120px; flex-shrink: 0; }
+  .sbar .track {
+    flex: 1; height: 8px;
+    background: rgba(255,255,255,.15);
+    border-radius: 4px; overflow: hidden;
+  }
+  .sbar .fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #CE93D8, #E1BEE7);
+  }
+  .sbar .pts { font-size: 11px; font-weight: 700; color: #CE93D8; width: 32px; text-align: right; }
+
+  /* ── Factor cards ────────────────────────────────────────────────────── */
+  .factor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .fc {
+    background: var(--white);
+    border-radius: 14px;
+    border: 1px solid #E0E0E0;
+    overflow: hidden;
+    transition: transform .18s, box-shadow .18s;
+    position: relative;
+  }
+  .fc:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 32px rgba(74,20,140,.12);
+  }
+  .fc-head {
+    background: linear-gradient(135deg, var(--dp), var(--mp));
+    padding: 16px 18px 14px;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .fc-num {
+    background: rgba(255,255,255,.18);
+    color: #CE93D8;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 3px 9px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .fc-title { color: white; }
+  .fc-title .en { font-size: 13px; font-weight: 700; }
+  .fc-title .ko { font-size: 11px; color: rgba(255,255,255,.7); margin-top: 1px; }
+  .fc-pts {
+    margin-left: auto;
+    background: rgba(255,255,255,.15);
+    border-radius: 20px;
+    padding: 4px 12px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .fc-pts .n { font-size: 20px; font-weight: 900; color: #E1BEE7; line-height: 1; }
+  .fc-pts .l { font-size: 9px; color: rgba(255,255,255,.6); }
+  .fc-body { padding: 16px 18px; }
+
+  .metric-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid #F0F0F0;
+    font-size: 12.5px;
+  }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-row .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .metric-row .mname { color: var(--dgray); flex: 1; }
+  .metric-row .mtag {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .signals {
+    display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap;
+  }
+  .sig {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: .3px;
+  }
+  .sig.bull { background: var(--lteal); color: var(--teal); }
+  .sig.bear { background: var(--lred);  color: var(--red); }
+  .sig.neutral { background: var(--lora); color: var(--ora); }
+
+  /* ── Grade table ─────────────────────────────────────────────────────── */
+  .grade-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 680px) { .grade-section { grid-template-columns: 1fr; } }
+
+  .grade-table {
+    background: var(--white);
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #E0E0E0;
+  }
+  .grade-table table {
+    width: 100%; border-collapse: collapse;
+  }
+  .grade-table thead th {
+    background: var(--dp);
+    color: white;
+    font-size: 12px;
+    padding: 11px 14px;
+    text-align: left;
+    font-weight: 700;
+  }
+  .grade-table tbody td {
+    padding: 10px 14px;
+    font-size: 12.5px;
+    border-bottom: 1px solid #F0F0F0;
+    vertical-align: middle;
+  }
+  .grade-table tbody tr:last-child td { border-bottom: none; }
+  .grade-pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: .3px;
+  }
+
+  /* ── Filter rules ────────────────────────────────────────────────────── */
+  .filter-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .filter-card {
+    background: var(--white);
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
+    padding: 18px;
+    border-top: 3px solid var(--mp);
+  }
+  .filter-card .num {
+    font-size: 28px; font-weight: 900;
+    color: var(--mlp);
+    line-height: 1; margin-bottom: 6px;
+  }
+  .filter-card h4 { font-size: 13px; font-weight: 700; color: var(--dp); margin-bottom: 6px; }
+  .filter-card p  { font-size: 12px; color: var(--dgray); line-height: 1.5; }
+
+  /* ── Risk rules ──────────────────────────────────────────────────────── */
+  .risk-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 700px) { .risk-grid { grid-template-columns: 1fr; } }
+  .risk-card {
+    background: var(--white);
+    border: 1px solid #E0E0E0;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .risk-card .rk-icon { font-size: 22px; margin-bottom: 8px; }
+  .risk-card h4 { font-size: 13px; font-weight: 700; color: var(--dp); margin-bottom: 6px; }
+  .risk-card p  { font-size: 12px; color: var(--dgray); line-height: 1.55; }
+  .risk-card .tag {
+    display: inline-block; margin-top: 10px;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 10px;
+  }
+  .tag.entry  { background: var(--lp);   color: var(--dp); }
+  .tag.stop   { background: var(--lred); color: var(--red); }
+  .tag.target { background: var(--lteal);color: var(--teal); }
+
+  /* ── Disclaimer ──────────────────────────────────────────────────────── */
+  .disclaimer {
+    background: var(--lp);
+    border: 1px solid var(--mlp);
+    border-radius: 12px;
+    padding: 18px 22px;
+    font-size: 12px;
+    color: var(--dgray);
+    margin-top: 40px;
+    text-align: center;
+    line-height: 1.7;
+  }
+  .disclaimer strong { color: var(--dp); }
+
+  /* ── Responsive ─────────────────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 26px; }
+    .score-overview { flex-direction: column; align-items: flex-start; }
+    .score-total .num { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-badge">📈 Spike Stock Analytics</div>
+  <h1>7-Factor <span>Convergence</span> System</h1>
+  <p>바닥을 다지고 단기 급등 가능성이 높은 개별 주식을 포착하는 수렴 분석 방법론<br>
+     ETF·레버리지 제외 | 개별주식 한정 | 250점 만점 스코어링</p>
+  <div class="hero-meta">
+    <span>기준일 2026.02.22</span>
+    <span>v1.0  급등종목 전용 모델</span>
+    <span>4개 프레임워크와 독립 운영</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── 모델 개요 ─────────────────────────────────────────────────────── -->
+  <div class="section-label">
+    <div class="bar"></div>
+    <h2>모델 철학</h2>
+    <p>Why 7-Factor?</p>
+  </div>
+
+  <div class="intro-grid">
+    <div class="intro-card">
+      <div class="ic-icon">🎯</div>
+      <h4>3중 수렴 원칙</h4>
+      <p>가격 압축 + 거래량 이상 + 옵션 시그널이 동시 수렴할 때만 진입. 단일 지표에 의존하지 않는다.</p>
+    </div>
+    <div class="intro-card">
+      <div class="ic-icon">📊</div>
+      <h4>정량적 스코어링</h4>
+      <p>250점 만점 기준으로 각 Factor를 수치화하여 감정을 배제하고 일관된 기준을 유지한다.</p>
+    </div>
+    <div class="intro-card">
+      <div class="ic-icon">⚡</div>
+      <h4>바닥권 집중</h4>
+      <p>고점 추격 대신 비이성적 공포로 형성된 바닥권에서의 리스크/리워드 비율을 극대화한다.</p>
+    </div>
+    <div class="intro-card">
+      <div class="ic-icon">🛡️</div>
+      <h4>리스크 선정의</h4>
+      <p>진입 전 손절선(-8%)과 목표가(+18~20%)를 사전 설정. 비율 유리한 셋업만 매매한다.</p>
+    </div>
+  </div>
+
+  <!-- ── 점수 구조 ─────────────────────────────────────────────────────── -->
+  <div class="section-label">
+    <div class="bar"></div>
+    <h2>점수 구조</h2>
+    <p>250점 만점 | Factor별 배점</p>
+  </div>
+
+  <div class="score-overview">
+    <div class="score-total">
+      <div class="num">250</div>
+      <div class="lbl">총점 만점 (7 Factors)</div>
+    </div>
+    <div class="score-bars">
+      <div class="sbar">
+        <span class="name">F1. 가격 압축</span>
+        <div class="track"><div class="fill" style="width:40%"></div></div>
+        <span class="pts">40pt</span>
+      </div>
+      <div class="sbar">
+        <span class="name">F2. 거래량 패턴</span>
+        <div class="track"><div class="fill" style="width:35%"></div></div>
+        <span class="pts">35pt</span>
+      </div>
+      <div class="sbar">
+        <span class="name">F3. 공매도 구조</span>
+        <div class="track"><div class="fill" style="width:35%"></div></div>
+        <span class="pts">35pt</span>
+      </div>
+      <div class="sbar">
+        <span class="name">F4. 옵션 이상 신호</span>
+        <div class="track"><div class="fill" style="width:40%"></div></div>
+        <span class="pts">40pt</span>
+      </div>
+      <div class="sbar">
+        <span class="name">F5. 내부자/기관 매집</span>
+        <div class="track"><div class="fill" style="width:25%"></div></div>
+        <span class="pts">25pt</span>
+      </div>
+      <div class="sbar">
+        <span class="name">F6. 기술적 임계점</span>
+        <div class="track"><div class="fill" style="width:40%"></div></div>
+        <span class="pts">40pt</span>
+      </div>
+      <div class="sbar">
+        <span class="name">F7. 촉매 이벤트</span>
+        <div class="track"><div class="fill" style="width:35%"></div></div>
+        <span class="pts">35pt</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 7 Factors ─────────────────────────────────────────────────────── -->
+  <div class="section-label">
+    <div class="bar"></div>
+    <h2>7-Factor 상세 분석 기준</h2>
+    <p>각 Factor별 핵심 측정 지표</p>
+  </div>
+
+  <div class="factor-grid">
+
+    <!-- F1 -->
+    <div class="fc">
+      <div class="fc-head">
+        <div class="fc-num">F1</div>
+        <div class="fc-title">
+          <div class="en">가격 압축 (Price Coiling)</div>
+          <div class="ko">변동성 수축 후 에너지 축적 구간</div>
+        </div>
+        <div class="fc-pts"><div class="n">40</div><div class="l">만점</div></div>
+      </div>
+      <div class="fc-body">
+        <div class="metric-row">
+          <div class="dot" style="background:#7B1FA2"></div>
+          <span class="mname">볼린저밴드 폭 (BB Width)</span>
+          <span class="mtag" style="background:#F3E5F5;color:#7B1FA2">6개월 최저 ✓</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#7B1FA2"></div>
+          <span class="mname">이평선 수렴도 (MA Compression)</span>
+          <span class="mtag" style="background:#F3E5F5;color:#7B1FA2">5/20/60일 수렴</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#7B1FA2"></div>
+          <span class="mname">ATR 변화율 (60일 기준)</span>
+          <span class="mtag" style="background:#F3E5F5;color:#7B1FA2">평균 대비 -40%+</span>
+        </div>
+        <div class="signals">
+          <span class="sig bull">▲ BB폭 최저 + MA수렴 = 강세</span>
+          <span class="sig neutral">● 일부 수렴 = 중립</span>
+          <span class="sig bear">▼ 변동성 확대 = 약세</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F2 -->
+    <div class="fc">
+      <div class="fc-head">
+        <div class="fc-num">F2</div>
+        <div class="fc-title">
+          <div class="en">거래량 패턴 (Volume Signature)</div>
+          <div class="ko">세력 매집 및 매도 소진 신호</div>
+        </div>
+        <div class="fc-pts"><div class="n">35</div><div class="l">만점</div></div>
+      </div>
+      <div class="fc-body">
+        <div class="metric-row">
+          <div class="dot" style="background:#1565C0"></div>
+          <span class="mname">5일/20일 거래량 비율</span>
+          <span class="mtag" style="background:#E3F2FD;color:#1565C0">30~60% 수준 ✓</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#1565C0"></div>
+          <span class="mname">OBV 방향성</span>
+          <span class="mtag" style="background:#E3F2FD;color:#1565C0">주가↓ OBV↗ 다이버전스</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#1565C0"></div>
+          <span class="mname">음봉 거래량 소진 패턴</span>
+          <span class="mtag" style="background:#E3F2FD;color:#1565C0">캔들 패턴 확인</span>
+        </div>
+        <div class="signals">
+          <span class="sig bull">▲ OBV 다이버전스 = 매집 신호</span>
+          <span class="sig bear">▼ 거래량 폭증 하락 = 분산</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F3 -->
+    <div class="fc">
+      <div class="fc-head">
+        <div class="fc-num">F3</div>
+        <div class="fc-title">
+          <div class="en">공매도 구조 (Short Interest)</div>
+          <div class="ko">숏 스퀴즈 잠재력 측정</div>
+        </div>
+        <div class="fc-pts"><div class="n">35</div><div class="l">만점</div></div>
+      </div>
+      <div class="fc-body">
+        <div class="metric-row">
+          <div class="dot" style="background:#E65100"></div>
+          <span class="mname">Short Float %</span>
+          <span class="mtag" style="background:#FFF3E0;color:#E65100">10% 이상 = 스퀴즈 가능</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#E65100"></div>
+          <span class="mname">Days to Cover</span>
+          <span class="mtag" style="background:#FFF3E0;color:#E65100">5일 이상 = 고위험</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#E65100"></div>
+          <span class="mname">공매도 잔고 증감 추세</span>
+          <span class="mtag" style="background:#FFF3E0;color:#E65100">주가 횡보 중 증가</span>
+        </div>
+        <div class="signals">
+          <span class="sig bull">▲ 높은 Short% + 횡보 = 스퀴즈 셋업</span>
+          <span class="sig neutral">● 6% 미만 = 스퀴즈 제한적</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F4 -->
+    <div class="fc">
+      <div class="fc-head">
+        <div class="fc-num">F4</div>
+        <div class="fc-title">
+          <div class="en">옵션 이상 신호 (Options Anomaly)</div>
+          <div class="ko">스마트 머니 옵션 베팅 포착</div>
+        </div>
+        <div class="fc-pts"><div class="n">40</div><div class="l">만점</div></div>
+      </div>
+      <div class="fc-body">
+        <div class="metric-row">
+          <div class="dot" style="background:#4A148C"></div>
+          <span class="mname">OTM 콜옵션 거래량 폭증</span>
+          <span class="mtag" style="background:#F3E5F5;color:#4A148C">평균 200%+ = 이상 신호</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#4A148C"></div>
+          <span class="mname">PCR (Put-Call Ratio)</span>
+          <span class="mtag" style="background:#F3E5F5;color:#4A148C">0.7~1.0 = 건강한 강세</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#4A148C"></div>
+          <span class="mname">만기일별 OI 분포</span>
+          <span class="mtag" style="background:#F3E5F5;color:#4A148C">Gamma 집중 구간</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#4A148C"></div>
+          <span class="mname">내재변동성(IV) 추세</span>
+          <span class="mtag" style="background:#F3E5F5;color:#4A148C">IV 압축 후 확대 전조</span>
+        </div>
+        <div class="signals">
+          <span class="sig bull">▲ OTM 콜 폭증 + PCR 하락 = 급등 예고</span>
+          <span class="sig bear">▼ 풋 폭증 = 헤지 수요↑</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F5 -->
+    <div class="fc">
+      <div class="fc-head">
+        <div class="fc-num">F5</div>
+        <div class="fc-title">
+          <div class="en">내부자/기관 매집 (Smart Money)</div>
+          <div class="ko">경영진 확신 및 기관 축적 포착</div>
+        </div>
+        <div class="fc-pts"><div class="n">25</div><div class="l">만점</div></div>
+      </div>
+      <div class="fc-body">
+        <div class="metric-row">
+          <div class="dot" style="background:#00897B"></div>
+          <span class="mname">장내 직접 매수 (Open Market)</span>
+          <span class="mtag" style="background:#E0F2F1;color:#00897B">$10만 이상 = 유의미</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#00897B"></div>
+          <span class="mname">클러스터 바잉 (복수 임원)</span>
+          <span class="mtag" style="background:#E0F2F1;color:#00897B">2인 이상 = 최강 신호</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#00897B"></div>
+          <span class="mname">기관 13F 포지션 변화</span>
+          <span class="mtag" style="background:#E0F2F1;color:#00897B">신규 편입 + 증량</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#00897B"></div>
+          <span class="mname">다크풀 블록 거래</span>
+          <span class="mtag" style="background:#E0F2F1;color:#00897B">평균 대비 3배+</span>
+        </div>
+        <div class="signals">
+          <span class="sig bull">▲ CEO+CFO 동시 매수 = 최고 신호</span>
+          <span class="sig neutral">● RSU/옵션 행사 = 제외</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F6 -->
+    <div class="fc">
+      <div class="fc-head">
+        <div class="fc-num">F6</div>
+        <div class="fc-title">
+          <div class="en">기술적 임계점 (Technical Trigger)</div>
+          <div class="ko">진입 타이밍 최적화 지표</div>
+        </div>
+        <div class="fc-pts"><div class="n">40</div><div class="l">만점</div></div>
+      </div>
+      <div class="fc-body">
+        <div class="metric-row">
+          <div class="dot" style="background:#7B1FA2"></div>
+          <span class="mname">52주 저가 대비 위치</span>
+          <span class="mtag" style="background:#F3E5F5;color:#7B1FA2">+5~15% = 바닥권</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#7B1FA2"></div>
+          <span class="mname">RSI (14일)</span>
+          <span class="mtag" style="background:#F3E5F5;color:#7B1FA2">30 이하 과매도 탈출</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#7B1FA2"></div>
+          <span class="mname">MACD 히스토그램</span>
+          <span class="mtag" style="background:#F3E5F5;color:#7B1FA2">골든크로스 형성</span>
+        </div>
+        <div class="metric-row">
+          <div class="dot" style="background:#7B1FA2"></div>
+          <span class="mname">이평선 정배열 전환</span>
+          <span class="mtag" style="background:#F3E5F5;color:#7B1FA2">5일선 > 20일선 돌파</span>
+        </div>
+        <div class="signals">
+          <span class="sig bull">▲ RSI 과매도 + MACD 골든크로스 = 진입</span>
+          <span class="sig bear">▼ 역배열 진행 중 = 대기</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F7 -->
+    <div class="fc" style="grid-column: 1 / -1; max-width: 640px;">
+      <div class="fc-head">
+        <div class="fc-num">F7</div>
+        <div class="fc-title">
+          <div class="en">촉매 이벤트 (Catalyst Calendar)</div>
+          <div class="ko">급등을 유발할 명확한 트리거 존재 여부</div>
+        </div>
+        <div class="fc-pts"><div class="n">35</div><div class="l">만점</div></div>
+      </div>
+      <div class="fc-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;">
+          <div>
+            <div class="metric-row">
+              <div class="dot" style="background:#1565C0"></div>
+              <span class="mname">실적 발표일 (Earnings Date)</span>
+              <span class="mtag" style="background:#E3F2FD;color:#1565C0">2~6주 내</span>
+            </div>
+            <div class="metric-row">
+              <div class="dot" style="background:#1565C0"></div>
+              <span class="mname">신제품/서비스 발표</span>
+              <span class="mtag" style="background:#E3F2FD;color:#1565C0">컨퍼런스 등</span>
+            </div>
+          </div>
+          <div>
+            <div class="metric-row">
+              <div class="dot" style="background:#1565C0"></div>
+              <span class="mname">배당 발표 / 자사주 매입</span>
+              <span class="mtag" style="background:#E3F2FD;color:#1565C0">주주환원 강화</span>
+            </div>
+            <div class="metric-row">
+              <div class="dot" style="background:#1565C0"></div>
+              <span class="mname">구조조정 / M&A 발표</span>
+              <span class="mtag" style="background:#E3F2FD;color:#1565C0">기업가치 리레이팅</span>
+            </div>
+          </div>
+        </div>
+        <div class="signals" style="margin-top:12px;">
+          <span class="sig bull">▲ 3주 내 실적 + 배당 동시 = 강력 촉매</span>
+          <span class="sig neutral">● 촉매 미확인 = 점수 차감</span>
+          <span class="sig bear">▼ 실적 연기 / 경영진 교체 = 리스크</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /factor-grid -->
+
+  <!-- ── 등급 기준 & 선별 필터 ─────────────────────────────────────────── -->
+  <div class="section-label">
+    <div class="bar"></div>
+    <h2>등급 기준 & 노이즈 필터</h2>
+    <p>점수 해석 및 선별 조건</p>
+  </div>
+
+  <div class="grade-section">
+    <div class="grade-table">
+      <table>
+        <thead>
+          <tr>
+            <th>점수 구간</th>
+            <th>등급</th>
+            <th>행동 지침</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:#C62828">200점 이상</strong></td>
+            <td><span class="grade-pill" style="background:#FFEBEE;color:#C62828">🔴 HIGH ALERT</span></td>
+            <td style="font-size:12px;color:#546E7A">즉각 모니터링 + 소규모 선매수</td>
+          </tr>
+          <tr>
+            <td><strong style="color:#00897B">170~199점</strong></td>
+            <td><span class="grade-pill" style="background:#E0F2F1;color:#00897B">🟢 STRONG BUY</span></td>
+            <td style="font-size:12px;color:#546E7A">진입가 도달 시 적극 매수</td>
+          </tr>
+          <tr>
+            <td><strong style="color:#7B1FA2">140~169점</strong></td>
+            <td><span class="grade-pill" style="background:#F3E5F5;color:#7B1FA2">🔵 BUY</span></td>
+            <td style="font-size:12px;color:#546E7A">2~3회 분할 진입 시작</td>
+          </tr>
+          <tr>
+            <td><strong style="color:#E65100">110~139점</strong></td>
+            <td><span class="grade-pill" style="background:#FFF3E0;color:#E65100">🟡 WATCH</span></td>
+            <td style="font-size:12px;color:#546E7A">관심 리스트 등록, 추가 확인</td>
+          </tr>
+          <tr>
+            <td><strong style="color:#757575">~109점</strong></td>
+            <td><span class="grade-pill" style="background:#F5F5F5;color:#757575">⚪ PASS</span></td>
+            <td style="font-size:12px;color:#546E7A">이번 사이클 제외</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="filter-section" style="grid-template-columns:1fr;">
+        <div class="filter-card">
+          <div class="num">①</div>
+          <h4>장내 매수만 인정</h4>
+          <p>스톡옵션 행사 및 RSU 취득은 제외. CEO가 본인 현금으로 직접 매수한 건만 F5에 반영한다.</p>
+        </div>
+        <div class="filter-card">
+          <div class="num">②</div>
+          <h4>3중 수렴 필수</h4>
+          <p>F1(가격압축) + F4(옵션이상) + F6(기술적 트리거) 중 최소 2개 이상이 강세 시그널이어야 진입을 검토한다.</p>
+        </div>
+        <div class="filter-card">
+          <div class="num">③</div>
+          <h4>개별 주식 한정</h4>
+          <p>ETF, 레버리지/인버스 상품은 완전 제외. 7-Factor 모델은 개별 주식의 바닥권 급등에 최적화되어 있다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 리스크 관리 ────────────────────────────────────────────────────── -->
+  <div class="section-label">
+    <div class="bar"></div>
+    <h2>포지션 리스크 관리</h2>
+    <p>진입 전 반드시 설정</p>
+  </div>
+
+  <div class="risk-grid">
+    <div class="risk-card">
+      <div class="rk-icon">🎯</div>
+      <h4>진입가 (Entry Zone)</h4>
+      <p>진입가 범위 내에서만 매수. 범위를 -3% 이탈하면 당일 청산하고 재진입 기회를 기다린다.</p>
+      <div><span class="tag entry">분할 매수 3회 권장</span></div>
+    </div>
+    <div class="risk-card">
+      <div class="rk-icon">🛑</div>
+      <h4>손절선 (Stop Loss)</h4>
+      <p>진입가 대비 -8% 선에서 예외 없이 자동 청산. 감정과 희망은 손절에 개입하지 않는다.</p>
+      <div><span class="tag stop">-8% 강제 집행</span></div>
+    </div>
+    <div class="risk-card">
+      <div class="rk-icon">💰</div>
+      <h4>목표가 (Target)</h4>
+      <p>목표가의 50%에서 절반 매도 후 이익 잠금. 나머지는 5일선 이탈 시 청산하여 추가 수익 추구.</p>
+      <div><span class="tag target">+18~20% 목표</span></div>
+    </div>
+  </div>
+
+  <!-- ── 면책 ─────────────────────────────────────────────────────────── -->
+  <div class="disclaimer">
+    <strong>📌 면책 조항</strong><br>
+    본 자료는 7-Factor Convergence System의 교육 및 연구 목적으로 작성된 방법론 소개 문서이며,<br>
+    투자 권유나 금융 자문이 아닙니다. 실제 투자는 전적으로 본인의 판단과 책임 하에 이루어져야 합니다.<br>
+    주식 거래는 원금 손실의 위험이 있으니 신중하게 결정하시기 바랍니다.
+  </div>
+
+</div><!-- /container -->
+</body>
+</html>
