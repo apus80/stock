@@ -543,6 +543,10 @@
                 💡 힌트: 비밀번호를 잊으셨나요?<br>
                 관리자에게 문의하세요.
             </div>
+
+            <div style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #dee2e6; color: #667eea; font-size: 0.95em; font-weight: 600;">
+                📧 문의사항 : aiinvestflow@gmail.com
+            </div>
         </div>
     </div>
 
@@ -625,6 +629,38 @@
                             <option value="">날짜를 선택하세요...</option>
                         </select>
                         <button class="btn-load" onclick="loadReport('recommendation')">불러오기</button>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- 급등 종목 리포트 -->
+                <div class="category-section featured">
+                    <div class="category-header">
+                        <span class="category-icon">🚀</span>
+                        <div class="category-title featured">
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <h3>
+                                    급등 종목 리포트
+                                    <span class="badge">ALERT</span>
+                                </h3>
+                                <a href="7Factor.html"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="btn-load"
+                                   style="text-decoration: none; font-size: 0.8em; padding: 8px 15px; background: #5a67d8;">
+                                    📝 분석 방법론 보기
+                                </a>
+                            </div>
+                            <p>급등 종목 탐지 및 7가지 요소 분석</p>
+                        </div>
+                    </div>
+                    <div class="selector-row">
+                        <label for="dateShoot">📅 날짜:</label>
+                        <select id="dateShoot">
+                            <option value="">날짜를 선택하세요...</option>
+                        </select>
+                        <button class="btn-load" onclick="loadReport('shoot')">불러오기</button>
                     </div>
                 </div>
 
@@ -744,6 +780,7 @@
                     <p style="margin-top: 10px;">위에서 카테고리와 날짜를 선택한 후 "불러오기" 버튼을 클릭하세요.</p>
                     <ul style="margin-top: 15px;">
                         <li><strong>추천 종목:</strong> 투자 추천 및 매매 전략</li>
+                        <li><strong>급등 종목:</strong> 급등 종목 탐지 및 7가지 요소 분석 <span style="color: #dc3545; font-weight: 700;">🚀 NEW!</span></li>
                         <li><strong>종목 뉴스:</strong> 주요 종목 뉴스 및 시장 동향 <span style="color: #28a745; font-weight: 700;">NEW!</span></li>
                         <li><strong>분석1:</strong> 미국 시장 유동성 및 자산 배분</li>
                         <li><strong>분석2:</strong> ETF 자금 흐름 및 섹터 로테이션</li>
@@ -854,6 +891,13 @@
         }
     },
             
+            shoot: {
+                '2026-02-22': {
+                    file: 'reports/shoot/2026-02-22-shoot.pdf',
+                    title: '7Factor 분석'
+                }
+            },
+            
             news: {
                 '2026-02-17': {
                     file: 'reports/news/US_Market_Analysis_20260217.pdf',
@@ -892,6 +936,11 @@
                 name: '추천 종목 리포트', 
                 icon: '🎯',
                 selectId: 'dateRecommendation'
+            },
+            'shoot': { 
+                name: '급등 종목 리포트', 
+                icon: '🚀',
+                selectId: 'dateShoot'
             },
             'news': { 
                 name: '종목 뉴스', 
@@ -935,10 +984,14 @@
                         const newsData = reportFiles[categoryKey][date];
                         option.textContent = `${formatDate(date)}: ${newsData.title}`;
                     } 
-                      else if (categoryKey === 'recommendation') {
+                    else if (categoryKey === 'recommendation') {
                         const stockData = reportFiles[categoryKey][date];
                         option.textContent = `${formatDate(date)} · ${stockData.title}`;
-                      }
+                    }
+                    else if (categoryKey === 'shoot') {
+                        const shootData = reportFiles[categoryKey][date];
+                        option.textContent = `${formatDate(date)} · ${shootData.title}`;
+                    }
                     else {
                         option.textContent = formatDate(date);
                     }
@@ -983,7 +1036,7 @@
 
             // News 카테고리는 객체에서 file 가져오기
             let pdfFile;
-        if (categoryKey === 'news' || categoryKey === 'recommendation') {
+        if (categoryKey === 'news' || categoryKey === 'recommendation' || categoryKey === 'shoot') {
     const data = reportFiles[categoryKey][selectedDate];
     pdfFile = data ? data.file : null;
 } else {
