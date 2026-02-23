@@ -558,7 +558,7 @@
             </div>
 
             <div style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #dee2e6; color: #667eea; font-size: 0.95em; font-weight: 600;">
-                📧 문의사항 : <a href="mailto:aiinvestflow@gmail.com" style="color: #667eea; text-decoration: none; font-weight: 600;">aiinvestflow@gmail.com</a>
+                📧 문의사항 : <a href="mailto:aiinvestflow@gmail.com" data-cfemail="3e5f575750485b4d4a585251497e59535f5752105d5153">[email&#160;protected]</a>
             </div>
         </div>
     </div>
@@ -839,18 +839,13 @@
     </div>
 
     <script>
-        // 비밀번호 설정
+        // ============================================
+        // 🔐 비밀번호 설정
+        // ============================================
         const CORRECT_PASSWORD = "9803";
-        const SESSION_KEY = "report_authenticated";
 
-        // 카테고리 설정
-        const categories = {
-            featured: { name: "추천 종목 리포트", icon: "🎯", selectId: "featuredSelect", folder: "featured" },
-            framework: { name: "4프레임워크 분석", icon: "📊", selectId: "frameworkSelect", folder: "framework" },
-            surge: { name: "급등 종목 리포트", icon: "🚀", selectId: "surgeSelect", folder: "surge" },
-            news: { name: "뉴스", icon: "📰", selectId: "newsSelect", folder: "news" },
-            reference: { name: "Reference", icon: "📚", selectId: "referenceSelect", folder: "reference" }
-        };
+        // 세션 저장 키
+        const SESSION_KEY = "report_authenticated";
 
         // 페이지 로드 시 인증 확인
         window.onload = function() {
@@ -872,6 +867,10 @@
                 error.style.display = 'block';
                 input.value = '';
                 input.focus();
+                input.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    input.style.animation = '';
+                }, 500);
             }
         }
 
@@ -890,60 +889,223 @@
             }
         }
 
-        // 날짜 목록 로드
-        function loadDateList() {
-            const dates = [
-                "2026-02-22", "2026-02-21", "2026-02-20", "2026-02-19", "2026-02-18",
-                "2026-02-17", "2026-02-16", "2026-02-15", "2026-02-14", "2026-02-13",
-                "2026-02-12", "2026-02-11", "2026-02-10", "2026-02-09", "2026-02-08",
-                "2026-02-07", "2026-02-06", "2026-02-05", "2026-02-04", "2026-02-03",
-                "2026-02-02", "2026-02-01", "2026-01-31", "2026-01-30", "2026-01-29"
-            ];
+        // ============================================
+        // 📊 리포트 관련 기능
+        // ============================================
 
-            for (const key in categories) {
-                const select = document.getElementById(categories[key].selectId);
-                if (select) {
-                    select.innerHTML = '<option value="">날짜 선택</option>';
-                    dates.forEach(date => {
-                        const option = document.createElement('option');
-                        option.value = date;
-                        option.textContent = formatDate(date);
-                        select.appendChild(option);
-                    });
+        // PDF 파일 목록
+        const reportFiles = {
+    recommendation: {
+
+        '2026-02-22': {
+            file: 'reports/recommendation/2026-02-22_catalyst.pdf',
+            title: '단기'
+        },
+        '2026-02-21': {
+            file: 'reports/recommendation/2026-02-22_analysis.pdf',
+            title: '중기'
+        },
+        '2026-02-18': {
+            file: 'reports/recommendation/2026-02-18_catalyst.pdf',
+            title: '단기'
+        },
+        '2026-02-12': {
+            file: 'reports/recommendation/2026-02-12_catalyst.pdf',
+            title: '단기'
+        },
+        '2026-02-09': {
+            file: 'reports/recommendation/2026-02-09_analysis.pdf',
+            title: '중기'
+        },
+        '2026-02-06': {
+            file: 'reports/recommendation/2026-02-06_analysis.pdf',
+            title: '중기'
+        }
+    },
+            
+            shoot: {
+                '2026-02-22': {
+                    file: 'reports/shoot/2026-02-22_shoot.pdf',
+                    title: 'VRNS/KKR/QDEL/RAL'
                 }
+            },
+            
+            news: {
+                '2026-02-17': {
+                    file: 'reports/news/US_Market_Analysis_20260217.pdf',
+                    title: '금일 미국 시황'
+                },
+                '2026-02-16': {
+                    file: 'reports/news/memory_supercycle.pdf',
+                    title: '메모리 사업의 전망'
+                },
+                '2026-02-15': {
+                    file: 'reports/news/2026-02-15_news.pdf',
+                    title: '주간 시장 동향'
+                }
+            },
+            analysis1: {
+                '2026-03-02': 'reports/analysis1/2026-03-02_liquidity.pdf',
+                '2026-02-10': 'reports/analysis1/2026-02-10_liquidity.pdf',
+            },
+            analysis2: {
+                '2026-03-02': 'reports/analysis2/2026-03-02_etf.pdf',
+                '2026-02-10': 'reports/analysis2/2026-02-10_etf.pdf',
+            },
+            analysis3: {
+                '2026-03-02': 'reports/analysis3/2026-03-02_insider.pdf',
+                '2026-02-10': 'reports/analysis3/2026-02-10_insider.pdf',
+            },
+            analysis4: {
+                '2026-03-02': 'reports/analysis4/2026-03-02_analyst.pdf',
+                '2026-02-10': 'reports/analysis4/2026-02-10_analyst.pdf',
+            }
+        };
+
+        // 카테고리 정보
+        const categories = {
+            'recommendation': { 
+                name: '추천 종목 리포트', 
+                icon: '🎯',
+                selectId: 'dateRecommendation'
+            },
+            'shoot': { 
+                name: '급등 종목 리포트', 
+                icon: '🚀',
+                selectId: 'dateShoot'
+            },
+            'news': { 
+                name: '종목 뉴스', 
+                icon: '📰',
+                selectId: 'dateNews'
+            },
+            'analysis1': { 
+                name: '미국 시장 유동성 메커니즘', 
+                icon: '💰',
+                selectId: 'dateAnalysis1'
+            },
+            'analysis2': { 
+                name: 'ETF 자금 흐름 분석', 
+                icon: '📈',
+                selectId: 'dateAnalysis2'
+            },
+            'analysis3': { 
+                name: '내부자 매수 분석', 
+                icon: '👔',
+                selectId: 'dateAnalysis3'
+            },
+            'analysis4': { 
+                name: '애널리스트 목표가 분석', 
+                icon: '🎯',
+                selectId: 'dateAnalysis4'
+            }
+        };
+
+        function loadDateList() {
+            Object.keys(categories).forEach(categoryKey => {
+                const category = categories[categoryKey];
+                const dateSelect = document.getElementById(category.selectId);
+                const dates = Object.keys(reportFiles[categoryKey]).sort().reverse();
+
+                dates.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date;
+                    
+                    // News 카테고리는 제목 추가
+                    if (categoryKey === 'news') {
+                        const newsData = reportFiles[categoryKey][date];
+                        option.textContent = `${formatDate(date)}: ${newsData.title}`;
+                    } 
+                    else if (categoryKey === 'recommendation') {
+                        const stockData = reportFiles[categoryKey][date];
+                        option.textContent = `${formatDate(date)} · ${stockData.title}`;
+                    }
+                    else if (categoryKey === 'shoot') {
+                        const shootData = reportFiles[categoryKey][date];
+                        option.textContent = `${formatDate(date)} · ${shootData.title}`;
+                    }
+                    else {
+                        option.textContent = formatDate(date);
+                    }
+                    
+                    dateSelect.appendChild(option);
+                });
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const categoryParam = urlParams.get('category');
+            const dateParam = urlParams.get('date');
+            
+            if (categoryParam && dateParam && categories[categoryParam]) {
+                document.getElementById(categories[categoryParam].selectId).value = dateParam;
+                loadReport(categoryParam);
             }
         }
 
-        // 날짜 포맷
         function formatDate(dateStr) {
             const date = new Date(dateStr);
+            const year = date.getFullYear();
             const month = date.getMonth() + 1;
             const day = date.getDate();
-            const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-            const weekday = weekdays[date.getDay()];
-            return `${month}월 ${day}일 (${weekday})`;
+            const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+            return `${year}년 ${month}월 ${day}일 (${weekday})`;
         }
 
-        // 리포트 로드
         function loadReport(categoryKey) {
             const category = categories[categoryKey];
-            const select = document.getElementById(category.selectId);
-            const date = select.value;
+            const dateSelect = document.getElementById(category.selectId);
+            const selectedDate = dateSelect.value;
+            const pdfContent = document.getElementById('pdfContent');
 
-            if (!date) {
-                alert('날짜를 선택해주세요.');
+            if (!selectedDate) {
+                pdfContent.innerHTML = `
+                    <div class="error">
+                        ⚠️ 날짜를 선택해주세요.
+                    </div>
+                `;
                 return;
             }
 
-            const pdfPath = `pdfs/${category.folder}/${date}.pdf`;
-            displayPDF(pdfPath, date, category);
+            // News 카테고리는 객체에서 file 가져오기
+            let pdfFile;
+        if (categoryKey === 'news' || categoryKey === 'recommendation' || categoryKey === 'shoot') {
+    const data = reportFiles[categoryKey][selectedDate];
+    pdfFile = data ? data.file : null;
+} else {
+    pdfFile = reportFiles[categoryKey][selectedDate];
+}
             
-            history.pushState({ category: categoryKey, date: date }, '', `?category=${categoryKey}&date=${date}`);
+            if (!pdfFile) {
+                pdfContent.innerHTML = `
+                    <div class="error">
+                        ❌ 해당 날짜의 리포트를 찾을 수 없습니다.<br>
+                        <small style="margin-top: 10px; display: block;">
+                            카테고리: ${category.name}<br>
+                            날짜: ${formatDate(selectedDate)}
+                        </small>
+                    </div>
+                `;
+                return;
+            }
+
+            pdfContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>${category.icon} ${category.name} 리포트를 불러오는 중...</p>
+                </div>
+            `;
+
+            const newUrl = `${window.location.pathname}?category=${categoryKey}&date=${selectedDate}`;
+            window.history.pushState({category: categoryKey, date: selectedDate}, '', newUrl);
+
+            setTimeout(() => {
+                displayPDF(pdfFile, selectedDate, category);
+            }, 500);
         }
 
-        // PDF 표시
         function displayPDF(pdfPath, date, category) {
             const pdfContent = document.getElementById('pdfContent');
+            
             pdfContent.innerHTML = `
                 <div class="current-view">
                     <h4>${category.icon} ${category.name}</h4>
@@ -966,50 +1128,45 @@
                 </div>
             `;
         }
+window.onpopstate = function(event) {
+    if (event.state && event.state.category && event.state.date) {
+        const category = categories[event.state.category];
+        document.getElementById(category.selectId).value = event.state.date;
+        .category, date: event.state.date});
+    }
+};
 
-        // 뒤로가기/앞으로가기
-        window.onpopstate = function(event) {
-            if (event.state && event.state.category && event.state.date) {
-                const category = categories[event.state.category];
-                document.getElementById(category.selectId).value = event.state.date;
-                loadReport(event.state.category);
-            }
-        };
+// 경제 캘린더
+var evt={'2-6':'💼','2-11':'📊','2-25':'💎','2-27':'🏭','3-6':'💼','3-11':'📊','3-13':'💹','3-18':'🏦','3-19':'🏦'};
+function drawCal(m,id){
+    var c=document.getElementById(id);if(!c)return;
+    var fd=new Date(2026,m-1,1).getDay(),dm=new Date(2026,m,0).getDate(),h='';
+    for(var i=0;i<fd;i++)h+='<div class="date empty"></div>';
+    for(var d=1;d<=dm;d++){
+        var k=m+'-'+d,e=evt[k];
+        h+='<div class="date'+(e?' has-event':'')+'">';
+        h+='<div>'+d+'</div>';
+        if(e)h+='<div class="event-icon">'+e+'</div>';
+        h+='</div>';
+    }
+    c.innerHTML=h;
+}
 
-        // 경제 캘린더
-        var evt={'2-6':'💼','2-11':'📊','2-25':'💎','2-27':'🏭','3-6':'💼','3-11':'📊','3-13':'💹','3-18':'🏦','3-19':'🏦'};
-        function drawCal(m,id){
-            var c=document.getElementById(id);if(!c)return;
-            var fd=new Date(2026,m-1,1).getDay(),dm=new Date(2026,m,0).getDate(),h='';
-            for(var i=0;i<fd;i++)h+='<div class="date empty"></div>';
-            for(var d=1;d<=dm;d++){
-                var k=m+'-'+d,e=evt[k];
-                h+='<div class="date'+(e?' has-event':'')+'">';
-                h+='<div>'+d+'</div>';
-                if(e)h+='<div class="event-icon">'+e+'</div>';
-                h+='</div>';
-            }
-            c.innerHTML=h;
-        }
-        
-        // Enter 키 지원
-        document.addEventListener('DOMContentLoaded', function() {
-            const pwdInput = document.getElementById('passwordInput');
-            if (pwdInput) {
-                pwdInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') checkPassword();
-                });
-            }
-            
-            // 캘린더 그리기
-            drawCal(2,'cal-feb');
-            drawCal(3,'cal-mar');
-        });
+// 캘린더 초기화
+if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+        drawCal(2,'cal-feb');
+        drawCal(3,'cal-mar');
+    });
+}else{
+    drawCal(2,'cal-feb');
+    drawCal(3,'cal-mar');
+}
 
-        // 메모리 리포트
-        function openMemoryReport() {
-            window.open("https://apus80.github.io/stock/memory_report.html", "_blank");
-        }
+function openMemoryReport() {
+    window.open("https://apus80.github.io/stock/memory_report.html", "_blank");
+}
+
     </script>
 </body>
 </html>
