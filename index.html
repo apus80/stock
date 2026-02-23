@@ -515,6 +515,190 @@
                 padding: 12px 24px;
             }
         }
+
+        /* 경제 캘린더 */
+        .economic-calendar {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 12px;
+        }
+        .economic-calendar h2 {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .month-calendar {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        .month-header {
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.75em;
+        }
+        .dates {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+        .date {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 45px;
+            font-size: 0.8em;
+        }
+        .date:hover:not(.empty) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .date.empty {
+            background: transparent;
+            cursor: default;
+        }
+        .date.today {
+            background: #667eea;
+            color: white;
+            font-weight: 700;
+        }
+        .date.has-event {
+            background: linear-gradient(135deg, #fff 0%, #f0f4ff 100%);
+            border: 2px solid #667eea;
+            font-weight: 600;
+        }
+        .event-icon {
+            font-size: 0.9em;
+            margin-top: 2px;
+        }
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-size: 0.75em;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+            max-width: 180px;
+            white-space: normal;
+            text-align: center;
+        }
+        .date:hover .tooltip {
+            display: block;
+        }
+        .event-summary {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .event-summary h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        .category-section {
+            margin-bottom: 20px;
+        }
+        .category-header-cal {
+            font-weight: 700;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 0.95em;
+        }
+        .event-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .event-item-cal {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+        .event-item-cal:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .event-icon-large {
+            font-size: 1.4em;
+            min-width: 30px;
+            text-align: center;
+        }
+        .event-details-cal {
+            flex: 1;
+        }
+        .event-date-cal {
+            font-weight: 700;
+            color: #495057;
+            font-size: 0.9em;
+        }
+        .event-title-cal {
+            color: #6c757d;
+            font-size: 0.85em;
+            line-height: 1.3;
+        }
+        .event-time-cal {
+            color: #adb5bd;
+            font-size: 0.75em;
+            margin-top: 2px;
+        }
+        @media (max-width: 768px) {
+            .calendar-grid {
+                grid-template-columns: 1fr;
+            }
+            .event-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -545,7 +729,7 @@
             </div>
 
             <div style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #dee2e6; color: #667eea; font-size: 0.95em; font-weight: 600;">
-                📧 문의사항 : aiinvestflow@gmail.com
+                📧 문의사항 : <a href="mailto:aiinvestflow@gmail.com" style="color: #667eea; text-decoration: none; font-weight: 600;">aiinvestflow@gmail.com</a>
             </div>
         </div>
     </div>
@@ -563,7 +747,7 @@
             <div class="tradingview-ticker-container">
                 <div class="tradingview-widget-container">
                     <div class="tradingview-widget-container__widget"></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+                    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
                     {
                         "symbols": [
                             {
@@ -598,6 +782,65 @@
                         "locale": "kr"
                     }
                     </script>
+                </div>
+            </div>
+
+            <!-- 경제 캘린더 -->
+            <div class="economic-calendar">
+                <h2>📆 2026년 2-3월 경제 일정 (53개)</h2>
+                <div class="calendar-grid">
+                    <div class="month-calendar">
+                        <div class="month-header">2월</div>
+                        <div class="weekdays"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+                        <div class="dates" id="feb"></div>
+                    </div>
+                    <div class="month-calendar">
+                        <div class="month-header">3월</div>
+                        <div class="weekdays"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+                        <div class="dates" id="mar"></div>
+                    </div>
+                </div>
+                <div class="event-summary">
+                    <h3>📌 전체 53개 이벤트</h3>
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 700;">2월: 24개 | 3월: 29개</div>
+                    <div class="category-section">
+                        <div class="category-header-cal" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">💎 실적 (3개)</div>
+                        <div class="event-grid">
+                            <div class="event-item-cal"><div class="event-icon-large">💎</div><div class="event-details-cal"><div class="event-date-cal">2/3 (화)</div><div class="event-title-cal">PLTR Q4</div><div class="event-time-cal">장마감후</div></div></div>
+                            <div class="event-item-cal"><div class="event-icon-large">💎</div><div class="event-details-cal"><div class="event-date-cal">2/25 (수)</div><div class="event-title-cal">⭐ NVDA Q4</div><div class="event-time-cal">16:30</div></div></div>
+                            <div class="event-item-cal"><div class="event-icon-large">💎</div><div class="event-details-cal"><div class="event-date-cal">3/4 (수)</div><div class="event-title-cal">AVGO Q1</div><div class="event-time-cal">장마감후</div></div></div>
+                        </div>
+                    </div>
+                    <div class="category-section">
+                        <div class="category-header-cal" style="background: linear-gradient(135deg, #6f42c1 0%, #8e44ad 100%);">💼 고용 (12개)</div>
+                        <div class="event-grid">
+                            <div class="event-item-cal"><div class="event-icon-large">💼</div><div class="event-details-cal"><div class="event-date-cal">2/3</div><div class="event-title-cal">JOLTS</div><div class="event-time-cal">24:00</div></div></div>
+                            <div class="event-item-cal"><div class="event-icon-large">💼</div><div class="event-details-cal"><div class="event-date-cal">2/6</div><div class="event-title-cal">⭐ NFP</div><div class="event-time-cal">22:30</div></div></div>
+                            <div class="event-item-cal"><div class="event-icon-large">💼</div><div class="event-details-cal"><div class="event-date-cal">3/6</div><div class="event-title-cal">⭐ NFP</div><div class="event-time-cal">22:30</div></div></div>
+                        </div>
+                    </div>
+                    <div class="category-section">
+                        <div class="category-header-cal" style="background: linear-gradient(135deg, #fd7e14 0%, #e74c3c 100%);">📊 물가 (11개)</div>
+                        <div class="event-grid">
+                            <div class="event-item-cal"><div class="event-icon-large">📊</div><div class="event-details-cal"><div class="event-date-cal">2/11</div><div class="event-title-cal">⭐ CPI</div><div class="event-time-cal">22:30</div></div></div>
+                            <div class="event-item-cal"><div class="event-icon-large">🏭</div><div class="event-details-cal"><div class="event-date-cal">2/27</div><div class="event-title-cal">⭐ PPI</div><div class="event-time-cal">22:30</div></div></div>
+                            <div class="event-item-cal"><div class="event-icon-large">📊</div><div class="event-details-cal"><div class="event-date-cal">3/11</div><div class="event-title-cal">⭐ CPI</div><div class="event-time-cal">22:30</div></div></div>
+                            <div class="event-item-cal"><div class="event-icon-large">🏭</div><div class="event-details-cal"><div class="event-date-cal">3/12</div><div class="event-title-cal">⭐ PPI</div><div class="event-time-cal">22:30</div></div></div>
+                        </div>
+                    </div>
+                    <div class="category-section">
+                        <div class="category-header-cal" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">💹 GDP (5개)</div>
+                        <div class="event-grid">
+                            <div class="event-item-cal"><div class="event-icon-large">💹</div><div class="event-details-cal"><div class="event-date-cal">3/13</div><div class="event-title-cal">⭐ GDP 2차</div><div class="event-time-cal">22:30</div></div></div>
+                        </div>
+                    </div>
+                    <div class="category-section">
+                        <div class="category-header-cal" style="background: linear-gradient(135deg, #0056b3 0%, #004085 100%);">🏦 FOMC (2일)</div>
+                        <div class="event-grid">
+                            <div class="event-item-cal"><div class="event-icon-large">🏦</div><div class="event-details-cal"><div class="event-date-cal">3/18-19</div><div class="event-title-cal">⭐ 금리발표</div><div class="event-time-cal">19일 03:00</div></div></div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 0.9em;"><strong>⭐ 시장 영향도 높은 핵심 지표</strong></div>
                 </div>
             </div>
 
@@ -961,16 +1204,7 @@
                 name: '내부자 매수 분석', 
                 icon: '👔',
                 selectId: 'dateAnalysis3'
-            },
-            'analysis4': { 
-                name: '애널리스트 목표가 분석', 
-                icon: '🎯',
-                selectId: 'dateAnalysis4'
-            }
-        };
-
-        function loadDateList() {
-            Object.keys(categories).forEach(categoryKey => {
+                      Object.keys(categories).forEach(categoryKey => {
                 const category = categories[categoryKey];
                 const dateSelect = document.getElementById(category.selectId);
                 const dates = Object.keys(reportFiles[categoryKey]).sort().reverse();
@@ -1105,6 +1339,35 @@ window.onpopstate = function(event) {
 };
 
 // ✅ 반드시 밖에 위치해야 함
+        // 경제 캘린더
+        var ev={
+            '2-3':[{i:'💼',t:'JOLTS'},{i:'💎',t:'PLTR'}],'2-4':[{i:'💼',t:'Metro'}],'2-6':[{i:'💼',t:'NFP⭐'}],
+            '2-10':[{i:'💰',t:'ECI'}],'2-11':[{i:'📊',t:'CPI⭐'}],'2-16':[{i:'🏛️',t:'휴장'}],'2-18':[{i:'💼',t:'Union'}],
+            '2-19':[{i:'⚠️',t:'산재'}],'2-20':[{i:'💼',t:'파업'}],'2-24':[{i:'💰',t:'ECEC'}],'2-25':[{i:'💎',t:'NVDA⭐'}],
+            '2-26':[{i:'📊',t:'BED'}],'2-27':[{i:'🏭',t:'PPI⭐'}],'3-4':[{i:'💎',t:'AVGO'}],'3-5':[{i:'💹',t:'무역'}],
+            '3-6':[{i:'💼',t:'NFP⭐'}],'3-10':[{i:'💰',t:'CEWQ'}],'3-11':[{i:'📊',t:'CPI⭐'}],'3-12':[{i:'🏭',t:'PPI⭐'}],
+            '3-13':[{i:'💹',t:'GDP⭐'}],'3-18':[{i:'🏦',t:'FOMC'}],'3-19':[{i:'🏦',t:'금리⭐'}],'3-24':[{i:'📈',t:'생산성'}],'3-25':[{i:'💹',t:'국제'}]
+        };
+        function drawCal(m,id){
+            var c=document.getElementById(id);if(!c)return;
+            var fd=new Date(2026,m-1,1).getDay(),dm=new Date(2026,m,0).getDate(),h='';
+            for(var i=0;i<fd;i++)h+='<div class="date empty"></div>';
+            for(var d=1;d<=dm;d++){
+                var k=m+'-'+d,e=ev[k],cls='date'+(e?' has-event':'');
+                h+='<div class="'+cls+'"><div>'+d+'</div>';
+                if(e&&e.length>0){
+                    var ic=e[0].i;if(e.length>1)ic+='+'+(e.length-1);
+                    var tt=e.map(function(x){return x.t;}).join(', ');
+                    h+='<div class="event-icon">'+ic+'</div><div class="tooltip">'+tt+'</div>';
+                }
+                h+='</div>';
+            }
+            c.innerHTML=h;
+        }
+        if(document.readyState==='loading'){
+            document.addEventListener('DOMContentLoaded',function(){drawCal(2,'feb');drawCal(3,'mar');});
+        }else{drawCal(2,'feb');drawCal(3,'mar');}
+
 function openMemoryReport() {
   window.open(
     "https://apus80.github.io/stock/memory_report.html",
@@ -1116,4 +1379,3 @@ function openMemoryReport() {
     </script>
 </body>
 </html>
-
