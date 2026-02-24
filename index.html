@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- Version: v1771922054 -->
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주식 분석 통합 리포트 뷰어</title>
@@ -618,7 +623,7 @@
             </div>
 
             <div style="margin-top: 25px; padding-top: 25px; border-top: 1px solid #dee2e6; color: #667eea; font-size: 0.95em; font-weight: 600;">
-                📧 문의사항 : <a href="mailto:aiinvestflow@gmail.com" style="color:#667eea;font-weight:600">aiinvestflow@gmail.com</a>
+                📧 문의사항 : <a href="/cdn-cgi/l/email-protection#8eefe7e7e0f8ebfdfae8e2e1f9cee9e3efe7e2a0ede1e3" style="color:#667eea;font-weight:600"><span class="__cf_email__" data-cfemail="bcddd5d5d2cad9cfc8dad0d3cbfcdbd1ddd5d092dfd3d1">[email&#160;protected]</span></a>
             </div>
         </div>
     </div>
@@ -636,7 +641,7 @@
             <div class="tradingview-ticker-container">
                 <div class="tradingview-widget-container">
                     <div class="tradingview-widget-container__widget"></div>
-                    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+                    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
                     {
                         "symbols": [
                             {
@@ -1028,6 +1033,11 @@
     </div>
 
     <script>
+        console.log('==========================================');
+        console.log('  📦 파일 버전: v1771922054');
+        console.log('  🕐 로드 시간:', new Date().toLocaleString());
+        console.log('==========================================');
+
         const CORRECT_PASSWORD = "9803";
         const SESSION_KEY = "report_authenticated";
         const reportFiles = {
@@ -1061,9 +1071,35 @@
         };
         window.onload = function() { if (sessionStorage.getItem(SESSION_KEY) === "true") showMainContent(); };
         function checkPassword() {
-            const input = document.getElementById('passwordInput'), error = document.getElementById('passwordError');
-            if (input.value === CORRECT_PASSWORD) { sessionStorage.setItem(SESSION_KEY, "true"); showMainContent(); error.style.display = 'none'; }
-            else { error.style.display = 'block'; input.value = ''; input.focus(); }
+            console.log('🔹 checkPassword 실행됨');
+            
+            const input = document.getElementById('passwordInput');
+            const error = document.getElementById('passwordError');
+            
+            console.log('입력 필드:', input);
+            console.log('입력값:', input ? input.value : 'NULL');
+            console.log('정답:', CORRECT_PASSWORD);
+            
+            if (!input) {
+                console.error('❌ passwordInput을 찾을 수 없습니다!');
+                alert('오류: 입력 필드를 찾을 수 없습니다. 페이지를 새로고침하세요.');
+                return;
+            }
+            
+            const inputValue = input.value.trim();
+            console.log('입력값(trim):', inputValue);
+            
+            if (inputValue === CORRECT_PASSWORD) {
+                console.log('✅ 비밀번호 일치!');
+                sessionStorage.setItem(SESSION_KEY, "true");
+                if (error) error.style.display = 'none';
+                showMainContent();
+            } else {
+                console.log('❌ 비밀번호 불일치');
+                if (error) error.style.display = 'block';
+                input.value = '';
+                input.focus();
+            }
         }
         function showMainContent() {
             document.getElementById('passwordOverlay').style.display = 'none';
@@ -1794,12 +1830,16 @@
             container.innerHTML = html;
         }
         function openMemoryReport() { window.open("https://apus80.github.io/stock/memory_report.html", "_blank"); }
-        document.addEventListener('DOMContentLoaded', function() {
+                document.addEventListener('DOMContentLoaded', function() {
             const pwdInput = document.getElementById('passwordInput');
             if (pwdInput) {
                 pwdInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') checkPassword();
+                    if (e.key === 'Enter') {
+                        console.log('🔹 Enter 키 눌림');
+                        checkPassword();
+                    }
                 });
+                console.log('✅ Enter 키 이벤트 등록 완료');
             }
             drawCalendar(2, 'cal-feb');
             drawCalendar(3, 'cal-mar');
