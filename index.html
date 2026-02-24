@@ -617,10 +617,9 @@
             </div>
         </div>
     </div>
-<div id="mainContent" class="main-content" style="display: none;">
 
     <!-- 메인 컨텐츠 -->
-    <div id="mainContent" class="main-content">
+    <div id="mainContent" class="main-content" style="display: none;">
         <div class="container">
             <div class="header">
                 <button class="logout-btn" onclick="logout()">🔒 로그아웃</button>
@@ -1061,20 +1060,25 @@
             analysis4: { name: '애널리스트', icon: '📊', selectId: 'dateAnalysis4' }
         };
             
-            const inputValue = input.value.trim();
-            console.log('입력값(trim):', inputValue);
-            
-            if (inputValue === CORRECT_PASSWORD) {
-                console.log('✅ 비밀번호 일치!');
-                sessionStorage.setItem(SESSION_KEY, "true");
-                if (error) error.style.display = 'none';
-                showMainContent();
-            } else {
-                console.log('❌ 비밀번호 불일치');
-                if (error) error.style.display = 'block';
-                input.value = '';
-                input.focus();
-            }
+function checkPassword() {
+    const input = document.getElementById('passwordInput');
+    const error = document.getElementById('passwordError');
+
+    const inputValue = input.value.trim();
+    console.log('입력값(trim):', inputValue);
+
+    if (inputValue === CORRECT_PASSWORD) {
+        console.log('✅ 비밀번호 일치!');
+        sessionStorage.setItem(SESSION_KEY, "true");
+        if (error) error.style.display = 'none';
+        showMainContent();
+    } else {
+        console.log('❌ 비밀번호 불일치');
+        if (error) error.style.display = 'block';
+        input.value = '';
+        input.focus();
+    }
+}
     
         function showMainContent() {
     document.getElementById('passwordOverlay').style.display = 'none';
@@ -1830,36 +1834,50 @@
 
     </script>
     </div> 
-    <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const btn = document.getElementById("loginBtn");
-    const pwdInput = document.getElementById("passwordInput");
+<script>
+const CORRECT_PASSWORD = "9803";
+const SESSION_KEY = "report_authenticated";
 
-    function checkPassword() {
-        const password = pwdInput.value.trim();
-        const CORRECT_PASSWORD = "9803";
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("loginBtn").addEventListener("click", checkPassword);
 
-        if (password === CORRECT_PASSWORD) {
-            document.getElementById("passwordOverlay").style.display = "none";
-            document.getElementById("mainContent").style.display = "block";
-        } else {
-            alert("비밀번호가 틀렸습니다.");
-            pwdInput.value = "";
-            pwdInput.focus();
-        }
+    if (sessionStorage.getItem(SESSION_KEY) === "true") {
+        showMainContent();
     }
-
-    btn.addEventListener("click", checkPassword);
-
-    pwdInput.addEventListener("keypress", function(e) {
-        if (e.key === "Enter") {
-            checkPassword();
-        }
-    });
 });
+
+function checkPassword() {
+    const input = document.getElementById("passwordInput");
+    const value = input.value.trim();
+
+    if (value === CORRECT_PASSWORD) {
+        sessionStorage.setItem(SESSION_KEY, "true");
+        showMainContent();
+    } else {
+        alert("비밀번호가 틀렸습니다.");
+        input.value = "";
+        input.focus();
+    }
+}
+
+function showMainContent() {
+    document.getElementById("passwordOverlay").style.display = "none";
+    document.getElementById("mainContent").style.display = "block";
+
+    if (typeof loadDateList === "function") loadDateList();
+    if (typeof loadNews === "function") loadNews();
+}
+
+function logout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+        sessionStorage.removeItem(SESSION_KEY);
+        location.reload();
+    }
+}
 </script>
 </body>
 </html>
+
 
 
 
