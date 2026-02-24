@@ -690,26 +690,36 @@
             <div class="news-dashboard">
                 <h2>📰 실시간 시장 뉴스</h2>
                 <div class="news-grid" id="newsContainer">
-                    <div class="news-item">
-                        <div class="news-title">📈 S&P 500, 사상 최고치 경신</div>
-                        <div class="news-meta">Bloomberg · 오늘</div>
-                    </div>
-                    <div class="news-item">
-                        <div class="news-title">🔥 AI 반도체 수요 급증, NVDA 주가 강세</div>
-                        <div class="news-meta">CNBC · 오늘</div>
-                    </div>
-                    <div class="news-item">
-                        <div class="news-title">💰 연준, 금리 동결 시사</div>
-                        <div class="news-meta">Reuters · 어제</div>
-                    </div>
-                    <div class="news-item">
-                        <div class="news-title">⚡ 테크 섹터 강세 지속</div>
-                        <div class="news-meta">WSJ · 어제</div>
-                    </div>
-                    <div class="news-item">
-                        <div class="news-title">🏦 빅테크 실적 시즌 대기</div>
-                        <div class="news-meta">MarketWatch · 어제</div>
-                    </div>
+                    <a href="https://www.bloomberg.com/markets" target="_blank" rel="noopener" class="news-link">
+                        <div class="news-item">
+                            <div class="news-title">📈 S&P 500, 사상 최고치 경신</div>
+                            <div class="news-meta">출처: Bloomberg · 오늘</div>
+                        </div>
+                    </a>
+                    <a href="https://www.cnbc.com/technology/" target="_blank" rel="noopener" class="news-link">
+                        <div class="news-item">
+                            <div class="news-title">🔥 AI 반도체 수요 급증, NVDA 주가 강세</div>
+                            <div class="news-meta">출처: CNBC · 오늘</div>
+                        </div>
+                    </a>
+                    <a href="https://www.reuters.com/markets/" target="_blank" rel="noopener" class="news-link">
+                        <div class="news-item">
+                            <div class="news-title">💰 연준, 금리 동결 시사</div>
+                            <div class="news-meta">출처: Reuters · 어제</div>
+                        </div>
+                    </a>
+                    <a href="https://www.wsj.com/economy" target="_blank" rel="noopener" class="news-link">
+                        <div class="news-item">
+                            <div class="news-title">⚡ 테크 섹터 강세 지속</div>
+                            <div class="news-meta">출처: WSJ · 어제</div>
+                        </div>
+                    </a>
+                    <a href="https://www.marketwatch.com/investing" target="_blank" rel="noopener" class="news-link">
+                        <div class="news-item">
+                            <div class="news-title">🏦 빅테크 실적 시즌 대기</div>
+                            <div class="news-meta">출처: MarketWatch · 어제</div>
+                        </div>
+                    </a>
                 </div>
                 <div class="sector-map">
                     <div class="sector-item sector-up"><div>Technology</div><div style="font-size:0.85em;margin-top:2px">+1.2%</div></div>
@@ -1103,17 +1113,117 @@
             document.getElementById('pdfContent').innerHTML = '<div class="current-view"><h4>' + category.icon + ' ' + category.name + '</h4><div class="info-grid"><div class="info-item"><div class="label">날짜</div><div class="value">' + formatDate(date) + '</div></div></div></div><div class="pdf-container"><iframe src="' + pdfPath + '" type="application/pdf"></iframe></div>';
         }
         async function searchEarningsAPI() {
-            const input = document.getElementById('earningsSearchInput'), resultDiv = document.getElementById('earningsResult'), ticker = input.value.trim().toUpperCase();
-            if (!ticker) { resultDiv.innerHTML = '<div class="search-result empty">🔍 티커 입력 (예: NVDA)</div>'; return; }
-            resultDiv.innerHTML = '<div class="search-result">🔄 검색 중...</div>';
+            const input = document.getElementById('earningsSearchInput');
+            const resultDiv = document.getElementById('earningsResult');
+            let ticker = input.value.trim().toUpperCase();
+            
+            if (!ticker) { 
+                resultDiv.innerHTML = '<div class="search-result empty">🔍 티커 입력 (예: NVDA, NKE)</div>'; 
+                return; 
+            }
+            
+            // 일반 이름을 티커로 변환
+            const nameToTicker = {
+                'NIKE': 'NKE',
+                '나이키': 'NKE',
+                'ALCOA': 'AA',
+                'VERONIS': 'VRNS',
+                '엔비디아': 'NVDA',
+                '애플': 'AAPL',
+                '테슬라': 'TSLA'
+            };
+            ticker = nameToTicker[ticker] || ticker;
+            
+            resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
+            
             try {
-                const today = new Date(), fromDate = today.toISOString().split('T')[0], toDate = new Date(today.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                const url = `https://financialmodelingprep.com/api/v3/earning_calendar?from=${fromDate}&to=${toDate}&symbol=${ticker}&apikey=LxMzdGGbqSUh4VH9P3DCtRFZG6pW5yL8`;
-                const response = await fetch(url), data = await response.json();
-                if (!data || data.length === 0) { resultDiv.innerHTML = '<div class="search-result empty">❌ 결과 없음</div>'; return; }
-                const next = data[0], dateStr = next.date;
-                resultDiv.innerHTML = `<div class="search-result"><div class="result-company">${ticker}</div><div class="result-date">📅 ${dateStr.replace('-', '년 ').replace('-', '월 ')}일</div><div class="result-info">⏰ ${next.time || '장마감후'}<br>💰 EPS: ${next.eps || 'N/A'}<br>📊 매출: ${next.revenue || 'N/A'}</div></div>`;
-            } catch (e) { resultDiv.innerHTML = '<div class="search-result empty">❌ 오류</div>'; }
+                const apiKey = 'LxMzdGGbqSUh4VH9P3DCtRFZG6pW5yL8';
+                
+                // 방법 1: 일반 실적 달력 (확정된 일정)
+                const today = new Date();
+                const fromDate = today.toISOString().split('T')[0];
+                const toDate = new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                
+                let url = `https://financialmodelingprep.com/api/v3/earning_calendar?from=${fromDate}&to=${toDate}&apikey=${apiKey}`;
+                let response = await fetch(url);
+                let allData = await response.json();
+                
+                // 해당 티커 필터링
+                let data = allData.filter(item => item.symbol === ticker);
+                
+                if (!data || data.length === 0) {
+                    // 방법 2: 히스토리컬 실적 (과거 실적)
+                    url = `https://financialmodelingprep.com/api/v3/historical/earning_calendar/${ticker}?apikey=${apiKey}`;
+                    response = await fetch(url);
+                    const histData = await response.json();
+                    
+                    if (histData && histData.length > 0) {
+                        const latest = histData[0];
+                        resultDiv.innerHTML = `
+                            <div class="search-result">
+                                <div class="result-company">${ticker}</div>
+                                <div class="result-date">📅 최근 실적: ${latest.date}</div>
+                                <div class="result-info">
+                                    💡 다음 실적 일정이 아직 확정되지 않았습니다.<br>
+                                    ⏰ 최근 발표: ${latest.time || '장마감후'}<br>
+                                    💰 EPS: ${latest.eps || 'N/A'}<br>
+                                    <small style="color:#999;margin-top:5px;display:block">
+                                    출처: Financial Modeling Prep<br>
+                                    💡 팁: 회사 IR 페이지에서 정확한 일정 확인 권장
+                                    </small>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <div class="search-result empty">
+                            ❌ "${ticker}" 실적 일정을 찾을 수 없습니다.<br>
+                            <small style="margin-top:8px;display:block;line-height:1.4">
+                            💡 <strong>확인사항:</strong><br>
+                            • 티커가 정확한지 확인 (예: NIKE → NKE)<br>
+                            • 미국 상장 기업인지 확인<br>
+                            • 회사 IR 페이지에서 직접 확인<br>
+                            <br>
+                            <strong>주요 티커 참고:</strong><br>
+                            NIKE = NKE, ALCOA = AA
+                            </small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const next = data[0];
+                const dateStr = next.date;
+                
+                resultDiv.innerHTML = `
+                    <div class="search-result">
+                        <div class="result-company">${ticker}</div>
+                        <div class="result-date">📅 다음 실적: ${dateStr.replace('-', '년 ').replace('-', '월 ')}일</div>
+                        <div class="result-info">
+                            ⏰ 예상 시간: ${next.time || '장마감후'}<br>
+                            💰 예상 EPS: ${next.eps || 'N/A'}<br>
+                            📊 예상 매출: ${next.revenue || 'N/A'}<br>
+                            <small style="color:#999;margin-top:5px;display:block">
+                            출처: Financial Modeling Prep
+                            </small>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (e) { 
+                console.error('API Error:', e);
+                resultDiv.innerHTML = `
+                    <div class="search-result empty">
+                        ❌ 검색 중 오류가 발생했습니다.<br>
+                        <small style="margin-top:5px;display:block">
+                        네트워크 연결을 확인하거나<br>
+                        잠시 후 다시 시도해주세요.
+                        </small>
+                    </div>
+                `; 
+            }
         }
 
         function toggleAccordion(header) {
