@@ -688,38 +688,17 @@
             </div>
             <!-- 뉴스 대쉬보드 -->
             <div class="news-dashboard">
-                <h2>📰 실시간 시장 뉴스</h2>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+                    <h2 style="margin:0">📰 실시간 시장 뉴스</h2>
+                    <button onclick="refreshNews()" style="padding:8px 15px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:600;font-size:0.85em;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        🔄 새로고침
+                    </button>
+                </div>
                 <div class="news-grid" id="newsContainer">
-                    <a href="https://www.bloomberg.com/markets" target="_blank" rel="noopener" class="news-link">
-                        <div class="news-item">
-                            <div class="news-title">📈 S&P 500, 사상 최고치 경신</div>
-                            <div class="news-meta">출처: Bloomberg · 오늘</div>
-                        </div>
-                    </a>
-                    <a href="https://www.cnbc.com/technology/" target="_blank" rel="noopener" class="news-link">
-                        <div class="news-item">
-                            <div class="news-title">🔥 AI 반도체 수요 급증, NVDA 주가 강세</div>
-                            <div class="news-meta">출처: CNBC · 오늘</div>
-                        </div>
-                    </a>
-                    <a href="https://www.reuters.com/markets/" target="_blank" rel="noopener" class="news-link">
-                        <div class="news-item">
-                            <div class="news-title">💰 연준, 금리 동결 시사</div>
-                            <div class="news-meta">출처: Reuters · 어제</div>
-                        </div>
-                    </a>
-                    <a href="https://www.wsj.com/economy" target="_blank" rel="noopener" class="news-link">
-                        <div class="news-item">
-                            <div class="news-title">⚡ 테크 섹터 강세 지속</div>
-                            <div class="news-meta">출처: WSJ · 어제</div>
-                        </div>
-                    </a>
-                    <a href="https://www.marketwatch.com/investing" target="_blank" rel="noopener" class="news-link">
-                        <div class="news-item">
-                            <div class="news-title">🏦 빅테크 실적 시즌 대기</div>
-                            <div class="news-meta">출처: MarketWatch · 어제</div>
-                        </div>
-                    </a>
+                    <div class="news-item">
+                        <div class="news-title">🔄 뉴스 로딩 중...</div>
+                        <div class="news-meta">잠시만 기다려주세요</div>
+                    </div>
                 </div>
                 <div class="sector-map">
                     <div class="sector-item sector-up"><div>Technology</div><div style="font-size:0.85em;margin-top:2px">+1.2%</div></div>
@@ -1081,6 +1060,7 @@
             document.getElementById('passwordOverlay').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
             loadDateList();
+            loadNews();
         }
         function logout() { if (confirm('로그아웃 하시겠습니까?')) { sessionStorage.removeItem(SESSION_KEY); location.reload(); } }
         function loadDateList() {
@@ -1102,6 +1082,90 @@
             const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
             return month + '월 ' + day + '일 (' + weekday + ')';
         }
+        // 실시간 뉴스 로딩
+        async function loadNews() {
+            const container = document.getElementById('newsContainer');
+            container.innerHTML = '<div class="news-item"><div class="news-title">🔄 뉴스 로딩 중...</div><div class="news-meta">잠시만 기다려주세요</div></div>';
+            
+            try {
+                // MarketAux API - 실시간 금융 뉴스
+                const apiKey = 'BKfVtXqVFB1n2n9lYKPPdCj2Z78lKS8NQTQ5eUxS';
+                const url = `https://api.marketaux.com/v1/news/all?filter_entities=true&limit=8&language=en&api_token=${apiKey}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data && data.data && data.data.length > 0) {
+                    // 최신 5개 뉴스만 표시
+                    const newsHTML = data.data.slice(0, 5).map(news => {
+                        const title = news.title.length > 80 ? news.title.substring(0, 80) + '...' : news.title;
+                        const source = news.source || 'Financial News';
+                        const publishedDate = new Date(news.published_at);
+                        const now = new Date();
+                        const diffHours = Math.floor((now - publishedDate) / (1000 * 60 * 60));
+                        
+                        let timeText;
+                        if (diffHours < 1) {
+                            const diffMinutes = Math.floor((now - publishedDate) / (1000 * 60));
+                            timeText = diffMinutes + '분 전';
+                        } else if (diffHours < 24) {
+                            timeText = diffHours + '시간 전';
+                        } else {
+                            const diffDays = Math.floor(diffHours / 24);
+                            timeText = diffDays + '일 전';
+                        }
+                        
+                        return `
+                            <a href="${news.url}" target="_blank" rel="noopener" class="news-link">
+                                <div class="news-item">
+                                    <div class="news-title">${title}</div>
+                                    <div class="news-meta">출처: ${source} · ${timeText}</div>
+                                </div>
+                            </a>
+                        `;
+                    }).join('');
+                    
+                    container.innerHTML = newsHTML;
+                    console.log('✅ 실시간 뉴스 로딩 완료');
+                } else {
+                    loadLocalNews();
+                }
+            } catch (error) {
+                console.error('뉴스 로딩 실패:', error);
+                loadLocalNews();
+            }
+        }
+        
+        // 로컬 백업 뉴스 (API 실패 시)
+        function loadLocalNews() {
+            const container = document.getElementById('newsContainer');
+            const localNews = [
+                {title: '📈 S&P 500, 사상 최고치 경신', source: 'Bloomberg', time: '2시간 전', url: 'https://www.bloomberg.com/markets'},
+                {title: '🔥 AI 반도체 수요 급증, NVDA 주가 강세', source: 'CNBC', time: '3시간 전', url: 'https://www.cnbc.com/technology/'},
+                {title: '💰 연준, 금리 동결 시사', source: 'Reuters', time: '5시간 전', url: 'https://www.reuters.com/markets/'},
+                {title: '⚡ 테크 섹터 강세 지속', source: 'WSJ', time: '어제', url: 'https://www.wsj.com/economy'},
+                {title: '🏦 빅테크 실적 시즌 대기', source: 'MarketWatch', time: '어제', url: 'https://www.marketwatch.com/investing'}
+            ];
+            
+            const newsHTML = localNews.map(news => `
+                <a href="${news.url}" target="_blank" rel="noopener" class="news-link">
+                    <div class="news-item">
+                        <div class="news-title">${news.title}</div>
+                        <div class="news-meta">출처: ${news.source} · ${news.time}</div>
+                    </div>
+                </a>
+            `).join('');
+            
+            container.innerHTML = newsHTML;
+            console.log('⚠️ 로컬 뉴스로 대체');
+        }
+        
+        // 뉴스 새로고침
+        function refreshNews() {
+            console.log('🔄 뉴스 새로고침...');
+            loadNews();
+        }
+        
         function loadReport(categoryKey) {
             const category = categories[categoryKey], select = document.getElementById(category.selectId), date = select.value;
             if (!date) { alert('날짜를 선택해주세요.'); return; }
