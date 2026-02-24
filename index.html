@@ -1613,159 +1613,81 @@ function checkPassword() {
             }
 };
         
-        async function searchEarningsAPI() {
-            const input = document.getElementById('earningsSearchInput');
-            const resultDiv = document.getElementById('earningsResult');
-            let ticker = input.value.trim().toUpperCase();
-            
-            if (!ticker) { 
-                resultDiv.innerHTML = '<div class="search-result empty">🔍 티커 입력 (예: NVDA, NKE, AA)</div>'; 
-                return; 
-            }
-            try{
-            // 이름을 티커로 변환
-            const nameToTicker = {
-                'NIKE': 'NKE', '나이키': 'NKE',
-                'ALCOA': 'AA',
-                'VERONIS': 'VRNS',
-                '엔비디아': 'NVDA', 'NVIDIA': 'NVDA',
-                '애플': 'AAPL', 'APPLE': 'AAPL',
-                '테슬라': 'TSLA', 'TESLA': 'TSLA',
-                '마이크로소프트': 'MSFT', 'MICROSOFT': 'MSFT',
-                'AMD': 'AMD', 'BROADCOM': 'AVGO',
-                'META': 'META', 'AMAZON': 'AMZN'
-            };
-            ticker = nameToTicker[ticker] || ticker;
-            
-            resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
-            
-            // 로컬 데이터에서 검색
-            if (earningsData[ticker]) {
-                const data = earningsData[ticker];
-                const dateStr = data.date || '미정';
-                const companyName = data.name || ticker;
+async function searchEarningsAPI() {
+    const input = document.getElementById('earningsSearchInput');
+    const resultDiv = document.getElementById('earningsResult');
+
+    if (!input || !resultDiv) return;
+
+    let ticker = input.value.trim().toUpperCase();
+
+    if (!ticker) {
+        resultDiv.innerHTML =
+            '<div class="search-result empty">🔍 티커 입력 (예: NVDA, NKE, AA)</div>';
+        return;
+    }
+
+    // 이름 → 티커 변환
+    const nameToTicker = {
+        'NIKE': 'NKE',
+        '나이키': 'NKE',
+        'ALCOA': 'AA',
+        'VERONIS': 'VRNS',
+        '엔비디아': 'NVDA',
+        'NVIDIA': 'NVDA',
+        '애플': 'AAPL',
+        'APPLE': 'AAPL',
+        '테슬라': 'TSLA',
+        'TESLA': 'TSLA',
+        '마이크로소프트': 'MSFT',
+        'MICROSOFT': 'MSFT',
+        'AMD': 'AMD',
+        'BROADCOM': 'AVGO',
+        'META': 'META',
+        'AMAZON': 'AMZN'
+    };
+
+    ticker = nameToTicker[ticker] || ticker;
+
+    resultDiv.innerHTML = `
+        <div class="search-result">
+            <div class="result-company">${ticker}</div>
+            <div class="result-info">
+                📅 실적 일정 및 예상치는 Yahoo Finance에서 확인하세요.<br><br>
                 
-                // 날짜 포맷팅
-                let formattedDate = dateStr;
-                if (dateStr !== '미정') {
-                    const parts = dateStr.split('-');
-                    if (parts.length === 3) {
-                        formattedDate = parts[0] + '년 ' + parseInt(parts[1]) + '월 ' + parseInt(parts[2]) + '일';
-                    }
-                }
+                <a href="https://finance.yahoo.com/quote/${ticker}/analysis" 
+                   target="_blank"
+                   style="display:inline-block;
+                          padding:8px 14px;
+                          background:#667eea;
+                          color:#fff;
+                          border-radius:6px;
+                          text-decoration:none;
+                          font-size:14px;">
+                    📊 예상 EPS / 매출 보기
+                </a>
                 
-                // EPS와 매출 포맷팅
-                const epsText = data.eps_avg ? '$' + data.eps_avg.toFixed(2) : 'N/A';
-                const revenueText = data.revenue_avg 
-                    ? '$' + (data.revenue_avg / 1000000000).toFixed(2) + 'B' 
-                    : 'N/A';
+                <br><br>
                 
-                resultDiv.innerHTML = `
-                    <div class="search-result">
-                        <div class="result-company">${ticker} - ${companyName}</div>
-                        <div class="result-date">📅 다음 실적: ${formattedDate}</div>
-                        <div class="result-info">
-                            💰 예상 EPS: ${epsText}<br>
-                            📊 예상 매출: ${revenueText}<br>
-                            <small style="color:#999;margin-top:5px;display:block">
-                            출처: Yahoo Finance<br>
-                            💡 <a href="https://finance.yahoo.com/quote/${ticker}/analysis" target="_blank" style="color:#667eea">상세 분석 보기</a>
-                            </small>
-                        </div>
-                    </div>
-                `;
-            } else {
-                // 데이터 없음
-                resultDiv.innerHTML = `
-                    <div class="search-result empty">
-                        ❌ "${ticker}" 실적 일정을 찾을 수 없습니다.<br>
-                        <small style="margin-top:8px;display:block;line-height:1.4">
-                        💡 <strong>확인사항:</strong><br>
-                        • 티커가 정확한지 확인 (예: NIKE → NKE)<br>
-                        • 미국 상장 기업인지 확인<br>
-                        <br>
-                        <strong>주요 티커 참고:</strong><br>
-                        NIKE=NKE, ALCOA=AA, VERONIS=VRNS<br>
-                        <br>
-                        💡 <a href="https://finance.yahoo.com/quote/${ticker}" target="_blank" style="color:#667eea">Yahoo Finance에서 직접 확인</a>
-                        </small>
-                    </div>
-                `;
-            };
-        
-            ticker = nameToTicker[ticker] || ticker;
-            
-            resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
-            
-           
-                const apiKey = 'LxMzdGGbqSUh4VH9P3DCtRFZG6pW5yL8';
-                
-                // 방법 1: 일반 실적 달력 (확정된 일정)
-                const today = new Date();
-                const fromDate = today.toISOString().split('T')[0];
-                const toDate = new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                
-                let url = `https://financialmodelingprep.com/api/v3/earning_calendar?from=${fromDate}&to=${toDate}&apikey=${apiKey}`;
-                let response = await fetch(url);
-                let allData = await response.json();
-                
-                // 해당 티커 필터링
-                let data = allData.filter(item => item.symbol === ticker);
-                
-                if (!data || data.length === 0) {
-                    // 방법 2: 히스토리컬 실적 (과거 실적)
-                    url = `https://financialmodelingprep.com/api/v3/historical/earning_calendar/${ticker}?apikey=${apiKey}`;
-                    response = await fetch(url);
-                    const histData = await response.json();
-                    
-                    if (histData && histData.length > 0) {
-                        const latest = histData[0];
-                        resultDiv.innerHTML = `
-                            <div class="search-result">
-                                <div class="result-company">${ticker}</div>
-                                <div class="result-date">📅 최근 실적: ${latest.date}</div>
-                                <div class="result-info">
-                                    💡 다음 실적 일정이 아직 확정되지 않았습니다.<br>
-                                    ⏰ 최근 발표: ${latest.time || '장마감후'}<br>
-                                    💰 EPS: ${latest.eps || 'N/A'}<br>
-                                    <small style="color:#999;margin-top:5px;display:block">
-                                    출처: Financial Modeling Prep<br>
-                                    💡 팁: 회사 IR 페이지에서 정확한 일정 확인 권장
-                                    </small>
-                                </div>
-                            </div>
-                        `;
-                        return;
-                                 }
-            
-                }
-            
-        } catch (error) {
-            console.error("실적 검색 오류:", error);
-            resultDiv.innerHTML = `
-                <div class="search-result empty">
-                    ❌ 데이터를 불러오지 못했습니다.<br>
-                    잠시 후 다시 시도해주세요.
-                </div>
-            `;
-        
+                <a href="https://finance.yahoo.com/quote/${ticker}" 
+                   target="_blank"
+                   style="display:inline-block;
+                          padding:8px 14px;
+                          background:#444;
+                          color:#fff;
+                          border-radius:6px;
+                          text-decoration:none;
+                          font-size:14px;">
+                    📈 기본 정보 보기
+                </a>
+
+                <small style="color:#999;margin-top:12px;display:block">
+                출처: Yahoo Finance
+                </small>
+            </div>
+        </div>
+    `;
 }
-                    resultDiv.innerHTML = `
-                        <div class="search-result empty">
-                            ❌ "${ticker}" 실적 일정을 찾을 수 없습니다.<br>
-                            <small style="margin-top:8px;display:block;line-height:1.4">
-                            💡 <strong>확인사항:</strong><br>
-                            • 티커가 정확한지 확인 (예: NIKE → NKE)<br>
-                            • 미국 상장 기업인지 확인<br>
-                            • 회사 IR 페이지에서 직접 확인<br>
-                            <br>
-                            <strong>주요 티커 참고:</strong><br>
-                            NIKE = NKE, ALCOA = AA
-                            </small>
-                        </div>
-                    `;
-                    return;
-                }
                 
                 const next = data[0];
                 const dateStr = next.date;
@@ -1891,6 +1813,7 @@ function logout() {
 </script>
 </body>
 </html>
+
 
 
 
