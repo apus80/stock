@@ -598,24 +598,16 @@
 <body>
     <!-- 비밀번호 입력 화면 -->
     <div id="passwordOverlay" class="password-overlay">
-        <div class="password-box">
-            <h2>🔐 접근 제한</h2>
-            <p>리포트를 보려면 비밀번호를 입력하세요</p>
-            
-            <input 
-                type="password" 
-                id="passwordInput" 
-                class="password-input" 
-                placeholder="비밀번호 입력"
-                onkeypress="if(event.key==='Enter') checkPassword()">
-            
-            <button class="password-btn" onclick="checkPassword()">
-                확인
-            </button>
-            
-            <div id="passwordError" class="password-error">
-                ❌ 비밀번호가 올바르지 않습니다
-            </div>
+       <div class="password-box">
+    <h2>데이터 보안 인증</h2>
+    <p>리포트 열람을 위해 비밀번호를 입력하세요.</p>
+    <input type="password" id="passwordInput" class="password-input" placeholder="비밀번호 입력" onkeypress="if(event.key==='Enter') checkPassword()">
+    <button class="password-btn" onclick="checkPassword()">인증 및 입장</button>
+    <div id="passwordError" class="error-msg" style="display:none; color:#ff4d4d; margin-top:10px;">
+        비밀번호가 올바르지 않습니다.
+    </div>
+</div>
+
 
             <div class="password-hint">
                 💡 힌트: 비밀번호를 잊으셨나요?<br>
