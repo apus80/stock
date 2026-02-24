@@ -1640,38 +1640,7 @@ async function searchEarningsAPI() {
         </div>
     `;
 }
-                
-                const next = data[0];
-                const dateStr = next.date;
-                
-                resultDiv.innerHTML = `
-                    <div class="search-result">
-                        <div class="result-company">${ticker}</div>
-                        <div class="result-date">📅 다음 실적: ${dateStr.replace('-', '년 ').replace('-', '월 ')}일</div>
-                        <div class="result-info">
-                            ⏰ 예상 시간: ${next.time || '장마감후'}<br>
-                            💰 예상 EPS: ${next.eps || 'N/A'}<br>
-                            📊 예상 매출: ${next.revenue || 'N/A'}<br>
-                            <small style="color:#999;margin-top:5px;display:block">
-                            출처: Financial Modeling Prep
-                            </small>
-                        </div>
-                    </div>
-                `;
-                
-            } catch (e) { 
-                console.error('API Error:', e);
-                resultDiv.innerHTML = `
-                    <div class="search-result empty">
-                        ❌ 검색 중 오류가 발생했습니다.<br>
-                        <small style="margin-top:5px;display:block">
-                        네트워크 연결을 확인하거나<br>
-                        잠시 후 다시 시도해주세요.
-                        </small>
-                    </div>
-                `; 
-            }
-        }
+
 
         function toggleAccordion(header) {
             header.classList.toggle('collapsed');
@@ -1765,6 +1734,7 @@ function logout() {
 </script>
 </body>
 </html>
+
 
 
 
