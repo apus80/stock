@@ -597,20 +597,32 @@
 </head>
 <body>
     <!-- 비밀번호 입력 화면 -->
-         <div id="passwordOverlay" class="password-overlay">
+             <div id="passwordOverlay" class="password-overlay">
         <div class="password-box">
-            <h2>🔐 접근 제한</h2>
-            <p>리포트를 보려면 비밀번호를 입력하세요</p>
-            <input type="password" id="passwordInput" class="password-input" placeholder="비밀번호 입력" onkeypress="if(event.key==='Enter') checkPassword()">
-            <button class="password-btn" onclick="checkPassword()">확인</button>
-            
-            <p style="margin-top: 15px; font-size: 13px; color: #666;">
-                문의사항: <a href="mailto:aiinvestflow@gmail.com" style="color: #764ba2; text-decoration: none;">관리자에게 메일 보내기</a>
-            </p>
+            <h2 style="color: #333; margin-bottom: 10px;">🔐 접근 제한</h2>
+            <p style="color: #666; margin-bottom: 20px;">리포트를 보려면 비밀번호를 입력하세요</p>
+
+            <input 
+                type="password" 
+                id="passwordInput" 
+                class="password-input" 
+                placeholder="비밀번호 입력"
+                onkeypress="if(event.key==='Enter') checkPassword()"
+                style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px;">
+
+            <button class="password-btn" onclick="checkPassword()"
+                style="width: 100%; padding: 12px; background: #764ba2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                확인
+            </button>
+
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; font-size: 13px; color: #888;">
+                문의사항: <a href="mailto:admin@example.com" style="color: #764ba2; text-decoration: none; font-weight: bold;">관리자에게 문의하기</a>
+            </div>
         </div>
     </div>
 
     <div id="mainContent" style="display: none;">
+
         <div class="main-content">
 
 
