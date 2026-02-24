@@ -1127,7 +1127,6 @@ function checkPassword() {
         }
         // 실시간 뉴스 로딩
         async function loadNews() {
-            try{
             const container = document.getElementById('newsContainer');
             container.innerHTML = '<div class="news-item"><div class="news-title">🔄 뉴스 로딩 중...</div><div class="news-meta">잠시만 기다려주세요</div></div>';
             
@@ -1623,7 +1622,7 @@ function checkPassword() {
                 resultDiv.innerHTML = '<div class="search-result empty">🔍 티커 입력 (예: NVDA, NKE, AA)</div>'; 
                 return; 
             }
-            
+            try{
             // 이름을 티커로 변환
             const nameToTicker = {
                 'NIKE': 'NKE', '나이키': 'NKE',
@@ -1739,7 +1738,7 @@ function checkPassword() {
                         return;
                                  }
             
-
+                }
         } catch (error) {
             console.error("실적 검색 오류:", error);
             resultDiv.innerHTML = `
@@ -1748,7 +1747,7 @@ function checkPassword() {
                     잠시 후 다시 시도해주세요.
                 </div>
             `;
-        }
+        
 }
                     resultDiv.innerHTML = `
                         <div class="search-result empty">
@@ -1891,6 +1890,7 @@ function logout() {
 </script>
 </body>
 </html>
+
 
 
 
