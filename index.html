@@ -1613,7 +1613,7 @@ function checkPassword() {
             }
 };
         
-        function searchEarningsAPI() {
+        async function searchEarningsAPI() {
             const input = document.getElementById('earningsSearchInput');
             const resultDiv = document.getElementById('earningsResult');
             let ticker = input.value.trim().toUpperCase();
@@ -1691,19 +1691,8 @@ function checkPassword() {
                         </small>
                     </div>
                 `;
-            }
-        }
-            
-            // 일반 이름을 티커로 변환
-            const nameToTicker = {
-                'NIKE': 'NKE',
-                '나이키': 'NKE',
-                'ALCOA': 'AA',
-                'VERONIS': 'VRNS',
-                '엔비디아': 'NVDA',
-                '애플': 'AAPL',
-                '테슬라': 'TSLA'
             };
+        
             ticker = nameToTicker[ticker] || ticker;
             
             resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
@@ -1748,7 +1737,7 @@ function checkPassword() {
                         `;
                         return;
                     }
-                    
+                }
                     resultDiv.innerHTML = `
                         <div class="search-result empty">
                             ❌ "${ticker}" 실적 일정을 찾을 수 없습니다.<br>
@@ -1890,6 +1879,7 @@ function logout() {
 </script>
 </body>
 </html>
+
 
 
 
