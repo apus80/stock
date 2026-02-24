@@ -617,12 +617,7 @@
             </div>
         </div>
     </div>
-
-    <div id="mainContent" style="display: none;">
-
-        <div class="main-content">
-
-
+<div id="mainContent" class="main-content" style="display: none;">
 
     <!-- 메인 컨텐츠 -->
     <div id="mainContent" class="main-content">
@@ -1065,22 +1060,6 @@
             analysis3: { name: '내부자', icon: '🔍', selectId: 'dateAnalysis3' },
             analysis4: { name: '애널리스트', icon: '📊', selectId: 'dateAnalysis4' }
         };
-        window.onload = function() { if (sessionStorage.getItem(SESSION_KEY) === "true") showMainContent(); };
-        function checkPassword() {
-            console.log('🔹 checkPassword 실행됨');
-            
-            const input = document.getElementById('passwordInput');
-            const error = document.getElementById('passwordError');
-            
-            console.log('입력 필드:', input);
-            console.log('입력값:', input ? input.value : 'NULL');
-            console.log('정답:', CORRECT_PASSWORD);
-            
-            if (!input) {
-                console.error('❌ passwordInput을 찾을 수 없습니다!');
-                alert('오류: 입력 필드를 찾을 수 없습니다. 페이지를 새로고침하세요.');
-                return;
-            }
             
             const inputValue = input.value.trim();
             console.log('입력값(trim):', inputValue);
@@ -1848,36 +1827,38 @@
             drawCalendar(3, 'cal-mar');
 
         });
-<script type="module">
-document.addEventListener("DOMContentLoaded", () => {
 
-  const CORRECT_PASSWORD = "9803";
-
-  function checkPassword() {
-    const pwdInput = document.getElementById("passwordInput");
-    const overlay = document.getElementById("passwordOverlay");
-    const mainContent = document.getElementById("mainContent");
-
-    console.log("🔥 버튼 클릭됨");
-
-    if (pwdInput.value === CORRECT_PASSWORD) {
-      overlay.style.display = "none";
-      mainContent.style.display = "block";
-      console.log("✅ 인증 성공");
-    } else {
-      alert("비밀번호가 틀렸습니다.");
-      pwdInput.value = "";
-      pwdInput.focus();
-    }
-  }
-
-  const btn = document.getElementById("loginBtn");
-  console.log("버튼 객체:", btn);
-
-  btn.addEventListener("click", checkPassword);
-});
     </script>
     </div> 
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+    const btn = document.getElementById("loginBtn");
+    const pwdInput = document.getElementById("passwordInput");
+
+    function checkPassword() {
+        const password = pwdInput.value.trim();
+        const CORRECT_PASSWORD = "9803";
+
+        if (password === CORRECT_PASSWORD) {
+            document.getElementById("passwordOverlay").style.display = "none";
+            document.getElementById("mainContent").style.display = "block";
+        } else {
+            alert("비밀번호가 틀렸습니다.");
+            pwdInput.value = "";
+            pwdInput.focus();
+        }
+    }
+
+    btn.addEventListener("click", checkPassword);
+
+    pwdInput.addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            checkPassword();
+        }
+    });
+});
+</script>
 </body>
 </html>
+
 
