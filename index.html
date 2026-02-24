@@ -597,7 +597,7 @@
 </head>
 <body>
     <!-- 비밀번호 입력 화면 -->
-        <div id="passwordOverlay" class="password-overlay">
+         <div id="passwordOverlay" class="password-overlay">
         <div class="password-box">
             <h2>🔐 접근 제한</h2>
             <p>리포트를 보려면 비밀번호를 입력하세요</p>
@@ -605,7 +605,7 @@
             <button class="password-btn" onclick="checkPassword()">확인</button>
             
             <p style="margin-top: 15px; font-size: 13px; color: #666;">
-                📧 문의사항: <a href="mailto:aiinvestflow@gmail.com" style="color: #764ba2; text-decoration: none;">관리자에게 메일 보내기</a>
+                문의사항: <a href="mailto:aiinvestflow@gmail.com" style="color: #764ba2; text-decoration: none;">관리자에게 메일 보내기</a>
             </p>
         </div>
     </div>
@@ -1838,15 +1838,15 @@
             drawCalendar(3, 'cal-mar');
         });
 
-        // 여기에 아래 코드를 붙여넣으세요!
+               
         function checkPassword() {
             const pwdInput = document.getElementById('passwordInput');
             const overlay = document.getElementById('passwordOverlay');
             const mainContent = document.getElementById('mainContent');
 
             if (pwdInput.value === '9803') {
-                overlay.style.display = 'none';    // 비밀번호창 숨김
-                mainContent.style.display = 'block'; // 메인화면 나타남
+                overlay.style.display = 'none';
+                mainContent.style.display = 'block';
                 console.log("인증 성공!");
             } else {
                 alert('비밀번호가 틀렸습니다.');
@@ -1855,5 +1855,6 @@
             }
         }
     </script>
-</div> </body>
+    </div> 
+</body>
 </html>
