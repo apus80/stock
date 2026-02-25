@@ -685,33 +685,23 @@
                 <div class="update-note">ℹ️ <strong>데이터:</strong> Financial Modeling Prep API | <strong>범위:</strong> 모든 미국 상장 기업 | <strong>업데이트:</strong> 실시간</div>
             </div>
 
-<div class="macro-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 10px;">
-    <div class="card" style="padding: 12px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid #667eea; min-height: auto !important;">
-        <h3 style="font-size: 13px; color: #666; margin-bottom: 5px;">📉 US Treasury 10Y</h3>
-        <div id="macroRate" style="font-size: 20px; font-weight: bold; color: #333;">연동 중...</div>
+<div class="macro-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 5px;">
+    <div class="card" style="padding: 10px !important; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid #667eea; min-height: auto !important; margin-bottom: 0px !important;">
+        <h3 style="font-size: 12px; color: #666; margin-bottom: 2px;">📉 US Treasury 10Y</h3>
+        <div id="macroRate" style="font-size: 18px; font-weight: bold; color: #333;">연동 중...</div>
     </div>
-    
-    <div class="card" style="padding: 12px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid #764ba2; min-height: auto !important;">
-        <h3 style="font-size: 13px; color: #666; margin-bottom: 5px;">🚀 실시간 주도 섹터</h3>
+    <div class="card" style="padding: 10px !important; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid #764ba2; min-height: auto !important; margin-bottom: 0px !important;">
+        <h3 style="font-size: 12px; color: #666; margin-bottom: 2px;">🚀 실시간 주도 섹터</h3>
         <div id="topSector" style="font-size: 16px; font-weight: bold; color: #764ba2;">연동 중...</div>
     </div>
 </div>
 
-<div class="news-dashboard">
-    ...
-
-            <!-- 뉴스 대쉬보드 -->
-            <div class="news-dashboard">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-                    <h2 style="margin:0">📰 실시간 시장 뉴스</h2>
-                    <button onclick="refreshNews()" style="padding:8px 15px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:600;font-size:0.85em;transition:transform 0.2s" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                        🔄 새로고침
-                    </button>
-                </div>
-                <div class="news-grid" id="newsContainer">
-                    <div class="news-item">
-                        <div class="news-title">🔄 뉴스 로딩 중...</div>
-                        <div class="news-meta">잠시만 기다려주세요</div>
+<div class="news-dashboard" style="margin-top: 0px !important; padding: 15px !important; border-top: none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h2 style="margin:0; font-size: 1.1em; color: #444;">📰 실시간 시장 뉴스</h2>
+        <button onclick="refreshNews()" style="padding:5px 10px; font-size: 12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:4px; cursor:pointer;">🔄 새로고침</button>
+    </div>
+    <div class="news-grid" id="newsContainer">
                     </div>
                 </div>
                
