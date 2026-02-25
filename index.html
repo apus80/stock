@@ -694,34 +694,35 @@
             <div class="tradingview-widget-container__widget"></div>
             <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
             {
-              "colorTheme": "light",
-              "dateRange": "12M",
-              "showChart": true,
-              "locale": "ko",
-              "width": "100%",
-              "height": 400,
-              "largeChartUrl": "",
-              "isTransparent": false,
-              "showSymbolLogo": true,
-              "showFloatingTooltip": false,
-              "tabs": [
-                {
-                  "name": "주요 지수",
-                  "symbols": [
-                    { "s": "FOREXCOM:SPX500", "d": "S&P 500" },
-                    { "s": "FOREXCOM:NSXUSD", "d": "Nasdaq 100" },
-                    { "s": "CBOE:VIX", "d": "변동성 지수 (VIX)" }
-                  ]
-                },
-                {
-                  "name": "환율/금리",
-                  "symbols": [
-                    { "s": "FX_IDC:USDKRW", "d": "원/달러 환율" },
-                    { "s": "TVC:US10Y", "d": "미 국채 10년물" }
-                  ]
-                }
-              ]
-            }
+  "colorTheme": "light",
+  "dateRange": "12M",
+  "showChart": true,
+  "locale": "ko",
+  "width": "100%",
+  "height": 400,
+  "largeChartUrl": "",
+  "isTransparent": false,
+  "showSymbolLogo": true,
+  "showFloatingTooltip": false,
+  "tabs": [
+    {
+      "name": "주요 지수",
+      "symbols": [
+        { "s": "AMEX:SPY", "d": "S&P 500 (SPY)" },
+        { "s": "NASDAQ:QQQ", "d": "Nasdaq 100 (QQQ)" },
+        { "s": "TVC:VIX", "d": "변동성 지수 (VIX)" } // CBOE:VIX 대신 TVC:VIX 사용
+      ]
+    },
+    {
+      "name": "환율/금리",
+      "symbols": [
+        { "s": "FX_IDC:USDKRW", "d": "원/달러 환율" },
+        { "s": "TVC:US10Y", "d": "미 국채 10년물 금리" }
+      ]
+    }
+  ]
+}
+
             </script>
         </div>
     </div>
