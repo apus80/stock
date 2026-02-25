@@ -1763,6 +1763,9 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+// --- 여기서부터 끝까지 복사해서 붙여넣으세요 ---
+
+// 비밀번호 확인 함수
 function checkPassword() {
     const input = document.getElementById("passwordInput");
     const value = input.value.trim();
@@ -1777,76 +1780,43 @@ function checkPassword() {
     }
 }
 
+// 메인 화면 표시 함수
 function showMainContent() {
     console.log("🔥 showMainContent 실행됨");
 
     document.getElementById('passwordOverlay').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
 
-    // 데이터 로드 함수들
+    // 1. 기본 리스트 및 뉴스 로드
     if (typeof loadDateList === 'function') loadDateList();
     if (typeof loadNews === 'function') loadNews();
 
-    // 1 & 2번 매크로/섹터 대시보드 호출 (새로 만든 함수)
-    if (typeof loadMacroDashboard === 'function') {
-        loadMacroDashboard(); 
-    }
+    // 2. 추가된 매크로 대시보드 호출
+    loadMacroDashboard(); 
 
-    // 캘린더 그리기 (중복 제거됨)
+    // 3. 캘린더 그리기
     if (typeof drawCalendar === 'function') {
         drawCalendar(2, 'cal-feb');
         drawCalendar(3, 'cal-mar');
-        console.log("✅ 캘린더 및 대시보드 로딩 완료");
     }
+    console.log("✅ 모든 데이터 로딩 완료");
 }
-
 
 function logout() {
     if (confirm("로그아웃 하시겠습니까?")) {
-            sessionStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(SESSION_KEY);
         location.reload();
     }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-
-    // 로그인 버튼
-    const loginBtn = document.getElementById("loginBtn");
-    if (loginBtn) {
-        loginBtn.onclick = checkPassword;
-    }
-
-    // 엔터키
-    const pwdInput = document.getElementById("passwordInput");
-    if (pwdInput) {
-        pwdInput.onkeypress = function(e){
-            if(e.key === "Enter"){
-                checkPassword();
-            }
-        };
-    }
-
-    // 캘린더는 showMainContent에서 실행됨
-    console.log("✅ 페이지 로드 완료");
-
-});
-</script>
-<script type="text/javascript">
-    function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-            pageLanguage: 'en', // 기본 언어가 영어인 뉴스들을 위해 en 설정
-            includedLanguages: 'ko,en', // 한국어와 영어만 선택 가능하게
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-        }, 'google_translate_element');
-    }
-
+// 매크로 및 섹터 데이터 로드 함수
 async function loadMacroDashboard() {
     const rateEl = document.getElementById('macroRate');
     const sectorEl = document.getElementById('topSector');
-    const apiKey = 'NP58RFOBOUKNIOLV'; // 사용자의 Alpha Vantage API Key
+    const apiKey = 'NP58RFOBOUKNIOLV'; 
 
     try {
-        // 1. 미국 10년물 국채 금리 가져오기 (FRED 데이터 연동)
+        // 1. 미국 10년물 국채 금리
         const rateUrl = `https://www.alphavantage.co/query?function=TREASURY_YIELD&interval=daily&maturity=10year&apikey=${apiKey}`;
         const rateRes = await fetch(rateUrl);
         const rateData = await rateRes.json();
@@ -1857,31 +1827,55 @@ async function loadMacroDashboard() {
             rateEl.style.color = '#ff4b2b';
         }
 
-        // 2. 섹터별 수익률 가져오기
+        // 2. 섹터별 수익률
         const sectorUrl = `https://www.alphavantage.co/query?function=SECTOR&apikey=${apiKey}`;
         const sectorRes = await fetch(sectorUrl);
         const sectorData = await sectorRes.json();
         
-        // Alpha Vantage 섹터 데이터는 가끔 제한이 있으므로 성공 시에만 출력
         if (sectorData["Rank A: Real-Time Performance"]) {
             const sectors = sectorData["Rank A: Real-Time Performance"];
             const topSectorName = Object.keys(sectors)[0];
             const topSectorValue = sectors[topSectorName];
             sectorEl.innerHTML = `🥇 ${topSectorName} (${topSectorValue})`;
         } else {
-            sectorEl.innerHTML = "시장 데이터 대기 중";
+            sectorEl.innerHTML = "데이터 대기 중";
         }
-
     } catch (error) {
         console.error("Dashboard 로드 실패:", error);
-        rateEl.innerHTML = "연결 오류";
-        sectorEl.innerHTML = "점검 중";
+        if(rateEl) rateEl.innerHTML = "연결 오류";
     }
 }
 
+// 페이지 로드 시 초기화
+document.addEventListener("DOMContentLoaded", function () {
+    const loginBtn = document.getElementById("loginBtn");
+    if (loginBtn) {
+        loginBtn.onclick = checkPassword;
+    }
+
+    const pwdInput = document.getElementById("passwordInput");
+    if (pwdInput) {
+        pwdInput.onkeypress = function(e){
+            if(e.key === "Enter") checkPassword();
+        };
+    }
+
+    if (sessionStorage.getItem(SESSION_KEY) === "true") {
+        showMainContent();
+    }
+});
+
+// 구글 번역 초기화 함수
+function googleTranslateElementInit() {
+    new google.translate.TranslateElement({
+        pageLanguage: 'en', 
+        includedLanguages: 'ko,en', 
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+    }, 'google_translate_element');
+}
 </script>
+
 <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 </body>
 </html>
-
