@@ -1882,16 +1882,16 @@ document.addEventListener('DOMContentLoaded', function() {
     </div> 
 /////////
 <script>
-// 1. 설정 (실제 비밀번호를 "보안" 자리에 입력하세요)
-const PASSWORD = "9803"; 
+// 1. 설정 (실제 비밀번호를 입력하세요)
+const PASSWORD = "9803"; // "보안" 대신 사용자님의 비밀번호를 입력하세요
 const SESSION_KEY = "isLoggedIn";
 
-// 2. 비밀번호 확인 함수
+// 2. 비밀번호 확인 함수 (이게 없어서 반응이 없었던 것입니다)
 function checkPassword() {
     const pwdInput = document.getElementById("passwordInput");
     const enteredPassword = pwdInput.value;
     
-    console.log("비밀번호 확인 시도..."); // 작동 확인용 로그
+    console.log("🔒 비밀번호 확인 시도 중...");
 
     if (enteredPassword === PASSWORD) {
         sessionStorage.setItem(SESSION_KEY, "true");
@@ -1905,14 +1905,14 @@ function checkPassword() {
 
 // 3. 메인 화면 표시 및 위젯 강제 실행
 function showMainContent() {
-    console.log("🔥 메인 화면 전환 및 위젯 로딩");
+    console.log("🔥 메인 화면 전환 및 위젯 로딩 시작");
 
     // 화면 전환
     document.getElementById('passwordOverlay').style.display = 'none';
     const mainContent = document.getElementById('mainContent');
     mainContent.style.display = 'block';
 
-    // 위젯 박스 생성 (기존 자리가 깨졌을 경우 대비)
+    // 위젯 박스 강제 생성 (HTML 구조 보장)
     const chartSection = document.querySelector('.macro-tradingview');
     if (chartSection) {
         chartSection.innerHTML = `
@@ -1937,6 +1937,7 @@ function showMainContent() {
     // 0.5초 뒤 위젯 실행
     setTimeout(startTradingViewWidgets, 500);
 
+    // 기타 데이터 로드
     if (typeof loadDateList === 'function') loadDateList();
     if (typeof loadNews === 'function') loadNews();
     if (typeof drawCalendar === 'function') {
@@ -1945,8 +1946,11 @@ function showMainContent() {
     }
 }
 
-// 4. 위젯 렌더링 함수
+// 4. 위젯 실제 생성 함수
 function startTradingViewWidgets() {
+    console.log("🚀 위젯 렌더링 시작");
+    
+    // 지수 차트
     const mc = document.getElementById('main-chart-wrapper');
     if(mc) {
         mc.innerHTML = '<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>';
@@ -1960,6 +1964,7 @@ function startTradingViewWidgets() {
         mc.querySelector('.tradingview-widget-container').appendChild(s);
     }
 
+    // 환율
     const ex = document.getElementById('exchange-rate-wrapper');
     if(ex) {
         ex.innerHTML = '<div class="tradingview-widget-container"></div>';
@@ -1973,6 +1978,7 @@ function startTradingViewWidgets() {
     // 심리 게이지
     const area = document.getElementById('gauge-render-area');
     if(area) {
+        area.innerHTML = "";
         const s = document.createElement('script');
         s.src = "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
         s.async = true;
@@ -1988,26 +1994,27 @@ function logout() {
     }
 }
 
-// 5. 초기 이벤트 연결 (이 부분이 가장 중요합니다)
+// 5. 초기화 및 이벤트 바인딩
 document.addEventListener("DOMContentLoaded", function () {
-    // 로그인 버튼에 함수 연결
+    // 로그인 버튼 클릭 이벤트 연결
     const loginBtn = document.getElementById("loginBtn");
     if (loginBtn) {
         loginBtn.onclick = checkPassword; 
     }
 
-    // 엔터키 지원
+    // 엔터키 입력 이벤트 연결
     const pwdInput = document.getElementById("passwordInput");
     if (pwdInput) {
         pwdInput.onkeypress = function(e){ if(e.key === "Enter") checkPassword(); };
     }
 
-    // 이미 로그인된 상태라면 바로 메인 표시
+    // 세션 유지 확인
     if (sessionStorage.getItem(SESSION_KEY) === "true") {
         showMainContent();
     }
 });
 
+// 구글 번역
 function googleTranslateElementInit() {
     new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'ko,en', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
 }
