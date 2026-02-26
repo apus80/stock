@@ -701,22 +701,22 @@
 
 <div class="macro-tradingview" style="margin-top: -10px; margin-bottom: 20px;">
     <div class="card" style="padding: 15px; background: #fff; border-radius: 12px; border-left: 5px solid #667eea; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <h3 style="font-size: 14px; color: #333; margin-top: 0; margin-bottom: 12px; font-weight: bold;">📊 글로벌 시장 지표 및 실시간 심리</h3>
+        <h3 style="font-size: 14px; color: #333; margin-top: 0; margin-bottom: 12px; font-weight: bold;">📊 실시간 글로벌 지표 및 시장 심리</h3>
         
-        <div class="macro-container" style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
             
-            <div class="macro-left" style="flex: 1.2; min-width: 350px;">
-                <div class="tradingview-widget-container">
+            <div style="flex: 1.2; min-width: 320px;">
+                <div class="tradingview-widget-container" id="main-indices-widget">
                     <div class="tradingview-widget-container__widget"></div>
                     <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
                     {
                       "colorTheme": "light", "dateRange": "12M", "showChart": true, "locale": "ko", "width": "100%", "height": 400,
                       "largeChartUrl": "", "isTransparent": false, "showSymbolLogo": true,
                       "tabs": [
-                        { "name": "지수 및 선물", "symbols": [ 
+                        { "name": "주요 지수", "symbols": [ 
                             { "s": "NASDAQ:QQQ", "d": "나스닥 100" }, 
                             { "s": "AMEX:SPY", "d": "S&P 500" }, 
-                            { "s": "CME_MINI:NQ1!", "d": "나스닥 선물" },
+                            { "s": "CME:NQ1!", "d": "나스닥 선물" },
                             { "s": "FOREXCOM:DJI", "d": "다우 존스" } 
                         ] }
                       ]
@@ -725,7 +725,7 @@
                 </div>
             </div>
 
-            <div class="macro-right" style="flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 10px;">
                 
                 <div style="background: #fcfcfc; padding: 10px 15px; border-radius: 10px; border: 1px solid #eee;">
                     <p style="font-size: 11px; color: #666; margin-bottom: 5px; font-weight: bold;">🇰🇷 원/달러 환율</p>
@@ -736,17 +736,17 @@
                     </div>
                 </div>
 
-                <div style="background: #fcfcfc; padding: 12px 15px; border-radius: 10px; border: 1px solid #eee; flex-grow: 1;">
-                    <p style="font-size: 11px; color: #666; margin-bottom: 8px; font-weight: bold;">📈 실시간 시장 심리</p>
+                <div style="background: #fcfcfc; padding: 12px 15px; border-radius: 10px; border: 1px solid #eee; min-height: 280px;">
+                    <p style="font-size: 11px; color: #666; margin-bottom: 8px; font-weight: bold;">📈 실시간 매수/매도 강도</p>
                     
-                    <div style="display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap;">
-                        <button class="sent-btn" onclick="updateSentiment('NASDAQ:QQQ', this)" style="cursor:pointer; font-size:10px; padding:3px 6px; border-radius:4px; border:1px solid #ddd; background:#eee; font-weight:bold;">나스닥</button>
-                        <button class="sent-btn" onclick="updateSentiment('KRX:KOSPI', this)" style="cursor:pointer; font-size:10px; padding:3px 6px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">코스피</button>
-                        <button class="sent-btn" onclick="updateSentiment('KRX:KOSDAQ', this)" style="cursor:pointer; font-size:10px; padding:3px 6px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">코스닥</button>
-                        <button class="sent-btn" onclick="updateSentiment('BINANCE:BTCUSDT', this)" style="cursor:pointer; font-size:10px; padding:3px 6px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">비트코인</button>
+                    <div style="display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <button class="sent-btn" onclick="renderSentiment('NASDAQ:QQQ', this)" style="cursor:pointer; font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#eee; font-weight:bold;">나스닥</button>
+                        <button class="sent-btn" onclick="renderSentiment('KRX:KOSPI', this)" style="cursor:pointer; font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">코스피</button>
+                        <button class="sent-btn" onclick="renderSentiment('KRX:KOSDAQ', this)" style="cursor:pointer; font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">코스닥</button>
+                        <button class="sent-btn" onclick="renderSentiment('BINANCE:BTCUSDT', this)" style="cursor:pointer; font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">비트코인</button>
                     </div>
 
-                    <div id="sentiment-widget-box" style="height: 220px;">
+                    <div id="sentiment-container" style="height: 220px; width: 100%;">
                         </div>
                 </div>
             </div>
@@ -756,16 +756,16 @@
 
 <script>
 /**
- * 시장 심리 위젯을 동적으로 생성하는 함수
+ * 시장 심리 위젯을 강제로 새로 고침하며 그리는 함수
  */
-function updateSentiment(symbol, btn) {
-    const container = document.getElementById('sentiment-widget-box');
+function renderSentiment(symbol, btn) {
+    const container = document.getElementById('sentiment-container');
     if(!container) return;
-    
-    // 1. 기존 내용 삭제
+
+    // 1. 기존 위젯 완전 제거
     container.innerHTML = "";
-    
-    // 2. 새 스크립트 생성
+
+    // 2. 새 위젯 스크립트 생성 및 삽입
     const script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
@@ -780,23 +780,36 @@ function updateSentiment(symbol, btn) {
         "locale": "ko",
         "colorTheme": "light"
     });
-    
+
     container.appendChild(script);
 
-    // 3. 버튼 스타일 업데이트
+    // 3. 버튼 활성화 시각화
     document.querySelectorAll('.sent-btn').forEach(b => {
         b.style.background = '#fff';
+        b.style.borderColor = '#ddd';
     });
-    if(btn) btn.style.background = '#eee';
+    if(btn) {
+        btn.style.background = '#eee';
+        btn.style.borderColor = '#667eea';
+    }
 }
 
-// 초기 로드 시 나스닥 심리 실행
+// 초기화 로직
 document.addEventListener('DOMContentLoaded', function() {
+    // 페이지 로드 0.8초 후 나스닥 심리 강제 실행
     setTimeout(() => {
-        updateSentiment('NASDAQ:QQQ', document.querySelector('.sent-btn'));
-    }, 500); // 0.5초 뒤 실행하여 컨테이너 인식 보장
+        const firstBtn = document.querySelector('.sent-btn');
+        renderSentiment('NASDAQ:QQQ', firstBtn);
+    }, 800);
 });
+
+// 5분마다 자동 데이터 갱신 (지연 방지)
+setInterval(function() {
+    const activeBtn = Array.from(document.querySelectorAll('.sent-btn')).find(b => b.style.background === 'rgb(238, 238, 238)');
+    if (activeBtn) activeBtn.click();
+}, 300000);
 </script>
+
 
 
 
