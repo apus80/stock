@@ -1147,140 +1147,198 @@
                     ℹ️ 출처: Investing.com 경제 캘린더 및 Federal Reserve 공식 2026 릴리스 스케줄
                 </div>
 
-                <!-- 아코디언 컨테이너 (실제 이벤트 데이터 포함) -->
-                <div class="calendar-accordion-container">
-                    <div class="category-section">
-                        <div class="category-header-cal collapsed"
-                            style="background:linear-gradient(135deg,#667eea,#764ba2)" onclick="toggleAccordion(this)">
-                            💎 주요 실적 발표</div>
-                        <div class="event-grid accordion-content collapsed">
-                            <div class="event-item-cal">
+                <!-- 이벤트 그리드 컨테이너 (아코디언 제거, 2x2 그리드 적용) -->
+                <div class="calendar-event-grid-container"
+                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                    <!-- 주요 실적 발표 -->
+                    <div class="event-category-card"
+                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                        <div class="category-header-cal"
+                            style="background:linear-gradient(135deg,#667eea,#764ba2); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                            💎 주요 실적 발표
+                        </div>
+                        <div class="event-grid-cal" style="padding: 15px;">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">💎</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/4</div>
-                                    <div class="event-title-cal">⭐ Broadcom (AVGO)</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/4</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ Broadcom
+                                        (AVGO)</div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">💎</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">4/16</div>
-                                    <div class="event-title-cal">TSM (예정)</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/16</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">TSM (예정)
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">💎</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">4/21</div>
-                                    <div class="event-title-cal">Tesla (예정)</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/21</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">Tesla (예정)
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
                                 <div class="event-icon-large">💎</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">4/23</div>
-                                    <div class="event-title-cal">MSFT / GOOGL</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/23</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">MSFT / GOOGL
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="category-section">
-                        <div class="category-header-cal collapsed"
-                            style="background:linear-gradient(135deg,#6f42c1,#8e44ad)" onclick="toggleAccordion(this)">
-                            💼 고용 및 노동 시장</div>
-                        <div class="event-grid accordion-content collapsed">
-                            <div class="event-item-cal">
+                    <!-- 고용 및 노동 시장 -->
+                    <div class="event-category-card"
+                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                        <div class="category-header-cal"
+                            style="background:linear-gradient(135deg,#6f42c1,#8e44ad); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                            💼 고용 및 노동 시장
+                        </div>
+                        <div class="event-grid-cal" style="padding: 15px;">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">💼</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/6</div>
-                                    <div class="event-title-cal">⭐ NFP 고용보고서</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/6</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP 고용보고서
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">💼</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/28</div>
-                                    <div class="event-title-cal">JOLTS 구인건수</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/28</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">JOLTS 구인건수
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
                                 <div class="event-icon-large">💼</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">4/3</div>
-                                    <div class="event-title-cal">⭐ NFP 고용보고서</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/3</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP 고용보고서
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="category-section">
-                        <div class="category-header-cal collapsed"
-                            style="background:linear-gradient(135deg,#fd7e14,#e74c3c)" onclick="toggleAccordion(this)">
-                            📊 물가 및 인플레이션</div>
-                        <div class="event-grid accordion-content collapsed">
-                            <div class="event-item-cal">
+                    <!-- 물가 및 인플레이션 -->
+                    <div class="event-category-card"
+                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                        <div class="category-header-cal"
+                            style="background:linear-gradient(135deg,#fd7e14,#e74c3c); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                            📊 물가 및 인플레이션
+                        </div>
+                        <div class="event-grid-cal" style="padding: 15px;">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">📊</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/11</div>
-                                    <div class="event-title-cal">⭐ CPI (소비자물가)</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/11</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI (소비자물가)
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">🏭</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/12</div>
-                                    <div class="event-title-cal">PPI (생산자물가)</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/12</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI (생산자물가)
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">🛍️</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/27</div>
-                                    <div class="event-title-cal">근원 PCE 물가</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/27</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">근원 PCE 물가
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">📊</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">4/10</div>
-                                    <div class="event-title-cal">⭐ CPI (소비자물가)</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/10</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI (소비자물가)
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
                                 <div class="event-icon-large">🏭</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">4/14</div>
-                                    <div class="event-title-cal">PPI (생산자물가)</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/14</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI (생산자물가)
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="category-section">
-                        <div class="category-header-cal collapsed"
-                            style="background:linear-gradient(135deg,#0056b3,#004085)" onclick="toggleAccordion(this)">
-                            🏦 FOMC 및 통화 정책</div>
-                        <div class="event-grid accordion-content collapsed">
-                            <div class="event-item-cal">
+                    <!-- FOMC 및 통화 정책 -->
+                    <div class="event-category-card"
+                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                        <div class="category-header-cal"
+                            style="background:linear-gradient(135deg,#0056b3,#004085); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                            🏦 FOMC 및 통화 정책
+                        </div>
+                        <div class="event-grid-cal" style="padding: 15px;">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">🏦</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/17-18</div>
-                                    <div class="event-title-cal">FOMC 정례회의</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/17-18</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
                                 <div class="event-icon-large">🏦</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">3/18</div>
-                                    <div class="event-title-cal">⭐ 금리 결정/점도표</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/18</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ 금리 결정/점도표
+                                    </div>
                                 </div>
                             </div>
-                            <div class="event-item-cal">
+                            <div class="event-item-cal"
+                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
                                 <div class="event-icon-large">🏦</div>
                                 <div class="event-details-cal">
-                                    <div class="event-date-cal">4/28-29</div>
-                                    <div class="event-title-cal">FOMC 정례회의</div>
+                                    <div class="event-date-cal"
+                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/28-29</div>
+                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
+                                    </div>
                                 </div>
                             </div>
                         </div>
