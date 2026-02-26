@@ -1029,162 +1029,6 @@
                 </div>
             </div>
 
-            <div class="controls">
-                <!-- 추천 종목 리포트 (기존) -->
-                <div class="category-section featured">
-                    <div class="category-header">
-                        <span class="category-icon">🎯</span>
-                        <div class="category-title featured">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                <h3>
-                                    단기/중기 종목 리포트
-                                    <span class="badge">MAIN</span>
-                                </h3>
-                                <a href="methodology.html" target="_blank" rel="noopener noreferrer" class="btn-load"
-                                    style="text-decoration: none; font-size: 0.8em; padding: 8px 15px; background: #5a67d8;">
-                                    📝 분석 방법론 보기
-                                </a>
-                            </div>
-                            <p>투자 추천 종목 및 매매 전략</p>
-                        </div>
-                    </div>
-                    <div class="selector-row">
-                        <label for="dateRecommendation">📅 날짜:</label>
-                        <select id="dateRecommendation">
-                            <option value="">날짜를 선택하세요...</option>
-                        </select>
-                        <button class="btn-load" onclick="loadReport('recommendation')">불러오기</button>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- 급등 종목 리포트 -->
-                <div class="category-section featured">
-                    <div class="category-header">
-                        <span class="category-icon">🚀</span>
-                        <div class="category-title featured">
-                            <div
-                                style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                <h3>
-                                    급등 종목 리포트
-                                    <span class="badge">ALERT</span>
-                                </h3>
-                                <a href="7Factor.html" target="_blank" rel="noopener noreferrer" class="btn-load"
-                                    style="text-decoration: none; font-size: 0.8em; padding: 8px 15px; background: #5a67d8;">
-                                    📝 분석 방법론 보기
-                                </a>
-                            </div>
-                            <p>급등 종목 탐지 및 7가지 요소 분석</p>
-                        </div>
-                    </div>
-                    <div class="selector-row">
-                        <label for="dateShoot">📅 날짜:</label>
-                        <select id="dateShoot">
-                            <option value="">날짜를 선택하세요...</option>
-                        </select>
-                        <button class="btn-load" onclick="loadReport('shoot')">불러오기</button>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- 종목 뉴스 & 보고서 -->
-                <div class="category-section news">
-                    <div class="category-header">
-                        <span class="category-icon">📰</span>
-                        <div class="category-title news">
-                            <h3>
-                                시황 & 보고서
-                                <span class="badge news">NEW</span>
-                            </h3>
-                            <p>주요 종목 뉴스 및 시장 동향</p>
-                        </div>
-                    </div>
-                    <div class="selector-row">
-                        <label for="dateNews">📅 날짜:</label>
-                        <select id="dateNews">
-                            <option value="">날짜를 선택하세요...</option>
-                        </select>
-                        <button class="btn-load" onclick="loadReport('news')">불러오기</button>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- 분석 1: 미국 시장 유동성 -->
-                <div class="category-section">
-                    <div class="category-header">
-                        <span class="category-icon">💰</span>
-                        <div class="category-title">
-                            <h3>[분석1] 미국 시장 유동성 메커니즘</h3>
-                            <p>연준 정책, 넷 리퀴디티, 금융 여건 분석</p>
-                        </div>
-                    </div>
-                    <div class="selector-row">
-                        <label for="dateAnalysis1">📅 날짜:</label>
-                        <select id="dateAnalysis1">
-                            <option value="">날짜를 선택하세요...</option>
-                        </select>
-                        <button class="btn-load" onclick="loadReport('analysis1')">불러오기</button>
-                    </div>
-                </div>
-
-                <!-- 분석 2: ETF 자금 흐름 -->
-                <div class="category-section">
-                    <div class="category-header">
-                        <span class="category-icon">📈</span>
-                        <div class="category-title">
-                            <h3>[분석2] ETF 자금 흐름 분석</h3>
-                            <p>스마트 머니 추적 및 섹터 로테이션 (월간)</p>
-                        </div>
-                    </div>
-                    <div class="selector-row">
-                        <label for="dateAnalysis2">📅 날짜:</label>
-                        <select id="dateAnalysis2">
-                            <option value="">날짜를 선택하세요...</option>
-                        </select>
-                        <button class="btn-load" onclick="loadReport('analysis2')">불러오기</button>
-                    </div>
-                </div>
-
-                <!-- 분석 3: 내부자 매수 -->
-                <div class="category-section">
-                    <div class="category-header">
-                        <span class="category-icon">👔</span>
-                        <div class="category-title">
-                            <h3>[분석3] 내부자 매수 분석</h3>
-                            <p>경영진 고확신 매수 시그널 추적</p>
-                        </div>
-                    </div>
-                    <div class="selector-row">
-                        <label for="dateAnalysis3">📅 날짜:</label>
-                        <select id="dateAnalysis3">
-                            <option value="">날짜를 선택하세요...</option>
-                        </select>
-                        <button class="btn-load" onclick="loadReport('analysis3')">불러오기</button>
-                    </div>
-                </div>
-
-                <!-- 분석 4: 애널리스트 목표가 -->
-                <div class="category-section">
-                    <div class="category-header">
-                        <span class="category-icon">🎯</span>
-                        <div class="category-title">
-                            <h3>[분석4] 애널리스트 목표가 분석</h3>
-                            <p>월스트리트 고확신 목표가 상향 추적</p>
-                        </div>
-                    </div>
-                    <div class="selector-row">
-                        <label for="dateAnalysis4">📅 날짜:</label>
-                        <select id="dateAnalysis4">
-                            <option value="">날짜를 선택하세요...</option>
-                        </select>
-                        <button class="btn-load" onclick="loadReport('analysis4')">불러오기</button>
-                    </div>
-                </div>
-            </div>
 
             <!-- 실적발표 검색 -->
             <div class="earnings-search">
@@ -1720,6 +1564,161 @@
             </div>
         </div>
 
+    </div>
+
+    <div class="controls">
+        <!-- 추천 종목 리포트 (기존) -->
+        <div class="category-section featured">
+            <div class="category-header">
+                <span class="category-icon">🎯</span>
+                <div class="category-title featured">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h3>
+                            단기/중기 종목 리포트
+                            <span class="badge">MAIN</span>
+                        </h3>
+                        <a href="methodology.html" target="_blank" rel="noopener noreferrer" class="btn-load"
+                            style="text-decoration: none; font-size: 0.8em; padding: 8px 15px; background: #5a67d8;">
+                            📝 분석 방법론 보기
+                        </a>
+                    </div>
+                    <p>투자 추천 종목 및 매매 전략</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateRecommendation">📅 날짜:</label>
+                <select id="dateRecommendation">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('recommendation')">불러오기</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 급등 종목 리포트 -->
+        <div class="category-section featured">
+            <div class="category-header">
+                <span class="category-icon">🚀</span>
+                <div class="category-title featured">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h3>
+                            급등 종목 리포트
+                            <span class="badge">ALERT</span>
+                        </h3>
+                        <a href="7Factor.html" target="_blank" rel="noopener noreferrer" class="btn-load"
+                            style="text-decoration: none; font-size: 0.8em; padding: 8px 15px; background: #5a67d8;">
+                            📝 분석 방법론 보기
+                        </a>
+                    </div>
+                    <p>급등 종목 탐지 및 7가지 요소 분석</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateShoot">📅 날짜:</label>
+                <select id="dateShoot">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('shoot')">불러오기</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 종목 뉴스 & 보고서 -->
+        <div class="category-section news">
+            <div class="category-header">
+                <span class="category-icon">📰</span>
+                <div class="category-title news">
+                    <h3>
+                        시황 & 보고서
+                        <span class="badge news">NEW</span>
+                    </h3>
+                    <p>주요 종목 뉴스 및 시장 동향</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateNews">📅 날짜:</label>
+                <select id="dateNews">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('news')">불러오기</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 분석 1: 미국 시장 유동성 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">💰</span>
+                <div class="category-title">
+                    <h3>[분석1] 미국 시장 유동성 메커니즘</h3>
+                    <p>연준 정책, 넷 리퀴디티, 금융 여건 분석</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis1">📅 날짜:</label>
+                <select id="dateAnalysis1">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis1')">불러오기</button>
+            </div>
+        </div>
+
+        <!-- 분석 2: ETF 자금 흐름 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">📈</span>
+                <div class="category-title">
+                    <h3>[분석2] ETF 자금 흐름 분석</h3>
+                    <p>스마트 머니 추적 및 섹터 로테이션 (월간)</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis2">📅 날짜:</label>
+                <select id="dateAnalysis2">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis2')">불러오기</button>
+            </div>
+        </div>
+
+        <!-- 분석 3: 내부자 매수 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">👔</span>
+                <div class="category-title">
+                    <h3>[분석3] 내부자 매수 분석</h3>
+                    <p>경영진 고확신 매수 시그널 추적</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis3">📅 날짜:</label>
+                <select id="dateAnalysis3">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis3')">불러오기</button>
+            </div>
+        </div>
+
+        <!-- 분석 4: 애널리스트 목표가 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">🎯</span>
+                <div class="category-title">
+                    <h3>[분석4] 애널리스트 목표가 분석</h3>
+                    <p>월스트리트 고확신 목표가 상향 추적</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis4">📅 날짜:</label>
+                <select id="dateAnalysis4">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis4')">불러오기</button>
+            </div>
+        </div>
     </div>
 
     <div class="pdf-viewer">
