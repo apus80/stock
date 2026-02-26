@@ -1999,5 +1999,28 @@ function googleTranslateElementInit() {
 }
 </script>
 <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+<script>
+function checkPassword() {
+    const pwdInput = document.getElementById('passwordInput');
+    const overlay = document.getElementById('passwordOverlay');
+    const mainContent = document.getElementById('mainContent');
+
+    const PASSWORD = "9803"; // 원하는 비밀번호
+
+    if (pwdInput.value === PASSWORD) {
+        overlay.style.display = "none";
+        mainContent.style.display = "block";
+    } else {
+        pwdInput.value = "";
+        pwdInput.placeholder = "비밀번호가 틀렸습니다";
+        pwdInput.style.borderColor = "#dc3545";
+    }
+}
+
+// 버튼 클릭 연결
+document.getElementById("loginBtn").addEventListener("click", checkPassword);
+</script>
+
 </body>
 </html>
