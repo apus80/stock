@@ -71,8 +71,9 @@
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
             background: white;
             border-radius: var(--radius-main);
             box-shadow: var(--shadow-deep);
@@ -960,12 +961,12 @@
                 <!-- 글로벌 시장 핵심 지표 -->
                 <div class="card macro-card">
                     <h3 class="section-title">📊 글로벌 시장 핵심 지표</h3>
-                    <div class="tradingview-widget-container" style="height: 450px;">
+                    <div class="tradingview-widget-container" style="height: 550px;">
                         <div class="tradingview-widget-container__widget"></div>
                         <script type="text/javascript"
                             src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
                                 {
-                                    "colorTheme": "light", "dateRange": "12M", "showChart": true, "locale": "ko", "width": "100%", "height": 450,
+                                    "colorTheme": "light", "dateRange": "12M", "showChart": true, "locale": "ko", "width": "100%", "height": 550,
                                         "largeChartUrl": "", "isTransparent": false, "showSymbolLogo": true,
                                             "tabs": [
                                                 { "name": "미국 지수", "symbols": [{ "s": "NASDAQ:QQQ", "d": "나스닥 100" }, { "s": "AMEX:SPY", "d": "S&P 500" }, { "s": "FOREXCOM:DJI", "d": "다우 존스" }] },
@@ -1000,7 +1001,7 @@
                                 <button class="btn-sm" onclick="changeSentiment('AMEX:SPY')">S&P</button>
                                 <button class="btn-sm" onclick="changeSentiment('BINANCE:BTCUSDT')">코인</button>
                             </div>
-                            <div id="sentiment-widget-container" style="height: 350px;"></div>
+                            <div id="sentiment-widget-container" style="height: 450px;"></div>
                         </div>
                     </div>
                 </div>
@@ -1008,12 +1009,12 @@
                 <!-- 시장 핵심 거시 지표 (Market Pulse) -->
                 <div class="card macro-pulse-card">
                     <h3 class="section-title">🌐 시장 핵심 거시 지표 (Market Pulse)</h3>
-                    <div class="tradingview-widget-container" style="height: 450px;">
+                    <div class="tradingview-widget-container" style="height: 550px;">
                         <div class="tradingview-widget-container__widget"></div>
                         <script type="text/javascript"
                             src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
                                 {
-                                    "width": "100%", "height": 450, "symbolsGroups": [
+                                    "width": "100%", "height": 550, "symbolsGroups": [
                                         {
                                             "name": "거시 경제 핵심", "symbols": [
                                                 { "name": "TVC:US10Y", "displayName": "미 국채 10년 금리" },
