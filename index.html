@@ -152,6 +152,28 @@
             gap: 20px;
         }
 
+        /* 2단 리포트 레이아웃 전용 스타일 */
+        .grid-top-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-bottom-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+
+            .grid-top-row,
+            .grid-bottom-row {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            }
+        }
+
         .category-section {
             margin-bottom: 0px;
             /* 그리드 갭으로 대체 */
@@ -1423,7 +1445,7 @@
     <!-- 리포트 선택기 섹션 -->
     <div class="controls">
         <h3 class="section-title">📽️ 분석 리포트 선택 및 조회</h3>
-        <div class="category-grid">
+        <div class="grid-top-row">
             <!-- 종목 리포트 -->
             <div class="category-section featured">
                 <div class="category-header">
@@ -1474,8 +1496,10 @@
                     <button class="btn-load" onclick="loadReport('news')">📄 불러오기</button>
                 </div>
             </div>
+        </div>
 
-            <!-- 상세 분석 도구 (한 행 정렬) -->
+        <div class="grid-bottom-row" style="margin-top: 20px;">
+            <!-- 상세 분석 도구 -->
             <div class="category-section">
                 <div class="category-header">
                     <div class="category-icon">💰</div>
