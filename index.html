@@ -1306,8 +1306,8 @@
                 // 1. 기존 위젯 비우기
                 container.innerHTML = '';
 
-                // 2. 선택된 맵에 따라 심볼 설정
-                let symbolSource = selector.value === 'sp500' ? "SPX" : "NDX";
+                // 2. 선택된 맵에 따라 데이터 소스 설정
+                let dataSource = selector.value === 'sp500' ? "SPX500" : "NAS100";
 
                 // 3. 위젯 스크립트 생성 및 설정
                 const script = document.createElement('script');
@@ -1316,19 +1316,18 @@
                 script.async = true;
 
                 const config = {
-                    "symbolGroups": [
-                        {
-                            "name": selector.value === 'sp500' ? "S&P 500" : "Nasdaq 100",
-                            "symbols": [{ "name": symbolSource }]
-                        }
-                    ],
+                    "dataSource": dataSource,
+                    "grouping": "sector",
+                    "blockSize": "market_cap_basic",
+                    "blockColor": "change",
+                    "locale": "ko",
+                    "symbolUrl": "",
                     "colorTheme": "light",
+                    "hasTopBar": false,
                     "isTransparent": false,
                     "hasSymbolTooltip": true,
                     "width": "100%",
-                    "height": "100%",
-                    "blockCompositeStructures": false,
-                    "locale": "ko"
+                    "height": "100%"
                 };
 
                 script.text = JSON.stringify(config);
