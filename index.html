@@ -687,44 +687,115 @@
 
 
 
-<style>
-    .macro-container { display: flex; gap: 15px; flex-wrap: wrap; }
-    .macro-left { flex: 1.2; min-width: 350px; }
-    .macro-right { flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
-    
-    @media (max-width: 768px) {
-        .macro-container { flex-direction: column; }
-        .macro-left, .macro-right { min-width: 100%; }
-        .tradingview-widget-container { height: 350px !important; }
-    }
-</style>
-
-<div class="macro-tradingview" style="margin-top: -10px; margin-bottom: 20px;">
-    <div class="card" style="padding: 15px; background: #fff; border-radius: 12px; border-left: 5px solid #667eea; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <h3 style="font-size: 14px; color: #333; margin-top: 0; margin-bottom: 12px; font-weight: bold;">📊 실시간 글로벌 지표 및 시장 심리</h3>
+<div class="macro-tradingview" style="margin-bottom: 20px;">
+    <div class="card" style="margin-bottom: 20px; padding: 20px; background: #fff; border-radius: 12px; border-left: 5px solid #667eea; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <h3 style="font-size: 15px; color: #333; margin-bottom: 15px; font-weight: bold;">📊 글로벌 시장 핵심 지표 및 심리 현황</h3>
         
-        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-            <div style="flex: 1.2; min-width: 320px; height: 400px; background:#f9f9f9; border-radius:8px;" id="main-chart-wrapper"></div>
-
-            <div style="flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="background: #fcfcfc; padding: 10px 15px; border-radius: 10px; border: 1px solid #eee; height: 100px;">
-                    <p style="font-size: 11px; color: #666; margin-bottom: 5px; font-weight: bold;">🇰🇷 원/달러 환율</p>
-                    <div id="exchange-rate-wrapper"></div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            
+            <div style="flex: 1.2; min-width: 350px;">
+                <div class="tradingview-widget-container">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                    {
+                      "colorTheme": "light",
+                      "dateRange": "12M",
+                      "showChart": true,
+                      "locale": "ko",
+                      "width": "100%",
+                      "height": 450,
+                      "largeChartUrl": "",
+                      "isTransparent": false,
+                      "showSymbolLogo": true,
+                      "tabs": [
+                        {
+                          "name": "미국 지수",
+                          "symbols": [
+                            { "s": "NASDAQ:QQQ", "d": "나스닥 100" },
+                            { "s": "AMEX:SPY", "d": "S&P 500" },
+                            { "s": "FOREXCOM:DJI", "d": "다우 존스" }
+                          ]
+                        },
+                        {
+                          "name": "글로벌/선물",
+                          "symbols": [
+                            { "s": "CME_MINI:NQ1!", "d": "나스닥 선물" },
+                            { "s": "BINANCE:BTCUSDT", "d": "비트코인" },
+                            { "s": "OANDA:XAUUSD", "d": "금 (골드)" }
+                          ]
+                        }
+                      ]
+                    }
+                    </script>
                 </div>
+            </div>
 
-                <div style="background: #fcfcfc; padding: 12px 15px; border-radius: 10px; border: 1px solid #eee; height: 290px;">
-                    <p style="font-size: 11px; color: #666; margin-bottom: 8px; font-weight: bold;">📈 실시간 시장 심리</p>
-                    <div style="display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap;">
-                        <button class="sent-btn" onclick="initSenti('NASDAQ:QQQ', this)" style="cursor:pointer; font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#eee; font-weight:bold;">나스닥</button>
-                        <button class="sent-btn" onclick="initSenti('KRX:KOSPI', this)" style="cursor:pointer; font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">코스피</button>
-                        <button class="sent-btn" onclick="initSenti('BINANCE:BTCUSDT', this)" style="cursor:pointer; font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff; font-weight:bold;">코인</button>
+            <div style="flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 15px;">
+                
+                <div style="background: #fcfcfc; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px; font-weight: bold;">🇰🇷 실시간 원/달러 환율</p>
+                    <div class="tradingview-widget-container">
+                        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+                        {
+                          "symbol": "FX_IDC:USDKRW",
+                          "width": "100%",
+                          "colorTheme": "light",
+                          "isTransparent": true,
+                          "locale": "ko"
+                        }
+                        </script>
                     </div>
-                    <div id="gauge-render-area" style="height: 200px;"></div>
                 </div>
+
+                <div style="background: #fcfcfc; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px; font-weight: bold;">📈 실시간 시장 심리</p>
+                    
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <button onclick="changeSentiment('KRX:KOSPI')" style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">국피</button>
+                        <button onclick="changeSentiment('KRX:KOSDAQ')" style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">국닥</button>
+                        <button onclick="changeSentiment('NASDAQ:QQQ')" style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">나스닥</button>
+                        <button onclick="changeSentiment('AMEX:SPY')" style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">S&P</button>
+                        <button onclick="changeSentiment('BINANCE:BTCUSDT')" style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">코인</button>
+                    </div>
+
+                    <div id="sentiment-widget-container" style="height: 240px;">
+                        </div>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// 시장심리 위젯 교체 함수
+function changeSentiment(symbol) {
+    const container = document.getElementById('sentiment-widget-container');
+    container.innerHTML = ''; // 기존 위젯 삭제
+    
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+        "interval": "1D",
+        "width": "100%",
+        "isTransparent": true,
+        "height": 240,
+        "symbol": symbol,
+        "showIntervalTabs": false,
+        "locale": "ko",
+        "colorTheme": "light"
+    });
+    container.appendChild(script);
+}
+
+// 초기 로딩 시 나스닥 심리 표시
+document.addEventListener('DOMContentLoaded', function() {
+    changeSentiment('NASDAQ:QQQ');
+});
+</script>
+
 
 
     <div class="card" style="padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #764ba2; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
@@ -765,7 +836,8 @@
         <h2 style="margin:0; font-size: 1.1em; color: #444;">📰 실시간 시장 뉴스</h2>
         <button onclick="refreshNews()" style="padding:5px 10px; font-size: 12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:4px; cursor:pointer;">🔄 새로고침</button>
     </div>
-    <div class="news-grid" id="newsContainer">
+    <div class="news-grid" id="newsContainer">
+
                     </div>
                 </div>
                
@@ -1880,74 +1952,81 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </script>
     </div> 
-
 <script>
-// 1. 설정 (비밀번호를 여기서 직접 수정하세요)
-const PASSWORD = "9803"; 
-const SESSION_KEY = "isLoggedIn";
 
-// 2. 비밀번호 확인 및 로그인 로직
-function checkPassword() {
-    const pwdInput = document.getElementById("passwordInput");
-    const enteredPassword = pwdInput.value;
-    
-    console.log("🔒 로그인 시도 중...");
+window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("loginBtn").addEventListener("click", checkPassword);
 
-    if (enteredPassword === PASSWORD) {
-        sessionStorage.setItem(SESSION_KEY, "true");
-        showMainContent(); // 단순히 display만 바꾸는 게 아니라 전체 화면을 그리는 함수를 실행합니다.
-    } else {
-        alert("비밀번호가 올바르지 않습니다.");
-        pwdInput.value = "";
-        pwdInput.focus();
-    }
-}
-
-// 3. 메인 화면 활성화 및 모든 데이터 로딩
-function showMainContent() {
-    console.log("🔥 메인 화면 및 위젯 로딩 시작");
-
-    const overlay = document.getElementById('passwordOverlay');
-    const mainContent = document.getElementById('mainContent');
-    
-    if (overlay) overlay.style.display = 'none';
-    if (mainContent) {
-        mainContent.style.display = 'block';
-        mainContent.style.visibility = 'visible';
-    }
-
-    // 위젯과 데이터 로딩을 순차적으로 실행
-    setTimeout(() => {
-        // 트레이딩뷰 위젯 실행
-        if (typeof startTradingViewWidgets === 'function') startTradingViewWidgets();
-        
-        // 뉴스 및 데이터 로딩 (파일 위쪽에 정의된 함수들)
-        if (typeof loadDateList === 'function') loadDateList();
-        if (typeof loadNews === 'function') loadNews();
-        if (typeof drawCalendar === 'function') {
-            drawCalendar(2, 'cal-feb');
-            drawCalendar(3, 'cal-mar');
-        }
-    }, 200);
-}
-
-// 4. 초기 이벤트 연결 및 자동 로그인 체크
-document.addEventListener("DOMContentLoaded", function () {
-    const loginBtn = document.getElementById("loginBtn");
-    if (loginBtn) loginBtn.onclick = checkPassword;
-
-    const pwdInput = document.getElementById("passwordInput");
-    if (pwdInput) {
-        pwdInput.onkeypress = function(e){ if(e.key === "Enter") checkPassword(); };
-    }
-
-    // 이미 로그인된 세션이 있다면 바로 화면 표시
     if (sessionStorage.getItem(SESSION_KEY) === "true") {
         showMainContent();
     }
 });
 
-// 구글 번역 초기화
+// --- 여기서부터 끝까지 복사해서 붙여넣으세요 ---
+
+// 비밀번호 확인 함수
+function checkPassword() {
+    const input = document.getElementById("passwordInput");
+    const value = input.value.trim();
+
+    if (value === CORRECT_PASSWORD) {
+        sessionStorage.setItem(SESSION_KEY, "true");
+        showMainContent();
+    } else {
+        alert("비밀번호가 틀렸습니다.");
+        input.value = "";
+        input.focus();
+    }
+}
+
+// 메인 화면 표시 함수
+function showMainContent() {
+    console.log("🔥 showMainContent 실행됨");
+
+    document.getElementById('passwordOverlay').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+
+    // 1. 기본 리스트 및 뉴스 로드
+    if (typeof loadDateList === 'function') loadDateList();
+    if (typeof loadNews === 'function') loadNews();
+
+
+    // 3. 캘린더 그리기
+    if (typeof drawCalendar === 'function') {
+        drawCalendar(2, 'cal-feb');
+        drawCalendar(3, 'cal-mar');
+    }
+    console.log("✅ 모든 데이터 로딩 완료");
+}
+
+function logout() {
+    if (confirm("로그아웃 하시겠습니까?")) {
+        sessionStorage.removeItem(SESSION_KEY);
+        location.reload();
+    }
+}
+
+
+// 페이지 로드 시 초기화
+document.addEventListener("DOMContentLoaded", function () {
+    const loginBtn = document.getElementById("loginBtn");
+    if (loginBtn) {
+        loginBtn.onclick = checkPassword;
+    }
+
+    const pwdInput = document.getElementById("passwordInput");
+    if (pwdInput) {
+        pwdInput.onkeypress = function(e){
+            if(e.key === "Enter") checkPassword();
+        };
+    }
+
+    if (sessionStorage.getItem(SESSION_KEY) === "true") {
+        showMainContent();
+    }
+});
+
+// 구글 번역 초기화 함수
 function googleTranslateElementInit() {
     new google.translate.TranslateElement({
         pageLanguage: 'en', 
@@ -1956,30 +2035,8 @@ function googleTranslateElementInit() {
     }, 'google_translate_element');
 }
 </script>
+
 <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-
-
-<script>
-function checkPassword() {
-    const pwdInput = document.getElementById('passwordInput');
-    const overlay = document.getElementById('passwordOverlay');
-    const mainContent = document.getElementById('mainContent');
-
-    const PASSWORD = "9803"; // 원하는 비밀번호
-
-    if (pwdInput.value === PASSWORD) {
-        overlay.style.display = "none";
-        mainContent.style.display = "block";
-    } else {
-        pwdInput.value = "";
-        pwdInput.placeholder = "비밀번호가 틀렸습니다";
-        pwdInput.style.borderColor = "#dc3545";
-    }
-}
-
-// 버튼 클릭 연결
-document.getElementById("loginBtn").addEventListener("click", checkPassword);
-</script>
 
 </body>
 </html>
