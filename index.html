@@ -1632,8 +1632,7 @@
 
             <div
                 style="margin-top:10px;padding:8px;background:#fff3cd;border-left:3px solid #ffc107;border-radius:5px;font-size:0.82em">
-                <strong>⭐ 시장 영향도 높은 핵심 지표</strong>
-            </div>
+                <strong>⭐ 시장 영향도 높은 핵심 지표</strong></div>
         </div>
     </div>
 
@@ -1703,85 +1702,106 @@
                 <div class="category-title news">
                     <h3>
                         시황 & 보고서
-                        </select>
-                        <button class="btn-load" onclick="loadReport('news')">불러오기</button>
+                        <span class="badge news">NEW</span>
+                    </h3>
+                    <p>주요 종목 뉴스 및 시장 동향</p>
                 </div>
             </div>
+            <li class="dropdown-header">주요 보고서</li>
 
-            <div class="divider"></div>
+            <li style="list-style:none;">
+                -
+                <a href="#" onclick="openMemoryReport(); return false;">
+                    메모리 사업의 전망
+                    <span style="color:#888; font-size:12px;">
+                        (상세한 내용은 하단 2월 16일 보고서(pdf) 참조 )
+                    </span>
+                </a>
+            </li>
 
-            <!-- 분석 1: 미국 시장 유동성 -->
-            <div class="category-section">
-                <div class="category-header">
-                    <span class="category-icon">💰</span>
-                    <div class="category-title">
-                        <h3>[분석1] 미국 시장 유동성 메커니즘</h3>
-                        <p>연준 정책, 넷 리퀴디티, 금융 여건 분석</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <label for="dateAnalysis1">📅 날짜:</label>
-                    <select id="dateAnalysis1">
-                        <option value="">날짜를 선택하세요...</option>
-                    </select>
-                    <button class="btn-load" onclick="loadReport('analysis1')">불러오기</button>
-                </div>
-            </div>
-
-            <!-- 분석 2: ETF 자금 흐름 -->
-            <div class="category-section">
-                <div class="category-header">
-                    <span class="category-icon">📈</span>
-                    <div class="category-title">
-                        <h3>[분석2] ETF 자금 흐름 분석</h3>
-                        <p>스마트 머니 추적 및 섹터 로테이션 (월간)</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <label for="dateAnalysis2">📅 날짜:</label>
-                    <select id="dateAnalysis2">
-                        <option value="">날짜를 선택하세요...</option>
-                    </select>
-                    <button class="btn-load" onclick="loadReport('analysis2')">불러오기</button>
-                </div>
-            </div>
-
-            <!-- 분석 3: 내부자 매수 -->
-            <div class="category-section">
-                <div class="category-header">
-                    <span class="category-icon">👔</span>
-                    <div class="category-title">
-                        <h3>[분석3] 내부자 매수 분석</h3>
-                        <p>경영진 고확신 매수 시그널 추적</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <label for="dateAnalysis3">📅 날짜:</label>
-                    <select id="dateAnalysis3">
-                        <option value="">날짜를 선택하세요...</option>
-                    </select>
-                    <button class="btn-load" onclick="loadReport('analysis3')">불러오기</button>
-                </div>
-            </div>
-
-            <!-- 분석 4: 애널리스트 목표가 -->
-            <div class="category-section">
-                <div class="category-header">
-                    <span class="category-icon">🎯</span>
-                    <div class="category-title">
-                        <h3>[분석4] 애널리스트 목표가 분석</h3>
-                        <p>월스트리트 고확신 목표가 상향 추적</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <label for="dateAnalysis4">📅 날짜:</label>
-                    <select id="dateAnalysis4">
-                        <option value="">날짜를 선택하세요...</option>
-                    </select>
-                    <button class="btn-load" onclick="loadReport('analysis4')">불러오기</button>
-                </div>
+            <div class="selector-row">
+                <label for="dateNews">📅 날짜:</label>
+                <select id="dateNews">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('news')">불러오기</button>
             </div>
         </div>
+
+        <div class="divider"></div>
+
+        <!-- 분석 1: 미국 시장 유동성 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">💰</span>
+                <div class="category-title">
+                    <h3>[분석1] 미국 시장 유동성 메커니즘</h3>
+                    <p>연준 정책, 넷 리퀴디티, 금융 여건 분석</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis1">📅 날짜:</label>
+                <select id="dateAnalysis1">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis1')">불러오기</button>
+            </div>
+        </div>
+
+        <!-- 분석 2: ETF 자금 흐름 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">📈</span>
+                <div class="category-title">
+                    <h3>[분석2] ETF 자금 흐름 분석</h3>
+                    <p>스마트 머니 추적 및 섹터 로테이션 (월간)</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis2">📅 날짜:</label>
+                <select id="dateAnalysis2">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis2')">불러오기</button>
+            </div>
+        </div>
+
+        <!-- 분석 3: 내부자 매수 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">👔</span>
+                <div class="category-title">
+                    <h3>[분석3] 내부자 매수 분석</h3>
+                    <p>경영진 고확신 매수 시그널 추적</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis3">📅 날짜:</label>
+                <select id="dateAnalysis3">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis3')">불러오기</button>
+            </div>
+        </div>
+
+        <!-- 분석 4: 애널리스트 목표가 -->
+        <div class="category-section">
+            <div class="category-header">
+                <span class="category-icon">🎯</span>
+                <div class="category-title">
+                    <h3>[분석4] 애널리스트 목표가 분석</h3>
+                    <p>월스트리트 고확신 목표가 상향 추적</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateAnalysis4">📅 날짜:</label>
+                <select id="dateAnalysis4">
+                    <option value="">날짜를 선택하세요...</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('analysis4')">불러오기</button>
+            </div>
+        </div>
+    </div>
     </div>
 
     <div class="pdf-viewer">
@@ -1856,7 +1876,6 @@
                 '2026-02-10': { file: 'reports/analysis4/2026-02-10_analyst.pdf', title: '애널리스트 분석' }
             }
         };
-
         const categories = {
             recommendation: { name: '추천 종목', icon: '🎯', selectId: 'dateRecommendation' },
             shoot: { name: '급등 종목', icon: '🚀', selectId: 'dateShoot' },
@@ -1867,86 +1886,38 @@
             analysis4: { name: '애널리스트', icon: '📊', selectId: 'dateAnalysis4' }
         };
 
-        function showMainContent() {
-            // 데이터 초기화 및 로드
-            loadDateList();
-            loadNews();
-            updateTradingViewMap();
-            drawCalendar(2, 'cal-feb');
-            drawCalendar(3, 'cal-mar');
 
-            // 초기 심리 지표 로드
-            if (typeof changeSentiment === 'function') {
-                changeSentiment('NASDAQ:QQQ');
-            }
-        }
 
-        // --- 리포트 및 리스트 관련 함수 ---
+
         function loadDateList() {
             Object.keys(categories).forEach(categoryKey => {
-                const category = categories[categoryKey];
-                const select = document.getElementById(category.selectId);
+                const category = categories[categoryKey], select = document.getElementById(category.selectId);
                 if (!select) return;
-
                 select.innerHTML = "";
                 const dates = Object.keys(reportFiles[categoryKey]).sort().reverse();
                 dates.forEach(date => {
-                    const option = document.createElement('option');
-                    option.value = date;
+                    const option = document.createElement('option'); option.value = date;
                     if (categoryKey === 'news' || categoryKey === 'recommendation' || categoryKey === 'shoot') {
-                        const data = reportFiles[categoryKey][date];
-                        option.textContent = formatDate(date) + ' · ' + data.title;
-                    } else {
-                        option.textContent = formatDate(date);
-                    }
+                        const data = reportFiles[categoryKey][date]; option.textContent = formatDate(date) + ' · ' + data.title;
+                    } else option.textContent = formatDate(date);
                     select.appendChild(option);
                 });
             });
         }
-
         function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
+            const date = new Date(dateStr), month = date.getMonth() + 1, day = date.getDate();
             const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
             return month + '월 ' + day + '일 (' + weekday + ')';
         }
-
-        function loadReport(categoryKey) {
-            const category = categories[categoryKey];
-            const select = document.getElementById(category.selectId);
-            const date = select.value;
-            if (!date) { alert('날짜를 선택해주세요.'); return; }
-
-            let pdfFile;
-            const data = reportFiles[categoryKey][date];
-            pdfFile = (typeof data === 'string') ? data : data.file;
-            displayPDF(pdfFile, date, category);
-        }
-
-        function displayPDF(pdfPath, date, category) {
-            document.getElementById('pdfContent').innerHTML = `
-                <div class="current-view">
-                    <h4>${category.icon} ${category.name}</h4>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="label">날짜</div>
-                            <div class="value">${formatDate(date)}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="pdf-container">
-                    <iframe src="${pdfPath}" type="application/pdf"></iframe>
-                </div>`;
-        }
-
-        // --- 뉴스 관련 함수 ---
+        // 실시간 뉴스 로딩
+        // 이 줄부터 아래 마지막 } 까지 전부 지우고 새 코드를 넣으세요
         async function loadNews() {
             const container = document.getElementById('newsContainer');
             if (!container) return;
+
             container.innerHTML = '<div class="news-item">🔄 최신 시장 뉴스를 분석 중입니다...</div>';
 
-            // MarketAux
+            // --- 1단계: MarketAux (주식 뉴스) ---
             try {
                 const apiKey = 'BKfVtXqVFB1n2n9lYKPPdCj2Z78lKS8NQTQ5eUxS';
                 const url = `https://api.marketaux.com/v1/news/all?language=en&limit=5&api_token=${apiKey}`;
@@ -1958,7 +1929,7 @@
                 }
             } catch (e) { console.log("MarketAux 실패"); }
 
-            // Alpha Vantage
+            // --- 2단계: Alpha Vantage (금융 뉴스) ---
             try {
                 const apiKey = 'NP58RFOBOUKNIOLV';
                 const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&limit=5&apikey=${apiKey}`;
@@ -1976,24 +1947,44 @@
                 }
             } catch (e) { console.log("Alpha Vantage 실패"); }
 
+            // --- 3단계: CryptoCompare (암호화폐 뉴스) ---
+            try {
+                const res = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN');
+                const json = await res.json();
+                if (json.Data && json.Data.length > 0) {
+                    const formattedData = json.Data.slice(0, 5).map(item => ({
+                        title: item.title,
+                        url: item.url,
+                        source: item.source,
+                        published_at: item.published_on * 1000
+                    }));
+                    renderNews(formattedData, 'CryptoCompare');
+                    return;
+                }
+            } catch (e) { console.log("CryptoCompare 실패"); }
+
+            // --- 4단계: 로컬 뉴스 (최종 백업) ---
             loadLocalNews();
         }
 
+        // 이 함수도 세트로 같이 붙여넣어 주세요 (뉴스 그리기를 담당합니다)
         function renderNews(newsData, apiSource) {
             const container = document.getElementById('newsContainer');
             container.innerHTML = '';
             newsData.forEach(news => {
                 const html = `
-                    <div class="news-item">
-                        <a href="${news.url}" target="_blank" class="news-link">
-                            <div class="news-title">📢 ${news.title}</div>
-                            <div class="news-meta">${apiSource} | ${new Date(news.published_at).toLocaleString()}</div>
-                        </a>
-                    </div>`;
+            <div class="news-item">
+                <a href="${news.url}" target="_blank" class="news-link">
+                    <div class="news-title">📢 ${news.title}</div>
+                    <div class="news-meta">${apiSource} | ${new Date(news.published_at).toLocaleString()}</div>
+                </a>
+            </div>`;
                 container.insertAdjacentHTML('beforeend', html);
             });
         }
 
+
+        // 로컬 백업 뉴스 (API 실패 시)
         function loadLocalNews() {
             const container = document.getElementById('newsContainer');
             const localNews = [
@@ -2003,63 +1994,37 @@
                 { title: '⚡ 테크 섹터 강세 지속', source: 'WSJ', time: '어제', url: 'https://www.wsj.com/economy' },
                 { title: '🏦 빅테크 실적 시즌 대기', source: 'MarketWatch', time: '어제', url: 'https://www.marketwatch.com/investing' }
             ];
-            container.innerHTML = localNews.map(news => `
+
+            const newsHTML = localNews.map(news => `
                 <a href="${news.url}" target="_blank" rel="noopener" class="news-link">
                     <div class="news-item">
                         <div class="news-title">${news.title}</div>
                         <div class="news-meta">출처: ${news.source} · ${news.time}</div>
                     </div>
-                </a>`).join('');
+                </a>
+            `).join('');
+
+            container.innerHTML = newsHTML;
+            console.log('⚠️ 로컬 뉴스로 대체');
         }
 
-        function refreshNews() { loadNews(); }
-
-        // --- 기타 위젯 관련 함수 ---
-        function updateTradingViewMap() {
-            const selector = document.getElementById('mapSelector');
-            const container = document.getElementById('tradingview_widget_container');
-            const tvLink = document.getElementById('tvLink');
-            if (!container) return;
-
-            container.innerHTML = '';
-            let symbolSource = (selector && selector.value === 'sp500') ? "SPX" : "NDX";
-            if (tvLink) {
-                tvLink.href = (symbolSource === "SPX") ?
-                    "https://www.tradingview.com/heatmap/stock/#%7B%22index%22%3A%22S%26P500%22%7D" :
-                    "https://www.tradingview.com/heatmap/stock/#%7B%22index%22%3A%22NASDAQ100%22%7D";
-            }
-
-            const script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js';
-            script.async = true;
-            script.text = JSON.stringify({
-                "symbolGroups": [{
-                    "name": (symbolSource === "SPX") ? "S&P 500" : "Nasdaq 100",
-                    "symbols": [{ "name": symbolSource }]
-                }],
-                "colorTheme": "light", "isTransparent": false, "hasSymbolTooltip": true,
-                "width": "100%", "height": "100%", "blockCompositeStructures": false, "locale": "ko"
-            });
-            container.appendChild(script);
+        // 뉴스 새로고침
+        function refreshNews() {
+            console.log('🔄 뉴스 새로고침...');
+            loadNews();
         }
 
-        function changeSentiment(symbol) {
-            const container = document.getElementById('sentiment-widget-container');
-            if (!container) return;
-            container.innerHTML = '';
-            const script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
-            script.async = true;
-            script.innerHTML = JSON.stringify({
-                "interval": "1D", "width": "100%", "isTransparent": true, "height": 240,
-                "symbol": symbol, "showIntervalTabs": false, "locale": "ko", "colorTheme": "light"
-            });
-            container.appendChild(script);
+        function loadReport(categoryKey) {
+            const category = categories[categoryKey], select = document.getElementById(category.selectId), date = select.value;
+            if (!date) { alert('날짜를 선택해주세요.'); return; }
+            let pdfFile; const data = reportFiles[categoryKey][date];
+            if (typeof data === 'string') pdfFile = data; else pdfFile = data.file;
+            displayPDF(pdfFile, date, category);
         }
-
-        // --- 실적 검색 기능 ---
+        function displayPDF(pdfPath, date, category) {
+            document.getElementById('pdfContent').innerHTML = '<div class="current-view"><h4>' + category.icon + ' ' + category.name + '</h4><div class="info-grid"><div class="info-item"><div class="label">날짜</div><div class="value">' + formatDate(date) + '</div></div></div></div><div class="pdf-container"><iframe src="' + pdfPath + '" type="application/pdf"></iframe></div>';
+        }
+        // 실적 데이터 (Yahoo Finance 기반)
         const earningsData = {
             "NVDA": {
                 "name": "NVIDIA Corporation",
@@ -2456,91 +2421,159 @@
         async function searchEarningsAPI() {
             const input = document.getElementById('earningsSearchInput');
             const resultDiv = document.getElementById('earningsResult');
+
             if (!input || !resultDiv) return;
+
             let ticker = input.value.trim().toUpperCase();
+
             if (!ticker) {
-                resultDiv.innerHTML = '<div class="search-result empty">🔍 티커 입력 (예: NVDA, AAPL)</div>';
+                resultDiv.innerHTML =
+                    '<div class="search-result empty">🔍 티커 입력 (예: NVDA, AAPL, AMD)</div>';
                 return;
             }
 
+            resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
+
+            // 1. earningsData에서 먼저 검색
             if (earningsData[ticker]) {
                 const data = earningsData[ticker];
-                const eps = data.eps_avg ? '$' + data.eps_avg.toFixed(2) : 'N/A';
-                const revenue = data.revenue_avg ? '$' + (data.revenue_avg / 1e9).toFixed(2) + 'B' : 'N/A';
+                const dateStr = data.date || '미정';
+                const companyName = data.name || ticker;
+
+                // 날짜 포맷팅
+                const date = new Date(dateStr);
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+                const formattedDate = month + '월 ' + day + '일 (' + weekday + ')';
+
+                // EPS와 매출 포맷팅
+                const eps = data.eps_avg ? '$' + data.eps_avg.toFixed(2) : '정보 없음';
+                const revenue = data.revenue_avg ?
+                    '$' + (data.revenue_avg / 1000000000).toFixed(2) + 'B' : '정보 없음';
+
                 resultDiv.innerHTML = `
-                    <div class="search-result">
-                        <div class="result-company">${data.name} (${ticker})</div>
-                        <div class="result-date">📅 실적 발표: ${formatDate(data.date)}</div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px;text-align:center">
-                            <div><div style="color:#667eea;font-weight:600">예상 EPS</div><div style="font-size:1.2em;font-weight:700">${eps}</div></div>
-                            <div><div style="color:#667eea;font-weight:600">예상 매출</div><div style="font-size:1.2em;font-weight:700">${revenue}</div></div>
+            <div class="search-result">
+                <div class="result-company">${companyName} (${ticker})</div>
+                <div class="result-date">📅 실적 발표: ${formattedDate}</div>
+                <div class="result-info">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px">
+                        <div style="text-align:center">
+                            <div style="color:#667eea;font-weight:600;margin-bottom:5px">예상 EPS</div>
+                            <div style="font-size:1.2em;font-weight:700">${eps}</div>
                         </div>
-                    </div>`;
-            } else {
-                resultDiv.innerHTML = `<div class="search-result">⚠️ 데이터 없음. <a href="https://finance.yahoo.com/quote/${ticker}/analysis" target="_blank" style="color:#667eea">Yahoo Finance 보기 →</a></div>`;
+                        <div style="text-align:center">
+                            <div style="color:#667eea;font-weight:600;margin-bottom:5px">예상 매출</div>
+                            <div style="font-size:1.2em;font-weight:700">${revenue}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px;padding-top:15px;border-top:1px solid #e2e8f0">
+                        <a href="https://finance.yahoo.com/quote/${ticker}/analysis" 
+                           target="_blank" 
+                           style="color:#667eea;text-decoration:none;font-weight:600">
+                           📊 자세한 분석 보기 →
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+                console.log('✅ earningsData에서 검색 완료:', ticker);
+                return;
             }
+
+            // 2. earningsData에 없으면 Yahoo Finance 링크 제공
+            resultDiv.innerHTML = `
+        <div class="search-result">
+            <div class="result-company">${ticker}</div>
+            <div class="result-info" style="text-align:center;padding:20px">
+                <div style="margin-bottom:15px">
+                    ⚠️ 등록된 데이터가 없습니다
+                </div>
+                <a href="https://finance.yahoo.com/quote/${ticker}/analysis"
+                   target="_blank"
+                   style="display:inline-block;padding:10px 20px;background:#667eea;color:white;text-decoration:none;border-radius:5px;font-weight:600">
+                   📊 Yahoo Finance에서 확인하기
+                </a>
+            </div>
+        </div>
+    `;
         }
 
-        // --- 캘린더 관련 ---
+
         function toggleAccordion(header) {
             header.classList.toggle('collapsed');
             const content = header.nextElementSibling;
-            if (content) content.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
         }
-
         var calendarEvents = { '2-3': [{ i: '💼', t: 'JOLTS' }, { i: '💎', t: 'PLTR' }], '2-4': [{ i: '💼', t: 'Metro' }], '2-6': [{ i: '💼', t: 'NFP⭐' }], '2-10': [{ i: '💰', t: 'ECI' }, { i: '📈', t: '수입수출' }], '2-11': [{ i: '📊', t: 'CPI⭐' }, { i: '💵', t: '실질임금' }], '2-16': [{ i: '🏛️', t: '휴장' }], '2-18': [{ i: '💼', t: 'Union' }], '2-19': [{ i: '⚠️', t: '산재' }, { i: '💼', t: 'JOLTS' }], '2-20': [{ i: '💼', t: '파업' }], '2-24': [{ i: '💰', t: 'ECEC' }], '2-25': [{ i: '💎', t: 'NVDA⭐' }], '2-26': [{ i: '📊', t: 'BED' }], '2-27': [{ i: '🏭', t: 'PPI⭐' }], '3-4': [{ i: '💎', t: 'AVGO' }], '3-5': [{ i: '💹', t: '무역' }, { i: '📈', t: '생산성' }], '3-6': [{ i: '💼', t: 'NFP⭐' }], '3-10': [{ i: '💰', t: 'CEWQ' }], '3-11': [{ i: '📊', t: 'CPI⭐' }, { i: '💵', t: '실질임금' }], '3-12': [{ i: '🏭', t: 'PPI⭐' }], '3-13': [{ i: '💹', t: 'GDP⭐' }, { i: '💰', t: '소득' }], '3-18': [{ i: '🏦', t: 'FOMC' }], '3-19': [{ i: '🏦', t: '금리⭐' }], '3-24': [{ i: '📈', t: '생산성R' }], '3-25': [{ i: '💹', t: '국제' }], '3-28': [{ i: '💼', t: 'JOLTS' }] };
         function drawCalendar(month, elementId) {
-            const container = document.getElementById(elementId);
+            var container = document.getElementById(elementId);
             if (!container) return;
-            const firstDay = new Date(2026, month - 1, 1).getDay();
-            const daysInMonth = new Date(2026, month, 0).getDate();
-            let html = '';
-            for (let i = 0; i < firstDay; i++) html += '<div class="date empty"></div>';
-            for (let day = 1; day <= daysInMonth; day++) {
-                const events = calendarEvents[month + '-' + day];
-                const className = 'date' + (events ? ' has-event' : '');
-                html += `<div class="${className}"><div>${day}</div>`;
-                if (events) {
-                    html += `<div class="event-icon">${events[0].i}${events.length > 1 ? '+' + (events.length - 1) : ''}</div>`;
-                    html += `<div class="tooltip">${events.map(e => e.t).join(', ')}</div>`;
+            var firstDay = new Date(2026, month - 1, 1).getDay();
+            var daysInMonth = new Date(2026, month, 0).getDate();
+            var html = '';
+            for (var i = 0; i < firstDay; i++) html += '<div class="date empty"></div>';
+            for (var day = 1; day <= daysInMonth; day++) {
+                var key = month + '-' + day;
+                var events = calendarEvents[key];
+                var className = 'date' + (events ? ' has-event' : '');
+                html += '<div class="' + className + '"><div>' + day + '</div>';
+                if (events && events.length > 0) {
+                    var icons = events[0].i;
+                    if (events.length > 1) icons += '+' + (events.length - 1);
+                    var tooltipText = events.map(function (e) { return e.t; }).join(', ');
+                    html += '<div class="event-icon">' + icons + '</div>';
+                    html += '<div class="tooltip">' + tooltipText + '</div>';
                 }
                 html += '</div>';
             }
             container.innerHTML = html;
         }
-
-        // --- 초기화 및 이벤트 리스너 ---
+        // --- 초기화 및 실행 ---
         document.addEventListener("DOMContentLoaded", () => {
-            // 버튼 클릭 이벤트
-            const loginBtn = document.getElementById("loginBtn");
-            if (loginBtn) loginBtn.onclick = checkPassword;
-
-            // 엔터키 이벤트
-            const pwdInput = document.getElementById("passwordInput");
-            if (pwdInput) {
-                pwdInput.onkeypress = (e) => { if (e.key === "Enter") checkPassword(); };
-            }
-
-            // 세션 체크 및 초기 화면 설정
-            if (sessionStorage.getItem(SESSION_KEY) === "true") {
-                showMainContent();
-            }
+            showMainContent();
         });
 
-        // 구글 번역 초기화
+        // 메인 화면 표시 및 데이터 로딩 함수
+        function showMainContent() {
+            console.log("🔥 애플리케이션 초기화 및 데이터 로딩 시작");
+
+            // 1. 리포트 선택기 및 뉴스 로드
+            if (typeof loadDateList === 'function') loadDateList();
+            if (typeof loadNews === 'function') loadNews();
+
+            // 2. 캘린더 그리기
+            if (typeof drawCalendar === 'function') {
+                drawCalendar(2, 'cal-feb');
+                drawCalendar(3, 'cal-mar');
+            }
+
+            // 3. 시장 심리 위젯 초기화 (나스닥 기본)
+            if (typeof changeSentiment === 'function') {
+                changeSentiment('NASDAQ:QQQ');
+            }
+
+            // 4. 히트맵 초기화
+            if (typeof updateTradingViewMap === 'function') {
+                updateTradingViewMap();
+            }
+
+            console.log("✅ 모든 데이터 로딩 완료");
+        }
+
+        // 구글 번역 초기화 함수
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
-                pageLanguage: 'en', includedLanguages: 'ko,en',
+                pageLanguage: 'en',
+                includedLanguages: 'ko,en',
                 layout: google.translate.TranslateElement.InlineLayout.SIMPLE
             }, 'google_translate_element');
         }
-
-        function openMemoryReport() {
-            loadReport('news'); // 기존 로직에 따라 뉴스 카테고리 로드
-        }
     </script>
+
     <script type="text/javascript"
         src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 </body>
 
 </html>
