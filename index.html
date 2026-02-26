@@ -124,9 +124,10 @@
         /* 레이아웃 시스템 */
         .grid-dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             padding: 20px;
+            width: 100%;
         }
 
         .section-title {
@@ -1062,6 +1063,21 @@
                         새로고침</button>
                 </div>
                 <div class="news-grid" id="newsContainer"></div>
+
+                <!-- SAVE 뉴스링크 복구 -->
+                <div
+                    style="margin-top: 25px; text-align: center; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px dashed #667eea;">
+                    <p style="font-size: 0.9em; color: #4a5568; margin-bottom: 15px; font-weight: 600;">
+                        🔎 더 많은 실시간 뉴스와 정밀 티커 분석이 필요하다면?
+                    </p>
+                    <a href="https://saveticker.com/" target="_blank" rel="noopener noreferrer"
+                        style="display:inline-block; padding:12px 35px; background:var(--bg-gradient); color:#fff; text-decoration:none; border-radius:30px; font-weight:700; font-size:1em; transition:all 0.3s; box-shadow:var(--shadow-main);"
+                        onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--shadow-float)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-main)';"
+                        id="save-link-btn">
+                        🚀 SaveTicker 방문하기
+                    </a>
+                </div>
             </div>
 
             <!-- 히트맵 섹션 (Full Width) -->
