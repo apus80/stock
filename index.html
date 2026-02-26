@@ -704,7 +704,7 @@
         <h3 style="font-size: 14px; color: #333; margin-top: 0; margin-bottom: 12px; font-weight: bold;">📊 실시간 글로벌 지표 및 시장 심리</h3>
         
         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-            <div style="flex: 1.2; min-width: 320px; height: 400px;" id="main-chart-wrapper"></div>
+            <div style="flex: 1.2; min-width: 320px; height: 400px; background:#f9f9f9; border-radius:8px;" id="main-chart-wrapper"></div>
 
             <div style="flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 10px;">
                 <div style="background: #fcfcfc; padding: 10px 15px; border-radius: 10px; border: 1px solid #eee; height: 100px;">
@@ -725,7 +725,6 @@
         </div>
     </div>
 </div>
-
 
 
     <div class="card" style="padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #764ba2; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
@@ -1909,25 +1908,33 @@ function checkPassword() {
 }
 
 // 메인 화면 표시 함수
-
+// 메인 화면 표시 함수 (최종 통합본)
 function showMainContent() {
     console.log("🔥 showMainContent 실행됨");
 
+    // 1. 화면 전환
     document.getElementById('passwordOverlay').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
 
-    // 화면이 display: block으로 바뀐 후 위젯을 그려야 인식합니다.
+    // 2. 위젯 실행 (화면이 보인 후 0.3초 뒤에 실행하여 안정성 확보)
     setTimeout(function() {
-        startTradingViewWidgets();
-    }, 200);
+        if (typeof startTradingViewWidgets === 'function') {
+            startTradingViewWidgets();
+        }
+    }, 300);
 
+    // 3. 기타 데이터 로드
     if (typeof loadDateList === 'function') loadDateList();
     if (typeof loadNews === 'function') loadNews();
     if (typeof drawCalendar === 'function') {
         drawCalendar(2, 'cal-feb');
         drawCalendar(3, 'cal-mar');
     }
+    
+    console.log("✅ 모든 레이아웃 및 위젯 로딩 명령 완료");
 }
+
+
 
 function logout() {
     if (confirm("로그아웃 하시겠습니까?")) {
