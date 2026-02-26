@@ -1,0 +1,2546 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- Version: v1771922054 -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二쇱떇 遺꾩꽍 ?듯빀 由ы룷??酉곗뼱</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 鍮꾨?踰덊샇 ?낅젰 ?붾㈃ */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .password-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .password-box h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+        }
+
+        .password-box p {
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .password-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .password-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .password-error {
+            color: #dc3545;
+            margin-top: 15px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .password-hint {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+            font-size: 0.85em;
+        }
+
+        /* 硫붿씤 而⑦뀗痢?*/
+        .main-content {
+            display: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .category-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .category-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .category-section.featured {
+            border: 3px solid #667eea;
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        }
+
+        .category-section.news {
+            border: 3px solid #28a745;
+            background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .category-icon {
+            font-size: 2em;
+        }
+
+        .category-title {
+            flex: 1;
+        }
+
+        .category-title h3 {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 5px;
+        }
+
+        .category-title.featured h3 {
+            color: #5a67d8;
+            font-weight: 700;
+        }
+
+        .category-title.news h3 {
+            color: #28a745;
+            font-weight: 700;
+        }
+
+        .category-title p {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge.news {
+            background: #28a745;
+        }
+
+        .selector-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .selector-row label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 80px;
+        }
+
+        .selector-row select {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .selector-row select:hover {
+            border-color: #667eea;
+        }
+
+        .selector-row select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-load {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-load:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-load:active {
+            transform: translateY(0);
+        }
+
+        .pdf-viewer {
+            padding: 30px;
+            min-height: 600px;
+            background: white;
+        }
+
+        .pdf-container {
+            width: 100%;
+            height: 800px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .pdf-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .current-view {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .current-view h4 {
+            color: #0c5460;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .current-view .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .info-item .label {
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .info-item .value {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+
+        .loading .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-10px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(10px);
+            }
+        }
+
+        .error {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .info {
+            background: #e7f3ff;
+            border: 2px solid #2196F3;
+            color: #0c5460;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .info h3 {
+            margin-bottom: 15px;
+            color: #0c5460;
+        }
+
+        .info ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            margin: 30px 0;
+        }
+
+        /* TradingView ?꾧킅??*/
+        .tradingview-ticker-container {
+            background: white;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tradingview-widget-container {
+            width: 100%;
+            height: 46px;
+        }
+
+        .tradingview-widget-container__widget {
+            width: 100%;
+            height: 100%;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .footer h4 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .footer-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.05em;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-source:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .footer-source::before {
+            content: "?렏";
+            font-size: 1.4em;
+        }
+
+        .footer p {
+            margin-top: 20px;
+            color: #6c757d;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .selector-row {
+                flex-direction: column;
+            }
+
+            .selector-row select {
+                width: 100%;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .pdf-container {
+                height: 500px;
+            }
+
+            .category-title h3 {
+                font-size: 1.1em;
+            }
+
+            .logout-btn {
+                position: static;
+                margin-top: 15px;
+                display: block;
+                width: fit-content;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .footer-source {
+                font-size: 0.95em;
+                padding: 12px 24px;
+            }
+        }
+
+        /* 異붽? CSS */
+        .earnings-search {
+            background: #fff;
+            padding: 18px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05)
+        }
+
+        .earnings-search h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.15em
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 9px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9em
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea
+        }
+
+        .search-btn {
+            padding: 9px 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        .search-result {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            font-size: 0.88em
+        }
+
+        .search-result.empty {
+            background: #fff3cd;
+            border-left-color: #ffc107
+        }
+
+        .result-company {
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 5px
+        }
+
+        .result-date {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 3px
+        }
+
+        .result-info {
+            color: #6c757d;
+            font-size: 0.85em
+        }
+
+        .update-note {
+            margin-top: 10px;
+            padding: 7px;
+            background: #e7f0ff;
+            border-radius: 4px;
+            font-size: 0.78em
+        }
+
+        .news-dashboard {
+            background: #fff;
+            padding: 18px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05)
+        }
+
+        .news-dashboard h2 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.25em;
+            text-align: center
+        }
+
+        .news-grid {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px
+        }
+
+        .news-item {
+            padding: 9px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            transition: transform 0.2s
+        }
+
+        .news-item:hover {
+            transform: translateX(2px)
+        }
+
+        .news-title {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 3px;
+            font-size: 0.85em
+        }
+
+        .news-meta {
+            font-size: 0.72em;
+            color: #6c757d
+        }
+
+        .news-link {
+            text-decoration: none;
+            color: inherit;
+            display: block
+        }
+
+        .sector-map {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 7px;
+            margin-bottom: 12px
+        }
+
+        .sector-item {
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.75em;
+            font-weight: 600
+        }
+
+        .sector-up {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724
+        }
+
+        .sector-down {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24
+        }
+
+        .sector-neutral {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404
+        }
+
+        .market-summary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center
+        }
+
+        .market-summary h3 {
+            margin-bottom: 6px;
+            font-size: 1em
+        }
+
+        .market-keywords {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 6px
+        }
+
+        .keyword {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.75em
+        }
+
+        .framework-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px
+        }
+
+        @media (max-width:768px) {
+            .framework-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px
+            }
+        }
+
+        @media (max-width:480px) {
+            .framework-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        /* 寃쎌젣 罹섎┛??*/
+        .economic-calendar {
+            background: #fff;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05)
+        }
+
+        .economic-calendar h2 {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 15px
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+            max-width: 700px;
+            margin: 0 auto 20px
+        }
+
+        .month-calendar {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04)
+        }
+
+        .month-header {
+            text-align: center;
+            font-size: 0.95em;
+            font-weight: 700;
+            color: #495057;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #667eea
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 6px;
+            text-align: center;
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.7em
+        }
+
+        .dates {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px
+        }
+
+        .date {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3px;
+            border-radius: 5px;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 35px;
+            font-size: 0.75em
+        }
+
+        .date:hover:not(.empty) {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1)
+        }
+
+        .date.empty {
+            background: transparent;
+            cursor: default
+        }
+
+        .date.has-event {
+            background: linear-gradient(135deg, #fff 0%, #f0f4ff 100%);
+            border: 2px solid #667eea;
+            font-weight: 600
+        }
+
+        .event-icon {
+            font-size: 0.8em;
+            margin-top: 1px
+        }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: #fff;
+            padding: 4px 7px;
+            border-radius: 4px;
+            font-size: 0.65em;
+            z-index: 1000;
+            margin-bottom: 3px;
+            white-space: nowrap
+        }
+
+        .date:hover .tooltip {
+            display: block
+        }
+
+        .event-summary {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px
+        }
+
+        .event-summary h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.05em
+        }
+
+        .category-section {
+            margin-bottom: 12px
+        }
+
+        .category-header-cal {
+            font-weight: 700;
+            color: #fff;
+            padding: 9px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 0.88em;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            position: relative
+        }
+
+        .category-header-cal:hover {
+            opacity: 0.9
+        }
+
+        .category-header-cal::after {
+            content: '??;
+            float: right;
+            transition: transform 0.3s;
+            font-size: 0.7em
+        }
+
+        .category-header-cal.collapsed::after {
+            transform: rotate(-90deg)
+        }
+
+        .accordion-content {
+            max-height: 3000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out
+        }
+
+        .accordion-content.collapsed {
+            max-height: 0
+        }
+
+        .event-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 8px
+        }
+
+        .event-item-cal {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #fff;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+            transition: all 0.2s;
+            font-size: 0.85em
+        }
+
+        .event-item-cal:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06)
+        }
+
+        .event-icon-large {
+            font-size: 1.2em;
+            min-width: 25px;
+            text-align: center
+        }
+
+        .event-details-cal {
+            flex: 1
+        }
+
+        .event-date-cal {
+            font-weight: 700;
+            color: #495057;
+            font-size: 0.88em
+        }
+
+        .event-title-cal {
+            color: #6c757d;
+            font-size: 0.82em;
+            line-height: 1.2
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 硫붿씤 而⑦뀗痢?-->
+    <div id="mainContent" class="main-content">
+        <div class="container">
+            <div class="header">
+                <h1>?뱤 二쇱떇 遺꾩꽍 ?듯빀 由ы룷??酉곗뼱</h1>
+
+                <div id="google_translate_element" style="margin-top: 10px;"></div>
+
+
+                <p>異붿쿇 醫낅ぉ遺???쒖옣 遺꾩꽍源뚯?, 紐⑤뱺 由ы룷?몃? ??怨녹뿉??/p>
+            </div>
+
+            <!-- TradingView ?ㅼ떆媛??꾧킅??-->
+            <div class="tradingview-ticker-container">
+                <div class="tradingview-widget-container">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript"
+                        src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+                            {
+                                "symbols": [
+                                    {
+                                        "proName": "FOREXCOM:SPXUSD",
+                                        "title": "S&P 500"
+                                    },
+                                    {
+                                        "proName": "FOREXCOM:DJI",
+                                        "title": "Dow Jones"
+                                    },
+                                    {
+                                        "proName": "NASDAQ:AAPL",
+                                        "title": "Apple"
+                                    },
+                                    {
+                                        "proName": "NASDAQ:NVDA",
+                                        "title": "NVIDIA"
+                                    },
+                                    {
+                                        "proName": "TVC:GOLD",
+                                        "title": "Gold"
+                                    },
+                                    {
+                                        "proName": "BITSTAMP:BTCUSD",
+                                        "title": "Bitcoin"
+                                    }
+                                ],
+                                    "showSymbolLogo": true,
+                                        "colorTheme": "light",
+                                            "isTransparent": false,
+                                                "displayMode": "adaptive",
+                                                    "locale": "kr"
+                            }
+                        </script>
+                </div>
+            </div>
+
+
+            <!-- ?ㅼ쟻諛쒗몴 寃??-->
+            <div class="earnings-search">
+                <h3>?뱤 ?ㅼ쟻諛쒗몴 ?쇱젙 寃??/h3>
+                <div class="search-box">
+                    <input type="text" id="earningsSearchInput" class="search-input"
+                        placeholder="?곗빱 ?낅젰 (?? NVDA, AAPL - 紐⑤뱺 誘멸뎅 ?곸옣 湲곗뾽)"
+                        onkeypress="if(event.key==='Enter') searchEarningsAPI()">
+                    <button class="search-btn" onclick="searchEarningsAPI()">?뵇 寃??/button>
+                </div>
+                <div id="earningsResult"></div>
+                <div class="update-note">?뱄툘 <strong>?곗씠??</strong> Financial Modeling Prep API | <strong>踰붿쐞:</strong> 紐⑤뱺
+                    誘멸뎅 ?곸옣 湲곗뾽 | <strong>?낅뜲?댄듃:</strong> ?ㅼ떆媛?/div>
+            </div>
+
+
+
+            <div class="macro-tradingview" style="margin-bottom: 20px;">
+                <div class="card"
+                    style="margin-bottom: 20px; padding: 20px; background: #fff; border-radius: 12px; border-left: 5px solid #667eea; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3 style="font-size: 15px; color: #333; margin-bottom: 15px; font-weight: bold;">?뱤 湲濡쒕쾶 ?쒖옣 ?듭떖 吏??諛?
+                        ?щ━ ?꾪솴</h3>
+
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+
+                        <div style="flex: 1.2; min-width: 350px;">
+                            <div class="tradingview-widget-container">
+                                <div class="tradingview-widget-container__widget"></div>
+                                <script type="text/javascript"
+                                    src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js"
+                                    async>
+                                        {
+                                            "colorTheme": "light",
+                                                "dateRange": "12M",
+                                                    "showChart": true,
+                                                        "locale": "ko",
+                                                            "width": "100%",
+                                                                "height": 450,
+                                                                    "largeChartUrl": "",
+                                                                        "isTransparent": false,
+                                                                            "showSymbolLogo": true,
+                                                                                "tabs": [
+                                                                                    {
+                                                                                        "name": "誘멸뎅 吏??,
+                                                                                        "symbols": [
+                                                                                            { "s": "NASDAQ:QQQ", "d": "?섏뒪??100" },
+                                                                                            { "s": "AMEX:SPY", "d": "S&P 500" },
+                                                                                            { "s": "FOREXCOM:DJI", "d": "?ㅼ슦 議댁뒪" }
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "name": "湲濡쒕쾶/?좊Ъ",
+                                                                                        "symbols": [
+                                                                                            { "s": "CME_MINI:NQ1!", "d": "?섏뒪???좊Ъ" },
+                                                                                            { "s": "BINANCE:BTCUSDT", "d": "鍮꾪듃肄붿씤" },
+                                                                                            { "s": "OANDA:XAUUSD", "d": "湲?(怨⑤뱶)" }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                        }
+                                    </script>
+                            </div>
+                        </div>
+
+                        <div style="flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 15px;">
+
+                            <div
+                                style="background: #fcfcfc; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+                                <p style="font-size: 12px; color: #666; margin-bottom: 10px; font-weight: bold;">?눖?눟
+                                    ?ㅼ떆媛????щ윭 ?섏쑉</p>
+                                <div class="tradingview-widget-container">
+                                    <script type="text/javascript"
+                                        src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js"
+                                        async>
+                                            {
+                                                "symbol": "FX_IDC:USDKRW",
+                                                    "width": "100%",
+                                                        "colorTheme": "light",
+                                                            "isTransparent": true,
+                                                                "locale": "ko"
+                                            }
+                                        </script>
+                                </div>
+                            </div>
+
+                            <div
+                                style="background: #fcfcfc; padding: 15px; border-radius: 10px; border: 1px solid #eee;">
+                                <p style="font-size: 12px; color: #666; margin-bottom: 10px; font-weight: bold;">?뱢 ?ㅼ떆媛?
+                                    ?쒖옣 ?щ━</p>
+
+                                <div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">
+                                    <button onclick="changeSentiment('KRX:KOSPI')"
+                                        style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">援?뵾</button>
+                                    <button onclick="changeSentiment('KRX:KOSDAQ')"
+                                        style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">援?떏</button>
+                                    <button onclick="changeSentiment('NASDAQ:QQQ')"
+                                        style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">?섏뒪??/button>
+                                    <button onclick="changeSentiment('AMEX:SPY')"
+                                        style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">S&P</button>
+                                    <button onclick="changeSentiment('BINANCE:BTCUSDT')"
+                                        style="cursor:pointer; font-size:11px; padding:4px 8px; border-radius:4px; border:1px solid #ddd; background:#fff;">肄붿씤</button>
+                                </div>
+
+                                <div id="sentiment-widget-container" style="height: 240px;">
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                // ?쒖옣?щ━ ?꾩젽 援먯껜 ?⑥닔
+                function changeSentiment(symbol) {
+                    const container = document.getElementById('sentiment-widget-container');
+                    container.innerHTML = ''; // 湲곗〈 ?꾩젽 ??젣
+
+                    const script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+                    script.async = true;
+                    script.innerHTML = JSON.stringify({
+                        "interval": "1D",
+                        "width": "100%",
+                        "isTransparent": true,
+                        "height": 240,
+                        "symbol": symbol,
+                        "showIntervalTabs": false,
+                        "locale": "ko",
+                        "colorTheme": "light"
+                    });
+                    container.appendChild(script);
+                }
+
+                // 珥덇린 濡쒕뵫 ???섏뒪???щ━ ?쒖떆
+                document.addEventListener('DOMContentLoaded', function () {
+                    changeSentiment('NASDAQ:QQQ');
+                });
+            </script>
+
+
+
+            <div class="card"
+                style="padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #764ba2; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                <h3 style="font-size: 14px; color: #666; margin-bottom: 12px; font-weight: bold;">?? ?ㅼ떆媛??뱁꽣 二쇰룄二?(US)
+                </h3>
+                <div class="tradingview-widget-container">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript"
+                        src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+                            {
+                                "width": "100%",
+                                    "height": 350,
+                                        "symbolsGroups": [
+                                            {
+                                                "name": "二쇱슂 ?뱁꽣",
+                                                "originalName": "Sectors",
+                                                "symbols": [
+                                                    { "name": "AMEX:XLK", "displayName": "湲곗닠 (Technology)" },
+                                                    { "name": "AMEX:XLV", "displayName": "?ъ뒪耳??(Healthcare)" },
+                                                    { "name": "AMEX:XLF", "displayName": "湲덉쑖 (Financials)" },
+                                                    { "name": "AMEX:XLE", "displayName": "?먮꼫吏 (Energy)" },
+                                                    { "name": "AMEX:XLY", "displayName": "?뚮퉬??(Consumer)" },
+                                                    { "name": "AMEX:XLI", "displayName": "?곗뾽??(Industrials)" }
+                                                ]
+                                            }
+                                        ],
+                                            "showSymbolLogo": true,
+                                                "colorTheme": "light",
+                                                    "isTransparent": false,
+                                                        "locale": "ko"
+                            }
+                        </script>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="news-dashboard" style="margin-top: 0px !important; padding: 15px !important; border-top: none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 style="margin:0; font-size: 1.1em; color: #444;">?벐 ?ㅼ떆媛??쒖옣 ?댁뒪</h2>
+                <button onclick="refreshNews()"
+                    style="padding:5px 10px; font-size: 12px; background:linear-gradient(135deg,#667eea,#764ba2); color:#fff; border:none; border-radius:4px; cursor:pointer;">?봽
+                    ?덈줈怨좎묠</button>
+            </div>
+            <div class="news-grid" id="newsContainer">
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SaveTicker 異붿쿇 -->
+    <div
+        style="background:#fff;padding:20px;margin:20px 0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);text-align:center;border:2px solid #667eea">
+        <p style="margin:0 0 12px 0;color:#2d3748;font-size:1em;font-weight:600">
+            ?벐 <strong>?댁뒪?뺣낫 異붿쿇?ъ씠??/strong> (?ㅼ꽑???㏉똿!)
+        </p>
+        <a href="https://saveticker.com/" target="_blank" rel="noopener noreferrer"
+            style="display:inline-block;padding:12px 30px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.95em;transition:all 0.3s;box-shadow:0 4px 6px rgba(102,126,234,0.3)"
+            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 12px rgba(102,126,234,0.4)'"
+            onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 6px rgba(102,126,234,0.3)'">
+            ?뵕 SaveTicker 諛⑸Ц?섍린
+        </a>
+    </div>
+
+    <div class="card"
+        style="margin-bottom: 30px; padding: 0 !important; overflow: hidden; border: 2px solid #e1e4e8; background: #fff;">
+        <div class="card-header"
+            style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#fff; border-bottom:1px solid #eee;">
+            <h2 class="card-title" style="margin:0; font-size:1.25rem; display:flex; align-items:center; color:#333;">
+                ?뱤 Market Heat Map
+                <a id="tvLink" href="https://www.tradingview.com/heatmap/stock/" target="_blank"
+                    style="font-size:0.7em; color:#667eea; text-decoration:none; margin-left:10px; font-weight:normal;">
+                    (?먮낯蹂닿린 ??
+                </a>
+            </h2>
+
+            <select id="mapSelector" onchange="updateTradingViewMap()"
+                style="padding:6px 12px; border-radius:6px; border:1px solid #ddd; font-size:14px; cursor:pointer; background:#fff;">
+                <option value="sp500">S&P 500</option>
+                <option value="nasdaq100">Nasdaq 100</option>
+            </select>
+        </div>
+
+        <div id="tradingview_widget_container" style="width:100%; height:600px;">
+        </div>
+    </div>
+
+    <script>
+        // ?섏씠吏媛 泥섏쓬 ?대┫ ???먮룞?쇰줈 ?ㅽ뻾
+        document.addEventListener("DOMContentLoaded", function () {
+            updateTradingViewMap();
+        });
+
+        function updateTradingViewMap() {
+            const selector = document.getElementById('mapSelector');
+            const container = document.getElementById('tradingview_widget_container');
+            const tvLink = document.getElementById('tvLink');
+
+            // 1. 湲곗〈 ?꾩젽 鍮꾩슦湲?
+            container.innerHTML = '';
+
+            // 2. ?좏깮??留듭뿉 ?곕씪 留곹겕 二쇱냼 ?ㅼ젙
+            let symbolSource = "";
+            if (selector.value === 'sp500') {
+                symbolSource = "SPX";
+                tvLink.href = "https://www.tradingview.com/heatmap/stock/#%7B%22index%22%3A%22S%26P500%22%7D";
+            } else {
+                symbolSource = "NDX";
+                tvLink.href = "https://www.tradingview.com/heatmap/stock/#%7B%22index%22%3A%22NASDAQ100%22%7D";
+            }
+
+            // 3. ?꾩젽 ?ㅽ겕由쏀듃 ?앹꽦 諛??ㅼ젙
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js';
+            script.async = true;
+
+            const config = {
+                "symbolGroups": [
+                    {
+                        "name": selector.value === 'sp500' ? "S&P 500" : "Nasdaq 100",
+                        "symbols": [{ "name": symbolSource }]
+                    }
+                ],
+                "colorTheme": "light",
+                "isTransparent": false,
+                "hasSymbolTooltip": true,
+                "width": "100%",
+                "height": "100%",
+                "blockCompositeStructures": false,
+                "locale": "ko"
+            };
+
+            script.text = JSON.stringify(config);
+            container.appendChild(script);
+        }
+    </script>
+
+
+
+
+    <!-- 寃쎌젣 罹섎┛??-->
+    <div class="economic-calendar">
+        <h2>?뱠 2026??2-3??寃쎌젣 ?쇱젙</h2>
+        <div class="calendar-grid">
+            <div class="month-calendar">
+                <div class="month-header">2??/div>
+                <div class="weekdays">
+                    <div>??/div>
+                    <div>??/div>
+                    <div>??/div>
+                    <div>??/div>
+                    <div>紐?/div>
+                    <div>湲?/div>
+                    <div>??/div>
+                </div>
+                <div class="dates" id="cal-feb"></div>
+            </div>
+            <div class="month-calendar">
+                <div class="month-header">3??/div>
+                <div class="weekdays">
+                    <div>??/div>
+                    <div>??/div>
+                    <div>??/div>
+                    <div>??/div>
+                    <div>紐?/div>
+                    <div>湲?/div>
+                    <div>??/div>
+                </div>
+                <div class="dates" id="cal-mar"></div>
+            </div>
+        </div>
+        <div class="event-summary">
+            <h3>?뱦 ?꾩껜 53媛??대깽??/h3>
+            <div
+                style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:9px;border-radius:6px;margin-bottom:12px;text-align:center;font-weight:700;font-size:0.9em">
+                2?? 24媛?| 3?? 29媛?/div>
+
+            <div class="category-section">
+                <div class="category-header-cal collapsed" style="background:linear-gradient(135deg,#667eea,#764ba2)"
+                    onclick="toggleAccordion(this)">?뭿 ?ㅼ쟻 諛쒗몴 (3媛?</div>
+                <div class="event-grid accordion-content collapsed">
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뭿</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/3 (??</div>
+                            <div class="event-title-cal">Palantir Q4</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뭿</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/25 (??</div>
+                            <div class="event-title-cal">狩?NVIDIA Q4</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뭿</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/4 (??</div>
+                            <div class="event-title-cal">狩?Broadcom Q1</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header-cal collapsed" style="background:linear-gradient(135deg,#6f42c1,#8e44ad)"
+                    onclick="toggleAccordion(this)">?뮳 怨좎슜 吏??(12媛?</div>
+                <div class="event-grid accordion-content collapsed">
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/3</div>
+                            <div class="event-title-cal">JOLTS 12??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/4</div>
+                            <div class="event-title-cal">Metro 怨좎슜</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/6</div>
+                            <div class="event-title-cal">狩?NFP 1??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/18</div>
+                            <div class="event-title-cal">Union</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?좑툘</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/19</div>
+                            <div class="event-title-cal">?곗옱</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/19</div>
+                            <div class="event-title-cal">State JOLTS</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/20</div>
+                            <div class="event-title-cal">?뚯뾽</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮥</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/24</div>
+                            <div class="event-title-cal">ECEC Q3</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뱤</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/26</div>
+                            <div class="event-title-cal">BED Q2</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/6</div>
+                            <div class="event-title-cal">狩?NFP 2??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮥</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/10</div>
+                            <div class="event-title-cal">CEWQ Q3</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮳</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/28</div>
+                            <div class="event-title-cal">JOLTS 2??/div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header-cal collapsed" style="background:linear-gradient(135deg,#fd7e14,#e74c3c)"
+                    onclick="toggleAccordion(this)">?뱤 臾쇨? 吏??(11媛?</div>
+                <div class="event-grid accordion-content collapsed">
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮥</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/10</div>
+                            <div class="event-title-cal">ECI Q4</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뱢</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/10</div>
+                            <div class="event-title-cal">?섏엯?섏텧 12??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뱤</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/11</div>
+                            <div class="event-title-cal">狩?CPI 1??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮫</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/11</div>
+                            <div class="event-title-cal">?ㅼ쭏?꾧툑 1??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?룺</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/27</div>
+                            <div class="event-title-cal">狩?PPI 1??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뱢</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/5</div>
+                            <div class="event-title-cal">?앹궛??Q4</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뱤</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/5</div>
+                            <div class="event-title-cal">?섏엯?섏텧 1??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뱤</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/11</div>
+                            <div class="event-title-cal">狩?CPI 2??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮫</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/11</div>
+                            <div class="event-title-cal">?ㅼ쭏?꾧툑 2??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?룺</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/12</div>
+                            <div class="event-title-cal">狩?PPI 2??/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뱢</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/24</div>
+                            <div class="event-title-cal">?앹궛??媛쒖젙</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header-cal collapsed" style="background:linear-gradient(135deg,#28a745,#20c997)"
+                    onclick="toggleAccordion(this)">?뮰 GDP/臾댁뿭 (5媛?</div>
+                <div class="event-grid accordion-content collapsed">
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮰</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/5</div>
+                            <div class="event-title-cal">臾댁뿭?섏?</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮰</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/5</div>
+                            <div class="event-title-cal">?쇱쇅寃쎌젣</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮰</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/13</div>
+                            <div class="event-title-cal">狩?GDP 2李?/div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮥</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/13</div>
+                            <div class="event-title-cal">媛쒖씤?뚮뱷</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?뮰</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/25</div>
+                            <div class="event-title-cal">援?젣嫄곕옒</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header-cal collapsed" style="background:linear-gradient(135deg,#0056b3,#004085)"
+                    onclick="toggleAccordion(this)">?룱 FOMC (2??</div>
+                <div class="event-grid accordion-content collapsed">
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?룱</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/18</div>
+                            <div class="event-title-cal">FOMC Day 1</div>
+                        </div>
+                    </div>
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?룱</div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">3/19</div>
+                            <div class="event-title-cal">狩?湲덈━諛쒗몴</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header-cal collapsed" style="background:linear-gradient(135deg,#e91e63,#c2185b)"
+                    onclick="toggleAccordion(this)">?룢截?怨듯쑕??(1??</div>
+                <div class="event-grid accordion-content collapsed">
+                    <div class="event-item-cal">
+                        <div class="event-icon-large">?룢截?/div>
+                        <div class="event-details-cal">
+                            <div class="event-date-cal">2/16</div>
+                            <div class="event-title-cal">??듬졊????/div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                style="margin-top:10px;padding:8px;background:#fff3cd;border-left:3px solid #ffc107;border-radius:5px;font-size:0.82em">
+                <strong>狩??쒖옣 ?곹뼢???믪? ?듭떖 吏??/strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <!-- 異붿쿇 醫낅ぉ 由ы룷??(湲곗〈) -->
+        <div class="category-section featured">
+            <div class="category-header">
+                <span class="category-icon">?렞</span>
+                <div class="category-title featured">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h3>
+                            ?④린/以묎린 醫낅ぉ 由ы룷??
+                            <span class="badge">MAIN</span>
+                        </h3>
+                        <a href="methodology.html" target="_blank" rel="noopener noreferrer" class="btn-load"
+                            style="text-decoration: none; font-size: 0.8em; padding: 8px 15px; background: #5a67d8;">
+                            ?뱷 遺꾩꽍 諛⑸쾿濡?蹂닿린
+                        </a>
+                    </div>
+                    <p>?ъ옄 異붿쿇 醫낅ぉ 諛?留ㅻℓ ?꾨왂</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateRecommendation">?뱟 ?좎쭨:</label>
+                <select id="dateRecommendation">
+                    <option value="">?좎쭨瑜??좏깮?섏꽭??..</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('recommendation')">遺덈윭?ㅺ린</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 湲됰벑 醫낅ぉ 由ы룷??-->
+        <div class="category-section featured">
+            <div class="category-header">
+                <span class="category-icon">??</span>
+                <div class="category-title featured">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h3>
+                            湲됰벑 醫낅ぉ 由ы룷??
+                            <span class="badge">ALERT</span>
+                        </h3>
+                        <a href="7Factor.html" target="_blank" rel="noopener noreferrer" class="btn-load"
+                            style="text-decoration: none; font-size: 0.8em; padding: 8px 15px; background: #5a67d8;">
+                            ?뱷 遺꾩꽍 諛⑸쾿濡?蹂닿린
+                        </a>
+                    </div>
+                    <p>湲됰벑 醫낅ぉ ?먯? 諛?7媛吏 ?붿냼 遺꾩꽍</p>
+                </div>
+            </div>
+            <div class="selector-row">
+                <label for="dateShoot">?뱟 ?좎쭨:</label>
+                <select id="dateShoot">
+                    <option value="">?좎쭨瑜??좏깮?섏꽭??..</option>
+                </select>
+                <button class="btn-load" onclick="loadReport('shoot')">遺덈윭?ㅺ린</button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 醫낅ぉ ?댁뒪 & 蹂닿퀬??-->
+        <div class="category-section news">
+            <div class="category-header">
+                <span class="category-icon">?벐</span>
+                <div class="category-title news">
+                    <h3>
+                        ?쒗솴 & 蹂닿퀬??
+                        </select>
+                        <button class="btn-load" onclick="loadReport('news')">遺덈윭?ㅺ린</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 遺꾩꽍 1: 誘멸뎅 ?쒖옣 ?좊룞??-->
+            <div class="category-section">
+                <div class="category-header">
+                    <span class="category-icon">?뮥</span>
+                    <div class="category-title">
+                        <h3>[遺꾩꽍1] 誘멸뎅 ?쒖옣 ?좊룞??硫붿빱?덉쬁</h3>
+                        <p>?곗? ?뺤콉, ??由ы대뵒?? 湲덉쑖 ?ш굔 遺꾩꽍</p>
+                    </div>
+                </div>
+                <div class="selector-row">
+                    <label for="dateAnalysis1">?뱟 ?좎쭨:</label>
+                    <select id="dateAnalysis1">
+                        <option value="">?좎쭨瑜??좏깮?섏꽭??..</option>
+                    </select>
+                    <button class="btn-load" onclick="loadReport('analysis1')">遺덈윭?ㅺ린</button>
+                </div>
+            </div>
+
+            <!-- 遺꾩꽍 2: ETF ?먭툑 ?먮쫫 -->
+            <div class="category-section">
+                <div class="category-header">
+                    <span class="category-icon">?뱢</span>
+                    <div class="category-title">
+                        <h3>[遺꾩꽍2] ETF ?먭툑 ?먮쫫 遺꾩꽍</h3>
+                        <p>?ㅻ쭏??癒몃땲 異붿쟻 諛??뱁꽣 濡쒗뀒?댁뀡 (?붽컙)</p>
+                    </div>
+                </div>
+                <div class="selector-row">
+                    <label for="dateAnalysis2">?뱟 ?좎쭨:</label>
+                    <select id="dateAnalysis2">
+                        <option value="">?좎쭨瑜??좏깮?섏꽭??..</option>
+                    </select>
+                    <button class="btn-load" onclick="loadReport('analysis2')">遺덈윭?ㅺ린</button>
+                </div>
+            </div>
+
+            <!-- 遺꾩꽍 3: ?대???留ㅼ닔 -->
+            <div class="category-section">
+                <div class="category-header">
+                    <span class="category-icon">?몦</span>
+                    <div class="category-title">
+                        <h3>[遺꾩꽍3] ?대???留ㅼ닔 遺꾩꽍</h3>
+                        <p>寃쎌쁺吏?怨좏솗??留ㅼ닔 ?쒓렇??異붿쟻</p>
+                    </div>
+                </div>
+                <div class="selector-row">
+                    <label for="dateAnalysis3">?뱟 ?좎쭨:</label>
+                    <select id="dateAnalysis3">
+                        <option value="">?좎쭨瑜??좏깮?섏꽭??..</option>
+                    </select>
+                    <button class="btn-load" onclick="loadReport('analysis3')">遺덈윭?ㅺ린</button>
+                </div>
+            </div>
+
+            <!-- 遺꾩꽍 4: ?좊꼸由ъ뒪??紐⑺몴媛 -->
+            <div class="category-section">
+                <div class="category-header">
+                    <span class="category-icon">?렞</span>
+                    <div class="category-title">
+                        <h3>[遺꾩꽍4] ?좊꼸由ъ뒪??紐⑺몴媛 遺꾩꽍</h3>
+                        <p>?붿뒪?몃━??怨좏솗??紐⑺몴媛 ?곹뼢 異붿쟻</p>
+                    </div>
+                </div>
+                <div class="selector-row">
+                    <label for="dateAnalysis4">?뱟 ?좎쭨:</label>
+                    <select id="dateAnalysis4">
+                        <option value="">?좎쭨瑜??좏깮?섏꽭??..</option>
+                    </select>
+                    <button class="btn-load" onclick="loadReport('analysis4')">遺덈윭?ㅺ린</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pdf-viewer">
+        <div id="pdfContent" class="info">
+            <h3>?몝 ?섏쁺?⑸땲??</h3>
+            <p style="margin-top: 10px;">?꾩뿉??移댄뀒怨좊━? ?좎쭨瑜??좏깮????"遺덈윭?ㅺ린" 踰꾪듉???대┃?섏꽭??</p>
+            <ul style="margin-top: 15px;">
+                <li><strong>異붿쿇 醫낅ぉ:</strong> ?ъ옄 異붿쿇 諛?留ㅻℓ ?꾨왂</li>
+                <li><strong>湲됰벑 醫낅ぉ:</strong> 湲됰벑 醫낅ぉ ?먯? 諛?7媛吏 ?붿냼 遺꾩꽍 <span style="color: #dc3545; font-weight: 700;">??
+                        NEW!</span></li>
+                <li><strong>醫낅ぉ ?댁뒪:</strong> 二쇱슂 醫낅ぉ ?댁뒪 諛??쒖옣 ?숉뼢 <span style="color: #28a745; font-weight: 700;">NEW!</span>
+                </li>
+                <li><strong>遺꾩꽍1:</strong> 誘멸뎅 ?쒖옣 ?좊룞??諛??먯궛 諛곕텇</li>
+                <li><strong>遺꾩꽍2:</strong> ETF ?먭툑 ?먮쫫 諛??뱁꽣 濡쒗뀒?댁뀡</li>
+                <li><strong>遺꾩꽍3:</strong> ?대???留ㅼ닔 ?쒓렇??/li>
+                <li><strong>遺꾩꽍4:</strong> ?좊꼸由ъ뒪??紐⑺몴媛 ?곹뼢</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Footer with Source (異쒖쿂 ?듯빀) -->
+    <div class="footer">
+        <div class="footer-content">
+            <h4>?뱴 4媛吏 遺꾩꽍 ?꾨젅?꾩썙??異쒖쿂</h4>
+            <a href="https://youtu.be/R8Re7W02oxg?si=-Yi1xNDBs4HaYRyO" target="_blank" class="footer-source">
+                遺꾩꽍 諛⑸쾿濡??곸꽭 ?곸긽 蹂닿린
+            </a>
+            <p>
+                遺꾩꽍1~4???꾨젅?꾩썙?щ뒗 ???곸긽??湲곕컲?쇰줈 ?묒꽦?섏뿀?듬땲??<br>
+                ?ъ옄?????紐⑤뱺 梨낆엫? ?ъ옄??蹂몄씤?먭쾶 ?덉뒿?덈떎.
+            </p>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <script>
+        console.log('==========================================');
+        console.log('  ?벀 ?뚯씪 踰꾩쟾: v1771922054');
+        console.log('  ?븧 濡쒕뱶 ?쒓컙:', new Date().toLocaleString());
+        console.log('==========================================');
+
+        const reportFiles = {
+            recommendation: {
+                '2026-02-22': { file: 'reports/recommendation/2026-02-22_catalyst.pdf', title: '?④린' },
+                '2026-02-21': { file: 'reports/recommendation/2026-02-22_analysis.pdf', title: '以묎린' },
+                '2026-02-18': { file: 'reports/recommendation/2026-02-18_catalyst.pdf', title: '?④린' },
+                '2026-02-12': { file: 'reports/recommendation/2026-02-12_catalyst.pdf', title: '?④린' },
+                '2026-02-09': { file: 'reports/recommendation/2026-02-09_analysis.pdf', title: '以묎린' },
+                '2026-02-06': { file: 'reports/recommendation/2026-02-06_analysis.pdf', title: '以묎린' }
+            },
+            shoot: { '2026-02-22': { file: 'reports/shoot/2026-02-22_shoot.pdf', title: 'VRNS/KKR/QDEL/RAL' } },
+            news: {
+                '2026-02-17': { file: 'reports/news/US_Market_Analysis_20260217.pdf', title: '湲덉씪 誘멸뎅 ?쒗솴' },
+                '2026-02-16': { file: 'reports/news/memory_supercycle.pdf', title: '硫붾え由??ъ뾽???꾨쭩' },
+                '2026-02-15': { file: 'reports/news/2026-02-15_news.pdf', title: '二쇨컙 ?쒖옣 ?숉뼢' }
+            },
+            analysis1: {
+                '2026-03-02': { file: 'reports/analysis1/2026-03-02_liquidity.pdf', title: '?좊룞??由ы룷?? },
+                '2026-02-10': { file: 'reports/analysis1/2026-02-10_liquidity.pdf', title: '?좊룞??由ы룷?? }
+            },
+            analysis2: {
+                '2026-03-02': { file: 'reports/analysis2/2026-03-02_etf.pdf', title: 'ETF 由ы룷?? },
+                '2026-02-10': { file: 'reports/analysis2/2026-02-10_etf.pdf', title: 'ETF 由ы룷?? }
+            },
+            analysis3: {
+                '2026-03-02': { file: 'reports/analysis3/2026-03-02_insider.pdf', title: '?대???遺꾩꽍' },
+                '2026-02-10': { file: 'reports/analysis3/2026-02-10_insider.pdf', title: '?대???遺꾩꽍' }
+            },
+            analysis4: {
+                '2026-03-02': { file: 'reports/analysis4/2026-03-02_analyst.pdf', title: '?좊꼸由ъ뒪??遺꾩꽍' },
+                '2026-02-10': { file: 'reports/analysis4/2026-02-10_analyst.pdf', title: '?좊꼸由ъ뒪??遺꾩꽍' }
+            }
+        };
+
+        const categories = {
+            recommendation: { name: '異붿쿇 醫낅ぉ', icon: '?렞', selectId: 'dateRecommendation' },
+            shoot: { name: '湲됰벑 醫낅ぉ', icon: '??', selectId: 'dateShoot' },
+            news: { name: '?댁뒪', icon: '?벐', selectId: 'dateNews' },
+            analysis1: { name: '?좊룞??, icon: '?뮥', selectId: 'dateAnalysis1' },
+            analysis2: { name: 'ETF', icon: '?뱢', selectId: 'dateAnalysis2' },
+            analysis3: { name: '?대???, icon: '?뵇', selectId: 'dateAnalysis3' },
+            analysis4: { name: '?좊꼸由ъ뒪??, icon: '?뱤', selectId: 'dateAnalysis4' }
+        };
+
+        function showMainContent() {
+            // ?곗씠??珥덇린??諛?濡쒕뱶
+            loadDateList();
+            loadNews();
+            updateTradingViewMap();
+            drawCalendar(2, 'cal-feb');
+            drawCalendar(3, 'cal-mar');
+
+            // 珥덇린 ?щ━ 吏??濡쒕뱶
+            if (typeof changeSentiment === 'function') {
+                changeSentiment('NASDAQ:QQQ');
+            }
+        }
+
+        // --- 由ы룷??諛?由ъ뒪??愿???⑥닔 ---
+        function loadDateList() {
+            Object.keys(categories).forEach(categoryKey => {
+                const category = categories[categoryKey];
+                const select = document.getElementById(category.selectId);
+                if (!select) return;
+
+                select.innerHTML = "";
+                const dates = Object.keys(reportFiles[categoryKey]).sort().reverse();
+                dates.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date;
+                    if (categoryKey === 'news' || categoryKey === 'recommendation' || categoryKey === 'shoot') {
+                        const data = reportFiles[categoryKey][date];
+                        option.textContent = formatDate(date) + ' 쨌 ' + data.title;
+                    } else {
+                        option.textContent = formatDate(date);
+                    }
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekday = ['??, '??, '??, '??, '紐?, '湲?, '??][date.getDay()];
+            return month + '??' + day + '??(' + weekday + ')';
+        }
+
+        function loadReport(categoryKey) {
+            const category = categories[categoryKey];
+            const select = document.getElementById(category.selectId);
+            const date = select.value;
+            if (!date) { alert('?좎쭨瑜??좏깮?댁＜?몄슂.'); return; }
+
+            let pdfFile;
+            const data = reportFiles[categoryKey][date];
+            pdfFile = (typeof data === 'string') ? data : data.file;
+            displayPDF(pdfFile, date, category);
+        }
+
+        function displayPDF(pdfPath, date, category) {
+            document.getElementById('pdfContent').innerHTML = `
+                <div class="current-view">
+                    <h4>${category.icon} ${category.name}</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="label">?좎쭨</div>
+                            <div class="value">${formatDate(date)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pdf-container">
+                    <iframe src="${pdfPath}" type="application/pdf"></iframe>
+                </div>`;
+        }
+
+        // --- ?댁뒪 愿???⑥닔 ---
+        async function loadNews() {
+            const container = document.getElementById('newsContainer');
+            if (!container) return;
+            container.innerHTML = '<div class="news-item">?봽 理쒖떊 ?쒖옣 ?댁뒪瑜?遺꾩꽍 以묒엯?덈떎...</div>';
+
+            // MarketAux
+            try {
+                const apiKey = 'BKfVtXqVFB1n2n9lYKPPdCj2Z78lKS8NQTQ5eUxS';
+                const url = `https://api.marketaux.com/v1/news/all?language=en&limit=5&api_token=${apiKey}`;
+                const res = await fetch(url);
+                const json = await res.json();
+                if (json.data && json.data.length > 0) {
+                    renderNews(json.data, 'MarketAux');
+                    return;
+                }
+            } catch (e) { console.log("MarketAux ?ㅽ뙣"); }
+
+            // Alpha Vantage
+            try {
+                const apiKey = 'NP58RFOBOUKNIOLV';
+                const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&limit=5&apikey=${apiKey}`;
+                const res = await fetch(url);
+                const json = await res.json();
+                if (json.feed && json.feed.length > 0) {
+                    const formattedData = json.feed.slice(0, 5).map(item => ({
+                        title: item.title,
+                        url: item.url,
+                        source: item.source,
+                        published_at: item.time_published
+                    }));
+                    renderNews(formattedData, 'Alpha Vantage');
+                    return;
+                }
+            } catch (e) { console.log("Alpha Vantage ?ㅽ뙣"); }
+
+            loadLocalNews();
+        }
+
+        function renderNews(newsData, apiSource) {
+            const container = document.getElementById('newsContainer');
+            container.innerHTML = '';
+            newsData.forEach(news => {
+                const html = `
+                    <div class="news-item">
+                        <a href="${news.url}" target="_blank" class="news-link">
+                            <div class="news-title">?뱼 ${news.title}</div>
+                            <div class="news-meta">${apiSource} | ${new Date(news.published_at).toLocaleString()}</div>
+                        </a>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function loadLocalNews() {
+            const container = document.getElementById('newsContainer');
+            const localNews = [
+                { title: '?뱢 S&P 500, ?ъ긽 理쒓퀬移?寃쎌떊', source: 'Bloomberg', time: '2?쒓컙 ??, url: 'https://www.bloomberg.com/markets' },
+                { title: '?뵦 AI 諛섎룄泥??섏슂 湲됱쬆, NVDA 二쇨? 媛뺤꽭', source: 'CNBC', time: '3?쒓컙 ??, url: 'https://www.cnbc.com/technology/' },
+                { title: '?뮥 ?곗?, 湲덈━ ?숆껐 ?쒖궗', source: 'Reuters', time: '5?쒓컙 ??, url: 'https://www.reuters.com/markets/' },
+                { title: '???뚰겕 ?뱁꽣 媛뺤꽭 吏??, source: 'WSJ', time: '?댁젣', url: 'https://www.wsj.com/economy' },
+                { title: '?룱 鍮낇뀒???ㅼ쟻 ?쒖쫵 ?湲?, source: 'MarketWatch', time: '?댁젣', url: 'https://www.marketwatch.com/investing' }
+            ];
+            container.innerHTML = localNews.map(news => `
+                <a href="${news.url}" target="_blank" rel="noopener" class="news-link">
+                    <div class="news-item">
+                        <div class="news-title">${news.title}</div>
+                        <div class="news-meta">異쒖쿂: ${news.source} 쨌 ${news.time}</div>
+                    </div>
+                </a>`).join('');
+        }
+
+        function refreshNews() { loadNews(); }
+
+        // --- 湲고? ?꾩젽 愿???⑥닔 ---
+        function updateTradingViewMap() {
+            const selector = document.getElementById('mapSelector');
+            const container = document.getElementById('tradingview_widget_container');
+            const tvLink = document.getElementById('tvLink');
+            if (!container) return;
+
+            container.innerHTML = '';
+            let symbolSource = (selector && selector.value === 'sp500') ? "SPX" : "NDX";
+            if (tvLink) {
+                tvLink.href = (symbolSource === "SPX") ?
+                    "https://www.tradingview.com/heatmap/stock/#%7B%22index%22%3A%22S%26P500%22%7D" :
+                    "https://www.tradingview.com/heatmap/stock/#%7B%22index%22%3A%22NASDAQ100%22%7D";
+            }
+
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js';
+            script.async = true;
+            script.text = JSON.stringify({
+                "symbolGroups": [{
+                    "name": (symbolSource === "SPX") ? "S&P 500" : "Nasdaq 100",
+                    "symbols": [{ "name": symbolSource }]
+                }],
+                "colorTheme": "light", "isTransparent": false, "hasSymbolTooltip": true,
+                "width": "100%", "height": "100%", "blockCompositeStructures": false, "locale": "ko"
+            });
+            container.appendChild(script);
+        }
+
+        function changeSentiment(symbol) {
+            const container = document.getElementById('sentiment-widget-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+            script.async = true;
+            script.innerHTML = JSON.stringify({
+                "interval": "1D", "width": "100%", "isTransparent": true, "height": 240,
+                "symbol": symbol, "showIntervalTabs": false, "locale": "ko", "colorTheme": "light"
+            });
+            container.appendChild(script);
+        }
+
+        // --- ?ㅼ쟻 寃??湲곕뒫 ---
+        const earningsData = {
+            "NVDA": {
+                "name": "NVIDIA Corporation",
+                "date": "2026-02-25",
+                "eps_avg": 1.53669,
+                "revenue_avg": 66124358429
+            },
+            "AMD": {
+                "name": "Advanced Micro Devices, Inc.",
+                "date": "2026-05-05",
+                "eps_avg": 1.2683,
+                "revenue_avg": 9852755290
+            },
+            "AVGO": {
+                "name": "Broadcom Inc.",
+                "date": "2026-03-04",
+                "eps_avg": 2.02026,
+                "revenue_avg": 19105028740
+            },
+            "QCOM": {
+                "name": "QUALCOMM Incorporated",
+                "date": "2026-04-29",
+                "eps_avg": 2.57534,
+                "revenue_avg": 10567846810
+            },
+            "INTC": {
+                "name": "Intel Corporation",
+                "date": "2026-04-23",
+                "eps_avg": 0.002,
+                "revenue_avg": 12313072310
+            },
+            "MU": {
+                "name": "Micron Technology, Inc.",
+                "date": "2026-03-18",
+                "eps_avg": 8.50416,
+                "revenue_avg": 18895169750
+            },
+            "TSM": {
+                "name": "Taiwan Semiconductor Manufacturing Company Limited",
+                "date": "2026-04-16",
+                "eps_avg": 3.28131,
+                "revenue_avg": 1115423921810
+            },
+            "ASML": {
+                "name": "ASML Holding N.V.",
+                "date": "2026-04-15",
+                "eps_avg": 6.64707,
+                "revenue_avg": 8605432520
+            },
+            "AAPL": {
+                "name": "Apple Inc.",
+                "date": "2026-04-30",
+                "eps_avg": 1.95403,
+                "revenue_avg": 109083851330
+            },
+            "MSFT": {
+                "name": "Microsoft Corporation",
+                "date": "2026-04-29",
+                "eps_avg": 4.06091,
+                "revenue_avg": 81380910850
+            },
+            "GOOGL": {
+                "name": "Alphabet Inc.",
+                "date": "2026-04-23",
+                "eps_avg": 2.61405,
+                "revenue_avg": 106659407030
+            },
+            "AMZN": {
+                "name": "Amazon.com, Inc.",
+                "date": "2026-04-30",
+                "eps_avg": 1.63706,
+                "revenue_avg": 176962316420
+            },
+            "META": {
+                "name": "Meta Platforms, Inc.",
+                "date": "2026-04-29",
+                "eps_avg": 6.73273,
+                "revenue_avg": 55441680360
+            },
+            "TSLA": {
+                "name": "Tesla, Inc.",
+                "date": "2026-04-21",
+                "eps_avg": 0.41048,
+                "revenue_avg": 23195230200
+            },
+            "NFLX": {
+                "name": "Netflix, Inc.",
+                "date": "2026-04-16",
+                "eps_avg": 0.76279,
+                "revenue_avg": 12170332990
+            },
+            "JPM": {
+                "name": "JPMorgan Chase & Co.",
+                "date": "2026-04-14",
+                "eps_avg": 5.32738,
+                "revenue_avg": 47960373930
+            },
+            "BAC": {
+                "name": "Bank of America Corporation",
+                "date": "2026-04-15",
+                "eps_avg": 0.99683,
+                "revenue_avg": 29810633100
+            },
+            "WFC": {
+                "name": "Wells Fargo & Company",
+                "date": "2026-04-14",
+                "eps_avg": 1.58092,
+                "revenue_avg": 21845400000
+            },
+            "GS": {
+                "name": "The Goldman Sachs Group, Inc.",
+                "date": "2026-04-13",
+                "eps_avg": 15.61964,
+                "revenue_avg": 16657353620
+            },
+            "MS": {
+                "name": "Morgan Stanley",
+                "date": "2026-04-15",
+                "eps_avg": 2.92227,
+                "revenue_avg": 19233819950
+            },
+            "C": {
+                "name": "Citigroup Inc.",
+                "date": "2026-04-14",
+                "eps_avg": 2.58724,
+                "revenue_avg": 22941302430
+            },
+            "NKE": {
+                "name": "NIKE, Inc.",
+                "date": "2026-03-19",
+                "eps_avg": 0.2859,
+                "revenue_avg": 11225616780
+            },
+            "SBUX": {
+                "name": "Starbucks Corporation",
+                "date": "2026-04-28",
+                "eps_avg": 0.40434,
+                "revenue_avg": 9075520370
+            },
+            "MCD": {
+                "name": "McDonald's Corporation",
+                "date": "2026-04-30",
+                "eps_avg": 2.76154,
+                "revenue_avg": 6496857200
+            },
+            "HD": {
+                "name": "The Home Depot, Inc.",
+                "date": "2026-02-24",
+                "eps_avg": 2.5232,
+                "revenue_avg": 38102927610
+            },
+            "LOW": {
+                "name": "Lowe's Companies, Inc.",
+                "date": "2026-02-25",
+                "eps_avg": 1.9426,
+                "revenue_avg": 20336473910
+            },
+            "TGT": {
+                "name": "Target Corporation",
+                "date": "2026-03-03",
+                "eps_avg": 2.15566,
+                "revenue_avg": 30494139680
+            },
+            "WMT": {
+                "name": "Walmart Inc.",
+                "date": "2026-05-14",
+                "eps_avg": 0.66132,
+                "revenue_avg": 172219029380
+            },
+            "COST": {
+                "name": "Costco Wholesale Corporation",
+                "date": "2026-03-05",
+                "eps_avg": 4.53101,
+                "revenue_avg": 69265262480
+            },
+            "JNJ": {
+                "name": "Johnson & Johnson",
+                "date": "2026-04-14",
+                "eps_avg": 2.68547,
+                "revenue_avg": 23600479740
+            },
+            "UNH": {
+                "name": "UnitedHealth Group Incorporated",
+                "date": "2026-04-16",
+                "eps_avg": 6.87616,
+                "revenue_avg": 109833320850
+            },
+            "PFE": {
+                "name": "Pfizer Inc.",
+                "date": "2026-04-28",
+                "eps_avg": 0.72643,
+                "revenue_avg": 13900287780
+            },
+            "ABBV": {
+                "name": "AbbVie Inc.",
+                "date": "2026-05-01",
+                "eps_avg": 3.00872,
+                "revenue_avg": 14715000780
+            },
+            "LLY": {
+                "name": "Eli Lilly and Company",
+                "date": "2026-04-30",
+                "eps_avg": 7.23315,
+                "revenue_avg": 17456361190
+            },
+            "TMO": {
+                "name": "Thermo Fisher Scientific Inc.",
+                "date": "2026-04-22",
+                "eps_avg": 5.29081,
+                "revenue_avg": 10874613920
+            },
+            "BA": {
+                "name": "The Boeing Company",
+                "date": "2026-04-22",
+                "eps_avg": -0.34644,
+                "revenue_avg": 22252591180
+            },
+            "CAT": {
+                "name": "Caterpillar Inc.",
+                "date": "2026-04-30",
+                "eps_avg": 4.52299,
+                "revenue_avg": 16195040460
+            },
+            "GE": {
+                "name": "GE Aerospace",
+                "date": "2026-04-21",
+                "eps_avg": 1.58739,
+                "revenue_avg": 10619465140
+            },
+            "HON": {
+                "name": "Honeywell International Inc.",
+                "date": "2026-04-28",
+                "eps_avg": 2.32493,
+                "revenue_avg": 9270212740
+            },
+            "UPS": {
+                "name": "United Parcel Service, Inc.",
+                "date": "2026-04-28",
+                "eps_avg": 1.14325,
+                "revenue_avg": 21085993190
+            },
+            "FDX": {
+                "name": "FedEx Corporation",
+                "date": "2026-03-19",
+                "eps_avg": 4.04897,
+                "revenue_avg": 23443613160
+            },
+            "XOM": {
+                "name": "Exxon Mobil Corporation",
+                "date": "2026-05-01",
+                "eps_avg": 1.51002,
+                "revenue_avg": 79217960170
+            },
+            "CVX": {
+                "name": "Chevron Corporation",
+                "date": "2026-05-01",
+                "eps_avg": 1.5006,
+                "revenue_avg": 46696217960
+            },
+            "COP": {
+                "name": "ConocoPhillips",
+                "date": "2026-05-07",
+                "eps_avg": 1.11209,
+                "revenue_avg": 13535126140
+            },
+            "SLB": {
+                "name": "SLB N.V.",
+                "date": "2026-05-01",
+                "eps_avg": 0.6061,
+                "revenue_avg": 8884411650
+            },
+            "AA": {
+                "name": "Alcoa Corporation",
+                "date": "2026-04-15",
+                "eps_avg": 1.18124,
+                "revenue_avg": 3296144100
+            },
+            "FCX": {
+                "name": "Freeport-McMoRan Inc.",
+                "date": "2026-04-23",
+                "eps_avg": 0.45274,
+                "revenue_avg": 5579707240
+            },
+            "DIS": {
+                "name": "The Walt Disney Company",
+                "date": "2026-05-06",
+                "eps_avg": 1.49737,
+                "revenue_avg": 24909719370
+            },
+            "V": {
+                "name": "Visa Inc.",
+                "date": "2026-04-28",
+                "eps_avg": 3.09224,
+                "revenue_avg": 10729545630
+            },
+            "MA": {
+                "name": "Mastercard Incorporated",
+                "date": "2026-04-30",
+                "eps_avg": 4.40606,
+                "revenue_avg": 8260552120
+            },
+            "PYPL": {
+                "name": "PayPal Holdings, Inc.",
+                "date": "2026-05-05",
+                "eps_avg": 1.27784,
+                "revenue_avg": 8069200290
+            },
+            "CRM": {
+                "name": "Salesforce, Inc.",
+                "date": "2026-02-25",
+                "eps_avg": 3.05025,
+                "revenue_avg": 11188164760
+            },
+            "ORCL": {
+                "name": "Oracle Corporation",
+                "date": "2026-03-09",
+                "eps_avg": 1.70661,
+                "revenue_avg": 16902193840
+            },
+            "IBM": {
+                "name": "International Business Machines Corporation",
+                "date": "2026-04-22",
+                "eps_avg": 1.80925,
+                "revenue_avg": 15628294330
+            },
+            "PLTR": {
+                "name": "Palantir Technologies Inc.",
+                "date": "2026-05-04",
+                "eps_avg": 0.27927,
+                "revenue_avg": 1538548150
+            },
+            "CRWD": {
+                "name": "CrowdStrike Holdings, Inc.",
+                "date": "2026-03-03",
+                "eps_avg": 1.10262,
+                "revenue_avg": 1297442450
+            },
+            "SNOW": {
+                "name": "Snowflake Inc.",
+                "date": "2026-02-25",
+                "eps_avg": 0.27176,
+                "revenue_avg": 1254964190
+            },
+            "HOOD": {
+                "name": "Robinhood Markets, Inc.",
+                "date": "2026-04-29",
+                "eps_avg": 0.545,
+                "revenue_avg": 1265007100
+            },
+            "COIN": {
+                "name": "Coinbase Global, Inc.",
+                "date": "2026-05-07",
+                "eps_avg": 0.38164,
+                "revenue_avg": 1587193310
+            },
+            "SHOP": {
+                "name": "Shopify Inc.",
+                "date": "2026-05-07",
+                "eps_avg": 0.33011,
+                "revenue_avg": 3086287180
+            },
+            "VRNS": {
+                "name": "Varonis Systems, Inc.",
+                "date": "2026-05-05",
+                "eps_avg": -0.05503,
+                "revenue_avg": 165511190
+            },
+            "KKR": {
+                "name": "KKR & Co. Inc.",
+                "date": "2026-04-30",
+                "eps_avg": 1.43316,
+                "revenue_avg": 2275882440
+            },
+            "QDEL": {
+                "name": "QuidelOrtho Corporation",
+                "date": "2026-05-06",
+                "eps_avg": 0.47054,
+                "revenue_avg": 682809560
+            },
+            "RAL": {
+                "name": "Ralliant Corporation",
+                "date": "2026-04-27",
+                "eps_avg": 0.48804,
+                "revenue_avg": 515108280
+            },
+            "MRVL": {
+                "name": "Marvell Technology, Inc.",
+                "date": "2026-03-05",
+                "eps_avg": 0.79217,
+                "revenue_avg": 2206965170
+            }
+        };
+
+        async function searchEarningsAPI() {
+            const input = document.getElementById('earningsSearchInput');
+            const resultDiv = document.getElementById('earningsResult');
+            if (!input || !resultDiv) return;
+            let ticker = input.value.trim().toUpperCase();
+            if (!ticker) {
+                resultDiv.innerHTML = '<div class="search-result empty">?뵇 ?곗빱 ?낅젰 (?? NVDA, AAPL)</div>';
+                return;
+            }
+
+            if (earningsData[ticker]) {
+                const data = earningsData[ticker];
+                const eps = data.eps_avg ? '$' + data.eps_avg.toFixed(2) : 'N/A';
+                const revenue = data.revenue_avg ? '$' + (data.revenue_avg / 1e9).toFixed(2) + 'B' : 'N/A';
+                resultDiv.innerHTML = `
+                    <div class="search-result">
+                        <div class="result-company">${data.name} (${ticker})</div>
+                        <div class="result-date">?뱟 ?ㅼ쟻 諛쒗몴: ${formatDate(data.date)}</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px;text-align:center">
+                            <div><div style="color:#667eea;font-weight:600">?덉긽 EPS</div><div style="font-size:1.2em;font-weight:700">${eps}</div></div>
+                            <div><div style="color:#667eea;font-weight:600">?덉긽 留ㅼ텧</div><div style="font-size:1.2em;font-weight:700">${revenue}</div></div>
+                        </div>
+                    </div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="search-result">?좑툘 ?곗씠???놁쓬. <a href="https://finance.yahoo.com/quote/${ticker}/analysis" target="_blank" style="color:#667eea">Yahoo Finance 蹂닿린 ??/a></div>`;
+            }
+        }
+
+        // --- 罹섎┛??愿??---
+        function toggleAccordion(header) {
+            header.classList.toggle('collapsed');
+            const content = header.nextElementSibling;
+            if (content) content.classList.toggle('collapsed');
+        }
+
+        var calendarEvents = { '2-3': [{ i: '?뮳', t: 'JOLTS' }, { i: '?뭿', t: 'PLTR' }], '2-4': [{ i: '?뮳', t: 'Metro' }], '2-6': [{ i: '?뮳', t: 'NFP狩? }], '2-10': [{ i: '?뮥', t: 'ECI' }, { i: '?뱢', t: '?섏엯?섏텧' }], '2-11': [{ i: '?뱤', t: 'CPI狩? }, { i: '?뮫', t: '?ㅼ쭏?꾧툑' }], '2-16': [{ i: '?룢截?, t: '?댁옣' }], '2-18': [{ i: '?뮳', t: 'Union' }], '2-19': [{ i: '?좑툘', t: '?곗옱' }, { i: '?뮳', t: 'JOLTS' }], '2-20': [{ i: '?뮳', t: '?뚯뾽' }], '2-24': [{ i: '?뮥', t: 'ECEC' }], '2-25': [{ i: '?뭿', t: 'NVDA狩? }], '2-26': [{ i: '?뱤', t: 'BED' }], '2-27': [{ i: '?룺', t: 'PPI狩? }], '3-4': [{ i: '?뭿', t: 'AVGO' }], '3-5': [{ i: '?뮰', t: '臾댁뿭' }, { i: '?뱢', t: '?앹궛?? }], '3-6': [{ i: '?뮳', t: 'NFP狩? }], '3-10': [{ i: '?뮥', t: 'CEWQ' }], '3-11': [{ i: '?뱤', t: 'CPI狩? }, { i: '?뮫', t: '?ㅼ쭏?꾧툑' }], '3-12': [{ i: '?룺', t: 'PPI狩? }], '3-13': [{ i: '?뮰', t: 'GDP狩? }, { i: '?뮥', t: '?뚮뱷' }], '3-18': [{ i: '?룱', t: 'FOMC' }], '3-19': [{ i: '?룱', t: '湲덈━狩? }], '3-24': [{ i: '?뱢', t: '?앹궛?켙' }], '3-25': [{ i: '?뮰', t: '援?젣' }], '3-28': [{ i: '?뮳', t: 'JOLTS' }] };
+        function drawCalendar(month, elementId) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+            const firstDay = new Date(2026, month - 1, 1).getDay();
+            const daysInMonth = new Date(2026, month, 0).getDate();
+            let html = '';
+            for (let i = 0; i < firstDay; i++) html += '<div class="date empty"></div>';
+            for (let day = 1; day <= daysInMonth; day++) {
+                const events = calendarEvents[month + '-' + day];
+                const className = 'date' + (events ? ' has-event' : '');
+                html += `<div class="${className}"><div>${day}</div>`;
+                if (events) {
+                    html += `<div class="event-icon">${events[0].i}${events.length > 1 ? '+' + (events.length - 1) : ''}</div>`;
+                    html += `<div class="tooltip">${events.map(e => e.t).join(', ')}</div>`;
+                }
+                html += '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        // --- 珥덇린??諛??대깽??由ъ뒪??---
+        document.addEventListener("DOMContentLoaded", () => {
+            // 踰꾪듉 ?대┃ ?대깽??
+            const loginBtn = document.getElementById("loginBtn");
+            if (loginBtn) loginBtn.onclick = checkPassword;
+
+            // ?뷀꽣???대깽??
+            const pwdInput = document.getElementById("passwordInput");
+            if (pwdInput) {
+                pwdInput.onkeypress = (e) => { if (e.key === "Enter") checkPassword(); };
+            }
+
+            // ?몄뀡 泥댄겕 諛?珥덇린 ?붾㈃ ?ㅼ젙
+            if (sessionStorage.getItem(SESSION_KEY) === "true") {
+                showMainContent();
+            }
+        });
+
+        // 援ш? 踰덉뿭 珥덇린??
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en', includedLanguages: 'ko,en',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+        }
+
+        function openMemoryReport() {
+            loadReport('news'); // 湲곗〈 濡쒖쭅???곕씪 ?댁뒪 移댄뀒怨좊━ 濡쒕뱶
+        }
+    </script>
+    <script type="text/javascript"
+        src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+
+</html>
