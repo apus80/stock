@@ -1906,39 +1906,49 @@ function checkPassword() {
 }
 
 // 3. 메인 화면 표시 및 위젯 로딩 함수
+
 function showMainContent() {
-    console.log("🔥 메인 화면 전환 및 위젯 로딩 시작");
+    console.log("🔥 메인 화면 강제 활성화 시작");
 
-    // 화면 레이아웃 전환
+    // 1. 레이아웃 강제 노출
     const overlay = document.getElementById('passwordOverlay');
-    const main = document.getElementById('mainContent');
+    const mainContent = document.getElementById('mainContent');
     
-    if(overlay) overlay.style.display = 'none';
-    if(main) main.style.display = 'block';
+    if (overlay) overlay.style.setAttribute('style', 'display: none !important');
+    if (mainContent) {
+        mainContent.style.setAttribute('style', 'display: block !important');
+        mainContent.style.visibility = 'visible';
+        mainContent.style.opacity = '1';
+    }
 
-    // 위젯이 들어갈 HTML 구조를 강제로 다시 꽂아넣음 (박스가 없어서 안 뜨는 문제 방지)
+    // 2. 위젯 섹션 강제 생성 (기존 내용이 비어있을 경우 대비)
     const chartSection = document.querySelector('.macro-tradingview');
     if (chartSection) {
         chartSection.innerHTML = `
-            <div class="card" style="padding: 15px; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 5px solid #667eea;">
-                <h3 style="font-size: 14px; margin-bottom: 12px; font-weight: bold;">📊 실시간 시장 지표 및 분석 심리</h3>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                    <div style="flex: 1.2; min-width: 320px; height: 400px;" id="main-chart-wrapper"></div>
-                    <div style="flex: 0.8; min-width: 300px; display: flex; flex-direction: column; gap: 10px;">
-                        <div id="exchange-rate-wrapper" style="height: 100px; background: #fcfcfc; border-radius: 10px; border: 1px solid #eee;"></div>
-                        <div id="gauge-render-area" style="height: 290px; background: #fcfcfc; border-radius: 10px; border: 1px solid #eee;"></div>
+            <div class="card" style="padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 15px; font-weight: bold; color: #333;">📊 실시간 시장 지표 및 분석</h3>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div id="main-chart-wrapper" style="flex: 1.5; min-width: 320px; height: 450px; background: #f8f9fa; border-radius: 8px;"></div>
+                    <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 15px;">
+                        <div id="exchange-rate-wrapper" style="height: 120px; background: #f8f9fa; border-radius: 8px;"></div>
+                        <div id="gauge-render-area" style="height: 315px; background: #f8f9fa; border-radius: 8px;"></div>
                     </div>
                 </div>
             </div>`;
     }
 
-    // 화면이 나타난 직후(0.5초 뒤) 위젯 실행
-    setTimeout(startTradingViewWidgets, 500);
-
-    // 기존 데이터 로딩 함수들 호출
-    if (typeof loadDateList === 'function') loadDateList();
-    if (typeof loadNews === 'function') loadNews();
+    // 3. 0.3초 뒤 위젯 및 데이터 로딩 시작
+    setTimeout(() => {
+        startTradingViewWidgets();
+        if (typeof loadDateList === 'function') loadDateList();
+        if (typeof loadNews === 'function') loadNews();
+        if (typeof drawCalendar === 'function') {
+            drawCalendar(2, 'cal-feb');
+            drawCalendar(3, 'cal-mar');
+        }
+    }, 300);
 }
+
 
 // 4. 트레이딩뷰 위젯 생성 함수
 function startTradingViewWidgets() {
