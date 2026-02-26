@@ -1972,6 +1972,8 @@ function showMainContent() {
     document.getElementById('passwordOverlay').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
 
+startTradingViewWidgets(); 
+
     // 1. 기본 리스트 및 뉴스 로드
     if (typeof loadDateList === 'function') loadDateList();
     if (typeof loadNews === 'function') loadNews();
