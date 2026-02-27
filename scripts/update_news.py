@@ -50,8 +50,12 @@ def get_latest_market_data():
         },
         "morning_brew_summary": {
             "title": "☕ Morning Brew Daily Insights",
-            "summary": "오늘의 글로벌 증시는 매크로 지표 혼조세와 AI 섹터의 차익 실현 움직임 속에서도 전반적인 강세장을 유지하고 있습니다. 특히 기술주의 밸류에이션 부담에도 불구하고 헬스케어 및 금융주 중심으로 순환매가 뚜렷하게 관측되었습니다.",
-            "image_url": "https://images.unsplash.com/photo-1590283603385-18ff3827104f?auto=format&fit=crop&q=80&w=800",
+            "summary": """
+                <div style='margin-bottom: 12px;'><strong style='color:#facc15;'>📌 핵심 트렌드: AI 차익실현 및 헬스케어의 부상</strong><br>글로벌 증시는 매크로 지표 혼조세 속에서 AI 및 반도체 섹터의 차익 실현 움직임이 뚜렷하게 관측되고 있습니다. 넷플릭스 등 엔터주는 큰 폭의 랠리를 보인 반면, 엔비디아는 실적 발표 이후 단기 과열 부담에 조정을 받았습니다.</div>
+                <div style='margin-bottom: 12px;'><strong style='color:#facc15;'>📌 주요 거시 경제 이슈</strong><br>미 연준의 금리 인하 기대감이 다소 후퇴하며 채권 시장의 변동성이 확대되었습니다. PPI(생산자물가지수) 발표를 앞두고 관망세가 짙은 가운데, 금융주 및 산업재로의 자금 순환매가 이어지고 있습니다. 일각에서는 중동 지정학적 리스크 소강상태가 유가 안정에 기여하고 있다고 평가합니다.</div>
+                <div><strong style='color:#facc15;'>📌 혁신 기업 동향</strong><br>스페이스X가 하루 3회 발사 성공이라는 신기록을 세우며 우주 산업 주도권을 강화했고, 일라이릴리는 비만치료제의 장기 임상(당뇨병 예방 효과) 성공 결과를 발표했습니다. 반면 테슬라는 지역 반대에도 불구하고 독일 기가팩토리 확장 승인을 받아내는 등 주요 기업들의 개별 모멘텀 장세가 펼쳐지고 있습니다.</div>
+            """,
+            "image_url": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800",
             "link": "https://www.morningbrew.com/issues/latest",
             "updated_time": now_kst.strftime("%p %I:%M") # 예: AM 07:00, PM 11:00
         }
@@ -112,28 +116,11 @@ def update_index_html(data):
                         <div style="width: 100%; height: 180px; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
                             <img src="{mb['image_url']}" alt="Morning Brew Image" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
-                        <div style="font-size: 1.05rem; line-height: 1.7; color: #cbd5e1; margin-bottom: 20px; padding: 10px; border-left: 4px solid #f59e0b; background: rgba(255,255,255,0.03); border-radius: 0 8px 8px 0;">
+                        <div style="font-size: 1.05rem; line-height: 1.7; color: #cbd5e1; margin-bottom: 20px; padding: 15px; border-left: 4px solid #f59e0b; background: rgba(255,255,255,0.03); border-radius: 0 8px 8px 0;">
                             {mb['summary']}
                         </div>
-                        <div class="section-label">Market Impact Trend (S&P 500)</div>
-                        <div class="tradingview-widget-container" style="height: 200px; width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 25px;">
-                            <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                            {{
-                                "symbol": "AMEX:SPY",
-                                "width": "100%",
-                                "height": "100%",
-                                "locale": "kr",
-                                "dateRange": "1M",
-                                "colorTheme": "dark",
-                                "isTransparent": true,
-                                "autosize": true,
-                                "largeChartUrl": ""
-                            }}
-                            </script>
-                        </div>
-                        <div style="text-align: center; margin-top: 10px;">
-                            <a href="{mb['link']}" target="_blank" rel="noopener noreferrer" style="display:inline-block; width:100%; padding:15px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; text-decoration:none; border-radius:12px; font-weight:800; font-size:1.1rem; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3); transition:transform 0.2s;">
+                        <div style="text-align: center; margin-top: 20px;">
+                            <a href="{mb['link']}" target="_blank" rel="noopener noreferrer" style="display:inline-block; width:100%; padding:15px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; text-decoration:none; border-radius:12px; font-weight:800; font-size:1.1rem; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3); transition:transform 0.2s; box-sizing:border-box;">
                                 ☕ Read Latest Issue on Morning Brew
                             </a>
                         </div>
