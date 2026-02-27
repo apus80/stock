@@ -926,159 +926,150 @@
             line-height: 1.2
         }
 
-        /* 자동화 마켓 뉴스 카드 전용 스타일 */
+        /* 인포그래픽/손글씨 스타일 마켓 뉴스 카드 */
         .news-card {
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 25px;
+            background: #fffef2;
+            /* 연한 미색 종이 질감 */
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 30px;
             margin: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            color: #f8fafc;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.05);
+            color: #1f2937;
+            font-family: 'Nanum Pen Script', 'Comic Sans MS', cursive, sans-serif;
+            position: relative;
         }
 
         .news-card-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .date-badge {
-            background: rgba(56, 189, 248, 0.2);
-            color: #38bdf8;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .market-status-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            line-height: 1.4;
-            color: #f8fafc;
-        }
-
-        .index-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            text-align: center;
             margin-bottom: 25px;
         }
 
-        .index-summary-item {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .index-summary-name {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            display: block;
-        }
-
-        .index-summary-value {
-            font-size: 1rem;
-            font-weight: 700;
-            display: block;
-        }
-
-        .index-summary-change {
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .change-up {
-            color: #10b981;
-        }
-
-        .change-down {
-            color: #ef4444;
-        }
-
-        .section-title-line {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #818cf8;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 20px 0 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-title-line::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .sector-summary-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .sector-badge-pill {
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .headline-summary-item {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 10px 14px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            border-left: 3px solid #38bdf8;
-            font-size: 0.9rem;
-        }
-
-        .gauge-display-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .gauge-value-text {
-            font-size: 1.3rem;
+        .header-main-title {
+            display: inline-block;
+            background: #d1fae5;
+            padding: 5px 20px;
+            border-radius: 30px;
+            border: 2px solid #059669;
+            font-size: 1.5rem;
             font-weight: 800;
+            margin-bottom: 15px;
         }
 
-        .gauge-label-text {
-            font-size: 0.75rem;
-            color: #94a3b8;
+        .market-status-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1.4;
+            color: #111827;
+            margin-top: 10px;
+        }
+
+        .section-container {
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px dashed #cbd5e1;
+        }
+
+        .section-header {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .index-grid-wrapper {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .index-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            font-size: 1rem;
+        }
+
+        .sector-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .sector-table td {
+            padding: 6px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .sector-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .headline-bullet {
+            list-style: none;
+            padding: 0;
+        }
+
+        .headline-bullet li {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 10px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        .headline-bullet li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #6366f1;
+            font-weight: bold;
+        }
+
+        .big-highlight-box {
+            background: #fdf2f8;
+            border: 2px solid #818cf8;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .news-card-sources {
             margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px dashed rgba(255, 255, 255, 0.1);
-            font-size: 0.7rem;
-            color: #94a3b8;
-            text-align: center;
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-align: right;
         }
 
-        .source-links-list a {
-            color: #38bdf8;
-            text-decoration: none;
-            margin: 0 4px;
+        .change-up {
+            color: #059669;
+            font-weight: bold;
+        }
+
+        .change-down {
+            color: #dc2626;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -1291,61 +1282,76 @@
                 <!-- MARKET_NEWS_CARD_START -->
             <div id="marketNewsCardArea">
                 <div class="news-card">
+                    <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap" rel="stylesheet">
                     <div class="news-card-header">
-                        <div class="header-top">
-                            <span class="date-badge">2026.02.27 (목)</span>
-                            <span style="font-size: 0.8rem; color: #94a3b8;">미국 증시 요약</span>
-                        </div>
+                        <div class="header-main-title">미증시 동향 (2026.02.27)</div>
                         <div class="market-status-title">
-                            "엔비디아 발 차익 실현에 나스닥 하락, AI 과열 경계감 확산"
+                            <div>엔비디아 부진에 나스닥 하락 📉</div><div>미-이란 이슈로 낙폭 축소 🤔</div>
                         </div>
                     </div>
-                    <div class="section-title-line">Market Indices</div>
-                    <div class="index-summary-grid">
-                        <div class="index-summary-item">
-                            <span class="index-summary-name">DOW</span>
-                            <span class="index-summary-value">49,499.2</span>
-                            <span class="index-summary-change change-up">
-                                ▲ +0.03%
-                            </span>
+
+                    <div class="section-container">
+                        <div class="section-header">🌙 밤사이 미국 증시 🐻</div>
+                        <ul class="headline-bullet">
+                            <li>혼조세 마감: NVIDIA 실적 후 기술주 랠리 주춤, 투심 위축 😟</li><li>기술주 변동성 확대: AI 투자 비용 & 산업 재편 우려 속에 불확실성 지속 🏗️</li><li>NVIDIA 급락 나스닥 하락 주도: 실적 상회에도 성장 둔화 & 높은 기대치 부담 😥</li><li>순환매 움직임: 경기민감 업종으로 자금 이동 🔄</li><li>시장 주목: 향후 실적과 수요가 높은 기대치를 충족할지 여부 👀</li>
+                        </ul>
+                    </div>
+
+                    <div class="index-grid-wrapper" style="margin-bottom:25px;">
+                        <div class="index-box"><span class="index-name-box">🇺🇸 DOW</span> <span class="change-up">+0.03%</span></div><div class="index-box"><span class="index-name-box">🌍 S&P500</span> <span class="change-down">-0.54%</span></div><div class="index-box"><span class="index-name-box">📉 Nasdaq</span> <span class="change-down">-1.18%</span></div><div class="index-box"><span class="index-name-box">🏢 Russell2000</span> <span class="change-up">+0.58%</span></div><div class="index-box"><span class="index-name-box">⚡ 필라델피아 반도체</span> <span class="change-down">-3.19%</span></div><div class="index-box"><span class="index-name-box">📈 VIX</span> <span class="change-down">+4.13%</span></div>
+                    </div>
+
+                    <div class="section-container">
+                        <div class="section-header">📊 S&P500 섹터별 등락</div>
+                        <table class="sector-table">
+                            
+            <tr>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#059669"></div>Financial <span class="change-up">+1.21%</span></div></td>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#dc2626"></div>Technology <span class="change-down">-1.40%</span></div></td>
+            </tr>
+        
+            <tr>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#059669"></div>Industrials <span class="change-up">+0.63%</span></div></td>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#dc2626"></div>Utilities <span class="change-down">-0.42%</span></div></td>
+            </tr>
+        
+            <tr>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#059669"></div>Real Estate <span class="change-up">+0.46%</span></div></td>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#dc2626"></div>Healthcare <span class="change-down">-0.26%</span></div></td>
+            </tr>
+        
+            <tr>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#059669"></div>Energy <span class="change-up">+0.33%</span></div></td>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#dc2626"></div>Cons. Defensive <span class="change-down">-0.17%</span></div></td>
+            </tr>
+        
+            <tr>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#059669"></div>Comm. Services <span class="change-up">+0.19%</span></div></td>
+                <td style="width:50%"><div class="sector-name-cell"><div class="color-dot" style="background:#dc2626"></div>Basic Materials <span class="change-down">-0.11%</span></div></td>
+            </tr>
+        
+                        </table>
+                    </div>
+
+                    <div class="big-highlight-box">
+                        <div style="font-size:1.4rem; font-weight:800;">NVIDIA <span class="change-down">-5.49% 📉</span></div>
+                        <div style="font-size:0.95rem; width:65%; line-height:1.4;">전일 정규장 마감 후 예상 상외 실적 & 가이던스 제시했음에도 실적/가이던스가 시장 기대치 대비 크게 높지 않다는 점 부각 😥</div>
+                    </div>
+
+                    <div class="section-container">
+                        <div class="section-header">💻 빅테크 7</div>
+                        <div class="index-grid-wrapper">
+                            <div class="index-box" style="border:none; background:none; font-size:0.95rem;"><span>Apple</span> <span class="change-down">-0.47%</span></div><div class="index-box" style="border:none; background:none; font-size:0.95rem;"><span>Microsoft</span> <span class="change-up">+0.28%</span></div><div class="index-box" style="border:none; background:none; font-size:0.95rem;"><span>Alphabet</span> <span class="change-down">-1.88%</span></div><div class="index-box" style="border:none; background:none; font-size:0.95rem;"><span>Amazon</span> <span class="change-down">-1.29%</span></div><div class="index-box" style="border:none; background:none; font-size:0.95rem;"><span>Tesla</span> <span class="change-down">-2.11%</span></div><div class="index-box" style="border:none; background:none; font-size:0.95rem;"><span>Meta</span> <span class="change-up">+0.51%</span></div>
                         </div>
-                        <div class="index-summary-item">
-                            <span class="index-summary-name">S&P 500</span>
-                            <span class="index-summary-value">6,908.8</span>
-                            <span class="index-summary-change change-down">
-                                ▼ -0.54%
-                            </span>
-                        </div>
-                        <div class="index-summary-item">
-                            <span class="index-summary-name">NASDAQ</span>
-                            <span class="index-summary-value">22,878.3</span>
-                            <span class="index-summary-change change-down">
-                                ▼ -1.18%
-                            </span>
-                        </div>
                     </div>
-                    <div class="section-title-line">Magnificent 7 & Sectors</div>
-                    <div class="sector-summary-list">
-                        <div class="sector-badge-pill" style="border-color: #ef4444">엔비디아(NVDA) -5.0% 🔴</div><div class="sector-badge-pill" style="border-color: #10b981">넷플릭스(NFLX) +11.0% 🟢</div><div class="sector-badge-pill" style="border-color: #10b981">금융(XLF) +1.3% 🟢</div><div class="sector-badge-pill" style="border-color: #ef4444">정보기술(XLK) -1.8% 🔴</div>
+
+                    <div class="section-container" style="border:none; background:#f0f9ff;">
+                        <div class="section-header">Other ETFs 🌏</div>
+                        <div style="margin-bottom:8px; font-size:0.95rem;">📌 MSCI 한국 증시 ETF : 미 증시 부진에도 전일 KOSPI 급등으로 1.02% 상승 🇰🇷</div><div style="margin-bottom:8px; font-size:0.95rem;">📌 MSCI 신흥지수 ETF : 0.95% 하락 🌍</div>
                     </div>
-                    <div class="section-title-line">Key Headlines</div>
-                    <div class="headline-list-container">
-                        <div class="headline-summary-item">🚀 <strong>AI 피로감</strong>: 엔비디아 역대급 실적에도 불구, 고점 부담에 따른 5% 급락</div><div class="headline-summary-item">📺 <strong>넷플릭스의 승리</strong>: WBD 인수 철회 소식에 자본 효율성 기대감으로 11% 폭등</div><div class="headline-summary-item">💼 <strong>고용 시장</strong>: 신규 실업수당 청구 건수 소폭 증가, 견조한 노동 시장 재확인</div>
-                    </div>
-                    <div class="section-title-line">Market Sentiment</div>
-                    <div class="gauge-display-container">
-                        <div class="gauge-value-text">44 (Fear)</div>
-                        <div class="gauge-label-text">Fear & Greed Index</div>
-                    </div>
+
                     <div class="news-card-sources">
-                        <p>Data Sources:</p>
-                        <div class="source-links-list">
-                            <a href="https://www.morningbrew.com/issues/latest">Morning Brew</a> | 
-                            <a href="https://www.reuters.com/markets/">Reuters</a> | 
-                            <a href="https://seekingalpha.com/">Seeking Alpha</a> | 
-                            <a href="https://www.investing.com/">Investing.com</a> | 
-                            <a href="https://finviz.com/">Finviz</a>
-                        </div>
+                        <p>Data Sources: Morning Brew, Reuters, Investing.com</p>
                     </div>
                 </div>
             </div>
