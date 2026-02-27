@@ -925,6 +925,161 @@
             font-size: 0.82em;
             line-height: 1.2
         }
+
+        /* 자동화 마켓 뉴스 카드 전용 스타일 */
+        .news-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 25px;
+            margin: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            color: #f8fafc;
+        }
+
+        .news-card-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .date-badge {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .market-status-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.4;
+            color: #f8fafc;
+        }
+
+        .index-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .index-summary-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .index-summary-name {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            display: block;
+        }
+
+        .index-summary-value {
+            font-size: 1rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .index-summary-change {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .change-up {
+            color: #10b981;
+        }
+
+        .change-down {
+            color: #ef4444;
+        }
+
+        .section-title-line {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #818cf8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 20px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title-line::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sector-summary-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sector-badge-pill {
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .headline-summary-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border-left: 3px solid #38bdf8;
+            font-size: 0.9rem;
+        }
+
+        .gauge-display-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .gauge-value-text {
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .gauge-label-text {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .news-card-sources {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .source-links-list a {
+            color: #38bdf8;
+            text-decoration: none;
+            margin: 0 4px;
+        }
     </style>
 </head>
 
@@ -1131,569 +1286,646 @@
                         </a>
                     </div>
                 </div>
-            </div>
 
-            <!-- 히트맵 섹션 (Full Width) -->
-            <div class="card heatmap-card" style="margin: 20px; padding: 0; overflow: hidden;">
-                <div
-                    style="display:flex; justify-content:space-between; align-items:center; padding:20px; border-bottom:1px solid #edf2f7;">
-                    <h3 class="section-title" style="border:none; padding:0; margin:0;">📊 Market Heat Map</h3>
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <!-- 외부 링크 배지 -->
-                        <div style="display:flex; gap:8px;">
-                            <a href="https://www.tradingview.com/heatmap/stock/" target="_blank"
-                                rel="noopener noreferrer" class="btn-sm"
-                                style="background:#f1f5f9; text-decoration:none; display:flex; align-items:center; gap:4px;">
-                                📈 TradingView
-                            </a>
-                            <a href="https://finviz.com/map.ashx" target="_blank" rel="noopener noreferrer"
-                                class="btn-sm"
-                                style="background:#f1f5f9; text-decoration:none; display:flex; align-items:center; gap:4px;">
-                                🗺️ Finviz
-                            </a>
+                <!-- 자동화 마켓 뉴스 카드 위치 -->
+                <!-- MARKET_NEWS_CARD_START -->
+            <div id="marketNewsCardArea">
+                <div class="news-card">
+                    <div class="news-card-header">
+                        <div class="header-top">
+                            <span class="date-badge">2026.02.27 (목)</span>
+                            <span style="font-size: 0.8rem; color: #94a3b8;">미국 증시 요약</span>
                         </div>
-                        <select id="mapSelector" onchange="updateTradingViewMap()" class="search-input"
-                            style="width: auto; padding: 6px 12px; margin: 0;">
-                            <option value="S&P 500">S&P 500</option>
-                            <option value="Nasdaq 100">Nasdaq 100</option>
-                        </select>
+                        <div class="market-status-title">
+                            "엔비디아 발 차익 실현에 나스닥 하락, AI 과열 경계감 확산"
+                        </div>
+                    </div>
+                    <div class="section-title-line">Market Indices</div>
+                    <div class="index-summary-grid">
+                        <div class="index-summary-item">
+                            <span class="index-summary-name">DOW</span>
+                            <span class="index-summary-value">49,499.2</span>
+                            <span class="index-summary-change change-up">
+                                ▲ +0.03%
+                            </span>
+                        </div>
+                        <div class="index-summary-item">
+                            <span class="index-summary-name">S&P 500</span>
+                            <span class="index-summary-value">6,908.8</span>
+                            <span class="index-summary-change change-down">
+                                ▼ -0.54%
+                            </span>
+                        </div>
+                        <div class="index-summary-item">
+                            <span class="index-summary-name">NASDAQ</span>
+                            <span class="index-summary-value">22,878.3</span>
+                            <span class="index-summary-change change-down">
+                                ▼ -1.18%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="section-title-line">Magnificent 7 & Sectors</div>
+                    <div class="sector-summary-list">
+                        <div class="sector-badge-pill" style="border-color: #ef4444">엔비디아(NVDA) -5.0% 🔴</div><div class="sector-badge-pill" style="border-color: #10b981">넷플릭스(NFLX) +11.0% 🟢</div><div class="sector-badge-pill" style="border-color: #10b981">금융(XLF) +1.3% 🟢</div><div class="sector-badge-pill" style="border-color: #ef4444">정보기술(XLK) -1.8% 🔴</div>
+                    </div>
+                    <div class="section-title-line">Key Headlines</div>
+                    <div class="headline-list-container">
+                        <div class="headline-summary-item">🚀 <strong>AI 피로감</strong>: 엔비디아 역대급 실적에도 불구, 고점 부담에 따른 5% 급락</div><div class="headline-summary-item">📺 <strong>넷플릭스의 승리</strong>: WBD 인수 철회 소식에 자본 효율성 기대감으로 11% 폭등</div><div class="headline-summary-item">💼 <strong>고용 시장</strong>: 신규 실업수당 청구 건수 소폭 증가, 견조한 노동 시장 재확인</div>
+                    </div>
+                    <div class="section-title-line">Market Sentiment</div>
+                    <div class="gauge-display-container">
+                        <div class="gauge-value-text">44 (Fear)</div>
+                        <div class="gauge-label-text">Fear & Greed Index</div>
+                    </div>
+                    <div class="news-card-sources">
+                        <p>Data Sources:</p>
+                        <div class="source-links-list">
+                            <a href="https://www.morningbrew.com/issues/latest">Morning Brew</a> | 
+                            <a href="https://www.reuters.com/markets/">Reuters</a> | 
+                            <a href="https://seekingalpha.com/">Seeking Alpha</a> | 
+                            <a href="https://www.investing.com/">Investing.com</a> | 
+                            <a href="https://finviz.com/">Finviz</a>
+                        </div>
                     </div>
                 </div>
-                <!-- ID가 중복되지 않도록 확인 및 고정 높이 부여 -->
-                <div id="tradingview_heatmap_container" style="width:100%; height:600px;"></div>
             </div>
+<!-- MARKET_NEWS_CARD_END -->
+
+                <!-- 히트맵 섹션 (Full Width) -->
+                <div class="card heatmap-card" style="margin: 20px; padding: 0; overflow: hidden;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:center; padding:20px; border-bottom:1px solid #edf2f7;">
+                        <h3 class="section-title" style="border:none; padding:0; margin:0;">📊 Market Heat Map</h3>
+                        <div style="display:flex; align-items:center; gap:15px;">
+                            <!-- 외부 링크 배지 -->
+                            <div style="display:flex; gap:8px;">
+                                <a href="https://www.tradingview.com/heatmap/stock/" target="_blank"
+                                    rel="noopener noreferrer" class="btn-sm"
+                                    style="background:#f1f5f9; text-decoration:none; display:flex; align-items:center; gap:4px;">
+                                    📈 TradingView
+                                </a>
+                                <a href="https://finviz.com/map.ashx" target="_blank" rel="noopener noreferrer"
+                                    class="btn-sm"
+                                    style="background:#f1f5f9; text-decoration:none; display:flex; align-items:center; gap:4px;">
+                                    🗺️ Finviz
+                                </a>
+                            </div>
+                            <select id="mapSelector" onchange="updateTradingViewMap()" class="search-input"
+                                style="width: auto; padding: 6px 12px; margin: 0;">
+                                <option value="S&P 500">S&P 500</option>
+                                <option value="Nasdaq 100">Nasdaq 100</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- ID가 중복되지 않도록 확인 및 고정 높이 부여 -->
+                    <div id="tradingview_heatmap_container" style="width:100%; height:600px;"></div>
+                </div>
+
+
+
+
+            </div>
+
+            <!-- 경제 캘린더 섹션 (전체 통합 및 레이아웃 조정) -->
+            <div class="card calendar-card" style="padding: 24px;">
+                <h3 class="section-title">📆 2026년 3-4월 경제 일정</h3>
+                <div class="calendar-grid">
+                    <!-- 3월 달력 -->
+                    <div class="month-calendar">
+                        <div class="month-header">3월</div>
+                        <div class="weekdays">
+                            <div>일</div>
+                            <div>월</div>
+                            <div>화</div>
+                            <div>수</div>
+                            <div>목</div>
+                            <div>금</div>
+                            <div>토</div>
+                        </div>
+                        <div id="cal-mar" class="dates"></div>
+                    </div>
+                    <!-- 4월 달력 -->
+                    <div class="month-calendar">
+                        <div class="month-header">4월</div>
+                        <div class="weekdays">
+                            <div>일</div>
+                            <div>월</div>
+                            <div>화</div>
+                            <div>수</div>
+                            <div>목</div>
+                            <div>금</div>
+                            <div>토</div>
+                        </div>
+                        <div id="cal-apr" class="dates"></div>
+                    </div>
+                </div>
+
+                <div class="event-summary" style="margin-top: 30px;">
+                    <h3 class="section-title">📌 전체 53개 이벤트</h3>
+                    <div class="badge"
+                        style="background: var(--bg-gradient); width: 100%; text-align: center; padding: 10px; margin-bottom: 20px; border-radius: 8px;">
+                        3월: 21개 | 4월: 19개
+                    </div>
+                    <div class="update-note" style="margin-bottom: 15px; font-size: 0.8em; opacity: 0.8;">
+                        ℹ️ 출처: Investing.com 경제 캘린더 및 Federal Reserve 공식 2026 릴리스 스케줄
+                    </div>
+
+                    <!-- 이벤트 그리드 컨테이너 (아코디언 제거, 2x2 그리드 적용) -->
+                    <div class="calendar-event-grid-container"
+                        style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                        <!-- 주요 실적 발표 -->
+                        <div class="event-category-card"
+                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                            <div class="category-header-cal"
+                                style="background:linear-gradient(135deg,#667eea,#764ba2); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                                💎 주요 실적 발표
+                            </div>
+                            <div class="event-grid-cal" style="padding: 15px;">
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">💎</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/4</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐
+                                            Broadcom
+                                            (AVGO)</div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">💎</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/16</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">TSM (예정)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">💎</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/21</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">Tesla
+                                            (예정)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
+                                    <div class="event-icon-large">💎</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/23</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">MSFT /
+                                            GOOGL
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 고용 및 노동 시장 -->
+                        <div class="event-category-card"
+                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                            <div class="category-header-cal"
+                                style="background:linear-gradient(135deg,#6f42c1,#8e44ad); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                                💼 고용 및 노동 시장
+                            </div>
+                            <div class="event-grid-cal" style="padding: 15px;">
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">💼</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/6</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP
+                                            고용보고서
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">💼</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/28</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">JOLTS
+                                            구인건수
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
+                                    <div class="event-icon-large">💼</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/3</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP
+                                            고용보고서
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 물가 및 인플레이션 -->
+                        <div class="event-category-card"
+                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                            <div class="category-header-cal"
+                                style="background:linear-gradient(135deg,#fd7e14,#e74c3c); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                                📊 물가 및 인플레이션
+                            </div>
+                            <div class="event-grid-cal" style="padding: 15px;">
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">📊</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/11</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI
+                                            (소비자물가)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">🏭</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/12</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI
+                                            (생산자물가)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">🛍️</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/27</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">근원 PCE 물가
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">📊</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/10</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI
+                                            (소비자물가)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
+                                    <div class="event-icon-large">🏭</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/14</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI
+                                            (생산자물가)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FOMC 및 통화 정책 -->
+                        <div class="event-category-card"
+                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+                            <div class="category-header-cal"
+                                style="background:linear-gradient(135deg,#0056b3,#004085); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
+                                🏦 FOMC 및 통화 정책
+                            </div>
+                            <div class="event-grid-cal" style="padding: 15px;">
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">🏦</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/17-18</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="event-icon-large">🏦</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/18</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ 금리
+                                            결정/점도표
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="event-item-cal"
+                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
+                                    <div class="event-icon-large">🏦</div>
+                                    <div class="event-details-cal">
+                                        <div class="event-date-cal"
+                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/28-29</div>
+                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="update-note" style="justify-content: center; margin-top: 20px;">
+                        ⭐ 시장 영향도 높은 핵심 지표
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                // 페이지가 처음 열릴 때 자동으로 실행
+                document.addEventListener("DOMContentLoaded", function () {
+                    updateTradingViewMap();
+                });
+
+                function updateTradingViewMap() {
+                    const selector = document.getElementById('mapSelector');
+                    const container = document.getElementById('tradingview_heatmap_container');
+
+                    // 1. 기존 위젯 비우기
+                    container.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100%; color:#64748b;">🔄 실시간 맵 로딩 중...</div>';
+
+                    // 2. 선택된 맵에 따라 데이터 소스 설정
+                    let dataSource = selector.value; // "S&P 500" 또는 "Nasdaq 100" 직접 사용
+
+                    // 3. 위젯 스크립트 생성 및 설정
+                    const script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    // 타임스탬프를 추가하여 캐시를 방지하고 실시간성 확보
+                    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js?v=' + Date.now();
+                    script.async = true;
+
+                    const config = {
+                        "dataSource": dataSource,
+                        "grouping": "sector",
+                        "blockSize": "market_cap_basic",
+                        "blockColor": "change",
+                        "locale": "ko",
+                        "symbolUrl": "",
+                        "colorTheme": "light",
+                        "hasTopBar": true,
+                        "isTransparent": false,
+                        "hasSymbolTooltip": true,
+                        "width": "100%",
+                        "height": "100%"
+                    };
+
+                    script.text = JSON.stringify(config);
+
+                    // 로딩 메시지 제거 후 추가
+                    setTimeout(() => {
+                        container.innerHTML = '';
+                        container.appendChild(script);
+                    }, 100);
+                }
+            </script>
 
 
 
 
         </div>
 
-        <!-- 경제 캘린더 섹션 (전체 통합 및 레이아웃 조정) -->
-        <div class="card calendar-card" style="padding: 24px;">
-            <h3 class="section-title">📆 2026년 3-4월 경제 일정</h3>
-            <div class="calendar-grid">
-                <!-- 3월 달력 -->
-                <div class="month-calendar">
-                    <div class="month-header">3월</div>
-                    <div class="weekdays">
-                        <div>일</div>
-                        <div>월</div>
-                        <div>화</div>
-                        <div>수</div>
-                        <div>목</div>
-                        <div>금</div>
-                        <div>토</div>
+        <!-- 리포트 선택기 섹션 -->
+        <div class="controls">
+            <h3 class="section-title">📽️ 분석 리포트 선택 및 조회</h3>
+            <div class="grid-top-row">
+                <!-- 종목 리포트 -->
+                <div class="category-section featured">
+                    <div class="category-header">
+                        <div class="category-icon">📈</div>
+                        <div class="category-title">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <h3>주식 종목 리포트 <span class="badge">MAIN</span></h3>
+                                <a href="methodology.html" target="_blank" rel="noopener noreferrer" class="btn-sm"
+                                    style="text-decoration: none;">📝 방법론</a>
+                            </div>
+                            <p>기술적 분석 및 매수 전략</p>
+                        </div>
                     </div>
-                    <div id="cal-mar" class="dates"></div>
+                    <div class="selector-row">
+                        <select id="dateRecommendation"></select>
+                        <button class="btn-load" onclick="loadReport('recommendation')">📄 불러오기</button>
+                    </div>
                 </div>
-                <!-- 4월 달력 -->
-                <div class="month-calendar">
-                    <div class="month-header">4월</div>
-                    <div class="weekdays">
-                        <div>일</div>
-                        <div>월</div>
-                        <div>화</div>
-                        <div>수</div>
-                        <div>목</div>
-                        <div>금</div>
-                        <div>토</div>
+
+                <!-- 급등 종목 리포트 -->
+                <div class="category-section featured">
+                    <div class="category-header">
+                        <div class="category-icon">🚀</div>
+                        <div class="category-title">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <h3>급등 종목 리포트 <span class="badge">ALERT</span></h3>
+                                <a href="7Factor.html" target="_blank" rel="noopener noreferrer" class="btn-sm"
+                                    style="text-decoration: none;">📝 방법론</a>
+                            </div>
+                            <p>급등 탐지 및 7요소 분석</p>
+                        </div>
                     </div>
-                    <div id="cal-apr" class="dates"></div>
+                    <div class="selector-row">
+                        <select id="dateShoot"></select>
+                        <button class="btn-load" onclick="loadReport('shoot')">📄 불러오기</button>
+                    </div>
+                </div>
+
+                <!-- 시황 & 보고서 -->
+                <div class="category-section news">
+                    <div class="category-header">
+                        <div class="category-icon">📰</div>
+                        <div class="category-title">
+                            <h3>시황 & 보고서 <span class="badge news">NEW</span></h3>
+                            <p>글로벌 거시 경제 및 주요 공시</p>
+                        </div>
+                    </div>
+                    <div class="selector-row">
+                        <select id="dateNews"></select>
+                        <button class="btn-load" onclick="loadReport('news')">📄 불러오기</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="event-summary" style="margin-top: 30px;">
-                <h3 class="section-title">📌 전체 53개 이벤트</h3>
-                <div class="badge"
-                    style="background: var(--bg-gradient); width: 100%; text-align: center; padding: 10px; margin-bottom: 20px; border-radius: 8px;">
-                    3월: 21개 | 4월: 19개
-                </div>
-                <div class="update-note" style="margin-bottom: 15px; font-size: 0.8em; opacity: 0.8;">
-                    ℹ️ 출처: Investing.com 경제 캘린더 및 Federal Reserve 공식 2026 릴리스 스케줄
-                </div>
-
-                <!-- 이벤트 그리드 컨테이너 (아코디언 제거, 2x2 그리드 적용) -->
-                <div class="calendar-event-grid-container"
-                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-                    <!-- 주요 실적 발표 -->
-                    <div class="event-category-card"
-                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                        <div class="category-header-cal"
-                            style="background:linear-gradient(135deg,#667eea,#764ba2); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                            💎 주요 실적 발표
-                        </div>
-                        <div class="event-grid-cal" style="padding: 15px;">
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">💎</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/4</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ Broadcom
-                                        (AVGO)</div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">💎</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/16</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">TSM (예정)
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">💎</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/21</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">Tesla (예정)
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                <div class="event-icon-large">💎</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/23</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">MSFT / GOOGL
-                                    </div>
-                                </div>
-                            </div>
+            <div class="grid-bottom-row" style="margin-top: 20px;">
+                <!-- 상세 분석 도구 -->
+                <div class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon">💰</div>
+                        <div class="category-title">
+                            <h3>[분석1] 미국시장 유동성</h3>
+                            <p>연준 정책 및 금융 여건 분석</p>
                         </div>
                     </div>
-
-                    <!-- 고용 및 노동 시장 -->
-                    <div class="event-category-card"
-                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                        <div class="category-header-cal"
-                            style="background:linear-gradient(135deg,#6f42c1,#8e44ad); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                            💼 고용 및 노동 시장
-                        </div>
-                        <div class="event-grid-cal" style="padding: 15px;">
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">💼</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/6</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP 고용보고서
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">💼</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/28</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">JOLTS 구인건수
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                <div class="event-icon-large">💼</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/3</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP 고용보고서
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 물가 및 인플레이션 -->
-                    <div class="event-category-card"
-                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                        <div class="category-header-cal"
-                            style="background:linear-gradient(135deg,#fd7e14,#e74c3c); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                            📊 물가 및 인플레이션
-                        </div>
-                        <div class="event-grid-cal" style="padding: 15px;">
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">📊</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/11</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI (소비자물가)
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">🏭</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/12</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI (생산자물가)
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">🛍️</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/27</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">근원 PCE 물가
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">📊</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/10</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI (소비자물가)
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                <div class="event-icon-large">🏭</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/14</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI (생산자물가)
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- FOMC 및 통화 정책 -->
-                    <div class="event-category-card"
-                        style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                        <div class="category-header-cal"
-                            style="background:linear-gradient(135deg,#0056b3,#004085); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                            🏦 FOMC 및 통화 정책
-                        </div>
-                        <div class="event-grid-cal" style="padding: 15px;">
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">🏦</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/17-18</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                <div class="event-icon-large">🏦</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/18</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ 금리 결정/점도표
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="event-item-cal"
-                                style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                <div class="event-icon-large">🏦</div>
-                                <div class="event-details-cal">
-                                    <div class="event-date-cal"
-                                        style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/28-29</div>
-                                    <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="selector-row">
+                        <select id="dateAnalysis1"></select>
+                        <button class="btn-load" onclick="loadReport('analysis1')">🔍 분석</button>
                     </div>
                 </div>
-
-                <div class="update-note" style="justify-content: center; margin-top: 20px;">
-                    ⭐ 시장 영향도 높은 핵심 지표
+                <div class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon">📊</div>
+                        <div class="category-title">
+                            <h3>[분석2] ETF 자금 흐름</h3>
+                            <p>테마별 자금 유입 체크</p>
+                        </div>
+                    </div>
+                    <div class="selector-row">
+                        <select id="dateAnalysis2"></select>
+                        <button class="btn-load" onclick="loadReport('analysis2')">🔍 분석</button>
+                    </div>
                 </div>
+                <div class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon">👔</div>
+                        <div class="category-title">
+                            <h3>[분석3] 내부자 매수 분석</h3>
+                            <p>경영진 고확신 매수 시그널</p>
+                        </div>
+                    </div>
+                    <div class="selector-row">
+                        <select id="dateAnalysis3"></select>
+                        <button class="btn-load" onclick="loadReport('analysis3')">🔍 분석</button>
+                    </div>
+                </div>
+                <div class="category-section">
+                    <div class="category-header">
+                        <div class="category-icon">🎯</div>
+                        <div class="category-title">
+                            <h3>[분석4] 애널리스트 목표</h3>
+                            <p>월가 목표주가 상향 추적</p>
+                        </div>
+                    </div>
+                    <div class="selector-row">
+                        <select id="dateAnalysis4"></select>
+                        <button class="btn-load" onclick="loadReport('analysis4')">🔍 분석</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pdf-viewer">
+            <div id="pdfContent" class="info">
+                <h3>👋 환영합니다!</h3>
+                <p style="margin-top: 10px;">위에서 카테고리와 날짜를 선택한 후 "불러오기" 버튼을 클릭하세요.</p>
+                <ul style="margin-top: 15px;">
+                    <li><strong>추천 종목:</strong> 투자 추천 및 매매 전략</li>
+                    <li><strong>급등 종목:</strong> 급등 종목 탐지 및 7가지 요소 분석 <span style="color: #dc3545; font-weight: 700;">🚀
+                            NEW!</span></li>
+                    <li><strong>종목 뉴스:</strong> 주요 종목 뉴스 및 시장 동향 <span
+                            style="color: #28a745; font-weight: 700;">NEW!</span>
+                    </li>
+                    <li><strong>분석1:</strong> 미국 시장 유동성 및 자산 배분</li>
+                    <li><strong>분석2:</strong> ETF 자금 흐름 및 섹터 로테이션</li>
+                    <li><strong>분석3:</strong> 내부자 매수 시그널</li>
+                    <li><strong>분석4:</strong> 애널리스트 목표가 상향</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer with Source (출처 통합) -->
+        <div class="footer">
+            <div class="footer-content">
+                <h4>📚 4가지 분석 프레임워크 출처</h4>
+                <a href="https://youtu.be/R8Re7W02oxg?si=-Yi1xNDBs4HaYRyO" target="_blank" class="footer-source">
+                    분석 방법론 상세 영상 보기
+                </a>
+                <p>
+                    분석1~4의 프레임워크는 위 영상을 기반으로 작성되었습니다.<br>
+                    투자에 대한 모든 책임은 투자자 본인에게 있습니다.
+                </p>
             </div>
         </div>
 
         <script>
-            // 페이지가 처음 열릴 때 자동으로 실행
-            document.addEventListener("DOMContentLoaded", function () {
-                updateTradingViewMap();
-            });
+            console.log('==========================================');
+            console.log('  📦 파일 버전: v1771922054');
+            console.log('  🕐 로드 시간:', new Date().toLocaleString());
+            console.log('==========================================');
 
-            function updateTradingViewMap() {
-                const selector = document.getElementById('mapSelector');
-                const container = document.getElementById('tradingview_heatmap_container');
-
-                // 1. 기존 위젯 비우기
-                container.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100%; color:#64748b;">🔄 실시간 맵 로딩 중...</div>';
-
-                // 2. 선택된 맵에 따라 데이터 소스 설정
-                let dataSource = selector.value; // "S&P 500" 또는 "Nasdaq 100" 직접 사용
-
-                // 3. 위젯 스크립트 생성 및 설정
-                const script = document.createElement('script');
-                script.type = 'text/javascript';
-                // 타임스탬프를 추가하여 캐시를 방지하고 실시간성 확보
-                script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js?v=' + Date.now();
-                script.async = true;
-
-                const config = {
-                    "dataSource": dataSource,
-                    "grouping": "sector",
-                    "blockSize": "market_cap_basic",
-                    "blockColor": "change",
-                    "locale": "ko",
-                    "symbolUrl": "",
-                    "colorTheme": "light",
-                    "hasTopBar": true,
-                    "isTransparent": false,
-                    "hasSymbolTooltip": true,
-                    "width": "100%",
-                    "height": "100%"
-                };
-
-                script.text = JSON.stringify(config);
-
-                // 로딩 메시지 제거 후 추가
-                setTimeout(() => {
-                    container.innerHTML = '';
-                    container.appendChild(script);
-                }, 100);
-            }
-        </script>
-
-
-
-
-    </div>
-
-    <!-- 리포트 선택기 섹션 -->
-    <div class="controls">
-        <h3 class="section-title">📽️ 분석 리포트 선택 및 조회</h3>
-        <div class="grid-top-row">
-            <!-- 종목 리포트 -->
-            <div class="category-section featured">
-                <div class="category-header">
-                    <div class="category-icon">📈</div>
-                    <div class="category-title">
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <h3>주식 종목 리포트 <span class="badge">MAIN</span></h3>
-                            <a href="methodology.html" target="_blank" rel="noopener noreferrer" class="btn-sm"
-                                style="text-decoration: none;">📝 방법론</a>
-                        </div>
-                        <p>기술적 분석 및 매수 전략</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <select id="dateRecommendation"></select>
-                    <button class="btn-load" onclick="loadReport('recommendation')">📄 불러오기</button>
-                </div>
-            </div>
-
-            <!-- 급등 종목 리포트 -->
-            <div class="category-section featured">
-                <div class="category-header">
-                    <div class="category-icon">🚀</div>
-                    <div class="category-title">
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <h3>급등 종목 리포트 <span class="badge">ALERT</span></h3>
-                            <a href="7Factor.html" target="_blank" rel="noopener noreferrer" class="btn-sm"
-                                style="text-decoration: none;">📝 방법론</a>
-                        </div>
-                        <p>급등 탐지 및 7요소 분석</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <select id="dateShoot"></select>
-                    <button class="btn-load" onclick="loadReport('shoot')">📄 불러오기</button>
-                </div>
-            </div>
-
-            <!-- 시황 & 보고서 -->
-            <div class="category-section news">
-                <div class="category-header">
-                    <div class="category-icon">📰</div>
-                    <div class="category-title">
-                        <h3>시황 & 보고서 <span class="badge news">NEW</span></h3>
-                        <p>글로벌 거시 경제 및 주요 공시</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <select id="dateNews"></select>
-                    <button class="btn-load" onclick="loadReport('news')">📄 불러오기</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid-bottom-row" style="margin-top: 20px;">
-            <!-- 상세 분석 도구 -->
-            <div class="category-section">
-                <div class="category-header">
-                    <div class="category-icon">💰</div>
-                    <div class="category-title">
-                        <h3>[분석1] 미국시장 유동성</h3>
-                        <p>연준 정책 및 금융 여건 분석</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <select id="dateAnalysis1"></select>
-                    <button class="btn-load" onclick="loadReport('analysis1')">🔍 분석</button>
-                </div>
-            </div>
-            <div class="category-section">
-                <div class="category-header">
-                    <div class="category-icon">📊</div>
-                    <div class="category-title">
-                        <h3>[분석2] ETF 자금 흐름</h3>
-                        <p>테마별 자금 유입 체크</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <select id="dateAnalysis2"></select>
-                    <button class="btn-load" onclick="loadReport('analysis2')">🔍 분석</button>
-                </div>
-            </div>
-            <div class="category-section">
-                <div class="category-header">
-                    <div class="category-icon">👔</div>
-                    <div class="category-title">
-                        <h3>[분석3] 내부자 매수 분석</h3>
-                        <p>경영진 고확신 매수 시그널</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <select id="dateAnalysis3"></select>
-                    <button class="btn-load" onclick="loadReport('analysis3')">🔍 분석</button>
-                </div>
-            </div>
-            <div class="category-section">
-                <div class="category-header">
-                    <div class="category-icon">🎯</div>
-                    <div class="category-title">
-                        <h3>[분석4] 애널리스트 목표</h3>
-                        <p>월가 목표주가 상향 추적</p>
-                    </div>
-                </div>
-                <div class="selector-row">
-                    <select id="dateAnalysis4"></select>
-                    <button class="btn-load" onclick="loadReport('analysis4')">🔍 분석</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="pdf-viewer">
-        <div id="pdfContent" class="info">
-            <h3>👋 환영합니다!</h3>
-            <p style="margin-top: 10px;">위에서 카테고리와 날짜를 선택한 후 "불러오기" 버튼을 클릭하세요.</p>
-            <ul style="margin-top: 15px;">
-                <li><strong>추천 종목:</strong> 투자 추천 및 매매 전략</li>
-                <li><strong>급등 종목:</strong> 급등 종목 탐지 및 7가지 요소 분석 <span style="color: #dc3545; font-weight: 700;">🚀
-                        NEW!</span></li>
-                <li><strong>종목 뉴스:</strong> 주요 종목 뉴스 및 시장 동향 <span style="color: #28a745; font-weight: 700;">NEW!</span>
-                </li>
-                <li><strong>분석1:</strong> 미국 시장 유동성 및 자산 배분</li>
-                <li><strong>분석2:</strong> ETF 자금 흐름 및 섹터 로테이션</li>
-                <li><strong>분석3:</strong> 내부자 매수 시그널</li>
-                <li><strong>분석4:</strong> 애널리스트 목표가 상향</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Footer with Source (출처 통합) -->
-    <div class="footer">
-        <div class="footer-content">
-            <h4>📚 4가지 분석 프레임워크 출처</h4>
-            <a href="https://youtu.be/R8Re7W02oxg?si=-Yi1xNDBs4HaYRyO" target="_blank" class="footer-source">
-                분석 방법론 상세 영상 보기
-            </a>
-            <p>
-                분석1~4의 프레임워크는 위 영상을 기반으로 작성되었습니다.<br>
-                투자에 대한 모든 책임은 투자자 본인에게 있습니다.
-            </p>
-        </div>
-    </div>
-
-    <script>
-        console.log('==========================================');
-        console.log('  📦 파일 버전: v1771922054');
-        console.log('  🕐 로드 시간:', new Date().toLocaleString());
-        console.log('==========================================');
-
-        const reportFiles = {
-            recommendation: {
-                '2026-02-22': { file: 'reports/recommendation/2026-02-22_catalyst.pdf', title: '단기' },
-                '2026-02-21': { file: 'reports/recommendation/2026-02-22_analysis.pdf', title: '중기' },
-                '2026-02-18': { file: 'reports/recommendation/2026-02-18_catalyst.pdf', title: '단기' },
-                '2026-02-12': { file: 'reports/recommendation/2026-02-12_catalyst.pdf', title: '단기' },
-                '2026-02-09': { file: 'reports/recommendation/2026-02-09_analysis.pdf', title: '중기' },
-                '2026-02-06': { file: 'reports/recommendation/2026-02-06_analysis.pdf', title: '중기' }
-            },
-            shoot: { '2026-02-22': { file: 'reports/shoot/2026-02-22_shoot.pdf', title: 'VRNS/KKR/QDEL/RAL' } },
-            news: {
-                '2026-02-17': { file: 'reports/news/US_Market_Analysis_20260217.pdf', title: '금일 미국 시황' },
-                '2026-02-16': { file: 'reports/news/memory_supercycle.pdf', title: '메모리 사업의 전망' },
-                '2026-02-15': { file: 'reports/news/2026-02-15_news.pdf', title: '주간 시장 동향' }
-            },
-            analysis1: {
-                '2026-03-02': { file: 'reports/analysis1/2026-03-02_liquidity.pdf', title: '유동성 리포트' },
-                '2026-02-10': { file: 'reports/analysis1/2026-02-10_liquidity.pdf', title: '유동성 리포트' }
-            },
-            analysis2: {
-                '2026-03-02': { file: 'reports/analysis2/2026-03-02_etf.pdf', title: 'ETF 리포트' },
-                '2026-02-10': { file: 'reports/analysis2/2026-02-10_etf.pdf', title: 'ETF 리포트' }
-            },
-            analysis3: {
-                '2026-03-02': { file: 'reports/analysis3/2026-03-02_insider.pdf', title: '내부자 분석' },
-                '2026-02-10': { file: 'reports/analysis3/2026-02-10_insider.pdf', title: '내부자 분석' }
-            },
-            analysis4: {
-                '2026-03-02': { file: 'reports/analysis4/2026-03-02_analyst.pdf', title: '애널리스트 분석' },
-                '2026-02-10': { file: 'reports/analysis4/2026-02-10_analyst.pdf', title: '애널리스트 분석' }
-            }
-        };
-        const categories = {
-            recommendation: { name: '추천 종목', icon: '🎯', selectId: 'dateRecommendation' },
-            shoot: { name: '급등 종목', icon: '🚀', selectId: 'dateShoot' },
-            news: { name: '뉴스', icon: '📰', selectId: 'dateNews' },
-            analysis1: { name: '유동성', icon: '💰', selectId: 'dateAnalysis1' },
-            analysis2: { name: 'ETF', icon: '📈', selectId: 'dateAnalysis2' },
-            analysis3: { name: '내부자', icon: '🔍', selectId: 'dateAnalysis3' },
-            analysis4: { name: '애널리스트', icon: '📊', selectId: 'dateAnalysis4' }
-        };
+            const reportFiles = {
+                recommendation: {
+                    '2026-02-22': { file: 'reports/recommendation/2026-02-22_catalyst.pdf', title: '단기' },
+                    '2026-02-21': { file: 'reports/recommendation/2026-02-22_analysis.pdf', title: '중기' },
+                    '2026-02-18': { file: 'reports/recommendation/2026-02-18_catalyst.pdf', title: '단기' },
+                    '2026-02-12': { file: 'reports/recommendation/2026-02-12_catalyst.pdf', title: '단기' },
+                    '2026-02-09': { file: 'reports/recommendation/2026-02-09_analysis.pdf', title: '중기' },
+                    '2026-02-06': { file: 'reports/recommendation/2026-02-06_analysis.pdf', title: '중기' }
+                },
+                shoot: { '2026-02-22': { file: 'reports/shoot/2026-02-22_shoot.pdf', title: 'VRNS/KKR/QDEL/RAL' } },
+                news: {
+                    '2026-02-17': { file: 'reports/news/US_Market_Analysis_20260217.pdf', title: '금일 미국 시황' },
+                    '2026-02-16': { file: 'reports/news/memory_supercycle.pdf', title: '메모리 사업의 전망' },
+                    '2026-02-15': { file: 'reports/news/2026-02-15_news.pdf', title: '주간 시장 동향' }
+                },
+                analysis1: {
+                    '2026-03-02': { file: 'reports/analysis1/2026-03-02_liquidity.pdf', title: '유동성 리포트' },
+                    '2026-02-10': { file: 'reports/analysis1/2026-02-10_liquidity.pdf', title: '유동성 리포트' }
+                },
+                analysis2: {
+                    '2026-03-02': { file: 'reports/analysis2/2026-03-02_etf.pdf', title: 'ETF 리포트' },
+                    '2026-02-10': { file: 'reports/analysis2/2026-02-10_etf.pdf', title: 'ETF 리포트' }
+                },
+                analysis3: {
+                    '2026-03-02': { file: 'reports/analysis3/2026-03-02_insider.pdf', title: '내부자 분석' },
+                    '2026-02-10': { file: 'reports/analysis3/2026-02-10_insider.pdf', title: '내부자 분석' }
+                },
+                analysis4: {
+                    '2026-03-02': { file: 'reports/analysis4/2026-03-02_analyst.pdf', title: '애널리스트 분석' },
+                    '2026-02-10': { file: 'reports/analysis4/2026-02-10_analyst.pdf', title: '애널리스트 분석' }
+                }
+            };
+            const categories = {
+                recommendation: { name: '추천 종목', icon: '🎯', selectId: 'dateRecommendation' },
+                shoot: { name: '급등 종목', icon: '🚀', selectId: 'dateShoot' },
+                news: { name: '뉴스', icon: '📰', selectId: 'dateNews' },
+                analysis1: { name: '유동성', icon: '💰', selectId: 'dateAnalysis1' },
+                analysis2: { name: 'ETF', icon: '📈', selectId: 'dateAnalysis2' },
+                analysis3: { name: '내부자', icon: '🔍', selectId: 'dateAnalysis3' },
+                analysis4: { name: '애널리스트', icon: '📊', selectId: 'dateAnalysis4' }
+            };
 
 
 
 
-        function loadDateList() {
-            Object.keys(categories).forEach(categoryKey => {
-                const category = categories[categoryKey], select = document.getElementById(category.selectId);
-                if (!select) return;
-                select.innerHTML = "";
-                const dates = Object.keys(reportFiles[categoryKey]).sort().reverse();
-                dates.forEach(date => {
-                    const option = document.createElement('option'); option.value = date;
-                    if (categoryKey === 'news' || categoryKey === 'recommendation' || categoryKey === 'shoot') {
-                        const data = reportFiles[categoryKey][date]; option.textContent = formatDate(date) + ' · ' + data.title;
-                    } else option.textContent = formatDate(date);
-                    select.appendChild(option);
+            function loadDateList() {
+                Object.keys(categories).forEach(categoryKey => {
+                    const category = categories[categoryKey], select = document.getElementById(category.selectId);
+                    if (!select) return;
+                    select.innerHTML = "";
+                    const dates = Object.keys(reportFiles[categoryKey]).sort().reverse();
+                    dates.forEach(date => {
+                        const option = document.createElement('option'); option.value = date;
+                        if (categoryKey === 'news' || categoryKey === 'recommendation' || categoryKey === 'shoot') {
+                            const data = reportFiles[categoryKey][date]; option.textContent = formatDate(date) + ' · ' + data.title;
+                        } else option.textContent = formatDate(date);
+                        select.appendChild(option);
+                    });
                 });
-            });
-        }
-        function formatDate(dateStr) {
-            const date = new Date(dateStr), month = date.getMonth() + 1, day = date.getDate();
-            const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-            return month + '월 ' + day + '일 (' + weekday + ')';
-        }
-        // 시장 심리 위젯 변경 함수 (TradingView 기술적 분석 위젯)
-        function changeSentiment(symbol) {
-            const container = document.getElementById('sentiment-widget-container');
-            if (!container) return;
+            }
+            function formatDate(dateStr) {
+                const date = new Date(dateStr), month = date.getMonth() + 1, day = date.getDate();
+                const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+                return month + '월 ' + day + '일 (' + weekday + ')';
+            }
+            // 시장 심리 위젯 변경 함수 (TradingView 기술적 분석 위젯)
+            function changeSentiment(symbol) {
+                const container = document.getElementById('sentiment-widget-container');
+                if (!container) return;
 
-            // TradingView 표준 구조에 맞춰 내부 초기화
-            container.innerHTML = `
+                // TradingView 표준 구조에 맞춰 내부 초기화
+                container.innerHTML = `
                 <div class="tradingview-widget-container" style="width: 100%; height: 100%;">
                     <div class="tradingview-widget-container__widget"></div>
                     <div class="tradingview-widget-copyright">
@@ -1704,117 +1936,117 @@
                 </div>
             `;
 
-            const script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
-            script.async = true;
+                const script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+                script.async = true;
 
-            const config = {
-                "interval": "1m",
-                "width": "100%",
-                "isTransparent": false,
-                "height": 400, // 높이를 상향하여 가독성 확보
-                "symbol": symbol,
-                "showIntervalTabs": true,
-                "displayMode": "single",
-                "locale": "ko",
-                "colorTheme": "light"
-            };
+                const config = {
+                    "interval": "1m",
+                    "width": "100%",
+                    "isTransparent": false,
+                    "height": 400, // 높이를 상향하여 가독성 확보
+                    "symbol": symbol,
+                    "showIntervalTabs": true,
+                    "displayMode": "single",
+                    "locale": "ko",
+                    "colorTheme": "light"
+                };
 
-            script.text = JSON.stringify(config);
-            container.querySelector('.tradingview-widget-container').appendChild(script);
+                script.text = JSON.stringify(config);
+                container.querySelector('.tradingview-widget-container').appendChild(script);
 
-            // 컨테이너 자체 높이 조절 (부모 div에 맞춰서)
-            container.style.height = "400px";
-            console.log(`📊 시장 심리 변경 완료: ${symbol}`);
-        }
+                // 컨테이너 자체 높이 조절 (부모 div에 맞춰서)
+                container.style.height = "400px";
+                console.log(`📊 시장 심리 변경 완료: ${symbol}`);
+            }
 
-        // 실시간 뉴스 로딩
-        async function loadNews() {
-            const container = document.getElementById('newsContainer');
-            if (!container) return;
+            // 실시간 뉴스 로딩
+            async function loadNews() {
+                const container = document.getElementById('newsContainer');
+                if (!container) return;
 
-            container.innerHTML = '<div class="news-item">🔄 최신 시장 뉴스를 분석 중입니다...</div>';
+                container.innerHTML = '<div class="news-item">🔄 최신 시장 뉴스를 분석 중입니다...</div>';
 
-            // --- 1단계: MarketAux (주식 뉴스) ---
-            try {
-                const apiKey = 'BKfVtXqVFB1n2n9lYKPPdCj2Z78lKS8NQTQ5eUxS';
-                const url = `https://api.marketaux.com/v1/news/all?language=en&limit=5&api_token=${apiKey}`;
-                const res = await fetch(url);
-                const json = await res.json();
-                if (json.data && json.data.length > 0) {
-                    renderNews(json.data, 'MarketAux');
-                    return;
-                }
-            } catch (e) { console.log("MarketAux 실패"); }
+                // --- 1단계: MarketAux (주식 뉴스) ---
+                try {
+                    const apiKey = 'BKfVtXqVFB1n2n9lYKPPdCj2Z78lKS8NQTQ5eUxS';
+                    const url = `https://api.marketaux.com/v1/news/all?language=en&limit=5&api_token=${apiKey}`;
+                    const res = await fetch(url);
+                    const json = await res.json();
+                    if (json.data && json.data.length > 0) {
+                        renderNews(json.data, 'MarketAux');
+                        return;
+                    }
+                } catch (e) { console.log("MarketAux 실패"); }
 
-            // --- 2단계: Alpha Vantage (금융 뉴스) ---
-            try {
-                const apiKey = 'NP58RFOBOUKNIOLV';
-                const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&limit=5&apikey=${apiKey}`;
-                const res = await fetch(url);
-                const json = await res.json();
-                if (json.feed && json.feed.length > 0) {
-                    const formattedData = json.feed.slice(0, 5).map(item => ({
-                        title: item.title,
-                        url: item.url,
-                        source: item.source,
-                        published_at: item.time_published
-                    }));
-                    renderNews(formattedData, 'Alpha Vantage');
-                    return;
-                }
-            } catch (e) { console.log("Alpha Vantage 실패"); }
+                // --- 2단계: Alpha Vantage (금융 뉴스) ---
+                try {
+                    const apiKey = 'NP58RFOBOUKNIOLV';
+                    const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&limit=5&apikey=${apiKey}`;
+                    const res = await fetch(url);
+                    const json = await res.json();
+                    if (json.feed && json.feed.length > 0) {
+                        const formattedData = json.feed.slice(0, 5).map(item => ({
+                            title: item.title,
+                            url: item.url,
+                            source: item.source,
+                            published_at: item.time_published
+                        }));
+                        renderNews(formattedData, 'Alpha Vantage');
+                        return;
+                    }
+                } catch (e) { console.log("Alpha Vantage 실패"); }
 
-            // --- 3단계: CryptoCompare (암호화폐 뉴스) ---
-            try {
-                const res = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN');
-                const json = await res.json();
-                if (json.Data && json.Data.length > 0) {
-                    const formattedData = json.Data.slice(0, 5).map(item => ({
-                        title: item.title,
-                        url: item.url,
-                        source: item.source,
-                        published_at: item.published_on * 1000
-                    }));
-                    renderNews(formattedData, 'CryptoCompare');
-                    return;
-                }
-            } catch (e) { console.log("CryptoCompare 실패"); }
+                // --- 3단계: CryptoCompare (암호화폐 뉴스) ---
+                try {
+                    const res = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN');
+                    const json = await res.json();
+                    if (json.Data && json.Data.length > 0) {
+                        const formattedData = json.Data.slice(0, 5).map(item => ({
+                            title: item.title,
+                            url: item.url,
+                            source: item.source,
+                            published_at: item.published_on * 1000
+                        }));
+                        renderNews(formattedData, 'CryptoCompare');
+                        return;
+                    }
+                } catch (e) { console.log("CryptoCompare 실패"); }
 
-            // --- 4단계: 로컬 뉴스 (최종 백업) ---
-            loadLocalNews();
-        }
+                // --- 4단계: 로컬 뉴스 (최종 백업) ---
+                loadLocalNews();
+            }
 
-        // 이 함수도 세트로 같이 붙여넣어 주세요 (뉴스 그리기를 담당합니다)
-        function renderNews(newsData, apiSource) {
-            const container = document.getElementById('newsContainer');
-            container.innerHTML = '';
-            newsData.forEach(news => {
-                const html = `
+            // 이 함수도 세트로 같이 붙여넣어 주세요 (뉴스 그리기를 담당합니다)
+            function renderNews(newsData, apiSource) {
+                const container = document.getElementById('newsContainer');
+                container.innerHTML = '';
+                newsData.forEach(news => {
+                    const html = `
             <div class="news-item">
                 <a href="${news.url}" target="_blank" class="news-link">
                     <div class="news-title">📢 ${news.title}</div>
                     <div class="news-meta">${apiSource} | ${new Date(news.published_at).toLocaleString()}</div>
                 </a>
             </div>`;
-                container.insertAdjacentHTML('beforeend', html);
-            });
-        }
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+            }
 
 
-        // 로컬 백업 뉴스 (API 실패 시)
-        function loadLocalNews() {
-            const container = document.getElementById('newsContainer');
-            const localNews = [
-                { title: '📈 S&P 500, 사상 최고치 경신', source: 'Bloomberg', time: '2시간 전', url: 'https://www.bloomberg.com/markets' },
-                { title: '🔥 AI 반도체 수요 급증, NVDA 주가 강세', source: 'CNBC', time: '3시간 전', url: 'https://www.cnbc.com/technology/' },
-                { title: '💰 연준, 금리 동결 시사', source: 'Reuters', time: '5시간 전', url: 'https://www.reuters.com/markets/' },
-                { title: '⚡ 테크 섹터 강세 지속', source: 'WSJ', time: '어제', url: 'https://www.wsj.com/economy' },
-                { title: '🏦 빅테크 실적 시즌 대기', source: 'MarketWatch', time: '어제', url: 'https://www.marketwatch.com/investing' }
-            ];
+            // 로컬 백업 뉴스 (API 실패 시)
+            function loadLocalNews() {
+                const container = document.getElementById('newsContainer');
+                const localNews = [
+                    { title: '📈 S&P 500, 사상 최고치 경신', source: 'Bloomberg', time: '2시간 전', url: 'https://www.bloomberg.com/markets' },
+                    { title: '🔥 AI 반도체 수요 급증, NVDA 주가 강세', source: 'CNBC', time: '3시간 전', url: 'https://www.cnbc.com/technology/' },
+                    { title: '💰 연준, 금리 동결 시사', source: 'Reuters', time: '5시간 전', url: 'https://www.reuters.com/markets/' },
+                    { title: '⚡ 테크 섹터 강세 지속', source: 'WSJ', time: '어제', url: 'https://www.wsj.com/economy' },
+                    { title: '🏦 빅테크 실적 시즌 대기', source: 'MarketWatch', time: '어제', url: 'https://www.marketwatch.com/investing' }
+                ];
 
-            const newsHTML = localNews.map(news => `
+                const newsHTML = localNews.map(news => `
                 <a href="${news.url}" target="_blank" rel="noopener" class="news-link">
                     <div class="news-item">
                         <div class="news-title">${news.title}</div>
@@ -1823,455 +2055,455 @@
                 </a>
             `).join('');
 
-            container.innerHTML = newsHTML;
-            console.log('⚠️ 로컬 뉴스로 대체');
-        }
-
-        // 뉴스 새로고침
-        function refreshNews() {
-            console.log('🔄 뉴스 새로고침...');
-            loadNews();
-        }
-
-        function loadReport(categoryKey) {
-            const category = categories[categoryKey], select = document.getElementById(category.selectId), date = select.value;
-            if (!date) { alert('날짜를 선택해주세요.'); return; }
-            let pdfFile; const data = reportFiles[categoryKey][date];
-            if (typeof data === 'string') pdfFile = data; else pdfFile = data.file;
-            displayPDF(pdfFile, date, category);
-        }
-        function displayPDF(pdfPath, date, category) {
-            document.getElementById('pdfContent').innerHTML = '<div class="current-view"><h4>' + category.icon + ' ' + category.name + '</h4><div class="info-grid"><div class="info-item"><div class="label">날짜</div><div class="value">' + formatDate(date) + '</div></div></div></div><div class="pdf-container"><iframe src="' + pdfPath + '" type="application/pdf"></iframe></div>';
-        }
-        // 실적 데이터 (Yahoo Finance 기반)
-        const earningsData = {
-            "NVDA": {
-                "name": "NVIDIA Corporation",
-                "date": "2026-02-25",
-                "eps_avg": 1.53669,
-                "revenue_avg": 66124358429
-            },
-            "AMD": {
-                "name": "Advanced Micro Devices, Inc.",
-                "date": "2026-05-05",
-                "eps_avg": 1.2683,
-                "revenue_avg": 9852755290
-            },
-            "AVGO": {
-                "name": "Broadcom Inc.",
-                "date": "2026-03-04",
-                "eps_avg": 2.02026,
-                "revenue_avg": 19105028740
-            },
-            "QCOM": {
-                "name": "QUALCOMM Incorporated",
-                "date": "2026-04-29",
-                "eps_avg": 2.57534,
-                "revenue_avg": 10567846810
-            },
-            "INTC": {
-                "name": "Intel Corporation",
-                "date": "2026-04-23",
-                "eps_avg": 0.002,
-                "revenue_avg": 12313072310
-            },
-            "MU": {
-                "name": "Micron Technology, Inc.",
-                "date": "2026-03-18",
-                "eps_avg": 8.50416,
-                "revenue_avg": 18895169750
-            },
-            "TSM": {
-                "name": "Taiwan Semiconductor Manufacturing Company Limited",
-                "date": "2026-04-16",
-                "eps_avg": 3.28131,
-                "revenue_avg": 1115423921810
-            },
-            "ASML": {
-                "name": "ASML Holding N.V.",
-                "date": "2026-04-15",
-                "eps_avg": 6.64707,
-                "revenue_avg": 8605432520
-            },
-            "AAPL": {
-                "name": "Apple Inc.",
-                "date": "2026-04-30",
-                "eps_avg": 1.95403,
-                "revenue_avg": 109083851330
-            },
-            "MSFT": {
-                "name": "Microsoft Corporation",
-                "date": "2026-04-29",
-                "eps_avg": 4.06091,
-                "revenue_avg": 81380910850
-            },
-            "GOOGL": {
-                "name": "Alphabet Inc.",
-                "date": "2026-04-23",
-                "eps_avg": 2.61405,
-                "revenue_avg": 106659407030
-            },
-            "AMZN": {
-                "name": "Amazon.com, Inc.",
-                "date": "2026-04-30",
-                "eps_avg": 1.63706,
-                "revenue_avg": 176962316420
-            },
-            "META": {
-                "name": "Meta Platforms, Inc.",
-                "date": "2026-04-29",
-                "eps_avg": 6.73273,
-                "revenue_avg": 55441680360
-            },
-            "TSLA": {
-                "name": "Tesla, Inc.",
-                "date": "2026-04-21",
-                "eps_avg": 0.41048,
-                "revenue_avg": 23195230200
-            },
-            "NFLX": {
-                "name": "Netflix, Inc.",
-                "date": "2026-04-16",
-                "eps_avg": 0.76279,
-                "revenue_avg": 12170332990
-            },
-            "JPM": {
-                "name": "JPMorgan Chase & Co.",
-                "date": "2026-04-14",
-                "eps_avg": 5.32738,
-                "revenue_avg": 47960373930
-            },
-            "BAC": {
-                "name": "Bank of America Corporation",
-                "date": "2026-04-15",
-                "eps_avg": 0.99683,
-                "revenue_avg": 29810633100
-            },
-            "WFC": {
-                "name": "Wells Fargo & Company",
-                "date": "2026-04-14",
-                "eps_avg": 1.58092,
-                "revenue_avg": 21845400000
-            },
-            "GS": {
-                "name": "The Goldman Sachs Group, Inc.",
-                "date": "2026-04-13",
-                "eps_avg": 15.61964,
-                "revenue_avg": 16657353620
-            },
-            "MS": {
-                "name": "Morgan Stanley",
-                "date": "2026-04-15",
-                "eps_avg": 2.92227,
-                "revenue_avg": 19233819950
-            },
-            "C": {
-                "name": "Citigroup Inc.",
-                "date": "2026-04-14",
-                "eps_avg": 2.58724,
-                "revenue_avg": 22941302430
-            },
-            "NKE": {
-                "name": "NIKE, Inc.",
-                "date": "2026-03-19",
-                "eps_avg": 0.2859,
-                "revenue_avg": 11225616780
-            },
-            "SBUX": {
-                "name": "Starbucks Corporation",
-                "date": "2026-04-28",
-                "eps_avg": 0.40434,
-                "revenue_avg": 9075520370
-            },
-            "MCD": {
-                "name": "McDonald's Corporation",
-                "date": "2026-04-30",
-                "eps_avg": 2.76154,
-                "revenue_avg": 6496857200
-            },
-            "HD": {
-                "name": "The Home Depot, Inc.",
-                "date": "2026-02-24",
-                "eps_avg": 2.5232,
-                "revenue_avg": 38102927610
-            },
-            "LOW": {
-                "name": "Lowe's Companies, Inc.",
-                "date": "2026-02-25",
-                "eps_avg": 1.9426,
-                "revenue_avg": 20336473910
-            },
-            "TGT": {
-                "name": "Target Corporation",
-                "date": "2026-03-03",
-                "eps_avg": 2.15566,
-                "revenue_avg": 30494139680
-            },
-            "WMT": {
-                "name": "Walmart Inc.",
-                "date": "2026-05-14",
-                "eps_avg": 0.66132,
-                "revenue_avg": 172219029380
-            },
-            "COST": {
-                "name": "Costco Wholesale Corporation",
-                "date": "2026-03-05",
-                "eps_avg": 4.53101,
-                "revenue_avg": 69265262480
-            },
-            "JNJ": {
-                "name": "Johnson & Johnson",
-                "date": "2026-04-14",
-                "eps_avg": 2.68547,
-                "revenue_avg": 23600479740
-            },
-            "UNH": {
-                "name": "UnitedHealth Group Incorporated",
-                "date": "2026-04-16",
-                "eps_avg": 6.87616,
-                "revenue_avg": 109833320850
-            },
-            "PFE": {
-                "name": "Pfizer Inc.",
-                "date": "2026-04-28",
-                "eps_avg": 0.72643,
-                "revenue_avg": 13900287780
-            },
-            "ABBV": {
-                "name": "AbbVie Inc.",
-                "date": "2026-05-01",
-                "eps_avg": 3.00872,
-                "revenue_avg": 14715000780
-            },
-            "LLY": {
-                "name": "Eli Lilly and Company",
-                "date": "2026-04-30",
-                "eps_avg": 7.23315,
-                "revenue_avg": 17456361190
-            },
-            "TMO": {
-                "name": "Thermo Fisher Scientific Inc.",
-                "date": "2026-04-22",
-                "eps_avg": 5.29081,
-                "revenue_avg": 10874613920
-            },
-            "BA": {
-                "name": "The Boeing Company",
-                "date": "2026-04-22",
-                "eps_avg": -0.34644,
-                "revenue_avg": 22252591180
-            },
-            "CAT": {
-                "name": "Caterpillar Inc.",
-                "date": "2026-04-30",
-                "eps_avg": 4.52299,
-                "revenue_avg": 16195040460
-            },
-            "GE": {
-                "name": "GE Aerospace",
-                "date": "2026-04-21",
-                "eps_avg": 1.58739,
-                "revenue_avg": 10619465140
-            },
-            "HON": {
-                "name": "Honeywell International Inc.",
-                "date": "2026-04-28",
-                "eps_avg": 2.32493,
-                "revenue_avg": 9270212740
-            },
-            "UPS": {
-                "name": "United Parcel Service, Inc.",
-                "date": "2026-04-28",
-                "eps_avg": 1.14325,
-                "revenue_avg": 21085993190
-            },
-            "FDX": {
-                "name": "FedEx Corporation",
-                "date": "2026-03-19",
-                "eps_avg": 4.04897,
-                "revenue_avg": 23443613160
-            },
-            "XOM": {
-                "name": "Exxon Mobil Corporation",
-                "date": "2026-05-01",
-                "eps_avg": 1.51002,
-                "revenue_avg": 79217960170
-            },
-            "CVX": {
-                "name": "Chevron Corporation",
-                "date": "2026-05-01",
-                "eps_avg": 1.5006,
-                "revenue_avg": 46696217960
-            },
-            "COP": {
-                "name": "ConocoPhillips",
-                "date": "2026-05-07",
-                "eps_avg": 1.11209,
-                "revenue_avg": 13535126140
-            },
-            "SLB": {
-                "name": "SLB N.V.",
-                "date": "2026-05-01",
-                "eps_avg": 0.6061,
-                "revenue_avg": 8884411650
-            },
-            "AA": {
-                "name": "Alcoa Corporation",
-                "date": "2026-04-15",
-                "eps_avg": 1.18124,
-                "revenue_avg": 3296144100
-            },
-            "FCX": {
-                "name": "Freeport-McMoRan Inc.",
-                "date": "2026-04-23",
-                "eps_avg": 0.45274,
-                "revenue_avg": 5579707240
-            },
-            "DIS": {
-                "name": "The Walt Disney Company",
-                "date": "2026-05-06",
-                "eps_avg": 1.49737,
-                "revenue_avg": 24909719370
-            },
-            "V": {
-                "name": "Visa Inc.",
-                "date": "2026-04-28",
-                "eps_avg": 3.09224,
-                "revenue_avg": 10729545630
-            },
-            "MA": {
-                "name": "Mastercard Incorporated",
-                "date": "2026-04-30",
-                "eps_avg": 4.40606,
-                "revenue_avg": 8260552120
-            },
-            "PYPL": {
-                "name": "PayPal Holdings, Inc.",
-                "date": "2026-05-05",
-                "eps_avg": 1.27784,
-                "revenue_avg": 8069200290
-            },
-            "CRM": {
-                "name": "Salesforce, Inc.",
-                "date": "2026-02-25",
-                "eps_avg": 3.05025,
-                "revenue_avg": 11188164760
-            },
-            "ORCL": {
-                "name": "Oracle Corporation",
-                "date": "2026-03-09",
-                "eps_avg": 1.70661,
-                "revenue_avg": 16902193840
-            },
-            "IBM": {
-                "name": "International Business Machines Corporation",
-                "date": "2026-04-22",
-                "eps_avg": 1.80925,
-                "revenue_avg": 15628294330
-            },
-            "PLTR": {
-                "name": "Palantir Technologies Inc.",
-                "date": "2026-05-04",
-                "eps_avg": 0.27927,
-                "revenue_avg": 1538548150
-            },
-            "CRWD": {
-                "name": "CrowdStrike Holdings, Inc.",
-                "date": "2026-03-03",
-                "eps_avg": 1.10262,
-                "revenue_avg": 1297442450
-            },
-            "SNOW": {
-                "name": "Snowflake Inc.",
-                "date": "2026-02-25",
-                "eps_avg": 0.27176,
-                "revenue_avg": 1254964190
-            },
-            "HOOD": {
-                "name": "Robinhood Markets, Inc.",
-                "date": "2026-04-29",
-                "eps_avg": 0.545,
-                "revenue_avg": 1265007100
-            },
-            "COIN": {
-                "name": "Coinbase Global, Inc.",
-                "date": "2026-05-07",
-                "eps_avg": 0.38164,
-                "revenue_avg": 1587193310
-            },
-            "SHOP": {
-                "name": "Shopify Inc.",
-                "date": "2026-05-07",
-                "eps_avg": 0.33011,
-                "revenue_avg": 3086287180
-            },
-            "VRNS": {
-                "name": "Varonis Systems, Inc.",
-                "date": "2026-05-05",
-                "eps_avg": -0.05503,
-                "revenue_avg": 165511190
-            },
-            "KKR": {
-                "name": "KKR & Co. Inc.",
-                "date": "2026-04-30",
-                "eps_avg": 1.43316,
-                "revenue_avg": 2275882440
-            },
-            "QDEL": {
-                "name": "QuidelOrtho Corporation",
-                "date": "2026-05-06",
-                "eps_avg": 0.47054,
-                "revenue_avg": 682809560
-            },
-            "RAL": {
-                "name": "Ralliant Corporation",
-                "date": "2026-04-27",
-                "eps_avg": 0.48804,
-                "revenue_avg": 515108280
-            },
-            "MRVL": {
-                "name": "Marvell Technology, Inc.",
-                "date": "2026-03-05",
-                "eps_avg": 0.79217,
-                "revenue_avg": 2206965170
-            }
-        };
-
-        async function searchEarningsAPI() {
-            const input = document.getElementById('earningsSearchInput');
-            const resultDiv = document.getElementById('earningsResult');
-
-            if (!input || !resultDiv) return;
-
-            let ticker = input.value.trim().toUpperCase();
-
-            if (!ticker) {
-                resultDiv.innerHTML =
-                    '<div class="search-result empty">🔍 티커 입력 (예: NVDA, AAPL, AMD)</div>';
-                return;
+                container.innerHTML = newsHTML;
+                console.log('⚠️ 로컬 뉴스로 대체');
             }
 
-            resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
+            // 뉴스 새로고침
+            function refreshNews() {
+                console.log('🔄 뉴스 새로고침...');
+                loadNews();
+            }
 
-            // 1. earningsData에서 먼저 검색
-            if (earningsData[ticker]) {
-                const data = earningsData[ticker];
-                const dateStr = data.date || '미정';
-                const companyName = data.name || ticker;
+            function loadReport(categoryKey) {
+                const category = categories[categoryKey], select = document.getElementById(category.selectId), date = select.value;
+                if (!date) { alert('날짜를 선택해주세요.'); return; }
+                let pdfFile; const data = reportFiles[categoryKey][date];
+                if (typeof data === 'string') pdfFile = data; else pdfFile = data.file;
+                displayPDF(pdfFile, date, category);
+            }
+            function displayPDF(pdfPath, date, category) {
+                document.getElementById('pdfContent').innerHTML = '<div class="current-view"><h4>' + category.icon + ' ' + category.name + '</h4><div class="info-grid"><div class="info-item"><div class="label">날짜</div><div class="value">' + formatDate(date) + '</div></div></div></div><div class="pdf-container"><iframe src="' + pdfPath + '" type="application/pdf"></iframe></div>';
+            }
+            // 실적 데이터 (Yahoo Finance 기반)
+            const earningsData = {
+                "NVDA": {
+                    "name": "NVIDIA Corporation",
+                    "date": "2026-02-25",
+                    "eps_avg": 1.53669,
+                    "revenue_avg": 66124358429
+                },
+                "AMD": {
+                    "name": "Advanced Micro Devices, Inc.",
+                    "date": "2026-05-05",
+                    "eps_avg": 1.2683,
+                    "revenue_avg": 9852755290
+                },
+                "AVGO": {
+                    "name": "Broadcom Inc.",
+                    "date": "2026-03-04",
+                    "eps_avg": 2.02026,
+                    "revenue_avg": 19105028740
+                },
+                "QCOM": {
+                    "name": "QUALCOMM Incorporated",
+                    "date": "2026-04-29",
+                    "eps_avg": 2.57534,
+                    "revenue_avg": 10567846810
+                },
+                "INTC": {
+                    "name": "Intel Corporation",
+                    "date": "2026-04-23",
+                    "eps_avg": 0.002,
+                    "revenue_avg": 12313072310
+                },
+                "MU": {
+                    "name": "Micron Technology, Inc.",
+                    "date": "2026-03-18",
+                    "eps_avg": 8.50416,
+                    "revenue_avg": 18895169750
+                },
+                "TSM": {
+                    "name": "Taiwan Semiconductor Manufacturing Company Limited",
+                    "date": "2026-04-16",
+                    "eps_avg": 3.28131,
+                    "revenue_avg": 1115423921810
+                },
+                "ASML": {
+                    "name": "ASML Holding N.V.",
+                    "date": "2026-04-15",
+                    "eps_avg": 6.64707,
+                    "revenue_avg": 8605432520
+                },
+                "AAPL": {
+                    "name": "Apple Inc.",
+                    "date": "2026-04-30",
+                    "eps_avg": 1.95403,
+                    "revenue_avg": 109083851330
+                },
+                "MSFT": {
+                    "name": "Microsoft Corporation",
+                    "date": "2026-04-29",
+                    "eps_avg": 4.06091,
+                    "revenue_avg": 81380910850
+                },
+                "GOOGL": {
+                    "name": "Alphabet Inc.",
+                    "date": "2026-04-23",
+                    "eps_avg": 2.61405,
+                    "revenue_avg": 106659407030
+                },
+                "AMZN": {
+                    "name": "Amazon.com, Inc.",
+                    "date": "2026-04-30",
+                    "eps_avg": 1.63706,
+                    "revenue_avg": 176962316420
+                },
+                "META": {
+                    "name": "Meta Platforms, Inc.",
+                    "date": "2026-04-29",
+                    "eps_avg": 6.73273,
+                    "revenue_avg": 55441680360
+                },
+                "TSLA": {
+                    "name": "Tesla, Inc.",
+                    "date": "2026-04-21",
+                    "eps_avg": 0.41048,
+                    "revenue_avg": 23195230200
+                },
+                "NFLX": {
+                    "name": "Netflix, Inc.",
+                    "date": "2026-04-16",
+                    "eps_avg": 0.76279,
+                    "revenue_avg": 12170332990
+                },
+                "JPM": {
+                    "name": "JPMorgan Chase & Co.",
+                    "date": "2026-04-14",
+                    "eps_avg": 5.32738,
+                    "revenue_avg": 47960373930
+                },
+                "BAC": {
+                    "name": "Bank of America Corporation",
+                    "date": "2026-04-15",
+                    "eps_avg": 0.99683,
+                    "revenue_avg": 29810633100
+                },
+                "WFC": {
+                    "name": "Wells Fargo & Company",
+                    "date": "2026-04-14",
+                    "eps_avg": 1.58092,
+                    "revenue_avg": 21845400000
+                },
+                "GS": {
+                    "name": "The Goldman Sachs Group, Inc.",
+                    "date": "2026-04-13",
+                    "eps_avg": 15.61964,
+                    "revenue_avg": 16657353620
+                },
+                "MS": {
+                    "name": "Morgan Stanley",
+                    "date": "2026-04-15",
+                    "eps_avg": 2.92227,
+                    "revenue_avg": 19233819950
+                },
+                "C": {
+                    "name": "Citigroup Inc.",
+                    "date": "2026-04-14",
+                    "eps_avg": 2.58724,
+                    "revenue_avg": 22941302430
+                },
+                "NKE": {
+                    "name": "NIKE, Inc.",
+                    "date": "2026-03-19",
+                    "eps_avg": 0.2859,
+                    "revenue_avg": 11225616780
+                },
+                "SBUX": {
+                    "name": "Starbucks Corporation",
+                    "date": "2026-04-28",
+                    "eps_avg": 0.40434,
+                    "revenue_avg": 9075520370
+                },
+                "MCD": {
+                    "name": "McDonald's Corporation",
+                    "date": "2026-04-30",
+                    "eps_avg": 2.76154,
+                    "revenue_avg": 6496857200
+                },
+                "HD": {
+                    "name": "The Home Depot, Inc.",
+                    "date": "2026-02-24",
+                    "eps_avg": 2.5232,
+                    "revenue_avg": 38102927610
+                },
+                "LOW": {
+                    "name": "Lowe's Companies, Inc.",
+                    "date": "2026-02-25",
+                    "eps_avg": 1.9426,
+                    "revenue_avg": 20336473910
+                },
+                "TGT": {
+                    "name": "Target Corporation",
+                    "date": "2026-03-03",
+                    "eps_avg": 2.15566,
+                    "revenue_avg": 30494139680
+                },
+                "WMT": {
+                    "name": "Walmart Inc.",
+                    "date": "2026-05-14",
+                    "eps_avg": 0.66132,
+                    "revenue_avg": 172219029380
+                },
+                "COST": {
+                    "name": "Costco Wholesale Corporation",
+                    "date": "2026-03-05",
+                    "eps_avg": 4.53101,
+                    "revenue_avg": 69265262480
+                },
+                "JNJ": {
+                    "name": "Johnson & Johnson",
+                    "date": "2026-04-14",
+                    "eps_avg": 2.68547,
+                    "revenue_avg": 23600479740
+                },
+                "UNH": {
+                    "name": "UnitedHealth Group Incorporated",
+                    "date": "2026-04-16",
+                    "eps_avg": 6.87616,
+                    "revenue_avg": 109833320850
+                },
+                "PFE": {
+                    "name": "Pfizer Inc.",
+                    "date": "2026-04-28",
+                    "eps_avg": 0.72643,
+                    "revenue_avg": 13900287780
+                },
+                "ABBV": {
+                    "name": "AbbVie Inc.",
+                    "date": "2026-05-01",
+                    "eps_avg": 3.00872,
+                    "revenue_avg": 14715000780
+                },
+                "LLY": {
+                    "name": "Eli Lilly and Company",
+                    "date": "2026-04-30",
+                    "eps_avg": 7.23315,
+                    "revenue_avg": 17456361190
+                },
+                "TMO": {
+                    "name": "Thermo Fisher Scientific Inc.",
+                    "date": "2026-04-22",
+                    "eps_avg": 5.29081,
+                    "revenue_avg": 10874613920
+                },
+                "BA": {
+                    "name": "The Boeing Company",
+                    "date": "2026-04-22",
+                    "eps_avg": -0.34644,
+                    "revenue_avg": 22252591180
+                },
+                "CAT": {
+                    "name": "Caterpillar Inc.",
+                    "date": "2026-04-30",
+                    "eps_avg": 4.52299,
+                    "revenue_avg": 16195040460
+                },
+                "GE": {
+                    "name": "GE Aerospace",
+                    "date": "2026-04-21",
+                    "eps_avg": 1.58739,
+                    "revenue_avg": 10619465140
+                },
+                "HON": {
+                    "name": "Honeywell International Inc.",
+                    "date": "2026-04-28",
+                    "eps_avg": 2.32493,
+                    "revenue_avg": 9270212740
+                },
+                "UPS": {
+                    "name": "United Parcel Service, Inc.",
+                    "date": "2026-04-28",
+                    "eps_avg": 1.14325,
+                    "revenue_avg": 21085993190
+                },
+                "FDX": {
+                    "name": "FedEx Corporation",
+                    "date": "2026-03-19",
+                    "eps_avg": 4.04897,
+                    "revenue_avg": 23443613160
+                },
+                "XOM": {
+                    "name": "Exxon Mobil Corporation",
+                    "date": "2026-05-01",
+                    "eps_avg": 1.51002,
+                    "revenue_avg": 79217960170
+                },
+                "CVX": {
+                    "name": "Chevron Corporation",
+                    "date": "2026-05-01",
+                    "eps_avg": 1.5006,
+                    "revenue_avg": 46696217960
+                },
+                "COP": {
+                    "name": "ConocoPhillips",
+                    "date": "2026-05-07",
+                    "eps_avg": 1.11209,
+                    "revenue_avg": 13535126140
+                },
+                "SLB": {
+                    "name": "SLB N.V.",
+                    "date": "2026-05-01",
+                    "eps_avg": 0.6061,
+                    "revenue_avg": 8884411650
+                },
+                "AA": {
+                    "name": "Alcoa Corporation",
+                    "date": "2026-04-15",
+                    "eps_avg": 1.18124,
+                    "revenue_avg": 3296144100
+                },
+                "FCX": {
+                    "name": "Freeport-McMoRan Inc.",
+                    "date": "2026-04-23",
+                    "eps_avg": 0.45274,
+                    "revenue_avg": 5579707240
+                },
+                "DIS": {
+                    "name": "The Walt Disney Company",
+                    "date": "2026-05-06",
+                    "eps_avg": 1.49737,
+                    "revenue_avg": 24909719370
+                },
+                "V": {
+                    "name": "Visa Inc.",
+                    "date": "2026-04-28",
+                    "eps_avg": 3.09224,
+                    "revenue_avg": 10729545630
+                },
+                "MA": {
+                    "name": "Mastercard Incorporated",
+                    "date": "2026-04-30",
+                    "eps_avg": 4.40606,
+                    "revenue_avg": 8260552120
+                },
+                "PYPL": {
+                    "name": "PayPal Holdings, Inc.",
+                    "date": "2026-05-05",
+                    "eps_avg": 1.27784,
+                    "revenue_avg": 8069200290
+                },
+                "CRM": {
+                    "name": "Salesforce, Inc.",
+                    "date": "2026-02-25",
+                    "eps_avg": 3.05025,
+                    "revenue_avg": 11188164760
+                },
+                "ORCL": {
+                    "name": "Oracle Corporation",
+                    "date": "2026-03-09",
+                    "eps_avg": 1.70661,
+                    "revenue_avg": 16902193840
+                },
+                "IBM": {
+                    "name": "International Business Machines Corporation",
+                    "date": "2026-04-22",
+                    "eps_avg": 1.80925,
+                    "revenue_avg": 15628294330
+                },
+                "PLTR": {
+                    "name": "Palantir Technologies Inc.",
+                    "date": "2026-05-04",
+                    "eps_avg": 0.27927,
+                    "revenue_avg": 1538548150
+                },
+                "CRWD": {
+                    "name": "CrowdStrike Holdings, Inc.",
+                    "date": "2026-03-03",
+                    "eps_avg": 1.10262,
+                    "revenue_avg": 1297442450
+                },
+                "SNOW": {
+                    "name": "Snowflake Inc.",
+                    "date": "2026-02-25",
+                    "eps_avg": 0.27176,
+                    "revenue_avg": 1254964190
+                },
+                "HOOD": {
+                    "name": "Robinhood Markets, Inc.",
+                    "date": "2026-04-29",
+                    "eps_avg": 0.545,
+                    "revenue_avg": 1265007100
+                },
+                "COIN": {
+                    "name": "Coinbase Global, Inc.",
+                    "date": "2026-05-07",
+                    "eps_avg": 0.38164,
+                    "revenue_avg": 1587193310
+                },
+                "SHOP": {
+                    "name": "Shopify Inc.",
+                    "date": "2026-05-07",
+                    "eps_avg": 0.33011,
+                    "revenue_avg": 3086287180
+                },
+                "VRNS": {
+                    "name": "Varonis Systems, Inc.",
+                    "date": "2026-05-05",
+                    "eps_avg": -0.05503,
+                    "revenue_avg": 165511190
+                },
+                "KKR": {
+                    "name": "KKR & Co. Inc.",
+                    "date": "2026-04-30",
+                    "eps_avg": 1.43316,
+                    "revenue_avg": 2275882440
+                },
+                "QDEL": {
+                    "name": "QuidelOrtho Corporation",
+                    "date": "2026-05-06",
+                    "eps_avg": 0.47054,
+                    "revenue_avg": 682809560
+                },
+                "RAL": {
+                    "name": "Ralliant Corporation",
+                    "date": "2026-04-27",
+                    "eps_avg": 0.48804,
+                    "revenue_avg": 515108280
+                },
+                "MRVL": {
+                    "name": "Marvell Technology, Inc.",
+                    "date": "2026-03-05",
+                    "eps_avg": 0.79217,
+                    "revenue_avg": 2206965170
+                }
+            };
 
-                // 날짜 포맷팅
-                const date = new Date(dateStr);
-                const month = date.getMonth() + 1;
-                const day = date.getDate();
-                const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-                const formattedDate = month + '월 ' + day + '일 (' + weekday + ')';
+            async function searchEarningsAPI() {
+                const input = document.getElementById('earningsSearchInput');
+                const resultDiv = document.getElementById('earningsResult');
 
-                // EPS와 매출 포맷팅
-                const eps = data.eps_avg ? '$' + data.eps_avg.toFixed(2) : '정보 없음';
-                const revenue = data.revenue_avg ?
-                    '$' + (data.revenue_avg / 1000000000).toFixed(2) + 'B' : '정보 없음';
+                if (!input || !resultDiv) return;
 
-                resultDiv.innerHTML = `
+                let ticker = input.value.trim().toUpperCase();
+
+                if (!ticker) {
+                    resultDiv.innerHTML =
+                        '<div class="search-result empty">🔍 티커 입력 (예: NVDA, AAPL, AMD)</div>';
+                    return;
+                }
+
+                resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
+
+                // 1. earningsData에서 먼저 검색
+                if (earningsData[ticker]) {
+                    const data = earningsData[ticker];
+                    const dateStr = data.date || '미정';
+                    const companyName = data.name || ticker;
+
+                    // 날짜 포맷팅
+                    const date = new Date(dateStr);
+                    const month = date.getMonth() + 1;
+                    const day = date.getDate();
+                    const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+                    const formattedDate = month + '월 ' + day + '일 (' + weekday + ')';
+
+                    // EPS와 매출 포맷팅
+                    const eps = data.eps_avg ? '$' + data.eps_avg.toFixed(2) : '정보 없음';
+                    const revenue = data.revenue_avg ?
+                        '$' + (data.revenue_avg / 1000000000).toFixed(2) + 'B' : '정보 없음';
+
+                    resultDiv.innerHTML = `
             <div class="search-result">
                 <div class="result-company">${companyName} (${ticker})</div>
                 <div class="result-date">📅 실적 발표: ${formattedDate}</div>
@@ -2296,12 +2528,12 @@
                 </div>
             </div>
         `;
-                console.log('✅ earningsData에서 검색 완료:', ticker);
-                return;
-            }
+                    console.log('✅ earningsData에서 검색 완료:', ticker);
+                    return;
+                }
 
-            // 2. earningsData에 없으면 Yahoo Finance 링크 제공
-            resultDiv.innerHTML = `
+                // 2. earningsData에 없으면 Yahoo Finance 링크 제공
+                resultDiv.innerHTML = `
         <div class="search-result">
             <div class="result-company">${ticker}</div>
             <div class="result-info" style="text-align:center;padding:20px">
@@ -2316,114 +2548,114 @@
             </div>
         </div>
     `;
-        }
+            }
 
 
-        function toggleAccordion(header) {
-            header.classList.toggle('collapsed');
-            const content = header.nextElementSibling;
-            content.classList.toggle('collapsed');
-        }
-        var calendarEvents = {
-            '3-4': [{ i: '💎', t: 'Broadcom⭐' }],
-            '3-6': [{ i: '💼', t: 'NFP⭐' }],
-            '3-11': [{ i: '📊', t: 'CPI⭐' }],
-            '3-12': [{ i: '🏭', t: 'PPI⭐' }],
-            '3-13': [{ i: '💹', t: 'GDP종합⭐' }],
-            '3-18': [{ i: '🏦', t: 'FOMC 금리⭐' }, { i: '🏭', t: 'PPI' }],
-            '3-27': [{ i: '🛍️', t: 'PCE 물가⭐' }],
-            '3-28': [{ i: '💼', t: 'JOLTS' }],
-            '4-3': [{ i: '💼', t: 'NFP⭐' }],
-            '4-10': [{ i: '📊', t: 'CPI⭐' }],
-            '4-14': [{ i: '🏭', t: 'PPI⭐' }],
-            '4-16': [{ i: '💎', t: 'TSM' }],
-            '4-21': [{ i: '💎', t: 'TSLA' }],
-            '4-23': [{ i: '💎', t: 'GOOGL' }],
-            '4-29': [{ i: '🏦', t: 'FOMC 금리⭐' }],
-            '4-30': [{ i: '💹', t: 'GDP속보⭐' }, { i: '💎', t: 'AAPL/AMZN' }]
-        };
-        function drawCalendar(month, elementId) {
-            var container = document.getElementById(elementId);
-            if (!container) return;
-            var firstDay = new Date(2026, month - 1, 1).getDay();
-            var daysInMonth = new Date(2026, month, 0).getDate();
-            var html = '';
-            for (var i = 0; i < firstDay; i++) html += '<div class="date empty"></div>';
-            for (var day = 1; day <= daysInMonth; day++) {
-                var key = month + '-' + day;
-                var events = calendarEvents[key];
-                var className = 'date' + (events ? ' has-event' : '');
-                html += '<div class="' + className + '"><div>' + day + '</div>';
-                if (events && events.length > 0) {
-                    var icons = events[0].i;
-                    if (events.length > 1) icons += '+' + (events.length - 1);
-                    var tooltipText = events.map(function (e) { return e.t; }).join(', ');
-                    html += '<div class="event-icon">' + icons + '</div>';
-                    html += '<div class="tooltip">' + tooltipText + '</div>';
+            function toggleAccordion(header) {
+                header.classList.toggle('collapsed');
+                const content = header.nextElementSibling;
+                content.classList.toggle('collapsed');
+            }
+            var calendarEvents = {
+                '3-4': [{ i: '💎', t: 'Broadcom⭐' }],
+                '3-6': [{ i: '💼', t: 'NFP⭐' }],
+                '3-11': [{ i: '📊', t: 'CPI⭐' }],
+                '3-12': [{ i: '🏭', t: 'PPI⭐' }],
+                '3-13': [{ i: '💹', t: 'GDP종합⭐' }],
+                '3-18': [{ i: '🏦', t: 'FOMC 금리⭐' }, { i: '🏭', t: 'PPI' }],
+                '3-27': [{ i: '🛍️', t: 'PCE 물가⭐' }],
+                '3-28': [{ i: '💼', t: 'JOLTS' }],
+                '4-3': [{ i: '💼', t: 'NFP⭐' }],
+                '4-10': [{ i: '📊', t: 'CPI⭐' }],
+                '4-14': [{ i: '🏭', t: 'PPI⭐' }],
+                '4-16': [{ i: '💎', t: 'TSM' }],
+                '4-21': [{ i: '💎', t: 'TSLA' }],
+                '4-23': [{ i: '💎', t: 'GOOGL' }],
+                '4-29': [{ i: '🏦', t: 'FOMC 금리⭐' }],
+                '4-30': [{ i: '💹', t: 'GDP속보⭐' }, { i: '💎', t: 'AAPL/AMZN' }]
+            };
+            function drawCalendar(month, elementId) {
+                var container = document.getElementById(elementId);
+                if (!container) return;
+                var firstDay = new Date(2026, month - 1, 1).getDay();
+                var daysInMonth = new Date(2026, month, 0).getDate();
+                var html = '';
+                for (var i = 0; i < firstDay; i++) html += '<div class="date empty"></div>';
+                for (var day = 1; day <= daysInMonth; day++) {
+                    var key = month + '-' + day;
+                    var events = calendarEvents[key];
+                    var className = 'date' + (events ? ' has-event' : '');
+                    html += '<div class="' + className + '"><div>' + day + '</div>';
+                    if (events && events.length > 0) {
+                        var icons = events[0].i;
+                        if (events.length > 1) icons += '+' + (events.length - 1);
+                        var tooltipText = events.map(function (e) { return e.t; }).join(', ');
+                        html += '<div class="event-icon">' + icons + '</div>';
+                        html += '<div class="tooltip">' + tooltipText + '</div>';
+                    }
+                    html += '</div>';
                 }
-                html += '</div>';
+                container.innerHTML = html;
             }
-            container.innerHTML = html;
-        }
-        // --- 초기화 및 실행 ---
-        document.addEventListener("DOMContentLoaded", () => {
-            showMainContent();
-        });
-
-        // 메인 화면 표시 및 데이터 로딩 함수
-        function showMainContent() {
-            console.log("🔥 애플리케이션 초기화 및 데이터 로딩 시작");
-
-            // 메인 컨텐츠 표시
-            const mainContent = document.getElementById('mainContent');
-            if (mainContent) {
-                mainContent.style.display = 'block';
-            }
-
-            // 1. 리포트 선택기 및 뉴스 로드
-            if (typeof loadDateList === 'function') loadDateList();
-            if (typeof loadNews === 'function') loadNews();
-
-            // 2. 캘린더 그리기
-            if (typeof drawCalendar === 'function') {
-                drawCalendar(3, 'cal-mar');
-                drawCalendar(4, 'cal-apr');
-            }
-
-            // 3. 시장 심리 위젯 초기화 (나스닥 기본)
-            if (typeof changeSentiment === 'function') {
-                changeSentiment('NASDAQ:QQQ');
-            }
-
-            // 4. 히트맵 초기화
-            if (typeof updateTradingViewMap === 'function') {
-                updateTradingViewMap();
-            }
-
-            console.log("✅ 모든 데이터 로딩 완료");
-        }
-
-        // 구글 번역 초기화 함수
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'ko,en',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-            }, 'google_translate_element');
-        }
-
-        // 이메일 복사 함수
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert('이메일 주소가 복사되었습니다: ' + text);
-            }).catch(err => {
-                console.error('복사 실패:', err);
+            // --- 초기화 및 실행 ---
+            document.addEventListener("DOMContentLoaded", () => {
+                showMainContent();
             });
-        }
-    </script>
 
-    <script type="text/javascript"
-        src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+            // 메인 화면 표시 및 데이터 로딩 함수
+            function showMainContent() {
+                console.log("🔥 애플리케이션 초기화 및 데이터 로딩 시작");
+
+                // 메인 컨텐츠 표시
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) {
+                    mainContent.style.display = 'block';
+                }
+
+                // 1. 리포트 선택기 및 뉴스 로드
+                if (typeof loadDateList === 'function') loadDateList();
+                if (typeof loadNews === 'function') loadNews();
+
+                // 2. 캘린더 그리기
+                if (typeof drawCalendar === 'function') {
+                    drawCalendar(3, 'cal-mar');
+                    drawCalendar(4, 'cal-apr');
+                }
+
+                // 3. 시장 심리 위젯 초기화 (나스닥 기본)
+                if (typeof changeSentiment === 'function') {
+                    changeSentiment('NASDAQ:QQQ');
+                }
+
+                // 4. 히트맵 초기화
+                if (typeof updateTradingViewMap === 'function') {
+                    updateTradingViewMap();
+                }
+
+                console.log("✅ 모든 데이터 로딩 완료");
+            }
+
+            // 구글 번역 초기화 함수
+            function googleTranslateElementInit() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'en',
+                    includedLanguages: 'ko,en',
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+                }, 'google_translate_element');
+            }
+
+            // 이메일 복사 함수
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('이메일 주소가 복사되었습니다: ' + text);
+                }).catch(err => {
+                    console.error('복사 실패:', err);
+                });
+            }
+        </script>
+
+        <script type="text/javascript"
+            src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 </body>
 
