@@ -745,11 +745,8 @@ def get_latest_market_data():
     # 변동성 & 매크로 수집
     vm_data = get_volatility_macro_data()
 
-    # MK RSS 섹션별 기사 수집 (5건)
-    mk_data = get_mk_rss_all_sections(5)
-
-    # 뉴스 수집: 프리진경제 국제/IT 5건
-    intl_arts  = get_freezine_intl_news(5)    # 프리진경제 국제/IT
+    # MK RSS 섹션별 기사 수집 (10건)
+    mk_data = get_mk_rss_all_sections(10)
 
     data = {
         "is_morning_update": now_kst.hour in [7, 22],
@@ -765,7 +762,6 @@ def get_latest_market_data():
         "volatility": vm_data,
         "mk_data": mk_data,
         "news": {
-            "fz_intl":     intl_arts,
             "updated_time": now_kst.strftime("%H:%M")
         }
     }
@@ -834,7 +830,6 @@ def update_index_html(data):
     # --- 오른쪽 카드 HTML ---
     nn = data['news']
     mk_dropdown_html = build_mk_dropdown_html(data.get('mk_data', {}))
-    intl_html     = build_news_items_html(nn['fz_intl'],  border='rgba(74,222,128,0.5)')
 
     upd_time   = nn['updated_time']
     reload_btn = (
@@ -855,19 +850,11 @@ def update_index_html(data):
         '</div>'
         '<div class="market-status-title" style="margin-top:10px;">📰 뉴스 브리핑</div>'
         '</div>'
-        '<div style="margin-bottom:14px;">'
+        '<div>'
         '<strong style="color:#fbbf24;font-size:0.82em;display:block;margin-bottom:8px;'
         'letter-spacing:0.03em;border-bottom:1px solid rgba(251,191,36,0.2);padding-bottom:4px;">'
         '📰 매일경제</strong>'
         + mk_dropdown_html +
-        '</div>'
-        '<div>'
-        '<strong style="color:#4ade80;font-size:0.82em;display:block;margin-bottom:8px;'
-        'letter-spacing:0.03em;border-bottom:1px solid rgba(74,222,128,0.2);padding-bottom:4px;">'
-        '🌐 프리진경제 국제/IT</strong>'
-        '<div id="fz-intl-box">'
-        + intl_html +
-        '</div>'
         '</div>'
     )
 
