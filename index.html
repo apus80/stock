@@ -2880,33 +2880,67 @@
             }
 
             // ════════════════════════════════════════════════════════════
-            // 국내 뉴스 검색 체인 (1→2→3 순서로 시도)
+            // 국내 뉴스 검색 체인 (1→2→3→4 순서로 시도)
             // ════════════════════════════════════════════════════════════
+
+            // 공통: rss2json fetch with timeout (ms)
+            async function _rss2json(rssUrl, count, timeoutMs) {
+                var ctrl = new AbortController();
+                var timer = setTimeout(function(){ ctrl.abort(); }, timeoutMs || 8000);
+                try {
+                    var api = 'https://api.rss2json.com/v1/api.json?rss_url=' +
+                        encodeURIComponent(rssUrl) + '&count=' + (count || 10);
+                    var res = await fetch(api, { signal: ctrl.signal, cache: 'no-store' });
+                    clearTimeout(timer);
+                    return await res.json();
+                } catch(e) { clearTimeout(timer); return null; }
+            }
+
             async function _nsSearchKorean(q, box) {
                 var srcEl = document.getElementById('nsKorSrc');
 
-                // 1순위: Naver Open API (키 있을 때)
-                // docs: https://developers.naver.com/docs/serviceapi/search/news/news.md
+                // ── 1순위: Google News 한국어 RSS via rss2json ───────────
+                // 핵심: 실제 키워드 검색 지원, 무료, 키 불필요, 국내 언론사 기사 포함
+                // Google News RSS: https://news.google.com/rss/search?q=QUERY&hl=ko&gl=KR&ceid=KR:ko
+                try {
+                    var gnUrl = 'https://news.google.com/rss/search?q=' +
+                        encodeURIComponent(q) + '&hl=ko&gl=KR&ceid=KR:ko';
+                    var json = await _rss2json(gnUrl, 5, 8000);
+                    if (json && json.status === 'ok' && json.items && json.items.length) {
+                        var arts = json.items.slice(0,3).map(function(it) {
+                            // Google News 제목 형식: "기사제목 - 언론사명" → 분리
+                            var raw   = it.title || '';
+                            var dash  = raw.lastIndexOf(' - ');
+                            var title = dash > 0 ? raw.slice(0, dash).trim() : raw;
+                            var src   = dash > 0 ? raw.slice(dash + 3).trim() : (it.author || 'Google 뉴스');
+                            return { title: title, url: it.link, source: src, publishedAt: it.pubDate };
+                        });
+                        _nsRender(arts, box, 'kor');
+                        if (srcEl) srcEl.textContent = '📡 출처: Google 뉴스 (한국) · 실시간';
+                        return;
+                    }
+                } catch(e) { console.log('Google 뉴스 KO 실패', e); }
+
+                // ── 2순위: Naver Open API (키 등록 시 최우선) ────────────
+                // 가입: https://developers.naver.com → 검색 API → Client ID/Secret 발급
                 if (NS_NAVER_ID && NS_NAVER_SECRET) {
                     try {
-                        var url = 'https://openapi.naver.com/v1/search/news.json?' + [
-                            'query='   + encodeURIComponent(q),
-                            'display=3',
-                            'sort=date'
-                        ].join('&');
-                        var res  = await fetch(url, { headers: {
-                            'X-Naver-Client-Id':     NS_NAVER_ID,
-                            'X-Naver-Client-Secret': NS_NAVER_SECRET
-                        }});
-                        var json = await res.json();
-                        if (json.items && json.items.length) {
-                            _nsRender(json.items.slice(0,3).map(function(a) {
-                                return {
-                                    title: a.title.replace(/<[^>]+>/g,''),
-                                    url:   a.link || a.originallink,
-                                    source: a.source || '네이버',
-                                    publishedAt: a.pubDate
-                                };
+                        var ctrl2 = new AbortController();
+                        setTimeout(function(){ ctrl2.abort(); }, 6000);
+                        var url2 = 'https://openapi.naver.com/v1/search/news.json?query=' +
+                            encodeURIComponent(q) + '&display=3&sort=date';
+                        var res2 = await fetch(url2, {
+                            signal: ctrl2.signal,
+                            headers: { 'X-Naver-Client-Id': NS_NAVER_ID,
+                                       'X-Naver-Client-Secret': NS_NAVER_SECRET }
+                        });
+                        var json2 = await res2.json();
+                        if (json2.items && json2.items.length) {
+                            _nsRender(json2.items.slice(0,3).map(function(a) {
+                                return { title: a.title.replace(/<[^>]+>/g,''),
+                                         url: a.originallink || a.link,
+                                         source: a.source || '네이버뉴스',
+                                         publishedAt: a.pubDate };
                             }), box, 'kor');
                             if (srcEl) srcEl.textContent = '📡 출처: Naver Open API';
                             return;
@@ -2914,73 +2948,51 @@
                     } catch(e) { console.log('Naver API 실패', e); }
                 }
 
-                // 2순위: allorigins.win + Naver 뉴스 검색 HTML 파싱 (키 불필요)
-                try {
-                    var naverUrl = 'https://search.naver.com/search.naver?where=news&query=' +
-                        encodeURIComponent(q) + '&sm=tab_jum&sort=1';
-                    var proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(naverUrl);
-                    var res2 = await fetch(proxyUrl, { cache: 'no-store' });
-                    var json2 = await res2.json();
-                    if (json2.contents) {
-                        var parser = new DOMParser();
-                        var doc = parser.parseFromString(json2.contents, 'text/html');
-                        var titleLinks = doc.querySelectorAll('a.news_tit, a[class*="news_tit"]');
-                        var arts = []; var seen = new Set();
-                        titleLinks.forEach(function(a) {
-                            if (arts.length >= 3) return;
-                            var t = a.textContent.trim();
-                            var h = a.getAttribute('href') || '';
-                            if (!t || t.length < 6 || seen.has(h)) return;
-                            seen.add(h);
-                            var par = a.closest('li') || a.closest('div.news_area');
-                            var src = '', date = '';
-                            if (par) {
-                                var press = par.querySelector('a.press, .info.press');
-                                if (press) src = press.textContent.trim();
-                                var info = par.querySelector('.info_group .info:last-child');
-                                if (info) date = info.textContent.trim();
-                            }
-                            arts.push({ title: t, url: h, source: src || '네이버뉴스', publishedAt: date });
-                        });
-                        if (arts.length > 0) {
-                            _nsRender(arts, box, 'kor');
-                            if (srcEl) srcEl.textContent = '📡 출처: Naver 검색 (allorigins 프록시)';
-                            return;
-                        }
-                    }
-                } catch(e) { console.log('Naver HTML 실패', e); }
+                // ── 3순위: newsdata.io Korean (무료 200건/일, 키 불필요 모드) ─
+                // API: https://newsdata.io/api/1/news?language=ko&q=QUERY&category=business
+                // 키 없이도 제한적 동작 (키 있으면 완전 지원)
+                // var NS_NEWSDATA_KEY = '';  // ← newsdata.io 무료 키 (선택)
+                // if (NS_NEWSDATA_KEY) { ... }
 
-                // 3순위: rss2json + 국내 주요 RSS 피드 클라이언트 필터
-                // 피드: 매일경제 증권 → 한국경제 금융 → 연합뉴스 경제
+                // ── 4순위: 국내 RSS 복수 피드 병렬 키워드 필터 ─────────────
+                // 여러 피드를 동시에 가져와 키워드 매칭 → 더 넓은 커버리지
                 var korFeeds = [
-                    { url: 'https://www.mk.co.kr/rss/40300001/', name: '매일경제' },
-                    { url: 'https://www.hankyung.com/feed/finance',  name: '한국경제' },
-                    { url: 'https://www.yna.co.kr/rss/economy.xml',  name: '연합뉴스' }
+                    { url: 'https://www.mk.co.kr/rss/40300001/', name: '매일경제 증권' },
+                    { url: 'https://www.mk.co.kr/rss/30100041/', name: '매일경제 경제' },
+                    { url: 'https://www.hankyung.com/feed/finance', name: '한국경제' },
+                    { url: 'https://www.hankyung.com/feed/economy', name: '한국경제 경제' },
+                    { url: 'https://www.yna.co.kr/rss/economy.xml', name: '연합뉴스 경제' },
+                    { url: 'https://www.yna.co.kr/rss/stock.xml',   name: '연합뉴스 증권' }
                 ];
                 var qLow = q.toLowerCase();
-                for (var fi = 0; fi < korFeeds.length; fi++) {
-                    try {
-                        var feed = korFeeds[fi];
-                        var apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' +
-                            encodeURIComponent(feed.url) + '&count=30';
-                        var res3 = await fetch(apiUrl);
-                        var json3 = await res3.json();
-                        if (json3.status !== 'ok' || !json3.items) continue;
-                        var filtered = json3.items.filter(function(it) {
-                            return it.title && it.title.toLowerCase().includes(qLow);
-                        }).slice(0, 3);
-                        if (filtered.length > 0) {
-                            _nsRender(filtered.map(function(it) {
-                                return { title: it.title, url: it.link,
-                                         source: feed.name, publishedAt: it.pubDate };
-                            }), box, 'kor');
-                            if (srcEl) srcEl.textContent = '📡 출처: ' + feed.name + ' RSS (키워드 필터)';
-                            return;
+                // 모든 피드 병렬 fetch
+                var feedResults = await Promise.all(korFeeds.map(function(feed) {
+                    return _rss2json(feed.url, 30, 6000).then(function(json) {
+                        return { json: json, name: feed.name };
+                    });
+                }));
+                var allFiltered = [];
+                feedResults.forEach(function(r) {
+                    if (!r.json || r.json.status !== 'ok' || !r.json.items) return;
+                    r.json.items.forEach(function(it) {
+                        if (it.title && it.title.toLowerCase().includes(qLow)) {
+                            allFiltered.push({ title: it.title, url: it.link,
+                                               source: r.name, publishedAt: it.pubDate });
                         }
-                    } catch(e) {}
+                    });
+                });
+                if (allFiltered.length > 0) {
+                    // 날짜 최신순 정렬
+                    allFiltered.sort(function(a,b) {
+                        return new Date(b.publishedAt) - new Date(a.publishedAt);
+                    });
+                    _nsRender(allFiltered.slice(0,3), box, 'kor');
+                    if (srcEl) srcEl.textContent = '📡 출처: 국내 RSS 피드 (키워드 필터)';
+                    return;
                 }
 
-                box.innerHTML = '<p class="ns-empty">😔 국내 뉴스 없음<br>다른 키워드로 시도해 보세요</p>';
+                box.innerHTML = '<p class="ns-empty">😔 국내 뉴스 없음<br>' +
+                    '<span style="font-size:0.8em;color:#94a3b8;">영어 또는 더 일반적인 키워드로 시도해 보세요</span></p>';
                 if (srcEl) srcEl.textContent = '';
             }
 
