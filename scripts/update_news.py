@@ -1,9 +1,15 @@
 import os
 import re
+import sys
 import html as html_lib
 import datetime
 import urllib.request
 import xml.etree.ElementTree as ET
+
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
 
 try:
     from deep_translator import GoogleTranslator
@@ -126,69 +132,214 @@ def build_news_items_html(arts, border='rgba(250,204,21,0.5)'):
         )
     return out
 
-# ─── HTML 업데이트 ────────────────────────────────────────────────────────────
+# ─── 시장 데이터 수집 ─────────────────────────────────────────────────────────
 
-def update_index_html():
-    if not os.path.exists(INDEX_HTML_PATH):
-        print(f"파일 없음: {INDEX_HTML_PATH}")
-        return
-
+def get_latest_market_data():
     now_utc = datetime.datetime.now(datetime.timezone.utc)
     now_kst = now_utc + datetime.timedelta(hours=9)
-    updated_time = now_kst.strftime("%H:%M")
+    date_str = now_kst.strftime("%Y.%m.%d")
+    weekdays = ["월", "화", "수", "목", "금", "토", "일"]
+    weekday_str = weekdays[now_kst.weekday()]
+
+    indices_map = {
+        "DOW": "^DJI",
+        "S&P 500": "^GSPC",
+        "NASDAQ": "^IXIC",
+        "Russell 2K": "^RUT",
+        "Phil. Semi": "^SOX",
+        "VIX Index": "^VIX"
+    }
+    sectors_map = {
+        "Financials (XLF)": "XLF",
+        "Industrials (XLI)": "XLI",
+        "Technology (XLK)": "XLK",
+        "Health Care (XLV)": "XLV"
+    }
+    bigtech_map = ["MSFT", "AAPL", "NVDA", "GOOGL", "AMZN", "TSLA", "META"]
+
+    indices_data, sectors_data, bigtech_data = [], [], []
+
+    if yf:
+        for name, tk in indices_map.items():
+            try:
+                hist = yf.Ticker(tk).history(period="5d")
+                curr, prev = hist['Close'].iloc[-1], hist['Close'].iloc[-2]
+                pct = ((curr - prev) / prev) * 100
+                indices_data.append({"name": name, "val": f"{curr:,.1f}", "pct": f"{'+' if pct>=0 else ''}{pct:.2f}%", "up": pct>=0})
+            except Exception:
+                indices_data.append({"name": name, "val": "N/A", "pct": "0.00%", "up": True})
+        for name, tk in sectors_map.items():
+            try:
+                hist = yf.Ticker(tk).history(period="5d")
+                curr, prev = hist['Close'].iloc[-1], hist['Close'].iloc[-2]
+                pct = ((curr - prev) / prev) * 100
+                col = "#10b981" if pct >= 0 else "#f43f5e"
+                val_w = min(max(50 + pct * 10, 10), 90)
+                sectors_data.append({"name": name, "val": f"{val_w:.0f}%", "color": col, "pct": f"{'+' if pct>=0 else ''}{pct:.2f}%", "up": pct >= 0})
+            except Exception:
+                sectors_data.append({"name": name, "val": "50%", "color": "#10b981", "pct": "0.00%", "up": True})
+        for tk in bigtech_map:
+            try:
+                hist = yf.Ticker(tk).history(period="5d")
+                curr, prev = hist['Close'].iloc[-1], hist['Close'].iloc[-2]
+                pct = ((curr - prev) / prev) * 100
+                bigtech_data.append({"name": tk, "pct": f"{'+' if pct>=0 else ''}{pct:.2f}%", "up": pct >= 0})
+            except Exception:
+                bigtech_data.append({"name": tk, "pct": "0.00%", "up": True})
+    else:
+        indices_data = [{"name": n, "val": "로드실패", "pct": "0.00%", "up": True} for n in indices_map]
+        sectors_data = [{"name": n, "val": "50%", "color": "#10b981", "pct": "0.00%", "up": True} for n in sectors_map]
+        bigtech_data = [{"name": n, "pct": "0.00%", "up": True} for n in bigtech_map]
 
     # 뉴스 수집 (3 소스 × 3 기사 = 9개)
     yahoo_arts       = get_yahoo_finance_news(3)
     cnbc_arts        = get_cnbc_news(3)
     marketwatch_arts = get_marketwatch_news(3)
 
-    # HTML 생성
-    yahoo_html       = build_news_items_html(yahoo_arts,       border='rgba(250,204,21,0.5)')
-    cnbc_html        = build_news_items_html(cnbc_arts,        border='rgba(56,189,248,0.5)')
-    marketwatch_html = build_news_items_html(marketwatch_arts, border='rgba(74,222,128,0.5)')
+    data = {
+        "is_morning_update": now_kst.hour in [7, 22],  # 오전 7시 + 오후 10시 KST
+        "date": date_str,
+        "weekday": weekday_str,
+        "market": {
+            "title": "실시간 시장 지표 & 섹터 현황 📊",
+            "indices": indices_data,
+            "sectors": sectors_data,
+            "bigtech": bigtech_data,
+            "korea": "실시간 글로벌 시장 변동에 따른 투자 심리 변화가 감지되고 있습니다. 주도 섹터 및 기관 수급 유입 상황을 주의 깊게 살펴보세요."
+        },
+        "news": {
+            "yahoo":       yahoo_arts,
+            "cnbc":        cnbc_arts,
+            "marketwatch": marketwatch_arts,
+            "updated_time": now_kst.strftime("%H:%M")
+        }
+    }
+    return data
+
+# ─── HTML 업데이트 ────────────────────────────────────────────────────────────
+
+def update_index_html(data):
+    if not os.path.exists(INDEX_HTML_PATH):
+        return
+
+    with open(INDEX_HTML_PATH, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # --- 왼쪽 카드 HTML ---
+    indices_parts = []
+    for idx in data['market']['indices']:
+        cls   = 'change-up' if idx['up'] else 'change-down'
+        arrow = '▲' if idx['up'] else '▼'
+        indices_parts.append(
+            f'<div class="mini-box"><span class="mini-name">{idx["name"]}</span>'
+            f'<span class="mini-val">{idx["val"]}</span>'
+            f'<span class="mini-pct {cls}">{arrow} {idx["pct"]}</span></div>'
+        )
+    indices_html = ''.join(indices_parts)
+
+    sectors_parts = []
+    for s in data['market']['sectors']:
+        cls = 'change-up' if s.get('up') else 'change-down'
+        sectors_parts.append(
+            f'<div class="data-bar-row"><div class="data-bar-label"><span>{s["name"]}</span>'
+            f'<div class="data-bar-visual"><div class="data-bar-fill" style="width:{s["val"]}; background:{s["color"]};"></div></div></div>'
+            f'<span class="{cls}">{s["pct"]}</span></div>'
+        )
+    sectors_html = ''.join(sectors_parts)
+
+    bigtech_parts = []
+    for b in data['market']['bigtech']:
+        cls = 'change-up' if b['up'] else 'change-down'
+        bigtech_parts.append(
+            f'<div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">{b["name"]}</span>'
+            f'<span class="{cls}" style="font-size:0.95rem; font-weight:700;">{b["pct"]}</span></div>'
+        )
+    bigtech_html = ''.join(bigtech_parts)
+
+    left_card_content = f'''
+                        <div class="news-card-header">
+                            <div class="header-top">
+                                <span class="date-badge">{data['date']} ({data['weekday']})</span>
+                                <span style="font-size: 0.9rem; color: #94a3b8;">US Market Focus</span>
+                            </div>
+                            <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">{data['market']['title']}</div>
+                        </div>
+                        <div class="section-label">Major Indices</div>
+                        <div class="index-grid-3">{indices_html}</div>
+                        <div class="section-label">S&P 500 Sectors</div>
+                        <div style="margin-bottom:20px;">{sectors_html}</div>
+                        <div class="section-label">Magnificent 7</div>
+                        <div class="index-grid-3" style="grid-template-columns: repeat(4, 1fr);">{bigtech_html}</div>
+                        <div class="section-label">Korea Market Summary</div>
+                        <div style="font-size:1rem; line-height:1.6; color:#cbd5e1; background:rgba(255,255,255,0.03); padding:12px; border-radius:10px;">
+                            🇰🇷 {data['market']['korea']}
+                        </div>
+    '''
+
+    # --- 오른쪽 카드 HTML (3 소스 × 3 기사) ---
+    nn = data['news']
+    yahoo_html       = build_news_items_html(nn['yahoo'],       border='rgba(250,204,21,0.5)')
+    cnbc_html        = build_news_items_html(nn['cnbc'],        border='rgba(56,189,248,0.5)')
+    marketwatch_html = build_news_items_html(nn['marketwatch'], border='rgba(74,222,128,0.5)')
 
     right_card_content = f'''
                         <div class="news-card-header">
                             <div class="header-top">
                                 <span class="date-badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;">글로벌 마켓 뉴스</span>
-                                <span style="font-size:0.9rem;color:#94a3b8;">Updated: {updated_time} KST</span>
-                                <button onclick="window.location.reload()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">&#x27F3; 새로고침</button>
+                                <span style="font-size:0.9rem;color:#94a3b8;">Updated: {nn['updated_time']} KST</span>
+                                <button onclick="window.location.reload()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button>
                             </div>
-                            <div class="market-status-title" style="margin-top:10px;">&#127758; 실시간 글로벌 시장 뉴스</div>
+                            <div class="market-status-title" style="margin-top:10px;">🌐 실시간 글로벌 시장 뉴스</div>
                         </div>
                         <div style="margin-bottom:14px;">
-                            <strong style="color:#facc15;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(250,204,21,0.2);padding-bottom:4px;">&#128202; Yahoo Finance</strong>
+                            <strong style="color:#facc15;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(250,204,21,0.2);padding-bottom:4px;">📊 Yahoo Finance</strong>
                             {yahoo_html}
                         </div>
                         <div style="margin-bottom:14px;">
-                            <strong style="color:#38bdf8;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(56,189,248,0.2);padding-bottom:4px;">&#128250; CNBC Markets</strong>
+                            <strong style="color:#38bdf8;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(56,189,248,0.2);padding-bottom:4px;">📺 CNBC Markets</strong>
                             {cnbc_html}
                         </div>
                         <div>
-                            <strong style="color:#4ade80;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(74,222,128,0.2);padding-bottom:4px;">&#128240; MarketWatch</strong>
+                            <strong style="color:#4ade80;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(74,222,128,0.2);padding-bottom:4px;">📰 MarketWatch</strong>
                             {marketwatch_html}
                         </div>
     '''
 
-    with open(INDEX_HTML_PATH, 'r', encoding='utf-8') as f:
-        content = f.read()
-
-    # 오른쪽 카드만 업데이트 (LEFT_CARD는 TradingView 위젯 유지)
-    pattern = r'(<!-- RIGHT_CARD_START -->)(.*?)(<!-- RIGHT_CARD_END -->)'
+    # 업데이트 로직
+    pattern = r'(<!-- MARKET_NEWS_CARD_START -->)(.*?)(<!-- MARKET_NEWS_CARD_END -->)'
     if not re.search(pattern, content, re.DOTALL):
-        print("RIGHT_CARD 마커를 찾을 수 없습니다.")
+        print("마커를 찾을 수 없습니다.")
         return
 
-    updated = re.sub(
-        pattern,
-        rf'\1{right_card_content}\3',
-        content, flags=re.DOTALL
-    )
+    # 왼쪽 카드: 아침/저녁 업데이트 or --force 시에만 새 데이터로 교체
+    left_html_to_use = left_card_content
+    left_pattern = r'<!-- LEFT_CARD_START -->(.*?)<!-- LEFT_CARD_END -->'
+    left_match = re.search(left_pattern, content, re.DOTALL)
+    if left_match and not data['is_morning_update'] and '--force' not in sys.argv:
+        left_html_to_use = left_match.group(1).strip()
 
+    new_card_html = f'''
+            <div id="marketNewsCardArea">
+                <div class="news-card-wrapper">
+                    <div class="news-card-column" id="left-card-column">
+                        <!-- LEFT_CARD_START -->
+                        {left_html_to_use}
+                        <!-- LEFT_CARD_END -->
+                    </div>
+                    <div class="news-card-column" id="right-card-column">
+                        <!-- RIGHT_CARD_START -->
+                        {right_card_content}
+                        <!-- RIGHT_CARD_END -->
+                    </div>
+                </div>
+            </div>
+'''
+
+    updated = re.sub(pattern, rf'\1{new_card_html}\3', content, flags=re.DOTALL)
     with open(INDEX_HTML_PATH, 'w', encoding='utf-8') as f:
         f.write(updated)
-    print("index.html 오른쪽 뉴스 카드 업데이트 완료.")
+    print("index.html 업데이트 완료.")
 
 
 if __name__ == "__main__":
-    update_index_html()
+    update_index_html(get_latest_market_data())
