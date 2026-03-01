@@ -1501,13 +1501,12 @@
                 <h3>📊 실적발표 일정 검색</h3>
                 <div class="search-box">
                     <input type="text" id="earningsSearchInput" class="search-input"
-                        placeholder="티커 입력 (예: NVDA, AAPL - 모든 미국 상장 기업)"
+                        placeholder="티커 · 영문명 · 한글명 입력 (예: NVDA, Nvidia, 엔비디아)"
                         onkeypress="if(event.key==='Enter') searchEarningsAPI()">
                     <button class="search-btn" onclick="searchEarningsAPI()">🔍 검색</button>
                 </div>
                 <div id="earningsResult"></div>
-                <div class="update-note">ℹ️ <strong>데이터:</strong> Financial Modeling Prep API | <strong>범위:</strong> 모든
-                    미국 상장 기업 | <strong>업데이트:</strong> 실시간</div>
+                <div class="update-note">ℹ️ <strong>데이터:</strong> Finnhub API (실시간) | <strong>범위:</strong> 미국 전 상장 기업 | <strong>지원:</strong> 티커 · 영문명 · 한글명</div>
             </div>
 <!-- 상부 그리드 대시보드: 지표, 심리, 섹터 -->
             <div class="grid-dashboard">
@@ -2219,7 +2218,68 @@
             function displayPDF(pdfPath, date, category) {
                 document.getElementById('pdfContent').innerHTML = '<div class="current-view"><h4>' + category.icon + ' ' + category.name + '</h4><div class="info-grid"><div class="info-item"><div class="label">날짜</div><div class="value">' + formatDate(date) + '</div></div></div></div><div class="pdf-container"><iframe src="' + pdfPath + '" type="application/pdf"></iframe></div>';
             }
-            // 실적 데이터 (Yahoo Finance 기반)
+            // ── Finnhub 실적 검색 ────────────────────────────────────────────
+            const FH_KEY = 'd6i3mn9r01ql9cier6agd6i3mn9r01ql9cier6b0';
+
+            // 자주 쓰는 한글 회사명 → 티커 직접 매핑
+            const KO_TICKER = {
+                '애플':'AAPL','엔비디아':'NVDA','테슬라':'TSLA','아마존':'AMZN',
+                '마이크로소프트':'MSFT','구글':'GOOGL','알파벳':'GOOGL','메타':'META',
+                '넷플릭스':'NFLX','인텔':'INTC','퀄컴':'QCOM','브로드컴':'AVGO',
+                '팔란티어':'PLTR','우버':'UBER','에어비앤비':'ABNB','코인베이스':'COIN',
+                '스포티파이':'SPOT','줌':'ZM','팔로알토':'PANW','크라우드스트라이크':'CRWD',
+                '오라클':'ORCL','세일즈포스':'CRM','어도비':'ADBE','마이크론':'MU',
+                'TSMC':'TSM','존슨앤드존슨':'JNJ','화이자':'PFE','모더나':'MRNA',
+                '엑슨모빌':'XOM','쉐브론':'CVX','골드만삭스':'GS','제이피모건':'JPM',
+                '뱅크오브아메리카':'BAC','월마트':'WMT','코스트코':'COST','타겟':'TGT',
+                '맥도날드':'MCD','스타벅스':'SBUX','나이키':'NKE','디즈니':'DIS',
+                '버라이즌':'VZ','AT&T':'T','보잉':'BA','캐터필러':'CAT',
+                '쓰리엠':'MMM','하니웰':'HON','덱스컴':'DXCM','일라이릴리':'LLY',
+                '애브비':'ABBV','아스트라제네카':'AZN','바이오엔테크':'BNTX',
+                '암젠':'AMGN','길리어드':'GILD','리제네론':'REGN',
+            };
+
+            async function _fhFetch(endpoint, params) {
+                var url = 'https://finnhub.io/api/v1/' + endpoint + '?' +
+                    Object.entries(params).map(function(kv){ return kv[0]+'='+encodeURIComponent(kv[1]); }).join('&') +
+                    '&token=' + FH_KEY;
+                var ctrl = new AbortController();
+                setTimeout(function(){ ctrl.abort(); }, 9000);
+                var res = await fetch(url, { signal: ctrl.signal });
+                return await res.json();
+            }
+
+            async function _resolveToTicker(query) {
+                var q = query.trim();
+                // 1. 한글 직접 매핑
+                for (var ko in KO_TICKER) {
+                    if (q === ko || q.includes(ko)) return KO_TICKER[ko];
+                }
+                // 2. 이미 티커 형태 (영문 1-6자)
+                if (/^[A-Za-z]{1,6}$/.test(q)) return q.toUpperCase();
+                // 3. 한글 → 영어 번역
+                var searchQuery = q;
+                if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(q)) {
+                    try {
+                        var trRes = await fetch('https://api.mymemory.translated.net/get?q=' +
+                            encodeURIComponent(q) + '&langpair=ko|en');
+                        var trJson = await trRes.json();
+                        searchQuery = (trJson.responseData && trJson.responseData.translatedText) || q;
+                    } catch(e) {}
+                }
+                // 4. Finnhub 심볼 검색
+                try {
+                    var sJson = await _fhFetch('search', { q: searchQuery });
+                    if (sJson.result && sJson.result.length) {
+                        var found = sJson.result.find(function(r){ return r.type === 'Common Stock'; })
+                                    || sJson.result[0];
+                        return found.symbol;
+                    }
+                } catch(e) {}
+                return null;
+            }
+
+            // ── 하드코딩 더미 (구버전 호환용 - 사용 안 함) ─────────────────
             const earningsData = {
                 "NVDA": {
                     "name": "NVIDIA Corporation",
@@ -2614,84 +2674,105 @@
             };
 
             async function searchEarningsAPI() {
-                const input = document.getElementById('earningsSearchInput');
-                const resultDiv = document.getElementById('earningsResult');
-
+                var input = document.getElementById('earningsSearchInput');
+                var resultDiv = document.getElementById('earningsResult');
                 if (!input || !resultDiv) return;
 
-                let ticker = input.value.trim().toUpperCase();
+                var query = input.value.trim();
+                if (!query) {
+                    resultDiv.innerHTML = '<div class="search-result empty">🔍 티커 또는 회사명 입력 (한글 지원: 엔비디아, 애플 …)</div>';
+                    return;
+                }
 
-                if (!ticker) {
+                resultDiv.innerHTML = '<div class="search-result">🔄 검색 중… (' + query + ')</div>';
+
+                try {
+                    // ① 티커 확정
+                    var ticker = await _resolveToTicker(query);
+                    if (!ticker) {
+                        resultDiv.innerHTML = '<div class="search-result empty">⚠️ 종목을 찾을 수 없습니다: <b>' + query + '</b></div>';
+                        return;
+                    }
+
+                    // ② 회사 프로필
+                    var profile = {};
+                    try { profile = await _fhFetch('stock/profile2', { symbol: ticker }); } catch(e) {}
+                    var companyName = profile.name || ticker;
+
+                    // ③ 다음 실적 날짜 (향후 120일)
+                    var today = new Date();
+                    var future = new Date(today); future.setDate(today.getDate() + 120);
+                    var fmt = function(d){ return d.toISOString().slice(0,10); };
+                    var cal = {};
+                    try { cal = await _fhFetch('calendar/earnings', { symbol: ticker, from: fmt(today), to: fmt(future) }); } catch(e) {}
+                    var nextE = cal.earningsCalendar && cal.earningsCalendar[0];
+
+                    // ④ 최근 실적 이력 (4분기)
+                    var history = [];
+                    try {
+                        var h = await _fhFetch('stock/earnings', { symbol: ticker, limit: 4 });
+                        if (Array.isArray(h)) history = h;
+                    } catch(e) {}
+
+                    // ── 날짜 포맷 ──
+                    var dateDisplay = '미정';
+                    var hourStr = '';
+                    if (nextE && nextE.date) {
+                        var d = new Date(nextE.date + 'T00:00:00');
+                        var wd = ['일','월','화','수','목','금','토'][d.getDay()];
+                        hourStr = nextE.hour === 'amc' ? ' · 장마감 후' : nextE.hour === 'bmo' ? ' · 장개장 전' : '';
+                        dateDisplay = (d.getMonth()+1) + '월 ' + d.getDate() + '일 (' + wd + ')' + hourStr;
+                    }
+                    var epsEst = (nextE && nextE.epsEstimate != null) ? '$' + (+nextE.epsEstimate).toFixed(2) : '미정';
+                    var revEst = (nextE && nextE.revenueEstimate)
+                        ? '$' + (nextE.revenueEstimate / 1e9).toFixed(2) + 'B' : '미정';
+
+                    // ── 최근 4분기 이력 테이블 ──
+                    var histHtml = '';
+                    if (history.length) {
+                        histHtml = '<div style="margin-top:15px;padding-top:12px;border-top:1px solid #e2e8f0">' +
+                            '<div style="font-weight:600;color:#667eea;margin-bottom:8px;font-size:0.85em;">📊 최근 실적 이력</div>' +
+                            '<table style="width:100%;font-size:0.82em;border-collapse:collapse;">' +
+                            '<tr style="color:#667eea;font-weight:600;">' +
+                            '<td style="padding:3px 6px;">분기</td>' +
+                            '<td style="padding:3px 6px;text-align:right;">예상EPS</td>' +
+                            '<td style="padding:3px 6px;text-align:right;">실제EPS</td>' +
+                            '<td style="padding:3px 6px;text-align:right;">서프라이즈</td></tr>';
+                        history.forEach(function(q) {
+                            var spPct = q.surprisePercent != null
+                                ? (q.surprisePercent >= 0 ? '+' : '') + (+q.surprisePercent).toFixed(1) + '%' : '-';
+                            var spCol = (q.surprisePercent != null && q.surprisePercent >= 0) ? '#10b981' : '#f43f5e';
+                            histHtml += '<tr style="border-top:1px solid #f0f0f0;">' +
+                                '<td style="padding:3px 6px;">' + q.year + ' Q' + q.quarter + '</td>' +
+                                '<td style="padding:3px 6px;text-align:right;">' + (q.estimate != null ? '$' + (+q.estimate).toFixed(2) : '-') + '</td>' +
+                                '<td style="padding:3px 6px;text-align:right;">' + (q.actual != null ? '$' + (+q.actual).toFixed(2) : '-') + '</td>' +
+                                '<td style="padding:3px 6px;text-align:right;color:' + spCol + ';font-weight:600;">' + spPct + '</td></tr>';
+                        });
+                        histHtml += '</table></div>';
+                    }
+
                     resultDiv.innerHTML =
-                        '<div class="search-result empty">🔍 티커 입력 (예: NVDA, AAPL, AMD)</div>';
-                    return;
+                        '<div class="search-result">' +
+                        '<div class="result-company">' + companyName + ' (' + ticker + ')</div>' +
+                        '<div class="result-date">📅 다음 실적 발표: ' + dateDisplay + '</div>' +
+                        '<div class="result-info">' +
+                        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px">' +
+                        '<div style="text-align:center">' +
+                        '<div style="color:#667eea;font-weight:600;margin-bottom:5px">예상 EPS</div>' +
+                        '<div style="font-size:1.2em;font-weight:700">' + epsEst + '</div></div>' +
+                        '<div style="text-align:center">' +
+                        '<div style="color:#667eea;font-weight:600;margin-bottom:5px">예상 매출</div>' +
+                        '<div style="font-size:1.2em;font-weight:700">' + revEst + '</div></div></div>' +
+                        histHtml +
+                        '<div style="margin-top:15px;padding-top:12px;border-top:1px solid #e2e8f0">' +
+                        '<a href="https://finance.yahoo.com/quote/' + ticker + '/analysis"' +
+                        ' target="_blank" style="color:#667eea;text-decoration:none;font-weight:600">' +
+                        '📊 자세한 분석 보기 →</a></div>' +
+                        '</div></div>';
+
+                } catch(e) {
+                    resultDiv.innerHTML = '<div class="search-result empty">⚠️ 오류: ' + e.message + '</div>';
                 }
-
-                resultDiv.innerHTML = '<div class="search-result">🔄 검색 중... (' + ticker + ')</div>';
-
-                // 1. earningsData에서 먼저 검색
-                if (earningsData[ticker]) {
-                    const data = earningsData[ticker];
-                    const dateStr = data.date || '미정';
-                    const companyName = data.name || ticker;
-
-                    // 날짜 포맷팅
-                    const date = new Date(dateStr);
-                    const month = date.getMonth() + 1;
-                    const day = date.getDate();
-                    const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-                    const formattedDate = month + '월 ' + day + '일 (' + weekday + ')';
-
-                    // EPS와 매출 포맷팅
-                    const eps = data.eps_avg ? '$' + data.eps_avg.toFixed(2) : '정보 없음';
-                    const revenue = data.revenue_avg ?
-                        '$' + (data.revenue_avg / 1000000000).toFixed(2) + 'B' : '정보 없음';
-
-                    resultDiv.innerHTML = `
-            <div class="search-result">
-                <div class="result-company">${companyName} (${ticker})</div>
-                <div class="result-date">📅 실적 발표: ${formattedDate}</div>
-                <div class="result-info">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px">
-                        <div style="text-align:center">
-                            <div style="color:#667eea;font-weight:600;margin-bottom:5px">예상 EPS</div>
-                            <div style="font-size:1.2em;font-weight:700">${eps}</div>
-                        </div>
-                        <div style="text-align:center">
-                            <div style="color:#667eea;font-weight:600;margin-bottom:5px">예상 매출</div>
-                            <div style="font-size:1.2em;font-weight:700">${revenue}</div>
-                        </div>
-                    </div>
-                    <div style="margin-top:20px;padding-top:15px;border-top:1px solid #e2e8f0">
-                        <a href="https://finance.yahoo.com/quote/${ticker}/analysis" 
-                           target="_blank" 
-                           style="color:#667eea;text-decoration:none;font-weight:600">
-                           📊 자세한 분석 보기 →
-                        </a>
-                    </div>
-                </div>
-            </div>
-        `;
-                    console.log('✅ earningsData에서 검색 완료:', ticker);
-                    return;
-                }
-
-                // 2. earningsData에 없으면 Yahoo Finance 링크 제공
-                resultDiv.innerHTML = `
-        <div class="search-result">
-            <div class="result-company">${ticker}</div>
-            <div class="result-info" style="text-align:center;padding:20px">
-                <div style="margin-bottom:15px">
-                    ⚠️ 등록된 데이터가 없습니다
-                </div>
-                <a href="https://finance.yahoo.com/quote/${ticker}/analysis"
-                   target="_blank"
-                   style="display:inline-block;padding:10px 20px;background:#667eea;color:white;text-decoration:none;border-radius:5px;font-weight:600">
-                   📊 Yahoo Finance에서 확인하기
-                </a>
-            </div>
-        </div>
-    `;
             }
 
 
