@@ -170,6 +170,304 @@ def get_freezine_intl_news(count=3):
     return get_freezine_section_news('S1N6', count, '프리진경제 국제/IT')
 
 
+# ─── CBOE / FRED 데이터 ───────────────────────────────────────────────────────
+
+def get_cboe_pc_ratio(filename):
+    """CBOE Put/Call 비율 CSV (공개 데이터, 무료)"""
+    url = f"https://www.cboe.com/publishing/scheduledtask/mktdata/datahouse/{filename}"
+    try:
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            content = r.read().decode('utf-8', errors='replace')
+        lines = [l.strip() for l in content.strip().split('\n') if l.strip()]
+        for line in reversed(lines):
+            parts = line.split(',')
+            if len(parts) >= 2:
+                val_str = parts[1].strip().strip('"').strip()
+                date_str = parts[0].strip().strip('"').strip()
+                try:
+                    ratio = float(val_str)
+                    if 0.1 < ratio < 10.0:   # 유효 범위 체크
+                        return ratio, date_str
+                except ValueError:
+                    continue
+    except Exception as e:
+        print(f"[CBOE {filename}] 실패: {e}")
+    return None, None
+
+
+def get_fred_latest(series_id, units=None):
+    """FRED 공개 CSV에서 최신값 (API 키 불필요)
+    예: DFF(Fed금리), CPIAUCSL(CPI), UNRATE(실업률)
+    units='pc1' → YoY % 변화율
+    """
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+    if units:
+        url += f"&units={units}"
+    try:
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            content = r.read().decode('utf-8', errors='replace')
+        lines = [l.strip() for l in content.strip().split('\n') if l.strip()]
+        for line in reversed(lines[1:]):      # 헤더 스킵
+            parts = line.split(',')
+            if len(parts) >= 2 and parts[1].strip() not in ('', '.'):
+                try:
+                    return float(parts[1].strip()), parts[0].strip()
+                except ValueError:
+                    continue
+    except Exception as e:
+        print(f"[FRED {series_id}] 실패: {e}")
+    return None, None
+
+
+def get_volatility_macro_data():
+    """변동성(VIX), P/C 비율(CBOE), 매크로(FRED/yfinance) 통합 수집"""
+    vm = {
+        'vix': None, 'vix_prev': None, 'vix_52h': None, 'vix_52l': None,
+        'total_pcr': None, 'equity_pcr': None, 'index_pcr': None, 'pcr_date': None,
+        'tnx': None, 'irx': None, 'spread': None,
+        'dff': None, 'cpi_yoy': None, 'unrate': None,
+        'dxy': None, 'gold': None,
+    }
+
+    # VIX & 금리 / 자산가격 (yfinance)
+    if yf:
+        try:
+            hist = yf.Ticker("^VIX").history(period="1y")
+            if not hist.empty:
+                vm['vix'] = round(float(hist['Close'].iloc[-1]), 2)
+                if len(hist) >= 2:
+                    vm['vix_prev'] = round(float(hist['Close'].iloc[-2]), 2)
+                vm['vix_52h'] = round(float(hist['Close'].max()), 2)
+                vm['vix_52l'] = round(float(hist['Close'].min()), 2)
+        except Exception as e:
+            print(f"[VIX] 실패: {e}")
+
+        for ticker, key in [("^TNX", "tnx"), ("^IRX", "irx"),
+                            ("DX-Y.NYB", "dxy"), ("GC=F", "gold")]:
+            try:
+                h = yf.Ticker(ticker).history(period="5d")
+                if not h.empty:
+                    vm[key] = round(float(h['Close'].iloc[-1]), 2)
+            except Exception as e:
+                print(f"[{ticker}] 실패: {e}")
+
+        if vm['tnx'] is not None and vm['irx'] is not None:
+            vm['spread'] = round(vm['tnx'] - vm['irx'], 2)
+
+    # CBOE P/C 비율
+    vm['total_pcr'],  vm['pcr_date'] = get_cboe_pc_ratio("totalpc.csv")
+    vm['equity_pcr'], _              = get_cboe_pc_ratio("equitypc.csv")
+    vm['index_pcr'],  _              = get_cboe_pc_ratio("indexpc.csv")
+
+    # FRED 매크로 (공개 CSV)
+    vm['dff'],     _ = get_fred_latest("DFF")              # Fed 기준금리
+    vm['cpi_yoy'], _ = get_fred_latest("CPIAUCSL", "pc1")  # CPI YoY %
+    vm['unrate'],  _ = get_fred_latest("UNRATE")           # 실업률
+
+    print(f"[변동성] VIX={vm['vix']} PCR-total={vm['total_pcr']} "
+          f"DFF={vm['dff']} CPI={vm['cpi_yoy']} UR={vm['unrate']}")
+    return vm
+
+
+def _vbadge(label, cls):
+    return f'<span class="vol-badge vol-badge-{cls}">{label}</span>'
+
+
+def _vix_badge(v):
+    if v is None: return ''
+    if v < 15:  return _vbadge('낮음', 'green')
+    if v < 20:  return _vbadge('보통', 'lgreen')
+    if v < 25:  return _vbadge('⚠️중간', 'yellow')
+    if v < 30:  return _vbadge('⚠️높음', 'orange')
+    return _vbadge('🔴공포', 'red')
+
+
+def _pcr_badge(v):
+    if v is None: return ''
+    if v < 0.7:  return _vbadge('과열', 'red')
+    if v < 1.0:  return _vbadge('중립', 'yellow')
+    return _vbadge('방어', 'green')
+
+
+def _spread_badge(v):
+    if v is None: return ''
+    if v >= 0.5:  return _vbadge('정상', 'green')
+    if v >= 0.0:  return _vbadge('평탄', 'yellow')
+    return _vbadge('역전', 'red')
+
+
+def _cpi_badge(v):
+    if v is None: return ''
+    if v < 2.5:  return _vbadge('안정', 'green')
+    if v < 4.0:  return _vbadge('주의', 'yellow')
+    return _vbadge('고물가', 'red')
+
+
+def _dff_badge(v):
+    if v is None: return ''
+    if v < 2.0:  return _vbadge('완화', 'green')
+    if v < 4.0:  return _vbadge('중립', 'yellow')
+    return _vbadge('긴축', 'orange')
+
+
+def _fmtv(v, suffix='', prefix='', dec=2):
+    """None-safe 포맷"""
+    if v is None: return 'N/A'
+    return f"{prefix}{v:.{dec}f}{suffix}"
+
+
+def build_volatility_card_html(vm, updated_time):
+    """변동성 & 매크로 위젯 HTML 생성"""
+
+    # ── VIX 관련 사전 계산 ──
+    vix_str   = _fmtv(vm['vix'])
+    vix_badge = _vix_badge(vm['vix'])
+
+    if vm['vix'] is not None and vm['vix_prev'] is not None:
+        delta = vm['vix'] - vm['vix_prev']
+        arrow = '▲' if delta > 0 else '▼'
+        col   = '#f87171' if delta > 0 else '#4ade80'
+        vix_delta = (f'<span style="color:{col};font-size:0.68rem;margin-left:2px;">'
+                     f'{arrow}{abs(delta):.2f}</span>')
+    else:
+        vix_delta = ''
+
+    if (vm['vix'] is not None and vm['vix_52h'] is not None
+            and vm['vix_52l'] is not None):
+        rng = vm['vix_52h'] - vm['vix_52l']
+        pct_pos = ((vm['vix'] - vm['vix_52l']) / rng * 100) if rng > 0 else 50
+        vix_rank = f'상위 {100 - pct_pos:.0f}%'
+    else:
+        vix_rank = 'N/A'
+
+    vix_52_str  = f"{_fmtv(vm['vix_52l'])} ~ {_fmtv(vm['vix_52h'])}"
+
+    # ── P/C 관련 ──
+    total_pcr_str  = _fmtv(vm['total_pcr'])
+    total_pcr_b    = _pcr_badge(vm['total_pcr'])
+    equity_pcr_str = _fmtv(vm['equity_pcr'])
+    equity_pcr_b   = _pcr_badge(vm['equity_pcr'])
+    index_pcr_str  = _fmtv(vm['index_pcr'])
+    index_pcr_b    = _pcr_badge(vm['index_pcr'])
+
+    tpcr = vm['total_pcr'] if vm['total_pcr'] is not None else 0.85
+    pcr_signal = ('풋 우세 · 하락 헤지' if vm['index_pcr'] is not None
+                  and vm['index_pcr'] > 1.0 else '콜 우세 · 낙관')
+
+    # ── 금리 / 자산 ──
+    tnx_str    = _fmtv(vm['tnx'], '%')
+    irx_str    = _fmtv(vm['irx'], '%')
+    spread_str = _fmtv(vm['spread'], '%')
+    spread_b   = _spread_badge(vm['spread'])
+    spread_col = '#4ade80' if (vm['spread'] or 0) >= 0 else '#f87171'
+    dxy_str    = _fmtv(vm['dxy'], dec=1)
+    gold_str   = _fmtv(vm['gold'], prefix='$', dec=0)
+
+    # ── FRED 매크로 ──
+    dff_str     = _fmtv(vm['dff'])
+    dff_badge   = _dff_badge(vm['dff'])
+    cpi_str     = _fmtv(vm['cpi_yoy'])
+    cpi_badge   = _cpi_badge(vm['cpi_yoy'])
+    unrate_str  = _fmtv(vm['unrate'])
+
+    pcr_date_str = vm['pcr_date'] or ''
+
+    return f"""            <div class="vol-macro-card">
+                <div class="vol-macro-header">
+                    <span class="vol-macro-title">📊 시장 심리 &amp; 매크로 현황</span>
+                    <span style="font-size:0.7rem;color:#475569;">Updated: {updated_time} KST · 매시 자동갱신 · CBOE / FRED / yfinance</span>
+                </div>
+                <div class="vol-macro-grid">
+
+                    <!-- ① 변동성 & 공포 지표 -->
+                    <div>
+                        <div class="vol-section-title">😱 변동성 &amp; 공포 지표</div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">VIX 공포지수</span>
+                            <span class="vol-metric-value">{vix_str} {vix_delta} {vix_badge}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">52주 범위</span>
+                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">{vix_52_str}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">52주 위치</span>
+                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">{vix_rank}</span>
+                        </div>
+                        <div class="vol-metric-row" style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);">
+                            <span class="vol-metric-label">Total P/C 비율</span>
+                            <span class="vol-metric-value">{total_pcr_str} {total_pcr_b}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">Equity P/C</span>
+                            <span class="vol-metric-value">{equity_pcr_str} {equity_pcr_b}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">Index P/C</span>
+                            <span class="vol-metric-value">{index_pcr_str} {index_pcr_b}</span>
+                        </div>
+                        <div style="margin-top:5px;font-size:0.64rem;color:#374151;">{pcr_date_str} CBOE</div>
+                    </div>
+
+                    <!-- ② 옵션 신호 & 금리 -->
+                    <div>
+                        <div class="vol-section-title">📈 옵션 신호 &amp; 금리</div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">미국 10년물</span>
+                            <span class="vol-metric-value">{tnx_str}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">미국 3개월물</span>
+                            <span class="vol-metric-value">{irx_str}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">장단기 스프레드</span>
+                            <span class="vol-metric-value" style="color:{spread_col};">{spread_str} {spread_b}</span>
+                        </div>
+                        <div class="vol-metric-row" style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);">
+                            <span class="vol-metric-label">Index P/C 신호</span>
+                            <span class="vol-metric-value" style="font-size:0.7rem;color:#94a3b8;">{pcr_signal}</span>
+                        </div>
+                        <div class="vol-metric-row" style="margin-top:4px;">
+                            <span class="vol-metric-label">달러 DXY</span>
+                            <span class="vol-metric-value">{dxy_str}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">금 ($/oz)</span>
+                            <span class="vol-metric-value">{gold_str}</span>
+                        </div>
+                    </div>
+
+                    <!-- ③ 월별 매크로 요약 -->
+                    <div>
+                        <div class="vol-section-title">🏦 월별 매크로 요약</div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">Fed 기준금리</span>
+                            <span class="vol-metric-value">{dff_str}% {dff_badge}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">CPI 물가 YoY</span>
+                            <span class="vol-metric-value">{cpi_str}% {cpi_badge}</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">실업률</span>
+                            <span class="vol-metric-value">{unrate_str}%</span>
+                        </div>
+                        <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);
+                                    font-size:0.63rem;color:#374151;line-height:1.9;">
+                            📌 P/C &lt;0.7 과열(빨강) · 0.7-1.0 중립(노랑) · &gt;1.0 방어(초록)<br>
+                            📌 VIX &lt;15 안정 · 15-20 보통 · 20-25 주의 · &gt;25 공포<br>
+                            📌 스프레드 양수=정상 · 음수=역전(침체신호)
+                        </div>
+                    </div>
+
+                </div>
+            </div>"""
+
+
+
 def build_news_items_html(arts, border='rgba(250,204,21,0.5)'):
     if not arts:
         return "<p style='color:#f87171;font-size:0.85em;margin:0;'>기사를 불러올 수 없습니다.</p>"
@@ -266,6 +564,9 @@ def get_latest_market_data():
         sectors_data = [{"name": n, "val": "50%", "color": "#10b981", "pct": "0.00%", "up": True} for n in sectors_map]
         bigtech_data = [{"name": n, "pct": "0.00%", "up": True} for n in bigtech_map]
 
+    # 변동성 & 매크로 수집
+    vm_data = get_volatility_macro_data()
+
     # 뉴스 수집 (3 소스 × 3 기사 = 9개)
     yahoo_arts = get_yahoo_finance_news(3)
     stock_arts = get_freezine_stock_news(3)   # 프리진경제 주식/증권
@@ -282,6 +583,7 @@ def get_latest_market_data():
             "bigtech": bigtech_data,
             "korea": "실시간 글로벌 시장 변동에 따른 투자 심리 변화가 감지되고 있습니다. 주도 섹터 및 기관 수급 유입 상황을 주의 깊게 살펴보세요."
         },
+        "volatility": vm_data,
         "news": {
             "yahoo":       yahoo_arts,
             "fz_stock":    stock_arts,
@@ -379,6 +681,13 @@ def update_index_html(data):
                             {intl_html}
                         </div>
     '''
+
+    # --- 변동성 & 매크로 카드 업데이트 ---
+    if 'volatility' in data:
+        vol_html = build_volatility_card_html(data['volatility'], data['news']['updated_time'])
+        vol_pat  = r'<!-- VOLATILITY_CARD_START -->.*?<!-- VOLATILITY_CARD_END -->'
+        vol_rep  = '<!-- VOLATILITY_CARD_START -->\n' + vol_html + '\n            <!-- VOLATILITY_CARD_END -->'
+        content  = re.sub(vol_pat, vol_rep, content, flags=re.DOTALL)
 
     # 업데이트 로직
     pattern = r'(<!-- MARKET_NEWS_CARD_START -->)(.*?)(<!-- MARKET_NEWS_CARD_END -->)'

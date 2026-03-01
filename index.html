@@ -1130,6 +1130,70 @@
             font-weight: bold;
         }
 
+        /* ─── 변동성 & 매크로 위젯 ─── */
+        .vol-macro-card {
+            margin: 14px 20px;
+            background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(30,41,59,0.95));
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.07);
+            padding: 14px 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+        }
+        .vol-macro-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        .vol-macro-title {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: #94a3b8;
+            letter-spacing: 0.04em;
+        }
+        .vol-macro-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+        .vol-section-title {
+            font-size: 0.71rem;
+            font-weight: 700;
+            color: #475569;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .vol-metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2.5px 0;
+        }
+        .vol-metric-label { font-size: 0.73rem; color: #64748b; white-space: nowrap; }
+        .vol-metric-value { font-size: 0.77rem; font-weight: 600; color: #e2e8f0; text-align:right; }
+        .vol-badge {
+            display: inline-block;
+            font-size: 0.6rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: 700;
+            margin-left: 3px;
+            vertical-align: middle;
+        }
+        .vol-badge-green  { background: rgba(74,222,128,0.18);  color: #4ade80; }
+        .vol-badge-lgreen { background: rgba(163,230,53,0.18);  color: #a3e635; }
+        .vol-badge-yellow { background: rgba(250,204,21,0.18);  color: #facc15; }
+        .vol-badge-orange { background: rgba(251,146,60,0.18);  color: #fb923c; }
+        .vol-badge-red    { background: rgba(248,113,113,0.18); color: #f87171; }
+        @media (max-width: 768px) {
+            .vol-macro-grid { grid-template-columns: 1fr; gap: 10px; }
+        }
+
     </style>
 </head>
 
@@ -1205,6 +1269,14 @@
                 <div class="update-note">ℹ️ <strong>데이터:</strong> Financial Modeling Prep API | <strong>범위:</strong> 모든
                     미국 상장 기업 | <strong>업데이트:</strong> 실시간</div>
             </div>
+
+            <!-- VOLATILITY_CARD_START -->
+            <div class="vol-macro-card">
+                <div style="text-align:center;color:#475569;font-size:0.82rem;padding:16px 0;">
+                    ⏳ 시장 심리 & 매크로 데이터 로딩 중... (GitHub Actions 매시 자동갱신)
+                </div>
+            </div>
+            <!-- VOLATILITY_CARD_END -->
 
             <!-- 상부 그리드 대시보드: 지표, 심리, 섹터 -->
             <div class="grid-dashboard">
