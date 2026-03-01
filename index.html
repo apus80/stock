@@ -1129,6 +1129,39 @@
             color: #dc2626;
             font-weight: bold;
         }
+
+        /* ===== Tab Navigation ===== */
+        .tab-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            gap: 4px;
+            padding: 8px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .tab-nav::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: rgba(255,255,255,0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.25); color: white; }
+        .tab-btn.active { background: white; color: #667eea; font-weight: 700; }
+        @media (max-width: 768px) {
+            .tab-btn { padding: 6px 12px; font-size: 0.78rem; }
+        }
     </style>
 </head>
 
@@ -1191,9 +1224,18 @@
                 </div>
             </div>
 
+            <!-- ===== 탭 네비게이션 ===== -->
+            <nav class="tab-nav" id="tabNav">
+                <button class="tab-btn active" data-tab="dashboard" onclick="showTab('dashboard')">&#127968; 대시보드</button>
+                <button class="tab-btn" data-tab="market" onclick="showTab('market')">&#128202; 마켓</button>
+                <button class="tab-btn" data-tab="news" onclick="showTab('news')">&#128240; 뉴스</button>
+                <button class="tab-btn" data-tab="calendar" onclick="showTab('calendar')">&#128197; 캘린더</button>
+                <button class="tab-btn" data-tab="heatmap" onclick="showTab('heatmap')">&#128293; 히트맵</button>
+                <button class="tab-btn" data-tab="reports" onclick="showTab('reports')">&#128203; 리포트</button>
+            </nav>
 
             <!-- 실적발표 검색 -->
-            <div class="earnings-search">
+            <div class="earnings-search" data-section="calendar">
                 <h3>📊 실적발표 일정 검색</h3>
                 <div class="search-box">
                     <input type="text" id="earningsSearchInput" class="search-input"
@@ -1207,7 +1249,7 @@
             </div>
 
             <!-- 상부 그리드 대시보드: 지표, 심리, 섹터 -->
-            <div class="grid-dashboard">
+            <div class="grid-dashboard" data-section="dashboard">
                 <!-- 글로벌 시장 핵심 지표 -->
                 <div class="card macro-card">
                     <h3 class="section-title">📊 글로벌 시장 핵심 지표</h3>
@@ -1312,8 +1354,46 @@
 
             </div>
 
+            <!-- 글로벌 자산 현황 -->
+            <div class="card" data-section="dashboard" style="margin: 0 20px 20px; padding: 20px;">
+                <h3 class="section-title">&#127758; 글로벌 자산 현황</h3>
+                <div class="tradingview-widget-container" style="height: 450px;">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript"
+                        src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                            {
+                                "colorTheme": "light", "dateRange": "1M", "showChart": true, "locale": "ko",
+                                "width": "100%", "height": 450, "isTransparent": false, "showSymbolLogo": true,
+                                "tabs": [
+                                    {"name": "글로벌 주식", "symbols": [
+                                        {"s": "FOREXCOM:SPXUSD", "d": "S&P 500"},
+                                        {"s": "FOREXCOM:NSXUSD", "d": "Nasdaq 100"},
+                                        {"s": "INDEX:RTY", "d": "Russell 2000"},
+                                        {"s": "TVC:UKX", "d": "FTSE 100"},
+                                        {"s": "XETR:DAX", "d": "DAX"},
+                                        {"s": "TSE:NI225", "d": "Nikkei 225"}
+                                    ]},
+                                    {"name": "원자재", "symbols": [
+                                        {"s": "TVC:GOLD", "d": "금"},
+                                        {"s": "TVC:SILVER", "d": "은"},
+                                        {"s": "TVC:USOIL", "d": "WTI 원유"},
+                                        {"s": "TVC:NATURALGAS", "d": "천연가스"}
+                                    ]},
+                                    {"name": "외환/크립토", "symbols": [
+                                        {"s": "FX:USDKRW", "d": "달러원"},
+                                        {"s": "FX:EURUSD", "d": "유로달러"},
+                                        {"s": "FX_IDC:USDJPY", "d": "달러엔"},
+                                        {"s": "BITSTAMP:BTCUSD", "d": "비트코인"},
+                                        {"s": "BITSTAMP:ETHUSD", "d": "이더리움"}
+                                    ]}
+                                ]
+                            }
+                    </script>
+                </div>
+            </div>
+
             <!-- 뉴스 & 섹터 주도주 병렬 배치 영역 -->
-            <div class="news-sector-row">
+            <div class="news-sector-row" data-section="market">
                 <!-- 실시간 섹터 주도주 -->
                 <div class="card sector-card" style="margin-bottom: 0;">
                     <h3 class="section-title">🚀 실시간 섹터 주도주 (US)</h3>
@@ -1367,26 +1447,53 @@
 
                 <!-- 자동화 마켓 뉴스 카드 위치 -->
                 <!-- MARKET_NEWS_CARD_START -->
-            <div id="marketNewsCardArea">
+            <div id="marketNewsCardArea" data-section="market">
                 <div class="news-card-wrapper">
                     <div class="news-card-column" id="left-card-column">
                         <!-- LEFT_CARD_START -->
                         <div class="news-card-header">
                             <div class="header-top">
-                                <span class="date-badge">2026.03.01 (일)</span>
+                                <span class="date-badge">실시간 지표</span>
                                 <span style="font-size: 0.9rem; color: #94a3b8;">US Market Focus</span>
                             </div>
-                            <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">실시간 시장 지표 & 섹터 현황 📊</div>
+                            <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">실시간 시장 지표 &amp; 섹터 현황 &#128202;</div>
                         </div>
-                        <div class="section-label">Major Indices</div>
-                        <div class="index-grid-3"><div class="mini-box"><span class="mini-name">DOW</span><span class="mini-val">48,977.9</span><span class="mini-pct change-down">▼ -1.05%</span></div><div class="mini-box"><span class="mini-name">S&P 500</span><span class="mini-val">6,878.9</span><span class="mini-pct change-down">▼ -0.43%</span></div><div class="mini-box"><span class="mini-name">NASDAQ</span><span class="mini-val">22,668.2</span><span class="mini-pct change-down">▼ -0.92%</span></div><div class="mini-box"><span class="mini-name">Russell 2K</span><span class="mini-val">2,632.4</span><span class="mini-pct change-down">▼ -1.68%</span></div><div class="mini-box"><span class="mini-name">Phil. Semi</span><span class="mini-val">8,098.4</span><span class="mini-pct change-down">▼ -1.21%</span></div><div class="mini-box"><span class="mini-name">VIX Index</span><span class="mini-val">19.9</span><span class="mini-pct change-up">▲ +6.60%</span></div></div>
-                        <div class="section-label">S&P 500 Sectors</div>
-                        <div style="margin-bottom:20px;"><div class="data-bar-row"><div class="data-bar-label"><span>Financials (XLF)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:30%; background:#f43f5e;"></div></div></div><span class="change-down">-2.04%</span></div><div class="data-bar-row"><div class="data-bar-label"><span>Industrials (XLI)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:52%; background:#10b981;"></div></div></div><span class="change-up">+0.25%</span></div><div class="data-bar-row"><div class="data-bar-label"><span>Technology (XLK)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:34%; background:#f43f5e;"></div></div></div><span class="change-down">-1.60%</span></div><div class="data-bar-row"><div class="data-bar-label"><span>Health Care (XLV)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:68%; background:#10b981;"></div></div></div><span class="change-up">+1.77%</span></div></div>
-                        <div class="section-label">Magnificent 7</div>
-                        <div class="index-grid-3" style="grid-template-columns: repeat(4, 1fr);"><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">MSFT</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-2.24%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">AAPL</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-3.21%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">NVDA</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-4.16%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">GOOGL</span><span class="change-up" style="font-size:0.95rem; font-weight:700;">+1.42%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">AMZN</span><span class="change-up" style="font-size:0.95rem; font-weight:700;">+1.00%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">TSLA</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-1.49%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">META</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-1.34%</span></div></div>
-                        <div class="section-label">Korea Market Summary</div>
-                        <div style="font-size:1rem; line-height:1.6; color:#cbd5e1; background:rgba(255,255,255,0.03); padding:12px; border-radius:10px;">
-                            🇰🇷 실시간 글로벌 시장 변동에 따른 투자 심리 변화가 감지되고 있습니다. 주도 섹터 및 기관 수급 유입 상황을 주의 깊게 살펴보세요.
+                        <div class="tradingview-widget-container" style="height: 550px; margin: 0 -20px -20px;">
+                            <div class="tradingview-widget-container__widget"></div>
+                            <script type="text/javascript"
+                                src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                                    {
+                                        "colorTheme": "dark", "isTransparent": true,
+                                        "dateRange": "1D", "showChart": false, "locale": "ko",
+                                        "width": "100%", "height": 550, "showSymbolLogo": true,
+                                        "tabs": [
+                                            {"name": "주요 지수", "symbols": [
+                                                {"s": "FOREXCOM:SPXUSD", "d": "S&P 500"},
+                                                {"s": "FOREXCOM:NSXUSD", "d": "Nasdaq 100"},
+                                                {"s": "FOREXCOM:DJI", "d": "Dow Jones"},
+                                                {"s": "INDEX:RTY", "d": "Russell 2000"},
+                                                {"s": "CBOE:VIX", "d": "VIX"}
+                                            ]},
+                                            {"name": "Magnificent 7", "symbols": [
+                                                {"s": "NASDAQ:MSFT", "d": "Microsoft"},
+                                                {"s": "NASDAQ:AAPL", "d": "Apple"},
+                                                {"s": "NASDAQ:NVDA", "d": "NVIDIA"},
+                                                {"s": "NASDAQ:GOOGL", "d": "Google"},
+                                                {"s": "NASDAQ:AMZN", "d": "Amazon"},
+                                                {"s": "NASDAQ:TSLA", "d": "Tesla"},
+                                                {"s": "NASDAQ:META", "d": "Meta"}
+                                            ]},
+                                            {"name": "S&P Sectors", "symbols": [
+                                                {"s": "AMEX:XLK", "d": "Technology"},
+                                                {"s": "AMEX:XLF", "d": "Financials"},
+                                                {"s": "AMEX:XLV", "d": "Health Care"},
+                                                {"s": "AMEX:XLI", "d": "Industrials"},
+                                                {"s": "AMEX:XLE", "d": "Energy"},
+                                                {"s": "AMEX:XLY", "d": "Cons. Discretionary"}
+                                            ]}
+                                        ]
+                                    }
+                            </script>
                         </div>
                         <!-- LEFT_CARD_END -->
                     </div>
@@ -1420,8 +1527,24 @@
             </div>
 <!-- MARKET_NEWS_CARD_END -->
 
+            <!-- TradingView 실시간 뉴스 타임라인 -->
+            <div class="card" data-section="news" style="margin: 20px; padding: 20px;">
+                <h3 class="section-title">&#128240; 실시간 글로벌 시장 뉴스 (TradingView)</h3>
+                <div class="tradingview-widget-container" style="height: 600px;">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript"
+                        src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
+                            {
+                                "feedMode": "market", "market": "stock",
+                                "colorTheme": "light", "isTransparent": false,
+                                "displayMode": "regular", "width": "100%", "height": 600, "locale": "en"
+                            }
+                    </script>
+                </div>
+            </div>
+
                 <!-- 히트맵 섹션 (Full Width) -->
-                <div class="card heatmap-card" style="margin: 20px; padding: 0; overflow: hidden;">
+                <div class="card heatmap-card" data-section="heatmap" style="margin: 20px; padding: 0; overflow: hidden;">
                     <div
                         style="display:flex; justify-content:space-between; align-items:center; padding:20px; border-bottom:1px solid #edf2f7;">
                         <h3 class="section-title" style="border:none; padding:0; margin:0;">📊 Market Heat Map</h3>
@@ -1455,262 +1578,20 @@
 
             </div>
 
-            <!-- 경제 캘린더 섹션 (전체 통합 및 레이아웃 조정) -->
-            <div class="card calendar-card" style="padding: 24px;">
-                <h3 class="section-title">📆 2026년 3-4월 경제 일정</h3>
-                <div class="calendar-grid">
-                    <!-- 3월 달력 -->
-                    <div class="month-calendar">
-                        <div class="month-header">3월</div>
-                        <div class="weekdays">
-                            <div>일</div>
-                            <div>월</div>
-                            <div>화</div>
-                            <div>수</div>
-                            <div>목</div>
-                            <div>금</div>
-                            <div>토</div>
-                        </div>
-                        <div id="cal-mar" class="dates"></div>
-                    </div>
-                    <!-- 4월 달력 -->
-                    <div class="month-calendar">
-                        <div class="month-header">4월</div>
-                        <div class="weekdays">
-                            <div>일</div>
-                            <div>월</div>
-                            <div>화</div>
-                            <div>수</div>
-                            <div>목</div>
-                            <div>금</div>
-                            <div>토</div>
-                        </div>
-                        <div id="cal-apr" class="dates"></div>
-                    </div>
-                </div>
-
-                <div class="event-summary" style="margin-top: 30px;">
-                    <h3 class="section-title">📌 전체 53개 이벤트</h3>
-                    <div class="badge"
-                        style="background: var(--bg-gradient); width: 100%; text-align: center; padding: 10px; margin-bottom: 20px; border-radius: 8px;">
-                        3월: 21개 | 4월: 19개
-                    </div>
-                    <div class="update-note" style="margin-bottom: 15px; font-size: 0.8em; opacity: 0.8;">
-                        ℹ️ 출처: Investing.com 경제 캘린더 및 Federal Reserve 공식 2026 릴리스 스케줄
-                    </div>
-
-                    <!-- 이벤트 그리드 컨테이너 (아코디언 제거, 2x2 그리드 적용) -->
-                    <div class="calendar-event-grid-container"
-                        style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-                        <!-- 주요 실적 발표 -->
-                        <div class="event-category-card"
-                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                            <div class="category-header-cal"
-                                style="background:linear-gradient(135deg,#667eea,#764ba2); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                                💎 주요 실적 발표
-                            </div>
-                            <div class="event-grid-cal" style="padding: 15px;">
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">💎</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/4</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐
-                                            Broadcom
-                                            (AVGO)</div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">💎</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/16</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">TSM (예정)
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">💎</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/21</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">Tesla
-                                            (예정)
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                    <div class="event-icon-large">💎</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/23</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">MSFT /
-                                            GOOGL
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 고용 및 노동 시장 -->
-                        <div class="event-category-card"
-                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                            <div class="category-header-cal"
-                                style="background:linear-gradient(135deg,#6f42c1,#8e44ad); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                                💼 고용 및 노동 시장
-                            </div>
-                            <div class="event-grid-cal" style="padding: 15px;">
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">💼</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/6</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP
-                                            고용보고서
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">💼</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/28</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">JOLTS
-                                            구인건수
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                    <div class="event-icon-large">💼</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/3</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ NFP
-                                            고용보고서
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 물가 및 인플레이션 -->
-                        <div class="event-category-card"
-                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                            <div class="category-header-cal"
-                                style="background:linear-gradient(135deg,#fd7e14,#e74c3c); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                                📊 물가 및 인플레이션
-                            </div>
-                            <div class="event-grid-cal" style="padding: 15px;">
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">📊</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/11</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI
-                                            (소비자물가)
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">🏭</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/12</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI
-                                            (생산자물가)
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">🛍️</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/27</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">근원 PCE 물가
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">📊</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/10</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ CPI
-                                            (소비자물가)
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                    <div class="event-icon-large">🏭</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/14</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">PPI
-                                            (생산자물가)
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- FOMC 및 통화 정책 -->
-                        <div class="event-category-card"
-                            style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-                            <div class="category-header-cal"
-                                style="background:linear-gradient(135deg,#0056b3,#004085); padding: 15px; color: #fff; font-weight: 700; text-align: center;">
-                                🏦 FOMC 및 통화 정책
-                            </div>
-                            <div class="event-grid-cal" style="padding: 15px;">
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">🏦</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/17-18</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f1f5f9;">
-                                    <div class="event-icon-large">🏦</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">3/18</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">⭐ 금리
-                                            결정/점도표
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="event-item-cal"
-                                    style="display: flex; align-items: center; gap: 12px; padding: 10px;">
-                                    <div class="event-icon-large">🏦</div>
-                                    <div class="event-details-cal">
-                                        <div class="event-date-cal"
-                                            style="font-size: 0.85em; color: #64748b; font-weight: 600;">4/28-29</div>
-                                        <div class="event-title-cal" style="font-weight: 700; color: #1e293b;">FOMC 정례회의
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="update-note" style="justify-content: center; margin-top: 20px;">
-                        ⭐ 시장 영향도 높은 핵심 지표
-                    </div>
+            <!-- 경제 캘린더 섹션 -->
+            <div class="card calendar-card" data-section="calendar" style="padding: 24px;">
+                <h3 class="section-title">📅 실시간 경제 캘린더</h3>
+                <div class="tradingview-widget-container" style="height: 600px;">
+                    <div class="tradingview-widget-container__widget"></div>
+                    <script type="text/javascript"
+                        src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+                            {
+                                "colorTheme": "light", "isTransparent": false,
+                                "width": "100%", "height": 600, "locale": "en",
+                                "importanceFilter": "0,1",
+                                "currencyFilter": "USD,EUR,JPY,KRW,CNY,GBP"
+                            }
+                    </script>
                 </div>
             </div>
 
@@ -2716,6 +2597,44 @@
                     layout: google.translate.TranslateElement.InlineLayout.SIMPLE
                 }, 'google_translate_element');
             }
+
+
+            // ===== 탭 네비게이션 =====
+            function showTab(tabName) {
+                // Update button active states
+                document.querySelectorAll('.tab-btn').forEach(function(btn) {
+                    btn.classList.toggle('active', btn.dataset.tab === tabName);
+                });
+
+                // Show/hide sections inside .container based on data-section attribute
+                document.querySelectorAll('[data-section]').forEach(function(el) {
+                    var isActive = el.dataset.section === tabName;
+                    if (isActive) {
+                        el.style.display = el.classList.contains('news-sector-row') ? 'flex' : 'block';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+
+                // Show/hide reports sections (.controls, .pdf-viewer) outside container
+                var reportsSections = document.querySelectorAll('.controls, .pdf-viewer');
+                reportsSections.forEach(function(el) {
+                    el.style.display = (tabName === 'reports') ? 'block' : 'none';
+                });
+
+                // Trigger heatmap reload when heatmap tab selected
+                if (tabName === 'heatmap' && typeof updateTradingViewMap === 'function') {
+                    setTimeout(updateTradingViewMap, 200);
+                }
+
+                localStorage.setItem('activeTab', tabName);
+            }
+
+            // Initialize tab on page load
+            (function initTabs() {
+                var saved = localStorage.getItem('activeTab') || 'dashboard';
+                showTab(saved);
+            })();
 
             // 이메일 복사 함수
             function copyToClipboard(text) {
