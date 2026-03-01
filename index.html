@@ -10,6 +10,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주식 분석 통합 리포트 뷰어</title>
+
+    <!-- PWA 설정 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- iOS Safari 홈 화면 추가 지원 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="주식 리포트">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <style>
         :root {
             /* 컬러 시스템 */
@@ -2713,6 +2724,17 @@
 
         <script type="text/javascript"
             src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- PWA Service Worker 등록 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW 등록 성공:', reg.scope))
+                    .catch(err => console.log('SW 등록 실패:', err));
+            });
+        }
+    </script>
 
 </body>
 
