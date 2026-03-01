@@ -5,6 +5,7 @@ import html as html_lib
 import datetime
 import urllib.request
 import xml.etree.ElementTree as ET
+import json
 
 try:
     from bs4 import BeautifulSoup
@@ -41,6 +42,14 @@ MONTH_MAP = {
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                   'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+}
+
+MK_RSS_SECTIONS = {
+    '증권':    'https://www.mk.co.kr/rss/40300001/',
+    '경제':    'https://www.mk.co.kr/rss/30100041/',
+    '부동산':  'https://www.mk.co.kr/rss/50300009/',
+    '국제':    'https://www.mk.co.kr/rss/30200030/',
+    '산업·IT': 'https://www.mk.co.kr/rss/50200011/',
 }
 
 def esc(text):
@@ -245,14 +254,60 @@ def get_fred_latest(series_id, units=None):
     return None, None
 
 
+
+
+def get_cnn_fear_greed():
+    """CNN Fear & Greed Index (무료 공개 API)
+    score 0-24: Extreme Fear, 25-44: Fear, 45-55: Neutral, 56-75: Greed, 76-100: Extreme Greed
+    """
+    url = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata"
+    try:
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode('utf-8'))
+        fg = data.get('fear_and_greed', {})
+        score = fg.get('score')
+        rating = fg.get('rating', '')
+        prev   = fg.get('previous_close')
+        if score is not None:
+            return {
+                'score':  round(float(score), 1),
+                'rating': rating,
+                'prev':   round(float(prev), 1) if prev is not None else None
+            }
+    except Exception as e:
+        print(f"[CNN F&G] 실패: {e}")
+    return {}
+
+
+def get_spy_options_pcr():
+    """SPY 옵션 데이터에서 실시간 Put/Call 비율 계산 (yfinance)"""
+    if not yf:
+        return None
+    try:
+        spy = yf.Ticker("SPY")
+        exps = spy.options
+        if not exps:
+            return None
+        chain = spy.option_chain(exps[0])
+        call_vol = float(chain.calls['volume'].fillna(0).sum())
+        put_vol  = float(chain.puts['volume'].fillna(0).sum())
+        if call_vol > 0:
+            return round(put_vol / call_vol, 2)
+    except Exception as e:
+        print(f"[SPY PCR] 실패: {e}")
+    return None
+
 def get_volatility_macro_data():
     """변동성(VIX), P/C 비율(CBOE), 매크로(FRED/yfinance) 통합 수집"""
     vm = {
         'vix': None, 'vix_prev': None, 'vix_52h': None, 'vix_52l': None,
         'total_pcr': None, 'equity_pcr': None, 'index_pcr': None, 'pcr_date': None,
+        'spy_pcr': None,
         'tnx': None, 'irx': None, 'spread': None,
         'dff': None, 'cpi_yoy': None, 'unrate': None,
         'dxy': None, 'gold': None,
+        'fg_score': None, 'fg_rating': '', 'fg_prev': None,
     }
 
     # VIX & 금리 / 자산가격 (yfinance)
@@ -280,10 +335,22 @@ def get_volatility_macro_data():
         if vm['tnx'] is not None and vm['irx'] is not None:
             vm['spread'] = round(vm['tnx'] - vm['irx'], 2)
 
-    # CBOE P/C 비율
+    # CBOE P/C 비율 (실패 시 SPY 옵션으로 대체)
     vm['total_pcr'],  vm['pcr_date'] = get_cboe_pc_ratio("totalpc.csv")
     vm['equity_pcr'], _              = get_cboe_pc_ratio("equitypc.csv")
     vm['index_pcr'],  _              = get_cboe_pc_ratio("indexpc.csv")
+
+    # SPY 옵션 P/C (CBOE 실패 시 fallback)
+    spy_pcr = get_spy_options_pcr()
+    if vm['total_pcr'] is None:
+        vm['total_pcr'] = spy_pcr
+    vm['spy_pcr'] = spy_pcr
+
+    # CNN Fear & Greed Index
+    fg = get_cnn_fear_greed()
+    vm['fg_score']  = fg.get('score')
+    vm['fg_rating'] = fg.get('rating', '')
+    vm['fg_prev']   = fg.get('prev')
 
     # FRED 매크로 (공개 CSV)
     vm['dff'],     _ = get_fred_latest("DFF")              # Fed 기준금리
@@ -345,6 +412,30 @@ def _fmtv(v, suffix='', prefix='', dec=2):
 def build_volatility_card_html(vm, updated_time):
     """변동성 & 매크로 위젯 HTML 생성"""
 
+    # ── CNN F&G ──
+    fg_s   = vm.get('fg_score')
+    fg_r   = vm.get('fg_rating', '')
+    fg_p   = vm.get('fg_prev')
+    if fg_s is None:
+        fg_display = 'N/A'
+        fg_badge   = ''
+    else:
+        fg_display = f'{fg_s:.0f}/100'
+        if   fg_s <= 24: fg_badge = _vbadge('극도공포', 'red')
+        elif fg_s <= 44: fg_badge = _vbadge('공포', 'orange')
+        elif fg_s <= 55: fg_badge = _vbadge('중립', 'yellow')
+        elif fg_s <= 75: fg_badge = _vbadge('탐욕', 'lgreen')
+        else:            fg_badge = _vbadge('극도탐욕', 'green')
+
+    fg_delta = ''
+    if fg_s is not None and fg_p is not None:
+        d = fg_s - fg_p
+        col_fg = '#4ade80' if d >= 0 else '#f87171'
+        fg_delta = f'<span style="color:{col_fg};font-size:0.68rem;margin-left:2px;">{"▲" if d>=0 else "▼"}{abs(d):.1f}</span>'
+
+    fg_rating_ko = {'Extreme Fear':'극도공포', 'Fear':'공포', 'Neutral':'중립',
+                    'Greed':'탐욕', 'Extreme Greed':'극도탐욕'}.get(fg_r, fg_r)
+
     # ── VIX 관련 사전 계산 ──
     vix_str   = _fmtv(vm['vix'])
     vix_badge = _vix_badge(vm['vix'])
@@ -369,6 +460,8 @@ def build_volatility_card_html(vm, updated_time):
     vix_52_str  = f"{_fmtv(vm['vix_52l'])} ~ {_fmtv(vm['vix_52h'])}"
 
     # ── P/C 관련 ──
+    spy_pcr_str = _fmtv(vm.get('spy_pcr'))
+    spy_pcr_b   = _pcr_badge(vm.get('spy_pcr'))
     total_pcr_str  = _fmtv(vm['total_pcr'])
     total_pcr_b    = _pcr_badge(vm['total_pcr'])
     equity_pcr_str = _fmtv(vm['equity_pcr'])
@@ -408,6 +501,14 @@ def build_volatility_card_html(vm, updated_time):
                     <!-- ① 변동성 & 공포 지표 -->
                     <div>
                         <div class="vol-section-title">😱 변동성 &amp; 공포 지표</div>
+                        <div class="vol-metric-row" style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.07);">
+                            <span class="vol-metric-label">CNN 공포탐욕지수</span>
+                            <span class="vol-metric-value" style="font-size:0.9rem;">{fg_display} {fg_delta} {fg_badge}</span>
+                        </div>
+                        <div class="vol-metric-row" style="margin-bottom:6px;">
+                            <span class="vol-metric-label" style="color:#64748b;font-size:0.71rem;">분류</span>
+                            <span class="vol-metric-value" style="color:#94a3b8;font-size:0.72rem;">{fg_rating_ko}</span>
+                        </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">VIX 공포지수</span>
                             <span class="vol-metric-value">{vix_str} {vix_delta} {vix_badge}</span>
@@ -432,7 +533,11 @@ def build_volatility_card_html(vm, updated_time):
                             <span class="vol-metric-label">Index P/C</span>
                             <span class="vol-metric-value">{index_pcr_str} {index_pcr_b}</span>
                         </div>
-                        <div style="margin-top:5px;font-size:0.64rem;color:#374151;">{pcr_date_str} CBOE</div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">SPY P/C (실시간)</span>
+                            <span class="vol-metric-value">{spy_pcr_str} {spy_pcr_b}</span>
+                        </div>
+                        <div style="margin-top:5px;font-size:0.64rem;color:#374151;">{pcr_date_str} CBOE / yfinance</div>
                     </div>
 
                     <!-- ② 옵션 신호 & 금리 -->
@@ -490,6 +595,54 @@ def build_volatility_card_html(vm, updated_time):
                 </div>
             </div>"""
 
+
+
+
+def get_mk_rss_all_sections(count=3):
+    """매일경제 RSS 섹션별 기사 수집 (드롭다운용)"""
+    result = {}
+    for section, url in MK_RSS_SECTIONS.items():
+        arts = fetch_rss_news(url, count, f'매일경제({section})',
+                              'https://www.mk.co.kr', do_translate=False)
+        result[section] = arts
+        print(f"[MK {section}] {len(arts)}건")
+    return result
+
+
+def build_mk_dropdown_html(mk_data):
+    """MK RSS 드롭다운 HTML.
+    mkShow() 함수는 index.html 정적 <script>에 정의됨.
+    여기서는 데이터 JSON + 셀렉트 박스 + 결과 div만 생성.
+    """
+    sections_data = {}
+    for sec, arts in mk_data.items():
+        sections_data[sec] = [
+            {'t': a['title'], 'l': a['link'], 'd': a.get('date', '')}
+            for a in arts
+        ]
+    # </script> 가 JSON 안에 있으면 HTML 파싱 종료 → \u003C 로 치환
+    data_json = json.dumps(sections_data, ensure_ascii=False).replace('</', r'\u003C/')
+
+    options_html = ''.join(
+        '<option value="{s}" {sel}>{s}</option>'.format(
+            s=s, sel='selected' if s == '증권' else ''
+        )
+        for s in mk_data.keys()
+    )
+
+    parts = [
+        '<script>var _MKD=' + data_json + ';</script>',
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">',
+        '<strong style="color:#fbbf24;font-size:0.82em;letter-spacing:0.03em;">📰 매일경제</strong>',
+        '<select id="mk-cat-sel" onchange="mkShow(this.value)"',
+        ' style="background:#1e2535;color:#f8fafc;border:1px solid rgba(255,255,255,0.15);',
+        'border-radius:6px;padding:2px 10px;font-size:0.75rem;cursor:pointer;">',
+        options_html,
+        '</select></div>',
+        '<div id="mk-articles-box"></div>',
+        '<script>if(typeof mkShow==="function"){mkShow("증권");}</script>',
+    ]
+    return ''.join(parts)
 
 
 def build_news_items_html(arts, border='rgba(250,204,21,0.5)'):
@@ -591,8 +744,11 @@ def get_latest_market_data():
     # 변동성 & 매크로 수집
     vm_data = get_volatility_macro_data()
 
+    # MK RSS 섹션별 기사 수집
+    mk_data = get_mk_rss_all_sections(3)
+
     # 뉴스 수집 (3 소스 × 3 기사 = 9개)
-    yahoo_arts = get_yahoo_finance_news(3)
+    # Yahoo Finance 제거 (MK RSS 드롭다운으로 대체)
     stock_arts = get_freezine_stock_news(3)   # 프리진경제 주식/증권
     intl_arts  = get_freezine_intl_news(3)    # 프리진경제 국제/IT
 
@@ -608,8 +764,8 @@ def get_latest_market_data():
             "korea": "실시간 글로벌 시장 변동에 따른 투자 심리 변화가 감지되고 있습니다. 주도 섹터 및 기관 수급 유입 상황을 주의 깊게 살펴보세요."
         },
         "volatility": vm_data,
+        "mk_data": mk_data,
         "news": {
-            "yahoo":       yahoo_arts,
             "fz_stock":    stock_arts,
             "fz_intl":     intl_arts,
             "updated_time": now_kst.strftime("%H:%M")
@@ -679,32 +835,48 @@ def update_index_html(data):
 
     # --- 오른쪽 카드 HTML ---
     nn = data['news']
-    yahoo_html    = build_news_items_html(nn['yahoo'],    border='rgba(250,204,21,0.5)')
+    mk_dropdown_html = build_mk_dropdown_html(data.get('mk_data', {}))
     stock_html    = build_news_items_html(nn['fz_stock'], border='rgba(56,189,248,0.5)')
     intl_html     = build_news_items_html(nn['fz_intl'],  border='rgba(74,222,128,0.5)')
 
-    right_card_content = f'''
-                        <div class="news-card-header">
-                            <div class="header-top">
-                                <span class="date-badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;">프리진경제</span>
-                                <span style="font-size:0.9rem;color:#94a3b8;">Updated: {nn['updated_time']} KST</span>
-                                <button onclick="window.location.reload()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button>
-                            </div>
-                            <div class="market-status-title" style="margin-top:10px;">📰 프리진경제 뉴스 브리핑</div>
-                        </div>
-                        <div style="margin-bottom:14px;">
-                            <strong style="color:#facc15;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(250,204,21,0.2);padding-bottom:4px;">📊 Yahoo Finance</strong>
-                            {yahoo_html}
-                        </div>
-                        <div style="margin-bottom:14px;">
-                            <strong style="color:#38bdf8;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(56,189,248,0.2);padding-bottom:4px;">📈 프리진경제 주식/증권</strong>
-                            {stock_html}
-                        </div>
-                        <div>
-                            <strong style="color:#4ade80;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(74,222,128,0.2);padding-bottom:4px;">🌐 프리진경제 국제/IT</strong>
-                            {intl_html}
-                        </div>
-    '''
+    upd_time   = nn['updated_time']
+    reload_btn = (
+        '<button onclick="window.location.reload()" title="새로고침"'
+        ' style="margin-left:auto;background:rgba(255,255,255,0.08);'
+        'border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;'
+        'padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;"'
+        ' onmouseover="this.style.background=\'rgba(255,255,255,0.15)\';this.style.color=\'#f8fafc\'"'
+        ' onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';this.style.color=\'#94a3b8\'">⟳ 새로고침</button>'
+    )
+
+    right_card_content = (
+        '<div class="news-card-header">'
+        '<div class="header-top">'
+        '<span class="date-badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;">뉴스</span>'
+        f'<span style="font-size:0.9rem;color:#94a3b8;">Updated: {upd_time} KST</span>'
+        + reload_btn +
+        '</div>'
+        '<div class="market-status-title" style="margin-top:10px;">📰 뉴스 브리핑</div>'
+        '</div>'
+        '<div style="margin-bottom:14px;">'
+        '<strong style="color:#fbbf24;font-size:0.82em;display:block;margin-bottom:8px;'
+        'letter-spacing:0.03em;border-bottom:1px solid rgba(251,191,36,0.2);padding-bottom:4px;">'
+        '📰 매일경제</strong>'
+        + mk_dropdown_html +
+        '</div>'
+        '<div style="margin-bottom:14px;">'
+        '<strong style="color:#38bdf8;font-size:0.82em;display:block;margin-bottom:8px;'
+        'letter-spacing:0.03em;border-bottom:1px solid rgba(56,189,248,0.2);padding-bottom:4px;">'
+        '📈 프리진경제 주식/증권</strong>'
+        + stock_html +
+        '</div>'
+        '<div>'
+        '<strong style="color:#4ade80;font-size:0.82em;display:block;margin-bottom:8px;'
+        'letter-spacing:0.03em;border-bottom:1px solid rgba(74,222,128,0.2);padding-bottom:4px;">'
+        '🌐 프리진경제 국제/IT</strong>'
+        + intl_html +
+        '</div>'
+    )
 
     # --- 변동성 & 매크로 카드 업데이트 ---
     if 'volatility' in data:

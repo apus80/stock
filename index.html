@@ -1150,7 +1150,7 @@
         .vol-macro-title {
             font-size: 0.84rem;
             font-weight: 700;
-            color: #94a3b8;
+            color: #e2e8f0;
             letter-spacing: 0.04em;
         }
         .vol-macro-grid {
@@ -1159,23 +1159,23 @@
             gap: 14px;
         }
         .vol-section-title {
-            font-size: 0.71rem;
+            font-size: 0.74rem;
             font-weight: 700;
-            color: #475569;
-            letter-spacing: 0.05em;
+            color: #94a3b8;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
-            margin-bottom: 7px;
+            margin-bottom: 8px;
             padding-bottom: 4px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
         }
         .vol-metric-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 2.5px 0;
+            padding: 3px 0;
         }
-        .vol-metric-label { font-size: 0.73rem; color: #64748b; white-space: nowrap; }
-        .vol-metric-value { font-size: 0.77rem; font-weight: 600; color: #e2e8f0; text-align:right; }
+        .vol-metric-label { font-size: 0.78rem; color: #94a3b8; white-space: nowrap; }
+        .vol-metric-value { font-size: 0.84rem; font-weight: 600; color: #f8fafc; text-align:right; }
         .vol-badge {
             display: inline-block;
             font-size: 0.6rem;
@@ -1453,6 +1453,15 @@
                             <script type="text/javascript"
                                 src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
                                     { "symbol": "COINBASE:ETHUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(98,126,234,1)", "underLineColor": "rgba(98,126,234,0.3)", "underLineBottomColor": "rgba(98,126,234,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
+                            </script>
+                        </div>
+
+                        <!-- BMNR (Bloomberg US MBS / Bond Market) -->
+                        <div class="tradingview-widget-container" style="grid-column: 1 / -1;">
+                            <div class="tradingview-widget-container__widget"></div>
+                            <script type="text/javascript"
+                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                                    { "symbol": "BMNR", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(139,92,246,1)", "underLineColor": "rgba(139,92,246,0.3)", "underLineBottomColor": "rgba(139,92,246,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
 
@@ -2641,6 +2650,29 @@
                 }).catch(err => {
                     console.error('복사 실패:', err);
                 });
+            }
+
+            // ── MK RSS 드롭다운 렌더링 ──────────────────────────────────
+            function mkShow(cat) {
+                var arts = (typeof _MKD !== 'undefined' && _MKD[cat]) ? _MKD[cat] : [];
+                var h = '';
+                arts.forEach(function(a) {
+                    h += '<div style="margin-bottom:9px;padding:9px 10px;' +
+                         'background:rgba(0,0,0,0.2);border-left:3px solid rgba(251,191,36,0.5);' +
+                         'border-radius:0 6px 6px 0;">';
+                    h += '<a href="' + a.l + '" target="_blank" rel="noopener" ' +
+                         'style="color:#f8fafc;text-decoration:none;font-size:0.87em;' +
+                         'font-weight:600;line-height:1.4;display:block;">' + a.t + '</a>';
+                    h += '<span style="color:#64748b;font-size:0.72em;display:block;margin-top:3px;">' +
+                         (a.d || '') + ' &middot; 출처: <a href="https://www.mk.co.kr" ' +
+                         'target="_blank" rel="noopener" ' +
+                         'style="color:#94a3b8;text-decoration:underline;">매일경제</a></span>';
+                    h += '</div>';
+                });
+                var box = document.getElementById('mk-articles-box');
+                if (box) {
+                    box.innerHTML = h || '<p style="color:#f87171;font-size:0.85em;">기사를 불러올 수 없습니다.</p>';
+                }
             }
         </script>
 
