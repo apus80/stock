@@ -456,6 +456,40 @@
             .news-search-bar button { width: 100%; }
         }
 
+        /* ── 주요 경제지표 대시보드 ── */
+        .econ-wrap { background:var(--card-bg); border-radius:var(--radius-main); padding:22px 24px; margin-bottom:20px; box-shadow:var(--shadow-main); }
+        .econ-hdr  { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .econ-hdr h3 { font-size:1.02rem; font-weight:700; color:var(--primary-dark); margin:0; display:flex; align-items:center; gap:8px; }
+        .econ-updated { font-size:0.7em; color:#94a3b8; }
+        .econ-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+        .econ-card { background:#f8faff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px 10px; cursor:pointer; transition:all 0.18s; }
+        .econ-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.09); border-color:#93c5fd; background:#eff6ff; }
+        .econ-card-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
+        .econ-card-lbl { font-size:0.67em; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
+        .econ-card-ico { font-size:1.05em; }
+        .econ-card-val { font-size:1.26em; font-weight:800; color:#0f172a; line-height:1.1; margin:3px 0; }
+        .econ-card-chg { font-size:0.7em; font-weight:600; }
+        .econ-card-chg.pos { color:#16a34a; } .econ-card-chg.neg { color:#dc2626; } .econ-card-chg.neu { color:#94a3b8; }
+        .econ-card-frq { font-size:0.61em; color:#cbd5e1; margin-top:3px; }
+        .econ-sparksvg { display:block; width:100%; height:32px; margin-top:6px; overflow:visible; }
+        /* 모달 */
+        .econ-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9000; align-items:center; justify-content:center; }
+        .econ-overlay.open { display:flex; }
+        .econ-modal { background:#fff; border-radius:16px; padding:26px 28px; width:min(720px,94vw); max-height:88vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,0.25); }
+        .econ-modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+        .econ-modal-hdr h2 { font-size:1.1rem; font-weight:700; color:#1e293b; margin:0; }
+        .econ-modal-close { background:#f1f5f9; border:none; border-radius:50%; width:30px; height:30px; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .econ-modal-close:hover { background:#e2e8f0; }
+        .econ-chart-wrap { height:260px; position:relative; margin-bottom:16px; }
+        .econ-modal-note { font-size:0.7em; color:#94a3b8; margin-top:6px; text-align:right; }
+        .econ-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; }
+        .econ-stat { background:#f8faff; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; text-align:center; }
+        .econ-stat-lbl { font-size:0.65em; color:#94a3b8; text-transform:uppercase; }
+        .econ-stat-val { font-size:1em; font-weight:700; color:#1e293b; margin-top:3px; }
+        @media (max-width:920px) { .econ-grid { grid-template-columns:repeat(3,1fr); } }
+        @media (max-width:620px) { .econ-grid { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:400px) { .econ-stats { grid-template-columns:repeat(2,1fr); } }
+
         .earnings-search {
             background: #fff;
             padding: 24px;
@@ -1460,6 +1494,90 @@
             <!-- VOLATILITY_CARD_END -->
 
             
+            <!-- ── 주요 경제지표 대시보드 ── -->
+            <!-- ECON_DATA_START -->
+<script>
+var ECON_DATA = {
+  lastUpdated: "2025-08-01",
+  indicators: {
+    fedfunds: { label:"기준금리",      icon:"🏦", unit:"%",  freq:"FOMC",          isHighGood:false, threshold:2.0, thresholdLabel:"중립금리 추정", color:"#3b82f6",
+      current:4.33, prev:4.33, change:0,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[4.83,4.83,4.58,4.33,4.33,4.33,4.33,4.33,4.33,4.33,4.33,4.33] },
+    cpi: { label:"CPI (YoY)",        icon:"📈", unit:"%",  freq:"월간·BLS",       isHighGood:false, threshold:2.0, thresholdLabel:"Fed 목표 2%",  color:"#ef4444",
+      current:2.5, prev:2.8, change:-0.3,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[2.4,2.6,2.7,2.9,3.0,2.8,2.4,2.3,2.4,2.5,2.6,2.5] },
+    core_cpi: { label:"코어 CPI",    icon:"🎯", unit:"%",  freq:"월간·BLS",       isHighGood:false, threshold:2.0, thresholdLabel:"Fed 목표 2%",  color:"#f97316",
+      current:2.9, prev:3.1, change:-0.2,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[3.3,3.3,3.3,3.2,3.3,3.1,2.8,2.8,2.8,2.8,2.9,2.9] },
+    core_pce: { label:"코어 PCE",    icon:"💰", unit:"%",  freq:"월간·BEA",       isHighGood:false, threshold:2.0, thresholdLabel:"Fed 핵심목표", color:"#a855f7",
+      current:2.5, prev:2.7, change:-0.2,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[2.7,2.8,2.8,2.8,2.6,2.7,2.6,2.5,2.5,2.5,2.5,2.5] },
+    payems: { label:"비농업 고용",    icon:"👷", unit:"K",  freq:"월간·BLS",       isHighGood:true,  threshold:100, thresholdLabel:"정상 수준",    color:"#10b981",
+      current:142, prev:162, change:-20,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[255,36,224,307,111,151,228,177,140,147,162,142] },
+    unrate: { label:"실업률",          icon:"📉", unit:"%",  freq:"월간·BLS",       isHighGood:false, threshold:4.0, thresholdLabel:"자연실업률",   color:"#f59e0b",
+      current:4.2, prev:4.2, change:0,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[4.1,4.1,4.2,4.2,4.1,4.1,4.2,4.2,4.2,4.1,4.2,4.2] },
+    dgs10: { label:"국채 10Y",        icon:"🏛️", unit:"%",  freq:"일간→월평균",    isHighGood:null,  threshold:4.5, thresholdLabel:"주의 구간",    color:"#6366f1",
+      current:4.25, prev:4.29, change:-0.04,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[3.73,4.09,4.38,4.42,4.67,4.49,4.30,4.35,4.40,4.30,4.29,4.25] },
+    spread: { label:"장단기 스프레드", icon:"📊", unit:"%",  freq:"10Y-2Y",         isHighGood:true,  threshold:0,   thresholdLabel:"역전=침체신호", color:"#0ea5e9",
+      current:0.24, prev:0.25, change:-0.01,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[0.07,0.13,0.07,0.32,0.33,0.24,0.10,0.20,0.30,0.25,0.25,0.24] },
+    mfg_pmi: { label:"제조업 PMI",   icon:"🔧", unit:"",   freq:"월간·ISM",       isHighGood:true,  threshold:50,  thresholdLabel:"50=확장기준",  color:"#14b8a6",
+      current:50.3, prev:49.6, change:0.7,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[47.2,46.5,48.4,49.3,50.9,50.3,49.0,48.7,48.5,49.1,49.6,50.3] },
+    svc_pmi: { label:"서비스 PMI",   icon:"💼", unit:"",   freq:"월간·ISM",       isHighGood:true,  threshold:50,  thresholdLabel:"50=확장기준",  color:"#06b6d4",
+      current:51.4, prev:52.5, change:-1.1,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[54.9,56.0,52.1,54.0,52.8,53.5,50.8,51.6,53.8,53.8,52.5,51.4] },
+    retail: { label:"소매판매 YoY",  icon:"🛒", unit:"%",  freq:"월간·Census",    isHighGood:true,  threshold:0,   thresholdLabel:"성장 기준",    color:"#84cc16",
+      current:2.8, prev:2.5, change:0.3,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[2.0,2.8,3.8,3.9,4.5,3.1,4.5,5.6,5.2,3.6,2.5,2.8] },
+    umcsent: { label:"소비자심리",   icon:"😊", unit:"",   freq:"월간·UMich",     isHighGood:true,  threshold:80,  thresholdLabel:"낙관 기준",    color:"#f472b6",
+      current:67.9, prev:66.5, change:1.4,
+      dates:["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08"],
+      values:[70.1,70.5,71.8,74.0,71.1,64.7,57.0,52.2,50.8,65.6,66.5,67.9] }
+  }
+};
+</script>
+            <!-- ECON_DATA_END -->
+
+            <div class="econ-wrap">
+                <div class="econ-hdr">
+                    <h3>📊 주요 경제지표 대시보드</h3>
+                    <span class="econ-updated" id="econUpdated">출처: FRED·ISM·BLS·BEA | 업데이트: --</span>
+                </div>
+                <div class="econ-grid" id="econGrid">
+                    <!-- JS 렌더링 -->
+                </div>
+            </div>
+
+            <!-- 경제지표 상세 모달 -->
+            <div class="econ-overlay" id="econOverlay" onclick="if(event.target===this)closeEconModal()">
+                <div class="econ-modal">
+                    <div class="econ-modal-hdr">
+                        <h2 id="econModalTitle">지표 상세</h2>
+                        <button class="econ-modal-close" onclick="closeEconModal()">✕</button>
+                    </div>
+                    <div class="econ-chart-wrap">
+                        <canvas id="econModalCanvas"></canvas>
+                    </div>
+                    <div class="econ-modal-note" id="econModalNote"></div>
+                    <div class="econ-stats" id="econModalStats"></div>
+                </div>
+            </div>
+
             <!-- 실시간 금융 뉴스 검색 -->
             <div class="news-search-wrap">
                 <h3>🔎 실시간 금융 뉴스 검색</h3>
@@ -3278,6 +3396,141 @@
                     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
                     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             }
+
+            // ════════════════════════════════════════════════════════════
+            // 주요 경제지표 대시보드
+            // ════════════════════════════════════════════════════════════
+            (function() {
+                if (typeof ECON_DATA === 'undefined') return;
+                var D = ECON_DATA;
+                var grid = document.getElementById('econGrid');
+                var updEl = document.getElementById('econUpdated');
+                if (updEl && D.lastUpdated) updEl.textContent = '출처: FRED·ISM·BLS·BEA | 업데이트: ' + D.lastUpdated;
+
+                var ORDER = ['fedfunds','cpi','core_cpi','core_pce','payems','unrate','dgs10','spread','mfg_pmi','svc_pmi','retail','umcsent'];
+
+                // ── SVG 스파크라인 생성 ──────────────────────────────────
+                function sparkSvg(values, threshold, color) {
+                    var w = 120, h = 32, pad = 3;
+                    if (!values || values.length < 2) {
+                        return '<svg class="econ-sparksvg" viewBox="0 0 '+w+' '+h+'"><text x="50%" y="55%" text-anchor="middle" fill="#e2e8f0" font-size="9">N/A</text></svg>';
+                    }
+                    var allV = values.concat(threshold !== null && threshold !== undefined ? [threshold] : []);
+                    var mn = Math.min.apply(null, allV), mx = Math.max.apply(null, allV);
+                    var rng = (mx - mn) || 1;
+                    var uw = (w - pad * 2) / (values.length - 1);
+                    function fx(i) { return (pad + i * uw).toFixed(1); }
+                    function fy(v) { return (h - pad - ((v - mn) / rng) * (h - pad * 2)).toFixed(1); }
+                    var pts = values.map(function(v, i) { return fx(i) + ',' + fy(v); }).join(' ');
+                    var lx = fx(values.length - 1), ly = fy(values[values.length - 1]);
+                    var area = pad + ',' + h + ' ' + pts + ' ' + lx + ',' + h;
+                    var tLine = '';
+                    if (threshold !== null && threshold !== undefined) {
+                        var ty = fy(threshold);
+                        tLine = '<line x1="'+pad+'" y1="'+ty+'" x2="'+(w-pad)+'" y2="'+ty+'" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="3,2"/>';
+                    }
+                    return '<svg class="econ-sparksvg" viewBox="0 0 '+w+' '+h+'">' +
+                        '<polygon points="'+area+'" fill="'+color+'" fill-opacity="0.12"/>' +
+                        tLine +
+                        '<polyline points="'+pts+'" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linejoin="round"/>' +
+                        '<circle cx="'+lx+'" cy="'+ly+'" r="2.5" fill="'+color+'"/>' +
+                        '</svg>';
+                }
+
+                // ── 카드 렌더링 ───────────────────────────────────────────
+                ORDER.forEach(function(key) {
+                    var ind = D.indicators[key];
+                    if (!ind) return;
+                    var cur = ind.current, chg = ind.change || 0;
+                    var valStr = cur === null || cur === undefined ? 'N/A' :
+                        (ind.unit === 'K' ? Math.round(cur).toLocaleString() + 'K' :
+                         Number(cur).toFixed(1) + ind.unit);
+                    // 방향에 따른 색상 (인플레이션·실업률은 높으면 나쁨)
+                    var isGood = chg > 0 ? (ind.isHighGood !== false) : (ind.isHighGood === false);
+                    var chgCls = chg === 0 ? 'neu' : (isGood ? 'pos' : 'neg');
+                    var arrow  = chg > 0 ? '▲' : chg < 0 ? '▼' : '─';
+                    var chgTxt = chg !== 0 ? arrow + Math.abs(chg).toFixed(1) + ind.unit + ' 전월比' : '─ 전월 동일';
+
+                    var card = document.createElement('div');
+                    card.className = 'econ-card';
+                    card.innerHTML =
+                        '<div class="econ-card-hd">' +
+                          '<span class="econ-card-lbl">'+ind.label+'</span>' +
+                          '<span class="econ-card-ico">'+ind.icon+'</span>' +
+                        '</div>' +
+                        '<div class="econ-card-val">'+valStr+'</div>' +
+                        '<div class="econ-card-chg '+chgCls+'">'+chgTxt+'</div>' +
+                        sparkSvg(ind.values, ind.threshold, ind.color || '#3b82f6') +
+                        '<div class="econ-card-frq">'+ind.freq+'</div>';
+                    card.addEventListener('click', function() { openEconModal(key); });
+                    grid.appendChild(card);
+                });
+
+                // ── 모달 (Chart.js lazy load) ─────────────────────────────
+                var _chartInst = null;
+
+                window.openEconModal = function(key) {
+                    var ind = D.indicators[key];
+                    if (!ind) return;
+                    document.getElementById('econModalTitle').textContent = ind.icon + ' ' + ind.label;
+                    var noteEl = document.getElementById('econModalNote');
+                    if (noteEl) noteEl.textContent = '기준선: ' + (ind.thresholdLabel || '') + ' | 출처: ' + ind.freq;
+                    document.getElementById('econOverlay').classList.add('open');
+
+                    var vals = ind.values || [], dates = ind.dates || [];
+                    var cur = ind.current, mn = vals.length ? Math.min.apply(null,vals) : 0;
+                    var mx  = vals.length ? Math.max.apply(null,vals) : 0;
+                    var avg = vals.length ? (vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(2) : '--';
+                    document.getElementById('econModalStats').innerHTML =
+                        '<div class="econ-stat"><div class="econ-stat-lbl">현재</div><div class="econ-stat-val">'+(cur!==null&&cur!==undefined?cur+ind.unit:'N/A')+'</div></div>' +
+                        '<div class="econ-stat"><div class="econ-stat-lbl">'+vals.length+'개월 평균</div><div class="econ-stat-val">'+avg+ind.unit+'</div></div>' +
+                        '<div class="econ-stat"><div class="econ-stat-lbl">최고</div><div class="econ-stat-val">'+mx.toFixed(2)+ind.unit+'</div></div>' +
+                        '<div class="econ-stat"><div class="econ-stat-lbl">최저</div><div class="econ-stat-val">'+mn.toFixed(2)+ind.unit+'</div></div>';
+
+                    function drawChart() {
+                        var canvas = document.getElementById('econModalCanvas');
+                        if (_chartInst) { _chartInst.destroy(); _chartInst = null; }
+                        var datasets = [{
+                            label: ind.label, data: vals,
+                            borderColor: ind.color || '#3b82f6',
+                            backgroundColor: (ind.color || '#3b82f6') + '22',
+                            borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3
+                        }];
+                        if (ind.threshold !== null && ind.threshold !== undefined) {
+                            datasets.push({ label: ind.thresholdLabel || '기준선',
+                                data: dates.map(function(){ return ind.threshold; }),
+                                borderColor: '#94a3b8', borderDash: [5,5],
+                                borderWidth: 1, pointRadius: 0, fill: false });
+                        }
+                        _chartInst = new Chart(canvas, {
+                            type: 'line',
+                            data: { labels: dates, datasets: datasets },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 16 } } },
+                                scales: {
+                                    x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+                                    y: { ticks: { font: { size: 10 } } }
+                                }
+                            }
+                        });
+                    }
+                    if (typeof Chart !== 'undefined') { drawChart(); }
+                    else {
+                        var s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
+                        s.onload = drawChart;
+                        document.head.appendChild(s);
+                    }
+                };
+
+                window.closeEconModal = function() {
+                    document.getElementById('econOverlay').classList.remove('open');
+                };
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') closeEconModal();
+                });
+            })();
 
             // ── MK RSS 카테고리별 URL ──────────────────────────────────
             var MK_RSS_URLS = {

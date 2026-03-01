@@ -249,6 +249,209 @@ def get_fred_latest(series_id, units=None):
     return None, None
 
 
+def get_fred_history(series_id, months=24, units=None):
+    """FRED 공개 CSV에서 히스토리 데이터 (API 키 불필요).
+    일별 데이터는 월별 마지막값으로 집계.
+    returns list of (YYYY-MM, float) tuples, 최근 months개월
+    """
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+    if units:
+        url += f"&units={units}"
+    try:
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            content = r.read().decode('utf-8', errors='replace')
+        monthly: dict = {}
+        for line in content.strip().split('\n')[1:]:   # 헤더 스킵
+            parts = line.strip().split(',')
+            if len(parts) >= 2 and parts[1].strip() not in ('', '.'):
+                try:
+                    month = parts[0].strip()[:7]       # YYYY-MM
+                    monthly[month] = float(parts[1].strip())
+                except ValueError:
+                    pass
+        sorted_months = list(sorted(monthly.keys()))
+        n = len(sorted_months)
+        start = max(0, n - months) if months else 0
+        recent = [sorted_months[i] for i in range(start, n)]
+        return [(mo, float(f"{monthly[mo]:.2f}")) for mo in recent]
+    except Exception as e:
+        print(f"[FRED history {series_id}] 실패: {e}")
+        return []
+
+
+# ── 경제지표 메타 (정적 정보) ──────────────────────────────────────────────────
+ECON_META = {
+    'fedfunds': {'label':'기준금리',      'icon':'🏦', 'unit':'%',  'freq':'FOMC',
+                 'isHighGood':False, 'threshold':2.0, 'thresholdLabel':'중립금리 추정', 'color':'#3b82f6'},
+    'cpi':      {'label':'CPI (YoY)',    'icon':'📈', 'unit':'%',  'freq':'월간·BLS',
+                 'isHighGood':False, 'threshold':2.0, 'thresholdLabel':'Fed 목표 2%',  'color':'#ef4444'},
+    'core_cpi': {'label':'코어 CPI',     'icon':'🎯', 'unit':'%',  'freq':'월간·BLS',
+                 'isHighGood':False, 'threshold':2.0, 'thresholdLabel':'Fed 목표 2%',  'color':'#f97316'},
+    'core_pce': {'label':'코어 PCE',     'icon':'💰', 'unit':'%',  'freq':'월간·BEA',
+                 'isHighGood':False, 'threshold':2.0, 'thresholdLabel':'Fed 핵심목표', 'color':'#a855f7'},
+    'payems':   {'label':'비농업 고용',  'icon':'👷', 'unit':'K',  'freq':'월간·BLS',
+                 'isHighGood':True,  'threshold':100, 'thresholdLabel':'정상 수준',    'color':'#10b981'},
+    'unrate':   {'label':'실업률',        'icon':'📉', 'unit':'%',  'freq':'월간·BLS',
+                 'isHighGood':False, 'threshold':4.0, 'thresholdLabel':'자연실업률',   'color':'#f59e0b'},
+    'dgs10':    {'label':'국채 10Y',     'icon':'🏛️', 'unit':'%',  'freq':'일간→월평균',
+                 'isHighGood':None,  'threshold':4.5, 'thresholdLabel':'주의 구간',    'color':'#6366f1'},
+    'spread':   {'label':'장단기 스프레드','icon':'📊','unit':'%', 'freq':'10Y-2Y',
+                 'isHighGood':True,  'threshold':0,   'thresholdLabel':'역전=침체신호', 'color':'#0ea5e9'},
+    'mfg_pmi':  {'label':'제조업 PMI',   'icon':'🔧', 'unit':'',   'freq':'월간·ISM',
+                 'isHighGood':True,  'threshold':50,  'thresholdLabel':'50=확장기준',  'color':'#14b8a6'},
+    'svc_pmi':  {'label':'서비스 PMI',   'icon':'💼', 'unit':'',   'freq':'월간·ISM',
+                 'isHighGood':True,  'threshold':50,  'thresholdLabel':'50=확장기준',  'color':'#06b6d4'},
+    'retail':   {'label':'소매판매 YoY', 'icon':'🛒', 'unit':'%',  'freq':'월간·Census',
+                 'isHighGood':True,  'threshold':0,   'thresholdLabel':'성장 기준',    'color':'#84cc16'},
+    'umcsent':  {'label':'소비자심리',   'icon':'😊', 'unit':'',   'freq':'월간·UMich',
+                 'isHighGood':True,  'threshold':80,  'thresholdLabel':'낙관 기준',    'color':'#f472b6'},
+}
+
+# FRED 수집 설정 (key, series_id, units, months)
+FRED_SERIES_CFG = [
+    ('fedfunds', 'FEDFUNDS',  None,  24),
+    ('cpi',      'CPIAUCSL',  'pc1', 24),
+    ('core_cpi', 'CPILFESL',  'pc1', 24),
+    ('core_pce', 'PCEPILFE',  'pc1', 24),
+    ('payems',   'PAYEMS',    'ch1', 24),
+    ('unrate',   'UNRATE',    None,  24),
+    ('dgs10',    'DGS10',     None,  36),
+    ('spread',   'T10Y2Y',    None,  36),
+    ('retail',   'RSAFS',     'pc1', 24),
+    ('umcsent',  'UMCSENT',   None,  24),
+    # mfg_pmi / svc_pmi: ISM PMI는 FRED 미제공 → 기존 HTML 값 유지
+]
+
+ORDER_KEYS = ['fedfunds','cpi','core_cpi','core_pce','payems','unrate',
+              'dgs10','spread','mfg_pmi','svc_pmi','retail','umcsent']
+
+
+def build_econ_dashboard_script(existing_html):
+    """ECON_DATA_START/END 사이의 기존 스크립트에서 PMI 값을 보존하면서
+    FRED 최신 데이터로 덮어쓴 전체 <script> 블록 반환.
+    FRED 수집 실패 시 기존 HTML의 값을 그대로 유지.
+    """
+    import re as _re
+    today_str = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+
+    # 기존 HTML에서 PMI 값 추출 (FRED에 없으므로 보존)
+    pmi_preserve = {}
+    for pmi_key in ('mfg_pmi', 'svc_pmi'):
+        m_cur  = _re.search(rf'{pmi_key}.*?current:([\d.\-]+)', existing_html, _re.DOTALL)
+        m_prev = _re.search(rf'{pmi_key}.*?prev:([\d.\-]+)', existing_html, _re.DOTALL)
+        m_chg  = _re.search(rf'{pmi_key}.*?change:([\d.\-]+)', existing_html, _re.DOTALL)
+        # dates/values 배열 추출
+        m_dates = _re.search(rf'{pmi_key}.*?dates:(\[.*?\])', existing_html, _re.DOTALL)
+        m_vals  = _re.search(rf'{pmi_key}.*?values:(\[.*?\])', existing_html, _re.DOTALL)
+        pmi_preserve[pmi_key] = {
+            'current': float(m_cur.group(1))  if m_cur  else None,
+            'prev':    float(m_prev.group(1)) if m_prev else None,
+            'change':  float(m_chg.group(1))  if m_chg  else 0,
+            'dates':   m_dates.group(1) if m_dates else '[]',
+            'values':  m_vals.group(1)  if m_vals  else '[]',
+        }
+
+    # FRED 데이터 수집
+    fred_data = {}
+    for key, sid, units, months in FRED_SERIES_CFG:
+        rows = get_fred_history(sid, months, units)
+        if rows:
+            dates  = [r[0] for r in rows]
+            values = [r[1] for r in rows]
+            current = values[-1]
+            prev    = values[-2] if len(values) >= 2 else current
+            change  = round(current - prev, 2)
+            fred_data[key] = {'current': current, 'prev': prev, 'change': change,
+                              'dates': dates, 'values': values}
+            print(f"[ECON] {key}: 현재={current} ({len(rows)}개월)")
+        else:
+            pass   # 실패 → 기존값 유지 (fred_data.get(key)는 None 반환)
+
+    # 기존 HTML에서 기존값 추출 (FRED 실패 시 폴백)
+    def extract_existing(key, field, default):
+        pat = rf'{_re.escape(key)}.*?{field}:([\d.\-]+)'
+        m = _re.search(pat, existing_html, _re.DOTALL)
+        return float(m.group(1)) if m else default
+
+    def extract_arr(key, field):
+        pat = rf'{_re.escape(key)}.*?{field}:(\[.*?\])'
+        m = _re.search(pat, existing_html, _re.DOTALL)
+        return m.group(1) if m else '[]'
+
+    # 각 지표별 JS 객체 생성
+    ind_parts = []
+    for key in ORDER_KEYS:
+        meta = ECON_META.get(key, {})
+        dyn  = fred_data.get(key)
+
+        if key in ('mfg_pmi', 'svc_pmi'):
+            # PMI: 기존 보존값 사용
+            pp = pmi_preserve.get(key, {})
+            cur_js    = str(pp['current']) if pp['current'] is not None else 'null'
+            prev_js   = str(pp['prev'])    if pp['prev']    is not None else 'null'
+            chg_js    = str(pp['change'])
+            dates_js  = pp['dates']
+            values_js = pp['values']
+        elif dyn:
+            cur_js    = str(dyn['current'])
+            prev_js   = str(dyn['prev'])
+            chg_js    = str(dyn['change'])
+            dates_js  = json.dumps(dyn['dates'],  ensure_ascii=False)
+            values_js = json.dumps(dyn['values'], ensure_ascii=False)
+        else:
+            # FRED 실패 → 기존 HTML값 유지
+            cur_js    = str(extract_existing(key, 'current', 0))
+            prev_js   = str(extract_existing(key, 'prev',    0))
+            chg_js    = str(extract_existing(key, 'change',  0))
+            dates_js  = extract_arr(key, 'dates')
+            values_js = extract_arr(key, 'values')
+
+        ihg = meta.get('isHighGood')
+        ihg_js  = 'null' if ihg is None else ('true' if ihg else 'false')
+        thr     = meta.get('threshold')
+        thr_js  = 'null' if thr is None else str(thr)
+        label   = json.dumps(meta.get('label', ''),            ensure_ascii=False)
+        icon    = json.dumps(meta.get('icon',  ''),            ensure_ascii=False)
+        unit    = json.dumps(meta.get('unit',  ''),            ensure_ascii=False)
+        freq    = json.dumps(meta.get('freq',  ''),            ensure_ascii=False)
+        thrLbl  = json.dumps(meta.get('thresholdLabel', ''),   ensure_ascii=False)
+        color   = json.dumps(meta.get('color', '#3b82f6'),     ensure_ascii=False)
+
+        ind_parts.append(
+            f'    {key}: {{label:{label},icon:{icon},unit:{unit},freq:{freq},'
+            f'isHighGood:{ihg_js},threshold:{thr_js},thresholdLabel:{thrLbl},color:{color},'
+            f'current:{cur_js},prev:{prev_js},change:{chg_js},'
+            f'dates:{dates_js},values:{values_js}}}'
+        )
+
+    ind_block = ',\n'.join(ind_parts)
+    script = (
+        '<script>\n'
+        'var ECON_DATA = {\n'
+        f'  lastUpdated: "{today_str}",\n'
+        '  indicators: {\n'
+        f'{ind_block}\n'
+        '  }\n'
+        '};\n'
+        '</script>'
+    )
+    return script
+
+
+def update_econ_dashboard(content):
+    """<!-- ECON_DATA_START -->...<!-- ECON_DATA_END --> 블록을 FRED 최신값으로 교체"""
+    pattern = r'(<!-- ECON_DATA_START -->)(.*?)(<!-- ECON_DATA_END -->)'
+    m = re.search(pattern, content, re.DOTALL)
+    if not m:
+        print("[ECON] 마커 없음 - 스킵")
+        return content
+    existing_block = m.group(2)
+    new_script = build_econ_dashboard_script(existing_block)
+    new_block = m.group(1) + '\n' + new_script + '\n            ' + m.group(3)
+    updated = content[:m.start()] + new_block + content[m.end():]
+    print("[ECON] 경제지표 대시보드 업데이트 완료")
+    return updated
 
 
 def get_cnn_fear_greed():
@@ -896,6 +1099,7 @@ def update_index_html(data):
 '''
 
     updated = re.sub(pattern, rf'\1{new_card_html}\3', content, flags=re.DOTALL)
+    updated = update_econ_dashboard(updated)   # 경제지표 FRED 데이터 업데이트
     with open(INDEX_HTML_PATH, 'w', encoding='utf-8') as f:
         f.write(updated)
     print("index.html 업데이트 완료.")
