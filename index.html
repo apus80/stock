@@ -1589,7 +1589,7 @@ var ECON_DATA = {
                     <button onclick="nsSearch()">🔍 검색</button>
                 </div>
                 <p class="news-search-hint">
-                    🇰🇷 한글 입력 시 국내 뉴스 3건 + 영어 자동 번역 후 해외 뉴스 3건 동시 검색
+                    🌐 한글 입력 → 영어 번역 후 해외 뉴스 검색 &nbsp;|&nbsp; 영어 입력 → 한글 번역 후 국내 뉴스 검색 &nbsp;(국내·해외 동시)
                 </p>
                 <div id="nsContainer" style="display:none;">
                     <div class="ns-columns">
@@ -3045,35 +3045,41 @@ var ECON_DATA = {
                 korBox.innerHTML = skel;
                 engBox.innerHTML = skel;
 
-                // 한글 여부 감지 → 영어 번역
+                // 한글 여부 감지 → 양방향 번역
                 var isKorean = /[가-힣]/.test(q);
-                var qEng = q;
+                var qEng = q;   // 해외뉴스용 (영어)
+                var qKor = q;   // 국내뉴스용 (한글)
+                var badge = document.getElementById('nsTransBadge');
                 if (isKorean) {
-                    qEng = await _nsTranslate(q);
-                    var badge = document.getElementById('nsTransBadge');
+                    // 한글 → 영어 (해외뉴스 검색용)
+                    qEng = await _nsTranslate(q, 'ko|en');
                     if (badge) { badge.textContent = '"' + qEng + '"'; badge.style.display = 'inline'; }
                 } else {
-                    var badge2 = document.getElementById('nsTransBadge');
-                    if (badge2) badge2.style.display = 'none';
+                    // 영어 → 한글 (국내뉴스 검색용)
+                    qKor = await _nsTranslate(q, 'en|ko');
+                    if (badge) badge.style.display = 'none';
                 }
 
                 // 국내 + 해외 병렬 실행
                 await Promise.all([
-                    _nsSearchKorean(q, korBox),
+                    _nsSearchKorean(qKor, korBox),
                     _nsSearchEnglish(qEng, engBox)
                 ]);
             }
 
-            // ── 한국어 번역 (MyMemory, 무료, 키 불필요) ──────────────────
-            async function _nsTranslate(text) {
+            // ── 양방향 번역 (MyMemory, 무료, 키 불필요) ──────────────────
+            // langpair: 'ko|en' 한→영, 'en|ko' 영→한
+            async function _nsTranslate(text, langpair) {
                 try {
+                    var ctrl = new AbortController();
+                    setTimeout(function(){ ctrl.abort(); }, 5000);
                     var url = 'https://api.mymemory.translated.net/get?q=' +
-                        encodeURIComponent(text) + '&langpair=ko|en';
-                    var res  = await fetch(url);
+                        encodeURIComponent(text) + '&langpair=' + (langpair || 'ko|en');
+                    var res  = await fetch(url, { signal: ctrl.signal });
                     var json = await res.json();
                     if (json.responseStatus === 200) {
                         var t = json.responseData.translatedText || '';
-                        if (t && !t.includes('MYMEMORY WARNING')) return t;
+                        if (t && !t.includes('MYMEMORY WARNING') && t !== text) return t;
                     }
                 } catch(e) {}
                 return text;
@@ -3283,20 +3289,79 @@ var ECON_DATA = {
             async function _nsSearchEnglish(q, box) {
                 var srcEl = document.getElementById('nsEngSrc');
 
-                // 1순위: GNews (키 있을 때)
-                // docs: https://gnews.io/docs/v4  · 무료: 100건/일, CORS 지원
+                // ── CORS 프록시 RSS XML 파싱 헬퍼 ───────────────────────────
+                async function _fetchRssXmlEng(rssUrl, timeoutMs) {
+                    var proxies = [
+                        'https://corsproxy.io/?' + encodeURIComponent(rssUrl),
+                        'https://api.allorigins.win/raw?url=' + encodeURIComponent(rssUrl)
+                    ];
+                    for (var pi = 0; pi < proxies.length; pi++) {
+                        try {
+                            var ctrl = new AbortController();
+                            var timer = setTimeout(function(){ ctrl.abort(); }, timeoutMs || 7000);
+                            var res = await fetch(proxies[pi], { signal: ctrl.signal, cache: 'no-store' });
+                            clearTimeout(timer);
+                            if (!res.ok) continue;
+                            var text = await res.text();
+                            if (!text || text.trim().length < 50) continue;
+                            var doc = new DOMParser().parseFromString(text, 'text/xml');
+                            if (doc.querySelector('parsererror')) continue;
+                            return doc;
+                        } catch(e) { continue; }
+                    }
+                    return null;
+                }
+
+                function _rssEngItemToArt(it) {
+                    var titleEl = it.getElementsByTagName('title')[0];
+                    var linkEl  = it.getElementsByTagName('link')[0];
+                    var guidEl  = it.getElementsByTagName('guid')[0];
+                    var pubEl   = it.getElementsByTagName('pubDate')[0];
+                    var srcEl2  = it.getElementsByTagName('source')[0];
+                    var link = linkEl ? linkEl.textContent.trim() : '';
+                    if (!link && linkEl) {
+                        var nx = linkEl.nextSibling;
+                        if (nx && nx.nodeType === 3) link = nx.nodeValue.trim();
+                    }
+                    if (!link && guidEl) link = guidEl.textContent.trim();
+                    return {
+                        title:       titleEl ? titleEl.textContent.trim() : '',
+                        url:         link,
+                        source:      srcEl2  ? srcEl2.textContent.trim() : 'Google News',
+                        publishedAt: pubEl   ? pubEl.textContent.trim()  : ''
+                    };
+                }
+
+                // 1순위: Google News RSS (영어) — API키 불필요, 키워드 검색 지원
+                var gnEngUrl = 'https://news.google.com/rss/search?q=' +
+                    encodeURIComponent(q + ' finance stock') + '&hl=en-US&gl=US&ceid=US:en';
+                var docEng = await _fetchRssXmlEng(gnEngUrl, 9000);
+                if (docEng) {
+                    var gnItems = Array.from(docEng.getElementsByTagName('item'));
+                    var gnArts  = gnItems.slice(0, 6).map(_rssEngItemToArt)
+                                         .filter(function(a) { return a.title && a.url; });
+                    if (gnArts.length > 0) {
+                        _nsRender(gnArts.slice(0, 3), box, 'eng');
+                        if (srcEl) srcEl.textContent = '📡 출처: Google 뉴스 (영어)';
+                        return;
+                    }
+                }
+
+                // 2순위: GNews API (키 있을 때)
                 if (NS_GNEWS_KEY) {
                     try {
-                        var url = 'https://gnews.io/api/v4/search?' + [
+                        var ctrl2 = new AbortController();
+                        setTimeout(function(){ ctrl2.abort(); }, 8000);
+                        var gUrl = 'https://gnews.io/api/v4/search?' + [
                             'q='       + encodeURIComponent(q + ' finance OR stock OR market'),
-                            'lang=en', 'topic=business', 'max=3',
+                            'lang=en', 'max=3',
                             'sortby=publishedAt',
                             'apikey='  + NS_GNEWS_KEY
                         ].join('&');
-                        var res = await fetch(url);
-                        var json = await res.json();
-                        if (json.articles && json.articles.length) {
-                            _nsRender(json.articles.slice(0,3).map(function(a) {
+                        var resG = await fetch(gUrl, { signal: ctrl2.signal });
+                        var jsonG = await resG.json();
+                        if (jsonG.articles && jsonG.articles.length) {
+                            _nsRender(jsonG.articles.slice(0,3).map(function(a) {
                                 return { title: a.title, url: a.url,
                                          source: a.source ? a.source.name : 'GNews',
                                          publishedAt: a.publishedAt };
@@ -3307,64 +3372,26 @@ var ECON_DATA = {
                     } catch(e) { console.log('GNews 실패', e); }
                 }
 
-                // 2순위: The Guardian (무료 test 키, CORS 지원)
-                // docs: https://open-platform.theguardian.com/documentation/
+                // 3순위: The Guardian (무료 test 키, CORS 지원)
                 try {
-                    var url2 = 'https://content.guardianapis.com/search?' + [
+                    var ctrl3 = new AbortController();
+                    setTimeout(function(){ ctrl3.abort(); }, 8000);
+                    var grdUrl = 'https://content.guardianapis.com/search?' + [
                         'q='         + encodeURIComponent(q),
-                        'section=business', 'order-by=newest',
-                        'page-size=3', 'api-key=test'
+                        'order-by=newest', 'page-size=3', 'api-key=test'
                     ].join('&');
-                    var res2  = await fetch(url2);
-                    var json2 = await res2.json();
-                    var items2 = json2.response && json2.response.results;
-                    if (items2 && items2.length) {
-                        _nsRender(items2.slice(0,3).map(function(a) {
+                    var resGrd  = await fetch(grdUrl, { signal: ctrl3.signal });
+                    var jsonGrd = await resGrd.json();
+                    var grdItems = jsonGrd.response && jsonGrd.response.results;
+                    if (grdItems && grdItems.length) {
+                        _nsRender(grdItems.slice(0,3).map(function(a) {
                             return { title: a.webTitle, url: a.webUrl,
                                      source: 'The Guardian', publishedAt: a.webPublicationDate };
                         }), box, 'eng');
-                        if (srcEl) srcEl.textContent = '📡 출처: The Guardian (test key)';
+                        if (srcEl) srcEl.textContent = '📡 출처: The Guardian';
                         return;
                     }
                 } catch(e) { console.log('Guardian 실패', e); }
-
-                // 3순위: rss2json + Reuters/BBC Business RSS 클라이언트 필터
-                var engFeeds = [
-                    { url: 'https://feeds.reuters.com/reuters/businessNews', name: 'Reuters' },
-                    { url: 'https://feeds.bbci.co.uk/news/business/rss.xml', name: 'BBC Business' },
-                    { url: 'https://www.cnbc.com/id/10001147/device/rss/rss.html', name: 'CNBC' }
-                ];
-                var qLow2 = q.toLowerCase();
-                for (var fi2 = 0; fi2 < engFeeds.length; fi2++) {
-                    try {
-                        var feed2 = engFeeds[fi2];
-                        var apiUrl2 = 'https://api.rss2json.com/v1/api.json?rss_url=' +
-                            encodeURIComponent(feed2.url) + '&count=30';
-                        var res3 = await fetch(apiUrl2);
-                        var json3 = await res3.json();
-                        if (json3.status !== 'ok' || !json3.items) continue;
-                        var filtered2 = json3.items.filter(function(it) {
-                            return it.title && it.title.toLowerCase().includes(qLow2);
-                        }).slice(0, 3);
-                        if (filtered2.length > 0) {
-                            _nsRender(filtered2.map(function(it) {
-                                return { title: it.title, url: it.link,
-                                         source: feed2.name, publishedAt: it.pubDate };
-                            }), box, 'eng');
-                            if (srcEl) srcEl.textContent = '📡 출처: ' + feed2.name + ' RSS (키워드 필터)';
-                            return;
-                        }
-                        // 결과 없으면 최신 3건이라도 표시 (첫 번째 피드만)
-                        if (fi2 === 0 && json3.items.length > 0) {
-                            _nsRender(json3.items.slice(0,3).map(function(it) {
-                                return { title: it.title, url: it.link,
-                                         source: feed2.name, publishedAt: it.pubDate };
-                            }), box, 'eng');
-                            if (srcEl) srcEl.textContent = '📡 출처: ' + feed2.name + ' RSS (최신순, 키워드 매칭 없음)';
-                            return;
-                        }
-                    } catch(e) {}
-                }
 
                 box.innerHTML = '<p class="ns-empty">😔 해외 뉴스 없음<br>다른 키워드로 시도해 보세요</p>';
                 if (srcEl) srcEl.textContent = '';
