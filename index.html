@@ -1272,8 +1272,94 @@
 
             <!-- VOLATILITY_CARD_START -->
             <div class="vol-macro-card">
-                <div style="text-align:center;color:#475569;font-size:0.82rem;padding:16px 0;">
-                    ⏳ 시장 심리 & 매크로 데이터 로딩 중... (GitHub Actions 매시 자동갱신)
+                <div class="vol-macro-header">
+                    <span class="vol-macro-title">📊 시장 심리 &amp; 매크로 현황</span>
+                    <span style="font-size:0.7rem;color:#475569;">Updated: 18:13 KST · 매시 자동갱신 · CBOE / FRED / yfinance</span>
+                </div>
+                <div class="vol-macro-grid">
+
+                    <!-- ① 변동성 & 공포 지표 -->
+                    <div>
+                        <div class="vol-section-title">😱 변동성 &amp; 공포 지표</div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">VIX 공포지수</span>
+                            <span class="vol-metric-value">19.86 <span style="color:#f87171;font-size:0.68rem;margin-left:2px;">▲1.23</span> <span class="vol-badge vol-badge-lgreen">보통</span></span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">52주 범위</span>
+                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">13.47 ~ 52.33</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">52주 위치</span>
+                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">상위 84%</span>
+                        </div>
+                        <div class="vol-metric-row" style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);">
+                            <span class="vol-metric-label">Total P/C 비율</span>
+                            <span class="vol-metric-value">N/A </span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">Equity P/C</span>
+                            <span class="vol-metric-value">N/A </span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">Index P/C</span>
+                            <span class="vol-metric-value">N/A </span>
+                        </div>
+                        <div style="margin-top:5px;font-size:0.64rem;color:#374151;"> CBOE</div>
+                    </div>
+
+                    <!-- ② 옵션 신호 & 금리 -->
+                    <div>
+                        <div class="vol-section-title">📈 옵션 신호 &amp; 금리</div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">미국 10년물</span>
+                            <span class="vol-metric-value">3.96%</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">미국 3개월물</span>
+                            <span class="vol-metric-value">3.58%</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">장단기 스프레드</span>
+                            <span class="vol-metric-value" style="color:#4ade80;">0.38% <span class="vol-badge vol-badge-yellow">평탄</span></span>
+                        </div>
+                        <div class="vol-metric-row" style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);">
+                            <span class="vol-metric-label">Index P/C 신호</span>
+                            <span class="vol-metric-value" style="font-size:0.7rem;color:#94a3b8;">콜 우세 · 낙관</span>
+                        </div>
+                        <div class="vol-metric-row" style="margin-top:4px;">
+                            <span class="vol-metric-label">달러 DXY</span>
+                            <span class="vol-metric-value">97.7</span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">금 ($/oz)</span>
+                            <span class="vol-metric-value">$5248</span>
+                        </div>
+                    </div>
+
+                    <!-- ③ 월별 매크로 요약 -->
+                    <div>
+                        <div class="vol-section-title">🏦 월별 매크로 요약</div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">Fed 기준금리</span>
+                            <span class="vol-metric-value">3.64% <span class="vol-badge vol-badge-yellow">중립</span></span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">CPI 물가 YoY</span>
+                            <span class="vol-metric-value">326.59% <span class="vol-badge vol-badge-red">고물가</span></span>
+                        </div>
+                        <div class="vol-metric-row">
+                            <span class="vol-metric-label">실업률</span>
+                            <span class="vol-metric-value">4.30%</span>
+                        </div>
+                        <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05);
+                                    font-size:0.63rem;color:#374151;line-height:1.9;">
+                            📌 P/C &lt;0.7 과열(빨강) · 0.7-1.0 중립(노랑) · &gt;1.0 방어(초록)<br>
+                            📌 VIX &lt;15 안정 · 15-20 보통 · 20-25 주의 · &gt;25 공포<br>
+                            📌 스프레드 양수=정상 · 음수=역전(침체신호)
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <!-- VOLATILITY_CARD_END -->
@@ -1467,23 +1553,23 @@
                         
                         <div class="news-card-header">
                             <div class="header-top">
-                                <span class="date-badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;">글로벌 마켓 뉴스</span>
-                                <span style="font-size:0.9rem;color:#94a3b8;">Updated: 17:22 KST</span>
+                                <span class="date-badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;">프리진경제</span>
+                                <span style="font-size:0.9rem;color:#94a3b8;">Updated: 18:13 KST</span>
                                 <button onclick="window.location.reload()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button>
                             </div>
-                            <div class="market-status-title" style="margin-top:10px;">🌐 실시간 글로벌 시장 뉴스</div>
+                            <div class="market-status-title" style="margin-top:10px;">📰 프리진경제 뉴스 브리핑</div>
                         </div>
                         <div style="margin-bottom:14px;">
                             <strong style="color:#facc15;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(250,204,21,0.2);padding-bottom:4px;">📊 Yahoo Finance</strong>
-                            <div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(250,204,21,0.5);border-radius:0 6px 6px 0;'><a href='https://finance.yahoo.com/news/cubesmart-q4-earnings-call-highlights-030851066.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>CubeSmart 4분기 실적발표 하이라이트</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://finance.yahoo.com' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>Yahoo Finance</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(250,204,21,0.5);border-radius:0 6px 6px 0;'><a href='https://finance.yahoo.com/news/keurig-dr-pepper-kdp-gets-031630105.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>회사가 중립적 견해를 유지함에 따라 Roth Capital이 APA 목표를 높였습니다.</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://finance.yahoo.com' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>Yahoo Finance</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(250,204,21,0.5);border-radius:0 6px 6px 0;'><a href='https://finance.yahoo.com/personal-finance/banking/comparison/capital-one-vs-chase-184106558.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>Capital One vs. Chase: 어느 은행이 귀하에게 가장 적합합니까?</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://finance.yahoo.com' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>Yahoo Finance</a></span></div>
+                            <div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(250,204,21,0.5);border-radius:0 6px 6px 0;'><a href='https://finance.yahoo.com/news/netflix-backs-warner-bros-deal-045000278.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>넷플릭스는 워너 브라더스 거래에서 물러납니다. 이것이 현명한 조치인 5가지 이유</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://finance.yahoo.com' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>Yahoo Finance</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(250,204,21,0.5);border-radius:0 6px 6px 0;'><a href='https://finance.yahoo.com/news/barclays-sees-long-term-upside-050408125.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>Barclays는 강력한 수익 유지로 Zscaler(ZS)의 장기적인 상승 가능성을 확인했습니다.</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://finance.yahoo.com' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>Yahoo Finance</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(250,204,21,0.5);border-radius:0 6px 6px 0;'><a href='https://finance.yahoo.com/news/cloudflare-net-gains-upgrade-following-050434009.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>Cloudflare(NET), 강력한 4분기 실행 및 성장에 따라 업그레이드 획득</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://finance.yahoo.com' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>Yahoo Finance</a></span></div>
                         </div>
                         <div style="margin-bottom:14px;">
-                            <strong style="color:#38bdf8;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(56,189,248,0.2);padding-bottom:4px;">📺 CNBC Markets</strong>
-                            <div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(56,189,248,0.5);border-radius:0 6px 6px 0;'><a href='https://www.cnbc.com/2026/02/28/berkshire-ceo-abel-vows-to-keep-buffetts-culture-of-disciplined-investing-in-first-annual-letter.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>버크셔 CEO 그렉 아벨(Greg Abel)은 첫 번째 연례 편지에서 버핏의 규율 있는 투자 문화를 유지하겠다고 다짐했습니다.</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>2026-02-28  ·  출처: <a href='https://www.cnbc.com/markets/' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>CNBC</a></span><p style='color:#94a3b8;font-size:0.78em;margin:3px 0 0;line-height:1.5;'>Berkshire Hathaway&#x27;s Greg Abel released his first annual shareholder letter as chief execu...</p></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(56,189,248,0.5);border-radius:0 6px 6px 0;'><a href='https://www.cnbc.com/2026/02/28/berkshire-hathaway-brka-q4-2025-earnings.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>버크셔 해서웨이, 워렌 버핏 CEO 재임 마지막 분기 영업이익 30% 가까이 감소</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>2026-02-28  ·  출처: <a href='https://www.cnbc.com/markets/' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>CNBC</a></span><p style='color:#94a3b8;font-size:0.78em;margin:3px 0 0;line-height:1.5;'>Berkshire Hathaway reported fourth-quarter and full-year 2025 earnings on Saturday.</p></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(56,189,248,0.5);border-radius:0 6px 6px 0;'><a href='https://www.cnbc.com/2026/02/27/ubs-downgrades-the-us-stock-market-heres-what-has-the-investment-bank-worried.html' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>UBS가 미국 주식시장의 신용등급을 하향 조정했습니다. 투자은행이 우려하는 점은 다음과 같습니다.</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>2026-02-27  ·  출처: <a href='https://www.cnbc.com/markets/' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>CNBC</a></span><p style='color:#94a3b8;font-size:0.78em;margin:3px 0 0;line-height:1.5;'>UBS downgraded U.S. equities to &quot;benchmark&quot; in a fully invested global equity portfolio, s...</p></div>
+                            <strong style="color:#38bdf8;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(56,189,248,0.2);padding-bottom:4px;">📈 프리진경제 주식/증권</strong>
+                            <div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(56,189,248,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14635' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>트럼프 대통령의 이란 공격 대국민 연설 [전문]</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제 주식/증권</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(56,189,248,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14634' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>맘다니, 미국의 이란 공격 비난하다 거센 비판에 직면</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제 주식/증권</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(56,189,248,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14633' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>트럼프, &quot;이란 보복 공격 실행 시 전례없는 무력으로 공격할 것&quot; 경고</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제 주식/증권</a></span></div>
                         </div>
                         <div>
-                            <strong style="color:#4ade80;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(74,222,128,0.2);padding-bottom:4px;">🇰🇷 프리진경제</strong>
-                            <div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(74,222,128,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14635' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>트럼프 대통령의 이란 공격 대국민 연설 [전문]</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>2026-03-01  ·  출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제</a></span><p style='color:#94a3b8;font-size:0.78em;margin:3px 0 0;line-height:1.5;'>잠시전, 미국 군은 이란에 대한 전투 작전을 시작하였습니다.우리의 목표는 미국 국민을 방어하기 위하여 이란 정권으로 부터 임박한 위협을 제거하는 것입니다.그들은 ...</p></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(74,222,128,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14633' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>트럼프, &quot;이란 보복 공격 실행 시 전례없는 무력으로 공격할 것&quot; 경고</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>2026-03-01  ·  출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제</a></span><p style='color:#94a3b8;font-size:0.78em;margin:3px 0 0;line-height:1.5;'>도널드 트럼프 미국 대통령은 1일(현지시간) 새벽, 이란이 보복 위협을 실행에 옮길 경우 미국은 전례 없는 무력으로 이란을 공격할 것이라고 경고했다.트럼프 대통령...</p></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(74,222,128,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14631' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>이란, 하메네이 사망에 따라 권력이양 절차 시작</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>2026-03-01  ·  출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제</a></span><p style='color:#94a3b8;font-size:0.78em;margin:3px 0 0;line-height:1.5;'>이란의 안보 수장인 알리 라리자니(Ali Larijani)는 아야톨라 알리 하메네이 최고지도자의 사망에 따른 권력 이양 절차가 1일(현지시간)부터 시작될 것이라고...</p></div>
+                            <strong style="color:#4ade80;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(74,222,128,0.2);padding-bottom:4px;">🌐 프리진경제 국제/IT</strong>
+                            <div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(74,222,128,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14635' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>트럼프 대통령의 이란 공격 대국민 연설 [전문]</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제 국제/IT</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(74,222,128,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14634' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>맘다니, 미국의 이란 공격 비난하다 거센 비판에 직면</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제 국제/IT</a></span></div><div style='margin-bottom:9px;padding:9px 10px;background:rgba(0,0,0,0.2);border-left:3px solid rgba(74,222,128,0.5);border-radius:0 6px 6px 0;'><a href='https://www.freezine.co.kr/news/articleView.html?idxno=14633' target='_blank' rel='noopener' style='color:#f8fafc;text-decoration:none;font-size:0.87em;font-weight:600;line-height:1.4;display:block;'>트럼프, &quot;이란 보복 공격 실행 시 전례없는 무력으로 공격할 것&quot; 경고</a><span style='color:#64748b;font-size:0.72em;display:block;margin-top:3px;'>출처: <a href='https://www.freezine.co.kr' target='_blank' rel='noopener' style='color:#94a3b8;text-decoration:underline;'>프리진경제 국제/IT</a></span></div>
                         </div>
     
                         <!-- RIGHT_CARD_END -->
