@@ -42,4 +42,5 @@ jobs:
           git config --global user.email "bot@marketnews.com"
           git add index.html
           git commit -m "Automated Market News Update: $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
+          git pull --rebase origin main
           git push
