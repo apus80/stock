@@ -405,7 +405,6 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
-            padding-top: 10px;
             margin-top: 14px;
         }
         .ns-col-header {
@@ -573,35 +572,47 @@
             border-left: 4px solid var(--primary);
             font-size: 0.95em;
             line-height: 1.6;
-            position: relative;
         }
 
-        /* ── 결과 닫기 버튼 ── */
-        .result-close-btn {
-            position: absolute;
-            top: 10px; right: 12px;
-            width: 38px; height: 38px;
+        /* ── 결과 topbar (최소화 + 닫기 버튼) ── */
+        .result-topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px; padding-bottom: 8px;
+            border-bottom: 1px solid #e8eef8;
+        }
+        .result-topbar-label {
+            font-size: 0.82em; color: #64748b; font-weight: 600;
+            flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            padding-right: 8px;
+        }
+        .result-action-btns { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+        .result-min-btn, .result-cls-btn {
+            width: 36px; height: 36px;
             border-radius: 50%;
             border: 2px solid #cbd5e1;
             background: #f1f5f9;
             color: #475569;
-            font-size: 20px;
-            font-weight: 700;
-            line-height: 1;
+            font-size: 18px; font-weight: 700; line-height: 1;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.18s;
-            z-index: 10;
             box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         }
-        .result-close-btn:hover {
-            background: #ef4444;
-            border-color: #ef4444;
-            color: #fff;
-            transform: scale(1.12);
+        .result-min-btn:hover {
+            background: #667eea; border-color: #667eea; color: #fff;
+            transform: scale(1.1);
+        }
+        .result-cls-btn:hover {
+            background: #ef4444; border-color: #ef4444; color: #fff;
+            transform: scale(1.1);
             box-shadow: 0 3px 10px rgba(239,68,68,0.35);
         }
-        #nsContainer { position: relative; }
+        .result-body {
+            overflow: hidden;
+            transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.24s ease;
+            max-height: 3000px; opacity: 1;
+        }
+        .result-body.minimized { max-height: 0; opacity: 0; }
 
         .update-note {
             margin-top: 10px;
@@ -622,8 +633,8 @@
             border-left: 5px solid #10b981;
         }
         .company-search h3 { color: var(--primary-dark); margin-bottom: 15px; font-size: 1.2em; font-weight: 700; }
-        .co-card { background: #f8faff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-top: 12px; position: relative; }
-        .co-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; padding-right: 50px; }
+        .co-card { background: #f8faff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-top: 12px; }
+        .co-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
         .co-logo { width: 42px; height: 42px; border-radius: 8px; object-fit: contain; background: #fff; border: 1px solid #e2e8f0; padding: 3px; }
         .co-name { font-size: 1.08rem; font-weight: 700; color: #1e293b; }
         .co-ticker { background: #3b82f6; color: #fff; font-size: 0.76rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; margin-right: 4px; }
@@ -787,7 +798,6 @@
             font-weight: 700;
             color: #495057;
             margin-bottom: 5px;
-            padding-right: 50px;  /* 닫기 버튼 공간 확보 */
         }
 
         .result-date {
@@ -1666,21 +1676,29 @@ var ECON_DATA = {
                     🌐 한글 입력 → 영어 번역 후 해외 뉴스 검색 &nbsp;|&nbsp; 영어 입력 → 한글 번역 후 국내 뉴스 검색 &nbsp;(국내·해외 동시)
                 </p>
                 <div id="nsContainer" style="display:none;">
-                    <button class="result-close-btn" title="닫기"
-                        onclick="document.getElementById('nsContainer').style.display='none';">✕</button>
-                    <div class="ns-columns">
-                        <div class="ns-col">
-                            <div class="ns-col-header">🇰🇷 국내 뉴스</div>
-                            <div id="nsKorBox"></div>
-                            <div id="nsKorSrc" class="ns-col-src"></div>
+                    <div class="result-topbar">
+                        <span class="result-topbar-label" id="nsResultLabel">검색 결과</span>
+                        <div class="result-action-btns">
+                            <button class="result-min-btn" title="최소화" onclick="toggleResultMin(this)">▴</button>
+                            <button class="result-cls-btn" title="닫기"
+                                onclick="document.getElementById('nsContainer').style.display='none';">✕</button>
                         </div>
-                        <div class="ns-col">
-                            <div class="ns-col-header">
-                                🌐 해외 뉴스
-                                <span id="nsTransBadge" class="ns-trans-badge" style="display:none;"></span>
+                    </div>
+                    <div class="result-body">
+                        <div class="ns-columns">
+                            <div class="ns-col">
+                                <div class="ns-col-header">🇰🇷 국내 뉴스</div>
+                                <div id="nsKorBox"></div>
+                                <div id="nsKorSrc" class="ns-col-src"></div>
                             </div>
-                            <div id="nsEngBox"></div>
-                            <div id="nsEngSrc" class="ns-col-src"></div>
+                            <div class="ns-col">
+                                <div class="ns-col-header">
+                                    🌐 해외 뉴스
+                                    <span id="nsTransBadge" class="ns-trans-badge" style="display:none;"></span>
+                                </div>
+                                <div id="nsEngBox"></div>
+                                <div id="nsEngSrc" class="ns-col-src"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2966,30 +2984,38 @@ var ECON_DATA = {
 
                     resultDiv.innerHTML =
                         '<div class="co-card">' +
-                            '<button class="result-close-btn" title="닫기" onclick="document.getElementById(\'companyResult\').innerHTML=\'\'">✕</button>' +
-                            '<div class="co-header">' +
-                                logoHtml +
-                                '<div>' +
-                                    '<div class="co-name">' + profile.name + '</div>' +
-                                    '<span class="co-ticker">' + ticker + '</span>' +
-                                    '<span class="co-exchange">' + (profile.exchange || '') + '</span>' +
+                            '<div class="result-topbar">' +
+                                '<span class="result-topbar-label">' + (profile.name || ticker) + ' (' + ticker + ')</span>' +
+                                '<div class="result-action-btns">' +
+                                    '<button class="result-min-btn" title="최소화" onclick="toggleResultMin(this)">▴</button>' +
+                                    '<button class="result-cls-btn" title="닫기" onclick="document.getElementById(\'companyResult\').innerHTML=\'\'">✕</button>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="co-price-row">' +
-                                '<span class="co-price">' + price + '</span>' +
-                                chgHtml +
-                                '<span style="font-size:0.72rem;color:#94a3b8;margin-left:4px;">실시간</span>' +
+                            '<div class="result-body">' +
+                                '<div class="co-header">' +
+                                    logoHtml +
+                                    '<div>' +
+                                        '<div class="co-name">' + profile.name + '</div>' +
+                                        '<span class="co-ticker">' + ticker + '</span>' +
+                                        '<span class="co-exchange">' + (profile.exchange || '') + '</span>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="co-price-row">' +
+                                    '<span class="co-price">' + price + '</span>' +
+                                    chgHtml +
+                                    '<span style="font-size:0.72rem;color:#94a3b8;margin-left:4px;">실시간</span>' +
+                                '</div>' +
+                                '<div class="co-metrics">' +
+                                    '<div class="co-metric"><div class="co-metric-lbl">시가총액</div><div class="co-metric-val">' + mcStr + '</div></div>' +
+                                    '<div class="co-metric"><div class="co-metric-lbl">P/E Ratio (TTM)</div><div class="co-metric-val">' + pe + '</div></div>' +
+                                    '<div class="co-metric"><div class="co-metric-lbl">EPS (연간)</div><div class="co-metric-val">' + eps + '</div></div>' +
+                                    '<div class="co-metric"><div class="co-metric-lbl">배당 수익률</div><div class="co-metric-val">' + div + '</div></div>' +
+                                    '<div class="co-metric"><div class="co-metric-lbl">베타</div><div class="co-metric-val">' + beta + '</div></div>' +
+                                    '<div class="co-metric"><div class="co-metric-lbl">52주 범위</div><div class="co-metric-val">' + w52l + ' – ' + w52h + '</div></div>' +
+                                '</div>' +
+                                (tags ? '<div class="co-tags">' + tags + '</div>' : '') +
+                                '<div class="co-links">' + links + '</div>' +
                             '</div>' +
-                            '<div class="co-metrics">' +
-                                '<div class="co-metric"><div class="co-metric-lbl">시가총액</div><div class="co-metric-val">' + mcStr + '</div></div>' +
-                                '<div class="co-metric"><div class="co-metric-lbl">P/E Ratio (TTM)</div><div class="co-metric-val">' + pe + '</div></div>' +
-                                '<div class="co-metric"><div class="co-metric-lbl">EPS (연간)</div><div class="co-metric-val">' + eps + '</div></div>' +
-                                '<div class="co-metric"><div class="co-metric-lbl">배당 수익률</div><div class="co-metric-val">' + div + '</div></div>' +
-                                '<div class="co-metric"><div class="co-metric-lbl">베타</div><div class="co-metric-val">' + beta + '</div></div>' +
-                                '<div class="co-metric"><div class="co-metric-lbl">52주 범위</div><div class="co-metric-val">' + w52l + ' – ' + w52h + '</div></div>' +
-                            '</div>' +
-                            (tags ? '<div class="co-tags">' + tags + '</div>' : '') +
-                            '<div class="co-links">' + links + '</div>' +
                         '</div>';
 
                 } catch(e) {
@@ -3081,7 +3107,14 @@ var ECON_DATA = {
 
                     resultDiv.innerHTML =
                         '<div class="search-result">' +
-                        '<button class="result-close-btn" title="닫기" onclick="document.getElementById(\'earningsResult\').innerHTML=\'\'">✕</button>' +
+                        '<div class="result-topbar">' +
+                            '<span class="result-topbar-label">📅 ' + companyName + ' (' + ticker + ')</span>' +
+                            '<div class="result-action-btns">' +
+                                '<button class="result-min-btn" title="최소화" onclick="toggleResultMin(this)">▴</button>' +
+                                '<button class="result-cls-btn" title="닫기" onclick="document.getElementById(\'earningsResult\').innerHTML=\'\'">✕</button>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="result-body">' +
                         '<div class="result-company">' + companyName + ' (' + ticker + ')</div>' +
                         '<div class="result-date">📅 다음 실적 발표: ' + dateDisplay + '</div>' +
                         '<div class="result-info">' +
@@ -3097,7 +3130,9 @@ var ECON_DATA = {
                         '<a href="https://finance.yahoo.com/quote/' + ticker + '/analysis"' +
                         ' target="_blank" style="color:#667eea;text-decoration:none;font-weight:600">' +
                         '📊 자세한 분석 보기 →</a></div>' +
-                        '</div></div>';
+                        '</div>' +       /* .result-info */
+                        '</div>' +       /* .result-body */
+                        '</div>';        /* .search-result */
 
                 } catch(e) {
                     resultDiv.innerHTML = '<div class="search-result empty">⚠️ 오류: ' + e.message + '</div>';
@@ -3240,6 +3275,17 @@ var ECON_DATA = {
                 if (btn) btn.textContent = isOpen ? '▾ 펼치기' : '▴ 접기';
             }
 
+            /* ── 결과 최소화/펼치기 토글 ── */
+            function toggleResultMin(btn) {
+                var card = btn.closest('.co-card, .search-result, #nsContainer');
+                var body = card ? card.querySelector('.result-body') : null;
+                if (!body) return;
+                var isMin = body.classList.contains('minimized');
+                body.classList.toggle('minimized', !isMin);
+                btn.textContent = isMin ? '▴' : '▾';
+                btn.title       = isMin ? '최소화' : '펼치기';
+            }
+
             function nsSearch() {
                 clearTimeout(_nsDebounce);
                 _nsDebounce = setTimeout(_nsDoSearch, 0);
@@ -3261,7 +3307,14 @@ var ECON_DATA = {
                 if (!korBox || !engBox) return;
                 if (!q) { if (container) container.style.display = 'none'; return; }
 
-                if (container) container.style.display = 'block';
+                if (container) {
+                    container.style.display = 'block';
+                    // 새 검색 시 최소화 상태였으면 자동 펼침
+                    var nsBody = container.querySelector('.result-body');
+                    if (nsBody) nsBody.classList.remove('minimized');
+                    var nsMinBtn = container.querySelector('.result-min-btn');
+                    if (nsMinBtn) { nsMinBtn.textContent = '▴'; nsMinBtn.title = '최소화'; }
+                }
 
                 // 스켈레톤 표시
                 var skel = '<div class="ns-skeleton"></div>'.repeat(3);
