@@ -2363,25 +2363,59 @@ var ECON_DATA = {
             }
 
             // 제목 한국어 번역 (MyMemory API - 무료, 키 불필요)
+            // null 반환 = 번역 실패, string 반환 = 번역 성공
             async function translateTitle(title) {
                 try {
+                    const ctrl = new AbortController();
+                    setTimeout(() => ctrl.abort(), 7000);
                     const url = 'https://api.mymemory.translated.net/get?q=' +
-                        encodeURIComponent(title) + '&langpair=en|ko';
-                    const res = await fetch(url);
+                        encodeURIComponent(title.slice(0, 500)) + '&langpair=en|ko';
+                    const res = await fetch(url, { signal: ctrl.signal });
                     const json = await res.json();
                     if (json.responseStatus === 200 && json.responseData && json.responseData.translatedText) {
                         const t = json.responseData.translatedText;
-                        if (t && !t.includes('MYMEMORY WARNING') && t !== title) return t;
+                        // 'MYMEMORY WARNING' 포함 시만 걸러냄 (t===title 비교 제거 → 고유명사 섞여도 번역 사용)
+                        if (t && !t.includes('MYMEMORY WARNING')) return t;
                     }
                 } catch(e) {}
-                return title;
+                return null; // 실패 시 null (원문 유지)
             }
 
-            async function translateAll(newsData) {
-                return Promise.all(newsData.map(async item => {
-                    const ko = await translateTitle(item.title);
-                    return Object.assign({}, item, { title_ko: ko });
-                }));
+            // 뉴스 즉시 렌더링 (영어 제목으로 먼저 표시, data-idx 속성 부여)
+            function renderNews(newsData, apiSource) {
+                const container = document.getElementById('newsContainer');
+                container.innerHTML = '';
+                newsData.forEach(function(news, idx) {
+                    var timeStr = news.published_at ? new Date(news.published_at).toLocaleString('ko-KR') : '';
+                    var srcLabel = news.source || apiSource;
+                    var html = '<div class="news-item">' +
+                        '<a href="' + news.url + '" target="_blank" rel="noopener" class="news-link"' +
+                        ' title="' + (news.title || '').replace(/"/g, '&quot;') + '">' +
+                        '<div class="news-title" data-idx="' + idx + '" data-orig="' +
+                            (news.title || '').replace(/"/g, '&quot;') + '">📢 ' + (news.title || '') + '</div>' +
+                        '<div class="news-meta">' + srcLabel + ' · ' + timeStr + '</div>' +
+                        '</a></div>';
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            // 백그라운드 순차 번역 → 완료된 카드부터 한국어로 교체
+            async function translateAndUpdate(newsData) {
+                var container = document.getElementById('newsContainer');
+                for (var i = 0; i < newsData.length; i++) {
+                    var ko = await translateTitle(newsData[i].title);
+                    if (ko) {
+                        var el = container.querySelector('.news-title[data-idx="' + i + '"]');
+                        if (el) {
+                            el.textContent = '📢 ' + ko;
+                            // 원문은 부모 <a>의 title 속성으로 유지 (호버 툴팁)
+                        }
+                    }
+                    // 200ms 간격으로 순차 요청 → MyMemory 레이트 리밋 방지
+                    if (i < newsData.length - 1) {
+                        await new Promise(function(r) { setTimeout(r, 200); });
+                    }
+                }
             }
 
             // 실시간 뉴스 로딩
@@ -2405,9 +2439,9 @@ var ECON_DATA = {
                                 published_at: item.webPublicationDate
                             };
                         });
-                        container.innerHTML = '<div class="news-item">🌐 한국어로 번역 중...</div>';
-                        const translated = await translateAll(formattedData);
-                        renderNews(translated, 'The Guardian');
+                        // 즉시 영문으로 표시 → 백그라운드에서 순차 번역
+                        renderNews(formattedData, 'The Guardian');
+                        translateAndUpdate(formattedData);
                         return;
                     }
                 } catch(e) { console.log("Guardian 실패", e); }
@@ -2425,34 +2459,14 @@ var ECON_DATA = {
                                 published_at: item.published_on * 1000
                             };
                         });
-                        container.innerHTML = '<div class="news-item">🌐 한국어로 번역 중...</div>';
-                        const translated = await translateAll(formattedData);
-                        renderNews(translated, 'CryptoCompare');
+                        renderNews(formattedData, 'CryptoCompare');
+                        translateAndUpdate(formattedData);
                         return;
                     }
                 } catch(e) { console.log("CryptoCompare 실패"); }
 
                 // --- 3단계: 로컬 뉴스 (최종 백업) ---
                 loadLocalNews();
-            }
-
-            // 뉴스 렌더링 (한국어 제목 기본, 원문 영어 툴팁)
-            function renderNews(newsData, apiSource) {
-                const container = document.getElementById('newsContainer');
-                container.innerHTML = '';
-                newsData.forEach(function(news) {
-                    var displayTitle = (news.title_ko && news.title_ko !== news.title) ? news.title_ko : news.title;
-                    var origTitle = (news.title_ko && news.title_ko !== news.title) ? news.title : '';
-                    var timeStr = news.published_at ? new Date(news.published_at).toLocaleString('ko-KR') : '';
-                    var srcLabel = news.source || apiSource;
-                    var titleAttr = origTitle ? ' title="' + origTitle.replace(/"/g, '&quot;') + '"' : '';
-                    var html = '<div class="news-item">' +
-                        '<a href="' + news.url + '" target="_blank" rel="noopener" class="news-link"' + titleAttr + '>' +
-                        '<div class="news-title">📢 ' + displayTitle + '</div>' +
-                        '<div class="news-meta">' + srcLabel + ' · ' + timeStr + '</div>' +
-                        '</a></div>';
-                    container.insertAdjacentHTML('beforeend', html);
-                });
             }
 
 
