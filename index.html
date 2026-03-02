@@ -1889,7 +1889,7 @@ var ECON_DATA = {
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <h3 class="section-title" style="border:none; padding:0; margin:0;">📰 실시간 시장 뉴스</h3>
-                            <div id="google_translate_element"></div>
+                            <button id="newsLangToggle" onclick="toggleNewsLang()" style="display:inline-flex;align-items:center;gap:4px;padding:4px 14px;background:rgba(102,126,234,0.12);border:1px solid rgba(102,126,234,0.35);border-radius:20px;color:#667eea;font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all 0.2s;" title="뉴스 제목 언어 전환">🌐 English</button>
                         </div>
                         <button onclick="refreshNews()" class="btn-load" style="padding:4px 12px; font-size:11px;">🔄
                             새로고침</button>
@@ -2357,22 +2357,37 @@ var ECON_DATA = {
                 console.log(`📊 시장 심리 변경 완료: ${symbol}`);
             }
 
-            // 제목 한국어 번역 (MyMemory API - 무료, 키 불필요)
+            // 제목 한국어 번역
+            // 1차: Google 무료 API (gtx, 더 안정적)
+            // 2차: MyMemory API (폴백)
             // null 반환 = 번역 실패, string 반환 = 번역 성공
             async function translateTitle(title) {
+                // 1차: Google 비공식 무료 API
                 try {
                     const ctrl = new AbortController();
-                    setTimeout(() => ctrl.abort(), 7000);
-                    const url = 'https://api.mymemory.translated.net/get?q=' +
-                        encodeURIComponent(title.slice(0, 500)) + '&langpair=en|ko';
+                    setTimeout(() => ctrl.abort(), 8000);
+                    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=' +
+                        encodeURIComponent(title.slice(0, 500));
                     const res = await fetch(url, { signal: ctrl.signal });
-                    const json = await res.json();
-                    if (json.responseStatus === 200 && json.responseData && json.responseData.translatedText) {
-                        const t = json.responseData.translatedText;
-                        // 'MYMEMORY WARNING' 포함 시만 걸러냄 (t===title 비교 제거 → 고유명사 섞여도 번역 사용)
-                        if (t && !t.includes('MYMEMORY WARNING')) return t;
+                    const data = await res.json();
+                    if (Array.isArray(data) && Array.isArray(data[0])) {
+                        const text = data[0].map(function(c) { return c[0] || ''; }).join('');
+                        if (text) return text;
                     }
                 } catch(e) {}
+                // 2차: MyMemory 폴백
+                try {
+                    const ctrl2 = new AbortController();
+                    setTimeout(() => ctrl2.abort(), 7000);
+                    const url2 = 'https://api.mymemory.translated.net/get?q=' +
+                        encodeURIComponent(title.slice(0, 500)) + '&langpair=en|ko';
+                    const res2 = await fetch(url2, { signal: ctrl2.signal });
+                    const json2 = await res2.json();
+                    if (json2.responseStatus === 200 && json2.responseData && json2.responseData.translatedText) {
+                        const t = json2.responseData.translatedText;
+                        if (t && !t.includes('MYMEMORY WARNING')) return t;
+                    }
+                } catch(e2) {}
                 return null; // 실패 시 null (원문 유지)
             }
 
@@ -2380,6 +2395,9 @@ var ECON_DATA = {
             function renderNews(newsData, apiSource) {
                 const container = document.getElementById('newsContainer');
                 container.innerHTML = '';
+                // 번역 시작 전: 버튼 로딩 상태
+                var _ltBtn = document.getElementById('newsLangToggle');
+                if (_ltBtn) { _ltBtn.textContent = '🌐 번역 중...'; _ltBtn.disabled = true; }
                 newsData.forEach(function(news, idx) {
                     var timeStr = news.published_at ? new Date(news.published_at).toLocaleString('ko-KR') : '';
                     var srcLabel = news.source || apiSource;
@@ -2394,7 +2412,7 @@ var ECON_DATA = {
                 });
             }
 
-            // 백그라운드 순차 번역 → 완료된 카드부터 한국어로 교체
+            // 백그라운드 순차 번역 → data-ko 저장 + 한국어 모드면 즉시 표시
             async function translateAndUpdate(newsData) {
                 var container = document.getElementById('newsContainer');
                 for (var i = 0; i < newsData.length; i++) {
@@ -2402,15 +2420,37 @@ var ECON_DATA = {
                     if (ko) {
                         var el = container.querySelector('.news-title[data-idx="' + i + '"]');
                         if (el) {
-                            el.textContent = '📢 ' + ko;
-                            // 원문은 부모 <a>의 title 속성으로 유지 (호버 툴팁)
+                            el.setAttribute('data-ko', ko);
+                            if (_newsLangKo) el.textContent = '📢 ' + ko;
                         }
                     }
-                    // 200ms 간격으로 순차 요청 → MyMemory 레이트 리밋 방지
+                    // 200ms 간격 → API 레이트 리밋 방지
                     if (i < newsData.length - 1) {
                         await new Promise(function(r) { setTimeout(r, 200); });
                     }
                 }
+                // 번역 완료 후 버튼 활성화
+                var btn = document.getElementById('newsLangToggle');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = _newsLangKo ? '🌐 English' : '🌐 한국어';
+                }
+            }
+
+            // 뉴스 언어 토글 (한국어 ↔ 영어)
+            function toggleNewsLang() {
+                _newsLangKo = !_newsLangKo;
+                var btn = document.getElementById('newsLangToggle');
+                var titles = document.querySelectorAll('#newsContainer .news-title');
+                titles.forEach(function(el) {
+                    if (_newsLangKo) {
+                        var ko = el.getAttribute('data-ko');
+                        el.textContent = '📢 ' + (ko || el.getAttribute('data-orig') || '');
+                    } else {
+                        el.textContent = '📢 ' + (el.getAttribute('data-orig') || '');
+                    }
+                });
+                if (btn) btn.textContent = _newsLangKo ? '🌐 English' : '🌐 한국어';
             }
 
             // 실시간 뉴스 로딩
@@ -2853,14 +2893,6 @@ var ECON_DATA = {
                 console.log("✅ 모든 데이터 로딩 완료");
             }
 
-            // 구글 번역 초기화 함수
-            function googleTranslateElementInit() {
-                new google.translate.TranslateElement({
-                    pageLanguage: 'en',
-                    includedLanguages: 'ko,en',
-                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-                }, 'google_translate_element');
-            }
 
 
             // 이메일 복사 함수
@@ -2889,6 +2921,7 @@ var ECON_DATA = {
 
             var _nsDebounce = null;
             var _nsToken    = 0;   // 경쟁 조건 방지용 검색 토큰
+            var _newsLangKo = true; // true=한국어 표시(기본), false=영어 표시
 
             // ── 진입점: 버튼/Enter → 즉시, 타이핑 → 0.5s 디바운스 ──────
             // ── vol-macro 아코디언 (기본: 닫힘) ─────────────────────────
@@ -3680,8 +3713,6 @@ var ECON_DATA = {
             }
         </script>
 
-        <script type="text/javascript"
-            src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
     <!-- PWA Service Worker 등록 -->
     <script>
