@@ -1793,44 +1793,45 @@ var ECON_DATA = {
                 </div>
 
                 <!-- 시장 핵심 거시 지표 (Market Pulse) -->
-                <!-- TVC: 합성 심볼 임베드 차단 → 거래소 실시간 가능 심볼만 사용 -->
+                <!-- TVC:GOLD / TVC:SILVER → 등락폭(%) 표시 위해 TVC 합성 심볼 사용 (USOIL과 동일) -->
+                <!-- BITSTAMP:BTCUSD / BITSTAMP:ETHUSD → 거래소 심볼로 등락폭 표시 -->
                 <div class="card macro-pulse-card">
                     <h3 class="section-title">🌐 시장 핵심 거시 지표 (Market Pulse)</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
 
-                        <!-- 금 (Gold) -->
+                        <!-- 금 (Gold) — TVC:GOLD = 스팟 골드, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
                             <script type="text/javascript"
                                 src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                                    { "symbol": "OANDA:XAUUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(255,179,0,1)", "underLineColor": "rgba(255,179,0,0.3)", "underLineBottomColor": "rgba(255,179,0,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
+                                    { "symbol": "TVC:GOLD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(255,179,0,1)", "underLineColor": "rgba(255,179,0,0.3)", "underLineBottomColor": "rgba(255,179,0,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
 
-                        <!-- 은 (Silver) -->
+                        <!-- 은 (Silver) — TVC:SILVER = 스팟 실버, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
                             <script type="text/javascript"
                                 src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                                    { "symbol": "OANDA:XAGUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(148,163,184,1)", "underLineColor": "rgba(148,163,184,0.3)", "underLineBottomColor": "rgba(148,163,184,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
+                                    { "symbol": "TVC:SILVER", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(148,163,184,1)", "underLineColor": "rgba(148,163,184,0.3)", "underLineBottomColor": "rgba(148,163,184,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
 
-                        <!-- 비트코인 (Bitcoin) -->
+                        <!-- 비트코인 (Bitcoin) — BITSTAMP 거래소 심볼, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
                             <script type="text/javascript"
                                 src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                                    { "symbol": "COINBASE:BTCUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(247,147,26,1)", "underLineColor": "rgba(247,147,26,0.3)", "underLineBottomColor": "rgba(247,147,26,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
+                                    { "symbol": "BITSTAMP:BTCUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(247,147,26,1)", "underLineColor": "rgba(247,147,26,0.3)", "underLineBottomColor": "rgba(247,147,26,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
 
-                        <!-- 이더리움 (Ethereum) -->
+                        <!-- 이더리움 (Ethereum) — BITSTAMP 거래소 심볼, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
                             <script type="text/javascript"
                                 src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-                                    { "symbol": "COINBASE:ETHUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(98,126,234,1)", "underLineColor": "rgba(98,126,234,0.3)", "underLineBottomColor": "rgba(98,126,234,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
+                                    { "symbol": "BITSTAMP:ETHUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(98,126,234,1)", "underLineColor": "rgba(98,126,234,0.3)", "underLineBottomColor": "rgba(98,126,234,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
 
@@ -1951,7 +1952,8 @@ var ECON_DATA = {
                         <h3 class="section-title" style="border:none; padding:0; margin:0;">📊 Market Heat Map</h3>
                         <div style="display:flex; align-items:center; gap:15px;">
                             <!-- 외부 링크 배지 -->
-                            <div style="display:flex; gap:8px;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="font-size:0.78rem; color:#94a3b8; white-space:nowrap;">실시간으로 확인하려면 →</span>
                                 <a href="https://www.tradingview.com/heatmap/stock/" target="_blank"
                                     rel="noopener noreferrer" class="btn-sm"
                                     style="background:#f1f5f9; text-decoration:none; display:flex; align-items:center; gap:4px;">
@@ -3269,6 +3271,7 @@ var ECON_DATA = {
             // ────────────────────────────────────────────────────────────
 
             var _nsDebounce = null;
+            var _nsToken    = 0;   // 경쟁 조건 방지용 검색 토큰
 
             // ── 진입점: 버튼/Enter → 즉시, 타이핑 → 0.5s 디바운스 ──────
             // ── vol-macro 아코디언 (기본: 닫힘) ─────────────────────────
@@ -3307,6 +3310,7 @@ var ECON_DATA = {
 
             // ── 메인 검색 오케스트레이터 ─────────────────────────────────
             async function _nsDoSearch() {
+                var myTok = ++_nsToken;   // 이 검색의 고유 토큰 (경쟁 조건 방지)
                 var q = ((document.getElementById('nsInput') || {}).value || '').trim();
                 var container = document.getElementById('nsContainer');
                 var korBox    = document.getElementById('nsKorBox');
@@ -3343,12 +3347,32 @@ var ECON_DATA = {
                     if (badge) badge.style.display = 'none';
                 }
 
-                // 국내 + 해외 병렬 실행
+                // 번역 중 새 검색이 시작됐으면 중단
+                if (_nsToken !== myTok) return;
+
+                // 국내 + 해외 병렬 실행 (토큰 전달)
                 await Promise.all([
-                    _nsSearchKorean(qKor, korBox),
-                    _nsSearchEnglish(qEng, engBox)
+                    _nsSearchKorean(qKor, korBox, myTok),
+                    _nsSearchEnglish(qEng, engBox, myTok)
                 ]);
             }
+
+            // 금융 키워드 사전 (번역 실패 시 fallback: 한→영)
+            var _nsFinDict = {
+                '미국':'United States','한국':'South Korea','중국':'China','일본':'Japan',
+                '유럽':'Europe','독일':'Germany','영국':'United Kingdom','인도':'India',
+                '삼성':'Samsung','애플':'Apple','구글':'Google','알파벳':'Alphabet',
+                '마이크로소프트':'Microsoft','테슬라':'Tesla','엔비디아':'Nvidia',
+                '아마존':'Amazon','메타':'Meta','넷플릭스':'Netflix','인텔':'Intel',
+                '주식':'stock','금리':'interest rate','환율':'exchange rate',
+                '인플레이션':'inflation','연준':'Federal Reserve','기준금리':'benchmark rate',
+                '경기침체':'recession','반도체':'semiconductor','배터리':'battery',
+                '코스피':'KOSPI','코스닥':'KOSDAQ','나스닥':'Nasdaq','다우':'Dow Jones',
+                '채권':'bond','원자재':'commodities','유가':'oil price','금':'gold',
+                '달러':'dollar','원화':'Korean won','엔화':'Japanese yen',
+                '무역전쟁':'trade war','관세':'tariff','경제':'economy','금융':'finance',
+                '트럼프':'Trump','바이든':'Biden','파월':'Powell','Fed':'Fed'
+            };
 
             // ── 양방향 번역 (MyMemory, 무료, 키 불필요) ──────────────────
             // langpair: 'ko|en' 한→영, 'en|ko' 영→한
@@ -3365,6 +3389,12 @@ var ECON_DATA = {
                         if (t && !t.includes('MYMEMORY WARNING') && t !== text) return t;
                     }
                 } catch(e) {}
+                // fallback: 사전 검색 (한→영 only)
+                if (langpair === 'ko|en') {
+                    for (var k in _nsFinDict) {
+                        if (text.includes(k)) return _nsFinDict[k];
+                    }
+                }
                 return text;
             }
 
@@ -3372,7 +3402,7 @@ var ECON_DATA = {
             // 국내 뉴스 검색 체인 (1→2→3→4 순서로 시도)
             // ════════════════════════════════════════════════════════════
 
-            // 공통: rss2json fetch with timeout (ms)
+            // 공통: rss2json.com fetch — CORS 없음, 가장 안정적
             async function _rss2json(rssUrl, count, timeoutMs) {
                 var ctrl = new AbortController();
                 var timer = setTimeout(function(){ ctrl.abort(); }, timeoutMs || 8000);
@@ -3385,117 +3415,156 @@ var ECON_DATA = {
                 } catch(e) { clearTimeout(timer); return null; }
             }
 
-            async function _nsSearchKorean(q, box) {
-                var srcEl = document.getElementById('nsKorSrc');
+            // 공통: rss2json item → 기사 객체 변환
+            function _r2jToArt(item, defaultSource) {
+                var title  = (item.title || '').trim();
+                var source = (item.author || defaultSource || '').trim();
+                // Google 뉴스: 제목 끝 " - 출처명" 파싱
+                var m = title.match(/\s*-\s*([^-]{2,50})$/);
+                if (m) {
+                    if (!source || source === defaultSource) source = m[1].trim();
+                    title = title.slice(0, title.length - m[0].length).trim();
+                }
+                return {
+                    title:       title,
+                    url:         item.link || item.guid || '',
+                    source:      source || defaultSource || '',
+                    publishedAt: item.pubDate || '',
+                    description: (item.description || '').replace(/<[^>]+>/g, '').trim().slice(0, 200)
+                };
+            }
 
-                // ── 금융 키워드 자동 조합 ───────────────────────────────────
-                // 이미 금융 관련 단어 포함 시 그대로, 아니면 '주식 증권' 추가
+            // 공통: CORS 프록시 RSS XML 파싱 (rss2json 실패 시 fallback, 3개 프록시 시도)
+            async function _fetchRssXml(rssUrl, timeoutMs) {
+                var proxies = [
+                    'https://corsproxy.io/?'            + encodeURIComponent(rssUrl),
+                    'https://api.allorigins.win/raw?url=' + encodeURIComponent(rssUrl),
+                    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(rssUrl)
+                ];
+                for (var pi = 0; pi < proxies.length; pi++) {
+                    try {
+                        var ctrl  = new AbortController();
+                        var timer = setTimeout(function(){ ctrl.abort(); }, timeoutMs || 7000);
+                        var res   = await fetch(proxies[pi], { signal: ctrl.signal, cache: 'no-store' });
+                        clearTimeout(timer);
+                        if (!res.ok) continue;
+                        var text = await res.text();
+                        if (!text || text.trim().length < 50) continue;
+                        var doc = new DOMParser().parseFromString(text, 'text/xml');
+                        if (doc.querySelector('parsererror')) continue;
+                        return doc;
+                    } catch(e) { continue; }
+                }
+                return null;
+            }
+
+            // 공통: XML <item> → 기사 객체 변환
+            function _xmlItemToArt(it, sourceName) {
+                var titleEl = it.getElementsByTagName('title')[0];
+                var linkEl  = it.getElementsByTagName('link')[0];
+                var guidEl  = it.getElementsByTagName('guid')[0];
+                var pubEl   = it.getElementsByTagName('pubDate')[0];
+                var srcEl2  = it.getElementsByTagName('source')[0];
+                var descEl  = it.getElementsByTagName('description')[0];
+                var link = '';
+                if (linkEl) {
+                    link = linkEl.textContent.trim();
+                    if (!link) {
+                        var nx = linkEl.nextSibling;
+                        if (nx && nx.nodeType === 3) link = nx.nodeValue.trim();
+                    }
+                }
+                if (!link && guidEl) link = guidEl.textContent.trim();
+                return {
+                    title:       titleEl ? titleEl.textContent.trim() : '',
+                    url:         link,
+                    source:      srcEl2  ? srcEl2.textContent.trim() : (sourceName || ''),
+                    publishedAt: pubEl   ? pubEl.textContent.trim()  : '',
+                    description: descEl  ? descEl.textContent.replace(/<[^>]+>/g, '').trim() : ''
+                };
+            }
+
+            async function _nsSearchKorean(q, box, tok) {
+                var srcEl = document.getElementById('nsKorSrc');
+                function stale() { return _nsToken !== tok; }
+
+                // 금융 키워드 자동 조합
                 var finWords = ['주식','증권','금융','투자','환율','채권','펀드',
                                 'ETF','코스피','코스닥','나스닥','금리'];
                 var alreadyFin = finWords.some(function(k){ return q.includes(k); });
                 var optQ = alreadyFin ? q : (q + ' 주식 증권');
 
-                // ── RSS XML 파싱 헬퍼 (CORS 프록시 2개 순차 시도) ─────────────
-                async function _fetchRssXml(rssUrl, timeoutMs) {
-                    var proxies = [
-                        'https://corsproxy.io/?' + encodeURIComponent(rssUrl),
-                        'https://api.allorigins.win/raw?url=' + encodeURIComponent(rssUrl)
+                // ── 1순위: Naver News API (corsproxy → allorigins fallback) ──
+                if (NS_NAVER_ID && NS_NAVER_SECRET) {
+                    var naverApiUrl = 'https://openapi.naver.com/v1/search/news.json?query=' +
+                        encodeURIComponent(optQ) + '&display=5&sort=date';
+                    var naverProxies = [
+                        'https://corsproxy.io/?' + encodeURIComponent(naverApiUrl),
+                        'https://api.allorigins.win/raw?url=' + encodeURIComponent(naverApiUrl)
                     ];
-                    for (var pi = 0; pi < proxies.length; pi++) {
+                    for (var ni = 0; ni < naverProxies.length; ni++) {
                         try {
-                            var ctrl = new AbortController();
-                            var timer = setTimeout(function(){ ctrl.abort(); }, timeoutMs || 7000);
-                            var res = await fetch(proxies[pi], { signal: ctrl.signal, cache: 'no-store' });
-                            clearTimeout(timer);
-                            if (!res.ok) continue;
-                            var text = await res.text();
-                            if (!text || text.trim().length < 50) continue;
-                            var doc = new DOMParser().parseFromString(text, 'text/xml');
-                            var parseErr = doc.querySelector('parsererror');
-                            if (parseErr) continue;
-                            return doc;
+                            var ctrlN = new AbortController();
+                            setTimeout(function(){ ctrlN.abort(); }, 9000);
+                            var resN = await fetch(naverProxies[ni], {
+                                signal: ctrlN.signal,
+                                headers: {
+                                    'X-Naver-Client-Id':     NS_NAVER_ID,
+                                    'X-Naver-Client-Secret': NS_NAVER_SECRET
+                                }
+                            });
+                            var jsonN = await resN.json();
+                            if (jsonN.items && jsonN.items.length) {
+                                if (stale()) return;
+                                _nsRender(jsonN.items.slice(0,5).map(function(a) {
+                                    return {
+                                        title:       a.title.replace(/<[^>]+>/g,''),
+                                        url:         a.originallink || a.link,
+                                        source:      '네이버뉴스',
+                                        publishedAt: a.pubDate,
+                                        description: a.description ? a.description.replace(/<[^>]+>/g,'') : ''
+                                    };
+                                }), box, 'kor');
+                                if (srcEl) srcEl.textContent = '📡 출처: 네이버 뉴스 API';
+                                return;
+                            }
+                            break; // 응답 왔으나 결과 없음 → 다음 소스
                         } catch(e) { continue; }
                     }
-                    return null;
                 }
 
-                // ── RSS item → 기사 객체 변환 ───────────────────────────────
-                function _rssItemToArt(it, sourceName) {
-                    var titleEl = it.getElementsByTagName('title')[0];
-                    var linkEl  = it.getElementsByTagName('link')[0];
-                    var guidEl  = it.getElementsByTagName('guid')[0];
-                    var pubEl   = it.getElementsByTagName('pubDate')[0];
-                    var srcEl2  = it.getElementsByTagName('source')[0];
-                    var descEl  = it.getElementsByTagName('description')[0];
-                    var link = '';
-                    if (linkEl) {
-                        link = linkEl.textContent.trim();
-                        if (!link) {
-                            var nx = linkEl.nextSibling;
-                            if (nx && nx.nodeType === 3) link = nx.nodeValue.trim();
-                        }
-                    }
-                    if (!link && guidEl) link = guidEl.textContent.trim();
-                    return {
-                        title:       titleEl ? titleEl.textContent.trim() : '',
-                        url:         link,
-                        source:      srcEl2 ? srcEl2.textContent.trim() : (sourceName || ''),
-                        publishedAt: pubEl  ? pubEl.textContent.trim()  : '',
-                        description: descEl ? descEl.textContent.replace(/<[^>]+>/g,'').trim() : ''
-                    };
-                }
-
-                // ── 1순위: Naver News API (corsproxy.io로 헤더 전달) ─────────
-                // 네이버 뉴스: 국내 언론사 최다 커버, 제목+요약+원본링크 제공
-                // corsproxy.io는 요청 헤더를 타겟 서버로 그대로 전달
-                if (NS_NAVER_ID && NS_NAVER_SECRET) {
-                    try {
-                        var naverApiUrl = 'https://openapi.naver.com/v1/search/news.json?query=' +
-                            encodeURIComponent(optQ) + '&display=5&sort=date';
-                        var naverProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(naverApiUrl);
-                        var ctrlN = new AbortController();
-                        setTimeout(function(){ ctrlN.abort(); }, 9000);
-                        var resN = await fetch(naverProxyUrl, {
-                            signal: ctrlN.signal,
-                            headers: {
-                                'X-Naver-Client-Id':     NS_NAVER_ID,
-                                'X-Naver-Client-Secret': NS_NAVER_SECRET
-                            }
-                        });
-                        var jsonN = await resN.json();
-                        if (jsonN.items && jsonN.items.length) {
-                            _nsRender(jsonN.items.slice(0,5).map(function(a) {
-                                return {
-                                    title:       a.title.replace(/<[^>]+>/g,''),
-                                    url:         a.originallink || a.link,
-                                    source:      '네이버뉴스',
-                                    publishedAt: a.pubDate,
-                                    description: a.description ? a.description.replace(/<[^>]+>/g,'') : ''
-                                };
-                            }), box, 'kor');
-                            if (srcEl) srcEl.textContent = '📡 출처: 네이버 뉴스 API';
-                            return;
-                        }
-                    } catch(e) { console.log('Naver API 실패', e); }
-                }
-
-                // ── 2순위: Google News RSS 한국어 검색 (CORS 프록시) ──────────
+                // ── 2순위: Google News RSS (rss2json.com — CORS 없이 안정적) ─
                 var gnRssUrl = 'https://news.google.com/rss/search?q=' +
                     encodeURIComponent(optQ) + '&hl=ko&gl=KR&ceid=KR:ko';
+                var r2jGN = await _rss2json(gnRssUrl, 6, 8000);
+                if (r2jGN && r2jGN.status === 'ok' && r2jGN.items && r2jGN.items.length) {
+                    var artsR2J = r2jGN.items.slice(0, 5).map(function(it) {
+                        return _r2jToArt(it, '구글뉴스');
+                    }).filter(function(a) { return a.title && a.url; });
+                    if (artsR2J.length > 0) {
+                        if (stale()) return;
+                        _nsRender(artsR2J.slice(0, 3), box, 'kor');
+                        if (srcEl) srcEl.textContent = '📡 출처: Google 뉴스 (한국어)';
+                        return;
+                    }
+                }
+
+                // ── 3순위: Google News RSS (CORS 프록시 3개 fallback) ─────────
                 var docGN = await _fetchRssXml(gnRssUrl, 9000);
                 if (docGN) {
                     var itemsGN = Array.from(docGN.getElementsByTagName('item'));
-                    var artsGN = itemsGN.slice(0, 6).map(function(it) {
-                        return _rssItemToArt(it, '구글뉴스');
+                    var artsGN  = itemsGN.slice(0, 6).map(function(it) {
+                        return _xmlItemToArt(it, '구글뉴스');
                     }).filter(function(a) { return a.title && a.url; });
                     if (artsGN.length > 0) {
+                        if (stale()) return;
                         _nsRender(artsGN.slice(0, 3), box, 'kor');
                         if (srcEl) srcEl.textContent = '📡 출처: Google 뉴스 (한국어)';
                         return;
                     }
                 }
 
-                // ── 3순위: GNews API lang=ko ──────────────────────────────────
+                // ── 4순위: GNews API lang=ko ──────────────────────────────────
                 if (NS_GNEWS_KEY) {
                     try {
                         var gUrl = 'https://gnews.io/api/v4/search?' + [
@@ -3509,6 +3578,7 @@ var ECON_DATA = {
                         var res0  = await fetch(gUrl, { signal: ctrl0.signal });
                         var json0 = await res0.json();
                         if (json0.articles && json0.articles.length) {
+                            if (stale()) return;
                             _nsRender(json0.articles.slice(0,3).map(function(a) {
                                 return { title: a.title, url: a.url,
                                          source: a.source ? a.source.name : 'GNews',
@@ -3521,7 +3591,7 @@ var ECON_DATA = {
                     } catch(e) { console.log('GNews KO 실패', e); }
                 }
 
-                // ── 4순위: 국내 언론사 RSS 직접 파싱 (CORS 프록시) ──────────
+                // ── 5순위: 국내 언론사 RSS (rss2json 우선, CORS 프록시 fallback) ─
                 var korFeeds = [
                     { url: 'https://www.mk.co.kr/rss/30200030/', name: '매일경제 국제' },
                     { url: 'https://www.mk.co.kr/rss/40300001/', name: '매일경제 증권' },
@@ -3534,18 +3604,22 @@ var ECON_DATA = {
                     { url: 'https://www.hankyung.com/feed/finance',        name: '한국경제 증권' }
                 ];
                 var qLow = q.toLowerCase();
-                var feedDocs = await Promise.all(korFeeds.map(function(feed) {
-                    return _fetchRssXml(feed.url, 7000).then(function(doc) {
-                        return { doc: doc, name: feed.name };
+                var feedResults = await Promise.all(korFeeds.map(function(feed) {
+                    return _rss2json(feed.url, 50, 7000).then(function(r2j) {
+                        if (r2j && r2j.status === 'ok' && r2j.items && r2j.items.length) {
+                            return { items: r2j.items.map(function(it) { return _r2jToArt(it, feed.name); }) };
+                        }
+                        return _fetchRssXml(feed.url, 7000).then(function(doc) {
+                            if (!doc) return { items: [] };
+                            return { items: Array.from(doc.getElementsByTagName('item')).slice(0, 50)
+                                .map(function(it) { return _xmlItemToArt(it, feed.name); }) };
+                        });
                     });
                 }));
                 var allFiltered = [];
                 var seen = {};
-                feedDocs.forEach(function(r) {
-                    if (!r.doc) return;
-                    var items = Array.from(r.doc.getElementsByTagName('item')).slice(0, 50);
-                    items.forEach(function(it) {
-                        var art = _rssItemToArt(it, r.name);
+                feedResults.forEach(function(r) {
+                    (r.items || []).forEach(function(art) {
                         if (art.title && art.url && art.title.toLowerCase().includes(qLow) && !seen[art.url]) {
                             seen[art.url] = true;
                             allFiltered.push(art);
@@ -3553,84 +3627,58 @@ var ECON_DATA = {
                     });
                 });
                 if (allFiltered.length > 0) {
-                    allFiltered.sort(function(a,b) {
-                        return new Date(b.publishedAt) - new Date(a.publishedAt);
-                    });
+                    allFiltered.sort(function(a,b) { return new Date(b.publishedAt) - new Date(a.publishedAt); });
+                    if (stale()) return;
                     _nsRender(allFiltered.slice(0,3), box, 'kor');
                     if (srcEl) srcEl.textContent = '📡 출처: 국내 RSS (매일경제·연합뉴스·한경)';
                     return;
                 }
 
+                if (stale()) return;
                 box.innerHTML = '<p class="ns-empty">😔 국내 뉴스 없음<br>' +
                     '<span style="font-size:0.8em;color:#94a3b8;">더 일반적인 키워드로 시도해 보세요</span></p>';
                 if (srcEl) srcEl.textContent = '';
             }
 
             // ════════════════════════════════════════════════════════════
-            // 해외 뉴스 검색 체인 (1→2→3 순서로 시도)
+            // 해외 뉴스 검색 체인 (1→2→3→4 순서로 시도)
             // ════════════════════════════════════════════════════════════
-            async function _nsSearchEnglish(q, box) {
+            async function _nsSearchEnglish(q, box, tok) {
                 var srcEl = document.getElementById('nsEngSrc');
+                function stale() { return _nsToken !== tok; }
 
-                // ── CORS 프록시 RSS XML 파싱 헬퍼 ───────────────────────────
-                async function _fetchRssXmlEng(rssUrl, timeoutMs) {
-                    var proxies = [
-                        'https://corsproxy.io/?' + encodeURIComponent(rssUrl),
-                        'https://api.allorigins.win/raw?url=' + encodeURIComponent(rssUrl)
-                    ];
-                    for (var pi = 0; pi < proxies.length; pi++) {
-                        try {
-                            var ctrl = new AbortController();
-                            var timer = setTimeout(function(){ ctrl.abort(); }, timeoutMs || 7000);
-                            var res = await fetch(proxies[pi], { signal: ctrl.signal, cache: 'no-store' });
-                            clearTimeout(timer);
-                            if (!res.ok) continue;
-                            var text = await res.text();
-                            if (!text || text.trim().length < 50) continue;
-                            var doc = new DOMParser().parseFromString(text, 'text/xml');
-                            if (doc.querySelector('parsererror')) continue;
-                            return doc;
-                        } catch(e) { continue; }
-                    }
-                    return null;
-                }
-
-                function _rssEngItemToArt(it) {
-                    var titleEl = it.getElementsByTagName('title')[0];
-                    var linkEl  = it.getElementsByTagName('link')[0];
-                    var guidEl  = it.getElementsByTagName('guid')[0];
-                    var pubEl   = it.getElementsByTagName('pubDate')[0];
-                    var srcEl2  = it.getElementsByTagName('source')[0];
-                    var link = linkEl ? linkEl.textContent.trim() : '';
-                    if (!link && linkEl) {
-                        var nx = linkEl.nextSibling;
-                        if (nx && nx.nodeType === 3) link = nx.nodeValue.trim();
-                    }
-                    if (!link && guidEl) link = guidEl.textContent.trim();
-                    return {
-                        title:       titleEl ? titleEl.textContent.trim() : '',
-                        url:         link,
-                        source:      srcEl2  ? srcEl2.textContent.trim() : 'Google News',
-                        publishedAt: pubEl   ? pubEl.textContent.trim()  : ''
-                    };
-                }
-
-                // 1순위: Google News RSS (영어) — API키 불필요, 키워드 검색 지원
+                // ── 1순위: Google News RSS (rss2json.com — CORS 없이 안정적) ─
                 var gnEngUrl = 'https://news.google.com/rss/search?q=' +
                     encodeURIComponent(q + ' finance stock') + '&hl=en-US&gl=US&ceid=US:en';
-                var docEng = await _fetchRssXmlEng(gnEngUrl, 9000);
+                var r2jEng = await _rss2json(gnEngUrl, 6, 8000);
+                if (r2jEng && r2jEng.status === 'ok' && r2jEng.items && r2jEng.items.length) {
+                    var artsR2J = r2jEng.items.slice(0, 5).map(function(it) {
+                        return _r2jToArt(it, 'Google News');
+                    }).filter(function(a) { return a.title && a.url; });
+                    if (artsR2J.length > 0) {
+                        if (stale()) return;
+                        _nsRender(artsR2J.slice(0, 3), box, 'eng');
+                        if (srcEl) srcEl.textContent = '📡 출처: Google 뉴스 (영어)';
+                        return;
+                    }
+                }
+
+                // ── 2순위: Google News RSS (CORS 프록시 3개 fallback) ─────────
+                var docEng = await _fetchRssXml(gnEngUrl, 9000);
                 if (docEng) {
                     var gnItems = Array.from(docEng.getElementsByTagName('item'));
-                    var gnArts  = gnItems.slice(0, 6).map(_rssEngItemToArt)
-                                         .filter(function(a) { return a.title && a.url; });
+                    var gnArts  = gnItems.slice(0, 6).map(function(it) {
+                        return _xmlItemToArt(it, 'Google News');
+                    }).filter(function(a) { return a.title && a.url; });
                     if (gnArts.length > 0) {
+                        if (stale()) return;
                         _nsRender(gnArts.slice(0, 3), box, 'eng');
                         if (srcEl) srcEl.textContent = '📡 출처: Google 뉴스 (영어)';
                         return;
                     }
                 }
 
-                // 2순위: GNews API (키 있을 때)
+                // ── 3순위: GNews API (키 있을 때) ─────────────────────────────
                 if (NS_GNEWS_KEY) {
                     try {
                         var ctrl2 = new AbortController();
@@ -3644,6 +3692,7 @@ var ECON_DATA = {
                         var resG = await fetch(gUrl, { signal: ctrl2.signal });
                         var jsonG = await resG.json();
                         if (jsonG.articles && jsonG.articles.length) {
+                            if (stale()) return;
                             _nsRender(jsonG.articles.slice(0,3).map(function(a) {
                                 return { title: a.title, url: a.url,
                                          source: a.source ? a.source.name : 'GNews',
@@ -3655,7 +3704,7 @@ var ECON_DATA = {
                     } catch(e) { console.log('GNews 실패', e); }
                 }
 
-                // 3순위: The Guardian (무료 test 키, CORS 지원)
+                // ── 4순위: The Guardian (무료 test 키, CORS 지원) ─────────────
                 try {
                     var ctrl3 = new AbortController();
                     setTimeout(function(){ ctrl3.abort(); }, 8000);
@@ -3667,6 +3716,7 @@ var ECON_DATA = {
                     var jsonGrd = await resGrd.json();
                     var grdItems = jsonGrd.response && jsonGrd.response.results;
                     if (grdItems && grdItems.length) {
+                        if (stale()) return;
                         _nsRender(grdItems.slice(0,3).map(function(a) {
                             return { title: a.webTitle, url: a.webUrl,
                                      source: 'The Guardian', publishedAt: a.webPublicationDate };
@@ -3676,6 +3726,7 @@ var ECON_DATA = {
                     }
                 } catch(e) { console.log('Guardian 실패', e); }
 
+                if (stale()) return;
                 box.innerHTML = '<p class="ns-empty">😔 해외 뉴스 없음<br>다른 키워드로 시도해 보세요</p>';
                 if (srcEl) srcEl.textContent = '';
             }
