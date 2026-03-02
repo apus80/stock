@@ -1314,7 +1314,7 @@ def update_index_html(data):
                                 <span class="date-badge">{data['date']} ({data['weekday']})</span>
                                 <span style="font-size: 0.9rem; color: #94a3b8;">US Market Focus</span>
                                 <span id="leftCardUpdated" style="font-size:0.8rem;color:#94a3b8;margin-left:4px;">Updated: {data['news']['updated_time']} KST</span>
-                                <button onclick="location.reload()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.15)\';this.style.color=\'#f8fafc\'" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';this.style.color=\'#94a3b8\'">⟳ 새로고침</button>
+                                <button onclick="refreshLeftCard(this)" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.15)\';this.style.color=\'#f8fafc\'" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';this.style.color=\'#94a3b8\'">⟳ 새로고침</button>
                             </div>
                             <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">{data['market']['title']}</div>
                         </div>
@@ -1374,12 +1374,16 @@ def update_index_html(data):
         print("마커를 찾을 수 없습니다.")
         return
 
-    # 왼쪽 카드: 아침/저녁 업데이트 or --force 시에만 갱신
+    # 왼쪽 카드: 아침/저녁 업데이트 or --force 시에만 갱신 (시간은 항상 갱신)
     left_html_to_use = left_card_content
     left_pattern = r'<!-- LEFT_CARD_START -->(.*?)<!-- LEFT_CARD_END -->'
     left_match = re.search(left_pattern, content, re.DOTALL)
     if left_match and not data['is_morning_update'] and '--force' not in sys.argv:
-        left_html_to_use = left_match.group(1).strip()
+        left_html_to_use = re.sub(
+            r'(<span id="leftCardUpdated"[^>]*>)[^<]*(</span>)',
+            rf'\g<1>Updated: {data["news"]["updated_time"]} KST\g<2>',
+            left_match.group(1).strip()
+        )
 
     new_card_html = f'''
             <div id="marketNewsCardArea">

@@ -2007,7 +2007,7 @@ var ECON_DATA = {
                                 <span class="date-badge">2026.03.02 (월)</span>
                                 <span style="font-size: 0.9rem; color: #94a3b8;">US Market Focus</span>
                                 <span id="leftCardUpdated" style="font-size:0.8rem;color:#94a3b8;margin-left:4px;">Updated: 07:43 KST</span>
-                                <button onclick="location.reload()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button>
+                                <button onclick="refreshLeftCard(this)" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button>
                             </div>
                             <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">실시간 시장 지표 & 섹터 현황 📊</div>
                         </div>
@@ -3769,6 +3769,24 @@ var ECON_DATA = {
             }
 
             // 프리진경제 섹션 실시간 fetch (allorigins.win CORS 프록시)
+            // 왼쪽 카드 새로고침: 전체 페이지 리로드 없이 left-card-column만 교체
+            function refreshLeftCard(btn) {
+                var orig = btn ? btn.textContent : '';
+                if (btn) { btn.textContent = '⟳ ...'; btn.disabled = true; }
+                fetch(window.location.href.split('?')[0] + '?_=' + Date.now())
+                    .then(function(r) { return r.text(); })
+                    .then(function(html) {
+                        var doc = new DOMParser().parseFromString(html, 'text/html');
+                        var newCol = doc.getElementById('left-card-column');
+                        var curCol = document.getElementById('left-card-column');
+                        if (newCol && curCol) curCol.innerHTML = newCol.innerHTML;
+                    })
+                    .catch(function() {})
+                    .finally(function() {
+                        if (btn) { btn.textContent = orig; btn.disabled = false; }
+                    });
+            }
+
             // 새로고침 버튼 핸들러 (MK 갱신)
             function refreshRightCard() {
                 var sel = document.getElementById('mk-cat-sel');
