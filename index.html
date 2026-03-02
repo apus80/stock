@@ -405,6 +405,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
+            padding-top: 10px;
             margin-top: 14px;
         }
         .ns-col-header {
@@ -572,7 +573,35 @@
             border-left: 4px solid var(--primary);
             font-size: 0.95em;
             line-height: 1.6;
+            position: relative;
         }
+
+        /* ── 결과 닫기 버튼 ── */
+        .result-close-btn {
+            position: absolute;
+            top: 10px; right: 12px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.18s;
+            z-index: 10;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .result-close-btn:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #fff;
+            transform: scale(1.12);
+            box-shadow: 0 3px 10px rgba(239,68,68,0.35);
+        }
+        #nsContainer { position: relative; }
 
         .update-note {
             margin-top: 10px;
@@ -593,8 +622,8 @@
             border-left: 5px solid #10b981;
         }
         .company-search h3 { color: var(--primary-dark); margin-bottom: 15px; font-size: 1.2em; font-weight: 700; }
-        .co-card { background: #f8faff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-top: 12px; }
-        .co-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .co-card { background: #f8faff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-top: 12px; position: relative; }
+        .co-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; padding-right: 50px; }
         .co-logo { width: 42px; height: 42px; border-radius: 8px; object-fit: contain; background: #fff; border: 1px solid #e2e8f0; padding: 3px; }
         .co-name { font-size: 1.08rem; font-weight: 700; color: #1e293b; }
         .co-ticker { background: #3b82f6; color: #fff; font-size: 0.76rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; margin-right: 4px; }
@@ -757,7 +786,8 @@
         .result-company {
             font-weight: 700;
             color: #495057;
-            margin-bottom: 5px
+            margin-bottom: 5px;
+            padding-right: 50px;  /* 닫기 버튼 공간 확보 */
         }
 
         .result-date {
@@ -1636,6 +1666,8 @@ var ECON_DATA = {
                     🌐 한글 입력 → 영어 번역 후 해외 뉴스 검색 &nbsp;|&nbsp; 영어 입력 → 한글 번역 후 국내 뉴스 검색 &nbsp;(국내·해외 동시)
                 </p>
                 <div id="nsContainer" style="display:none;">
+                    <button class="result-close-btn" title="닫기"
+                        onclick="document.getElementById('nsContainer').style.display='none';">✕</button>
                     <div class="ns-columns">
                         <div class="ns-col">
                             <div class="ns-col-header">🇰🇷 국내 뉴스</div>
@@ -2934,6 +2966,7 @@ var ECON_DATA = {
 
                     resultDiv.innerHTML =
                         '<div class="co-card">' +
+                            '<button class="result-close-btn" title="닫기" onclick="document.getElementById(\'companyResult\').innerHTML=\'\'">✕</button>' +
                             '<div class="co-header">' +
                                 logoHtml +
                                 '<div>' +
@@ -3048,6 +3081,7 @@ var ECON_DATA = {
 
                     resultDiv.innerHTML =
                         '<div class="search-result">' +
+                        '<button class="result-close-btn" title="닫기" onclick="document.getElementById(\'earningsResult\').innerHTML=\'\'">✕</button>' +
                         '<div class="result-company">' + companyName + ' (' + ticker + ')</div>' +
                         '<div class="result-date">📅 다음 실적 발표: ' + dateDisplay + '</div>' +
                         '<div class="result-info">' +
