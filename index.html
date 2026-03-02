@@ -520,7 +520,7 @@
         .econ-card { background:#f8faff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px 10px; cursor:pointer; transition:all 0.18s; }
         .econ-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.09); border-color:#93c5fd; background:#eff6ff; }
         .econ-card-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
-        .econ-card-lbl { font-size:0.67em; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
+        .econ-card-lbl { font-size:1.34em; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
         .econ-card-ico { font-size:1.05em; }
         .econ-card-val { font-size:1.26em; font-weight:800; color:#0f172a; line-height:1.1; margin:3px 0; }
         .econ-card-chg { font-size:0.7em; font-weight:600; }
@@ -1852,35 +1852,81 @@ var ECON_DATA = {
                         <p style="font-size:0.82rem; font-weight:700; color:#475569; margin:0 0 10px; display:flex; align-items:center; gap:6px;">
                             📈 선물 시장 실시간
                             <span style="font-size:0.7rem; font-weight:400; color:#94a3b8;">S&P500 · Nasdaq · Dow · Russell · VIX · 국채</span>
+                            <span id="futuresLastUpdate" style="font-size:0.68rem;color:#94a3b8;margin-left:auto;"></span>
                         </p>
-                        <div class="tradingview-widget-container" style="height:370px;">
-                            <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
-                                    {
-                                        "width": "100%",
-                                        "height": 370,
-                                        "symbolsGroups": [
-                                            {
-                                                "name": "주요 선물",
-                                                "symbols": [
-                                                    {"name": "CME_MINI:ES1!", "displayName": "S&P 500 선물"},
-                                                    {"name": "CME_MINI:NQ1!", "displayName": "Nasdaq-100 선물"},
-                                                    {"name": "CBOT_MINI:YM1!", "displayName": "다우 선물"},
-                                                    {"name": "CME_MINI:RTY1!", "displayName": "Russell 2000 선물"},
-                                                    {"name": "CBOE:VX1!", "displayName": "VIX 선물"},
-                                                    {"name": "CBOT:ZN1!", "displayName": "국채 10Y 선물"},
-                                                    {"name": "CBOT:ZT1!", "displayName": "국채 2Y 선물"}
-                                                ]
-                                            }
-                                        ],
-                                        "showSymbolLogo": true,
-                                        "isTransparent": true,
-                                        "colorTheme": "light",
-                                        "locale": "ko"
-                                    }
-                            </script>
+                        <div id="futuresTable" style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;">
+                            <div style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:20px;">로딩 중...</div>
                         </div>
+                        <script>
+                        (function(){
+                            var FUTURES=[
+                                {sym:'ES=F',  name:'S&P 500 선물',      dec:2},
+                                {sym:'NQ=F',  name:'Nasdaq-100 선물',   dec:2},
+                                {sym:'YM=F',  name:'다우 선물',          dec:0},
+                                {sym:'RTY=F', name:'Russell 2000 선물', dec:2},
+                                {sym:'^VIX',  name:'VIX 공포지수',       dec:2},
+                                {sym:'ZN=F',  name:'10Y 국채 선물',     dec:3},
+                                {sym:'ZT=F',  name:'2Y 국채 선물',      dec:3}
+                            ];
+                            var syms=FUTURES.map(function(f){return f.sym;}).join(',');
+                            var BASE='https://query1.finance.yahoo.com/v7/finance/quote?lang=ko&symbols='+encodeURIComponent(syms);
+                            var PROXIES=[
+                                'https://corsproxy.io/?'+encodeURIComponent(BASE),
+                                'https://api.allorigins.win/raw?url='+encodeURIComponent(BASE)
+                            ];
+                            function fetchFallback(urls,i){
+                                if(i>=urls.length) return Promise.reject(new Error('fail'));
+                                return fetch(urls[i]).then(function(r){
+                                    if(!r.ok) throw new Error(r.status);
+                                    return r.json();
+                                }).catch(function(){return fetchFallback(urls,i+1);});
+                            }
+                            function fmt(v,d){
+                                if(v==null||isNaN(v)) return '-';
+                                var abs=Math.abs(v).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+                                return (v<0?'-':'')+abs;
+                            }
+                            function render(data){
+                                var quotes=(data.quoteResponse&&data.quoteResponse.result)||[];
+                                var map={};
+                                quotes.forEach(function(q){map[q.symbol]=q;});
+                                var html='<div style="display:flex;background:#f8fafc;padding:4px 8px;border-bottom:1px solid #e2e8f0;font-size:0.7rem;color:#94a3b8;font-weight:600;">'+
+                                    '<span style="flex:1;">종목</span>'+
+                                    '<span style="width:84px;text-align:right;">현재가</span>'+
+                                    '<span style="width:72px;text-align:right;">변동</span>'+
+                                    '<span style="width:68px;text-align:right;">등락률</span>'+
+                                    '</div>';
+                                FUTURES.forEach(function(f){
+                                    var q=map[f.sym]||{};
+                                    var p=q.regularMarketPrice;
+                                    var c=q.regularMarketChange;
+                                    var pct=q.regularMarketChangePercent;
+                                    var col=(c>0)?'#16a34a':(c<0)?'#dc2626':'#64748b';
+                                    var bg=(c>0)?'rgba(22,163,74,0.04)':(c<0)?'rgba(220,38,38,0.04)':'';
+                                    var sign=(c>0)?'+':'';
+                                    var arrow=(c>0)?'▲':(c<0)?'▼':'';
+                                    html+='<div style="display:flex;align-items:center;padding:6px 8px;border-bottom:1px solid #f1f5f9;font-size:0.78rem;background:'+bg+';">'+
+                                        '<span style="flex:1;font-weight:600;color:#334155;">'+f.name+'</span>'+
+                                        '<span style="width:84px;text-align:right;font-weight:700;color:#1e293b;">'+(p!=null?fmt(p,f.dec):'-')+'</span>'+
+                                        '<span style="width:72px;text-align:right;color:'+col+';">'+(c!=null?arrow+' '+fmt(Math.abs(c),f.dec):'-')+'</span>'+
+                                        '<span style="width:68px;text-align:right;font-weight:600;color:'+col+';">'+(pct!=null?sign+pct.toFixed(2)+'%':'-')+'</span>'+
+                                        '</div>';
+                                });
+                                document.getElementById('futuresTable').innerHTML=html;
+                                var now=new Date();
+                                var ts=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+                                var el=document.getElementById('futuresLastUpdate');
+                                if(el) el.textContent='갱신: '+ts+' (60초마다 자동)';
+                            }
+                            function load(){
+                                fetchFallback(PROXIES,0).then(render).catch(function(){
+                                    document.getElementById('futuresTable').innerHTML='<p style="font-size:0.75rem;color:#94a3b8;text-align:center;padding:16px;">데이터 로드 실패. 60초 후 자동 재시도합니다.</p>';
+                                });
+                            }
+                            load();
+                            setInterval(load,60000);
+                        })();
+                        </script>
                     </div>
                 </div>
 
