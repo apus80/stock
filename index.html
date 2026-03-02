@@ -3846,12 +3846,12 @@ var ECON_DATA = {
             }
         })();
 
-        // ── 방문자 카운터 (countapi.xyz) ──────────────────────────────────
+        // ── 방문자 카운터 (counterapi.dev) ──────────────────────────────────
         (function() {
             var ns = 'investflow-apus80';
             var today = new Date().toISOString().split('T')[0].replace(/-/g, '');
-            // 같은 세션에서 중복 카운트 방지
             var counted = sessionStorage.getItem('vc_counted');
+            var BASE = 'https://api.counterapi.dev/v1/' + ns + '/';
 
             function fmt(n) {
                 return Number(n).toLocaleString('ko-KR');
@@ -3868,18 +3868,18 @@ var ECON_DATA = {
                 // 최초 방문: 두 카운터 모두 증가
                 sessionStorage.setItem('vc_counted', '1');
                 Promise.all([
-                    fetch('https://api.countapi.xyz/hit/' + ns + '/total').then(function(r){ return r.json(); }),
-                    fetch('https://api.countapi.xyz/hit/' + ns + '/day-' + today).then(function(r){ return r.json(); })
+                    fetch(BASE + 'total/up').then(function(r){ return r.json(); }),
+                    fetch(BASE + 'day-' + today + '/up').then(function(r){ return r.json(); })
                 ]).then(function(results) {
-                    updateDisplay(results[1].value, results[0].value);
+                    updateDisplay(results[1].count, results[0].count);
                 }).catch(function() {});
             } else {
                 // 재방문(같은 세션): 증가 없이 조회만
                 Promise.all([
-                    fetch('https://api.countapi.xyz/get/' + ns + '/total').then(function(r){ return r.json(); }),
-                    fetch('https://api.countapi.xyz/get/' + ns + '/day-' + today).then(function(r){ return r.json(); })
+                    fetch(BASE + 'total').then(function(r){ return r.json(); }),
+                    fetch(BASE + 'day-' + today).then(function(r){ return r.json(); })
                 ]).then(function(results) {
-                    updateDisplay(results[1].value, results[0].value);
+                    updateDisplay(results[1].count, results[0].count);
                 }).catch(function() {});
             }
         })();
