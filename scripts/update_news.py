@@ -981,10 +981,16 @@ def build_volatility_card_html(vm, updated_time):
     pcr_date_str = vm['pcr_date'] or ''
 
     return f"""            <div class="vol-macro-card">
-                <div class="vol-macro-header">
-                    <span class="vol-macro-title">📊 시장 심리 &amp; 매크로 현황</span>
-                    <span style="font-size:0.7rem;color:#475569;">Updated: {updated_time} KST · 매시 자동갱신 · CBOE / FRED / yfinance</span>
+                <div class="vol-macro-header" onclick="toggleVolMacro()">
+                    <span class="vol-macro-title">📊 시장 심리 &amp; 매크로 현황
+                        <span style="font-size:0.63em;color:#64748b;font-weight:400;margin-left:6px;">아래 경제지표 대시보드와 일부 중복 · 상세 확인 시 펼치기</span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:0.7rem;color:#475569;">Updated: {updated_time} KST · 매시 자동갱신 · CBOE / FRED / yfinance</span>
+                        <button class="vol-acc-btn" id="volAccBtn" onclick="event.stopPropagation();toggleVolMacro()">▾ 펼치기</button>
+                    </span>
                 </div>
+                <div class="vol-macro-body vm-closed" id="volMacroBody">
                 <div class="vol-macro-grid">
 
                     <!-- ① 변동성 & 공포 지표 -->
@@ -1087,6 +1093,7 @@ def build_volatility_card_html(vm, updated_time):
                         </div>
                     </div>
 
+                </div>
                 </div>
             </div>"""
 
