@@ -1553,11 +1553,6 @@
         #viewToggleBtn:hover { background: rgba(102,126,234,1); transform: scale(1.05); }
         }
 
-        /* pwaInstallBtn는 viewToggleBtn 아래 */
-        #pwaInstallBtn {
-            top: 58px !important;
-        }
-
         /* ── .mobile-view 강제 모바일 레이아웃 ────────────────────── */
         body.mobile-view { padding: 0 !important; }
         body.mobile-view .container { border-radius: 0 !important; }
@@ -1565,7 +1560,7 @@
         body.mobile-view .header h1 { font-size: 1.5em !important; }
         body.mobile-view .header p { font-size: 0.9em !important; }
         body.mobile-view #visitorCounter { top: 12px; right: 12px; font-size: 0.68em; }
-        body.mobile-view #pwaInstallBtn { top: 46px !important; }
+        body.mobile-view #pwaInstallBtn { top: 20px !important; left: 20px !important; }
         body.mobile-view .grid-dashboard { grid-template-columns: 1fr !important; padding: 10px !important; }
         body.mobile-view .grid-top-row,
         body.mobile-view .grid-bottom-row { grid-template-columns: 1fr !important; }
@@ -1590,15 +1585,16 @@
 </head>
 
 <body>
+    <!-- 뷰 토글 버튼 (body 직속, container 밖에 위치해야 fixed가 정상 동작) -->
+    <button id="viewToggleBtn" onclick="toggleViewMode()" title="모바일/데스크탑 화면 전환">
+        📱 모바일
+    </button>
+
     <!-- 메인 컨텐츠 -->
     <div id="mainContent" class="main-content">
         <div class="container">
             <div class="header">
-                <!-- 모바일 ↔ 데스크탑 뷰 토글 (좌측 상단) -->
-                <button id="viewToggleBtn" onclick="toggleViewMode()" title="모바일/데스크탑 화면 전환">
-                    📱 모바일
-                </button>
-                <!-- PWA 홈 화면 추가 버튼 (좌측 상단, 토글 아래) -->
+                <!-- PWA 홈 화면 추가 버튼 (좌측 상단) -->
                 <button id="pwaInstallBtn" onclick="pwaInstall()" title="홈 화면에 앱으로 추가">
                     📱 홈 화면에 추가
                 </button>
