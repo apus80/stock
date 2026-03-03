@@ -73,6 +73,8 @@
             padding: 20px;
             color: var(--text-main);
             line-height: 1.6;
+            overscroll-behavior: none;       /* 스크롤 체이닝 방지 */
+            -webkit-text-size-adjust: 100%;  /* iOS 폰트 크기 자동조정 방지 */
         }
 
         /* 공통 카드 스타일 */
@@ -84,11 +86,11 @@
             box-shadow: var(--shadow-main);
             border-left: 5px solid var(--primary);
             transition: transform 0.2s, box-shadow 0.2s;
-            will-change: transform;
         }
 
         @media (hover: hover) {
         .card:hover {
+            will-change: transform;
             transform: translateY(-2px);
             box-shadow: var(--shadow-float);
         }
@@ -267,11 +269,11 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            will-change: transform;
         }
 
         @media (hover: hover) {
         .category-section:hover {
+            will-change: transform;
             transform: translateY(-4px);
             box-shadow: var(--shadow-float);
             border-color: var(--primary);
@@ -508,7 +510,6 @@
             animation: ns-shimmer 1.3s infinite linear;
             animation-play-state: running;
             border-radius: 6px; margin-bottom: 10px; height: 66px;
-            will-change: background-position;
             contain: layout;
         }
         .ns-shimmer-paused .ns-skeleton { animation-play-state: paused; }
@@ -1554,8 +1555,14 @@
         }
 
         /* ── .mobile-view 강제 모바일 레이아웃 ────────────────────── */
-        body.mobile-view { padding: 0 !important; }
+        body.mobile-view { padding: 0 !important; overscroll-behavior: none; }
         body.mobile-view .container { border-radius: 0 !important; }
+        /* 모바일에서 카드/섹션 독립 렌더링 컨텍스트로 격리 → 스크롤 시 repaint 범위 축소 */
+        body.mobile-view .category-section,
+        body.mobile-view .card { contain: layout style; }
+        /* 모바일 터치 스크롤 힌트 */
+        body.mobile-view .controls,
+        body.mobile-view .grid-dashboard { touch-action: pan-y; }
         body.mobile-view .header { padding: 65px 15px 30px !important; }
         body.mobile-view .header h1 { font-size: 1.5em !important; }
         body.mobile-view .header p { font-size: 0.9em !important; }
@@ -1585,8 +1592,11 @@
 </head>
 
 <body>
-    <!-- 뷰 토글 버튼 (body 직속, container 밖에 위치해야 fixed가 정상 동작) -->
-    <button id="viewToggleBtn" onclick="toggleViewMode()" title="모바일/데스크탑 화면 전환">
+    <!-- 뷰 토글 버튼 (body 직속 + inline style로 CSS 우선순위 문제 완전 차단) -->
+    <button id="viewToggleBtn"
+        onclick="toggleViewMode()"
+        title="모바일/데스크탑 화면 전환"
+        style="position:fixed;top:12px;left:12px;z-index:2147483647;display:flex;align-items:center;gap:5px;padding:8px 15px;background:#667eea;border:2px solid rgba(255,255,255,0.7);color:#fff;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.35);-webkit-tap-highlight-color:transparent;">
         📱 모바일
     </button>
 
@@ -1931,8 +1941,8 @@ var ECON_DATA = {
                     <h3 class="section-title">📊 글로벌 시장 핵심 지표</h3>
                     <div class="tradingview-widget-container" style="height: 550px;">
                         <div class="tradingview-widget-container__widget"></div>
-                        <script type="text/javascript"
-                            src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                        <script type="text/x-tradingview"
+                            data-src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" >
                                 {
                                     "colorTheme": "light", "dateRange": "12M", "showChart": true, "locale": "ko", "width": "100%", "height": 550,
                                         "largeChartUrl": "", "isTransparent": false, "showSymbolLogo": true,
@@ -1952,9 +1962,9 @@ var ECON_DATA = {
                         <div class="quote-item">
                             <p class="quote-label">🇰🇷 실시간 원/달러 환율</p>
                             <div class="tradingview-widget-container" style="height: 100px;">
-                                <script type="text/javascript"
-                                    src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js"
-                                    async>
+                                <script type="text/x-tradingview"
+                                    data-src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js"
+                                    >
                                         { "symbol": "FX_IDC:USDKRW", "width": "100%", "colorTheme": "light", "isTransparent": true, "locale": "ko" }
                                     </script>
                             </div>
@@ -1984,8 +1994,8 @@ var ECON_DATA = {
                         <!-- 금 (Gold) — TVC:GOLD = 스팟 골드, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "TVC:GOLD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(255,179,0,1)", "underLineColor": "rgba(255,179,0,0.3)", "underLineBottomColor": "rgba(255,179,0,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -1993,8 +2003,8 @@ var ECON_DATA = {
                         <!-- 은 (Silver) — TVC:SILVER = 스팟 실버, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "TVC:SILVER", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(148,163,184,1)", "underLineColor": "rgba(148,163,184,0.3)", "underLineBottomColor": "rgba(148,163,184,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -2002,8 +2012,8 @@ var ECON_DATA = {
                         <!-- 비트코인 (Bitcoin) — BITSTAMP 거래소 심볼, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "BITSTAMP:BTCUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(247,147,26,1)", "underLineColor": "rgba(247,147,26,0.3)", "underLineBottomColor": "rgba(247,147,26,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -2011,8 +2021,8 @@ var ECON_DATA = {
                         <!-- 이더리움 (Ethereum) — BITSTAMP 거래소 심볼, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "BITSTAMP:ETHUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(98,126,234,1)", "underLineColor": "rgba(98,126,234,0.3)", "underLineBottomColor": "rgba(98,126,234,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -2020,8 +2030,8 @@ var ECON_DATA = {
                         <!-- BMNR (Bloomberg US MBS / Bond Market) -->
                         <div class="tradingview-widget-container" style="grid-column: 1 / -1;">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "BMNR", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(139,92,246,1)", "underLineColor": "rgba(139,92,246,0.3)", "underLineBottomColor": "rgba(139,92,246,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -2029,8 +2039,8 @@ var ECON_DATA = {
                         <!-- WTI 유가 (마지막, grid-column span으로 중앙 정렬) -->
                         <div class="tradingview-widget-container" style="grid-column: 1 / -1;">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "TVC:USOIL", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(76,175,80,1)", "underLineColor": "rgba(76,175,80,0.3)", "underLineBottomColor": "rgba(76,175,80,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -2047,8 +2057,8 @@ var ECON_DATA = {
                     <h3 class="section-title">🚀 실시간 섹터 주도주 (US)</h3>
                     <div class="tradingview-widget-container" style="height: 400px; width: 100%;">
                         <div class="tradingview-widget-container__widget"></div>
-                        <script type="text/javascript"
-                            src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+                        <script type="text/x-tradingview"
+                            data-src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" >
                                 {
                                     "width": "100%", "height": 400, "symbolsGroups": [
                                         {
@@ -2183,8 +2193,8 @@ var ECON_DATA = {
                 </p>
                 <div class="tradingview-widget-container" style="height: 600px;">
                     <div class="tradingview-widget-container__widget"></div>
-                    <script type="text/javascript"
-                        src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+                    <script type="text/x-tradingview"
+                        data-src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" >
                             {
                                 "colorTheme": "light", "isTransparent": false,
                                 "width": "100%", "height": 600, "locale": "ko",
@@ -4049,6 +4059,48 @@ var ECON_DATA = {
         }
     </script>
 
+    <!-- TradingView 위젯 Lazy-Init (모바일: IntersectionObserver, 데스크탑: 즉시 로드) -->
+    <script>
+    (function() {
+        function initWidget(scriptEl) {
+            if (scriptEl.dataset.tvInited) return;
+            scriptEl.dataset.tvInited = '1';
+            var newScript = document.createElement('script');
+            newScript.src = scriptEl.dataset.src;
+            newScript.textContent = scriptEl.textContent;
+            scriptEl.parentNode.appendChild(newScript);
+        }
+
+        var lazyScripts = document.querySelectorAll('script[type="text/x-tradingview"][data-src]');
+
+        if (!document.body.classList.contains('mobile-view')) {
+            // 데스크탑: 전체 즉시 초기화
+            lazyScripts.forEach(initWidget);
+        } else {
+            // 모바일: IntersectionObserver로 뷰포트 진입 시 초기화
+            if (!window.IntersectionObserver) {
+                lazyScripts.forEach(initWidget);
+                return;
+            }
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var container = entry.target;
+                        var s = container.querySelector('script[type="text/x-tradingview"][data-src]');
+                        if (s) initWidget(s);
+                        observer.unobserve(container);
+                    }
+                });
+            }, { rootMargin: '200px 0px' }); // 200px 미리 로드
+
+            lazyScripts.forEach(function(s) {
+                var container = s.closest('.tradingview-widget-container');
+                if (container) observer.observe(container);
+            });
+        }
+    })();
+    </script>
+
     <!-- 모바일↔데스크탑 뷰 토글 + PWA 자동 모바일 뷰 -->
     <script>
     (function() {
@@ -4094,6 +4146,18 @@ var ECON_DATA = {
             var isMobile = document.body.classList.toggle('mobile-view');
             localStorage.setItem(STORAGE_KEY, isMobile ? 'mobile' : 'desktop');
             syncBtn();
+            // 데스크탑으로 전환 시 아직 미초기화된 위젯 즉시 로드
+            if (!isMobile) {
+                document.querySelectorAll('script[type="text/x-tradingview"][data-src]').forEach(function(s) {
+                    if (!s.dataset.tvInited) {
+                        s.dataset.tvInited = '1';
+                        var ns = document.createElement('script');
+                        ns.src = s.dataset.src;
+                        ns.textContent = s.textContent;
+                        s.parentNode.appendChild(ns);
+                    }
+                });
+            }
         };
     })();
     </script>
