@@ -1530,26 +1530,27 @@
         /* ── 뷰 토글 버튼 ─────────────────────────────────────────── */
         #viewToggleBtn {
             display: inline-flex;
-            position: absolute;
-            top: 20px;
-            left: 20px;
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top, 12px));
+            left: max(12px, env(safe-area-inset-left, 12px));
             align-items: center;
             gap: 5px;
-            padding: 7px 13px;
-            background: rgba(255,255,255,0.22);
-            border: 1px solid rgba(255,255,255,0.45);
+            padding: 8px 14px;
+            background: rgba(102,126,234,0.92);
+            border: 1px solid rgba(255,255,255,0.5);
             color: white;
             border-radius: 20px;
             cursor: pointer;
             font-size: 0.8em;
-            font-weight: 600;
-            transition: background 0.2s, color 0.2s;
+            font-weight: 700;
+            transition: background 0.2s, transform 0.15s;
             white-space: nowrap;
-            z-index: 11;
+            z-index: 9999;
             touch-action: manipulation;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         @media (hover: hover) {
-        #viewToggleBtn:hover { background: white; color: var(--primary); }
+        #viewToggleBtn:hover { background: rgba(102,126,234,1); transform: scale(1.05); }
         }
 
         /* pwaInstallBtn는 viewToggleBtn 아래 */
@@ -1560,12 +1561,10 @@
         /* ── .mobile-view 강제 모바일 레이아웃 ────────────────────── */
         body.mobile-view { padding: 0 !important; }
         body.mobile-view .container { border-radius: 0 !important; }
-        body.mobile-view .header { padding: 60px 15px 30px !important; }
+        body.mobile-view .header { padding: 65px 15px 30px !important; }
         body.mobile-view .header h1 { font-size: 1.5em !important; }
         body.mobile-view .header p { font-size: 0.9em !important; }
         body.mobile-view #visitorCounter { top: 12px; right: 12px; font-size: 0.68em; }
-        body.mobile-view #viewToggleBtn,
-        body.mobile-view #pwaInstallBtn { top: 12px !important; font-size: 0.72em; padding: 5px 10px; left: 12px; }
         body.mobile-view #pwaInstallBtn { top: 46px !important; }
         body.mobile-view .grid-dashboard { grid-template-columns: 1fr !important; padding: 10px !important; }
         body.mobile-view .grid-top-row,
@@ -3990,7 +3989,8 @@ var ECON_DATA = {
             var BASE = 'https://api.counterapi.dev/v1/' + ns + '/';
 
             function fmt(n) {
-                return Number(n).toLocaleString('ko-KR');
+                var num = Number(n);
+                return isNaN(num) ? '?' : num.toLocaleString('ko-KR');
             }
 
             function updateDisplay(todayVal, totalVal) {
@@ -4000,23 +4000,44 @@ var ECON_DATA = {
                 if (v) v.textContent = fmt(totalVal);
             }
 
+            function setError() {
+                var t = document.getElementById('vcToday');
+                var v = document.getElementById('vcTotal');
+                if (t) t.textContent = '?';
+                if (v) v.textContent = '?';
+            }
+
+            // 5초 타임아웃 fetch
+            function fetchWithTimeout(url, ms) {
+                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, ms) : null;
+                var opts = ctrl ? { signal: ctrl.signal } : {};
+                return fetch(url, opts).then(function(r) {
+                    if (timer) clearTimeout(timer);
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                }).then(function(data) {
+                    // counterapi.dev 응답: { count: N } 또는 { value: N } 대응
+                    var val = data.count !== undefined ? data.count : (data.value !== undefined ? data.value : data);
+                    return { count: Number(val) };
+                });
+            }
+
             if (!counted) {
-                // 최초 방문: 두 카운터 모두 증가
                 sessionStorage.setItem('vc_counted', '1');
                 Promise.all([
-                    fetch(BASE + 'total/up').then(function(r){ return r.json(); }),
-                    fetch(BASE + 'day-' + today + '/up').then(function(r){ return r.json(); })
+                    fetchWithTimeout(BASE + 'total/up', 5000),
+                    fetchWithTimeout(BASE + 'day-' + today + '/up', 5000)
                 ]).then(function(results) {
                     updateDisplay(results[1].count, results[0].count);
-                }).catch(function() {});
+                }).catch(function() { setError(); });
             } else {
-                // 재방문(같은 세션): 증가 없이 조회만
                 Promise.all([
-                    fetch(BASE + 'total').then(function(r){ return r.json(); }),
-                    fetch(BASE + 'day-' + today).then(function(r){ return r.json(); })
+                    fetchWithTimeout(BASE + 'total', 5000),
+                    fetchWithTimeout(BASE + 'day-' + today, 5000)
                 ]).then(function(results) {
                     updateDisplay(results[1].count, results[0].count);
-                }).catch(function() {});
+                }).catch(function() { setError(); });
             }
         })();
     </script>
