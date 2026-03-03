@@ -8,7 +8,7 @@
     <!-- Version: v1771922054 -->
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>주식 분석 통합 리포트 뷰어</title>
 
     <!-- PWA 설정 -->
@@ -56,6 +56,16 @@
             box-sizing: border-box;
         }
 
+        /* 모바일 더블탭 딜레이 제거 (F그룹) */
+        button, a, select,
+        .btn-load, .btn-sm, .search-btn, .news-search-bar button,
+        .date, .event-item-cal, .category-section,
+        .econ-card, .ns-card, .headline-item,
+        .vol-macro-header, .category-header-cal,
+        .result-min-btn, .result-cls-btn {
+            touch-action: manipulation;
+        }
+
         body {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
             background: var(--bg-gradient);
@@ -63,6 +73,8 @@
             padding: 20px;
             color: var(--text-main);
             line-height: 1.6;
+            overscroll-behavior: none;       /* 스크롤 체이닝 방지 */
+            -webkit-text-size-adjust: 100%;  /* iOS 폰트 크기 자동조정 방지 */
         }
 
         /* 공통 카드 스타일 */
@@ -76,9 +88,12 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
+        @media (hover: hover) {
         .card:hover {
+            will-change: transform;
             transform: translateY(-2px);
             box-shadow: var(--shadow-float);
+        }
         }
 
         .container {
@@ -124,13 +139,16 @@
             border-radius: var(--radius-small);
             cursor: pointer;
             font-size: 0.85em;
-            transition: all 0.3s;
-            backdrop-filter: blur(5px);
+            transition: background 0.3s, color 0.3s;
+            white-space: nowrap;
+            z-index: 10;
         }
 
+        @media (hover: hover) {
         .logout-btn:hover {
             background: white;
             color: var(--primary);
+        }
         }
 
         /* PWA 설치 버튼 */
@@ -142,15 +160,14 @@
             align-items: center;
             gap: 6px;
             padding: 7px 14px;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.22);
             border: 1px solid rgba(255,255,255,0.45);
             color: white;
             border-radius: 20px;
             cursor: pointer;
             font-size: 0.82em;
             font-weight: 600;
-            transition: all 0.25s;
-            backdrop-filter: blur(6px);
+            transition: background 0.25s, color 0.25s;
             white-space: nowrap;
             z-index: 10;
         }
@@ -247,17 +264,20 @@
             background: white;
             border-radius: var(--radius-small);
             box-shadow: var(--shadow-main);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid #edf2f7;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
 
+        @media (hover: hover) {
         .category-section:hover {
+            will-change: transform;
             transform: translateY(-4px);
             box-shadow: var(--shadow-float);
             border-color: var(--primary);
+        }
         }
 
         .category-section.featured {
@@ -316,7 +336,7 @@
             font-size: 0.95em;
             background: #fff;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: border-color 0.2s;
             color: var(--text-main);
         }
 
@@ -333,14 +353,16 @@
             font-size: 0.95em;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 4px 6px rgba(102, 126, 234, 0.2);
         }
 
+        @media (hover: hover) {
         .btn-load:hover {
             filter: brightness(1.1);
             transform: scale(1.02);
             box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+        }
         }
 
         /* 유틸리티 클래스 추가 */
@@ -351,15 +373,17 @@
             border-radius: var(--radius-small);
             border: 1px solid #e2e8f0;
             background: #fff;
-            transition: all 0.2s;
+            transition: border-color 0.2s, background 0.2s, color 0.2s;
             color: var(--text-main);
             font-weight: 600;
         }
 
+        @media (hover: hover) {
         .btn-sm:hover {
             border-color: var(--primary);
             color: var(--primary);
             background: #f8faff;
+        }
         }
 
         .quote-label {
@@ -440,7 +464,7 @@
         .news-search-bar input {
             flex: 1; padding: 12px 16px;
             border: 2px solid #e2e8f0; border-radius: var(--radius-small);
-            font-size: 1em; transition: all 0.2s; background: #f8fafc;
+            font-size: 1em; transition: border-color 0.2s, background 0.2s; background: #f8fafc;
         }
         .news-search-bar input:focus {
             outline: none; border-color: #f59e0b; background: #fff;
@@ -451,9 +475,9 @@
             background: linear-gradient(135deg, #f59e0b, #d97706);
             color: #fff; border: none; border-radius: var(--radius-small);
             font-weight: 600; font-size: 0.95em; cursor: pointer;
-            transition: all 0.2s; white-space: nowrap;
+            transition: opacity 0.2s, transform 0.2s; white-space: nowrap;
         }
-        .news-search-bar button:hover { opacity: 0.88; transform: translateY(-1px); }
+        @media (hover: hover) { .news-search-bar button:hover { opacity: 0.88; transform: translateY(-1px); } }
         .news-search-hint { font-size: 0.78em; color: #94a3b8; margin-bottom: 14px; }
         /* 2-컬럼 결과 레이아웃 */
         .ns-columns {
@@ -484,15 +508,18 @@
             background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
             background-size: 400px 100%;
             animation: ns-shimmer 1.3s infinite linear;
+            animation-play-state: running;
             border-radius: 6px; margin-bottom: 10px; height: 66px;
+            contain: layout;
         }
+        .ns-shimmer-paused .ns-skeleton { animation-play-state: paused; }
         /* 결과 카드 */
         .ns-card {
             display: flex; flex-direction: column; gap: 4px;
             padding: 11px 14px; border: 1px solid #e2e8f0;
             border-radius: 8px; margin-bottom: 9px;
             text-decoration: none; color: inherit;
-            transition: all 0.18s; background: #fafbff;
+            transition: background 0.18s, box-shadow 0.18s; background: #fafbff;
         }
         .ns-card.kor { border-left: 4px solid #3b82f6; }
         .ns-card.eng { border-left: 4px solid #f59e0b; }
@@ -517,8 +544,8 @@
         .econ-hdr h3 { font-size:1.02rem; font-weight:700; color:var(--primary-dark); margin:0; display:flex; align-items:center; gap:8px; }
         .econ-updated { font-size:0.7em; color:#94a3b8; }
         .econ-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-        .econ-card { background:#f8faff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px 10px; cursor:pointer; transition:all 0.18s; }
-        .econ-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.09); border-color:#93c5fd; background:#eff6ff; }
+        .econ-card { background:#f8faff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px 10px; cursor:pointer; transition:transform 0.18s, box-shadow 0.18s, border-color 0.18s, background 0.18s; }
+        @media (hover: hover) { .econ-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.09); border-color:#93c5fd; background:#eff6ff; } }
         .econ-card-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:2px; }
         .econ-card-lbl { font-size:1.34em; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
         .econ-card-ico { font-size:1.05em; }
@@ -546,11 +573,11 @@
         @media (max-width:400px) { .econ-stats { grid-template-columns:repeat(2,1fr); } }
         /* ── vol-macro 아코디언 ── */
         .vol-macro-header { cursor:pointer; user-select:none; }
-        .vol-macro-body { overflow:hidden; transition:max-height 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease; }
-        .vol-macro-body.vm-open   { max-height:2000px; opacity:1; }
-        .vol-macro-body.vm-closed { max-height:0; opacity:0; pointer-events:none; margin:0; }
-        .vol-acc-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.13); color:#94a3b8; font-size:0.69rem; padding:3px 11px; border-radius:6px; cursor:pointer; transition:all 0.2s; white-space:nowrap; line-height:1.5; }
-        .vol-acc-btn:hover { background:rgba(255,255,255,0.16); color:#e2e8f0; }
+        .vol-macro-body { overflow:hidden; transition:opacity 0.28s ease, visibility 0.28s ease; will-change: opacity; }
+        .vol-macro-body.vm-open   { opacity:1; visibility:visible; max-height:none; }
+        .vol-macro-body.vm-closed { opacity:0; visibility:hidden; max-height:0; pointer-events:none; margin:0; }
+        .vol-acc-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.13); color:#94a3b8; font-size:0.69rem; padding:3px 11px; border-radius:6px; cursor:pointer; transition:background 0.2s, color 0.2s; white-space:nowrap; line-height:1.5; }
+        @media (hover: hover) { .vol-acc-btn:hover { background:rgba(255,255,255,0.16); color:#e2e8f0; } }
         /* ── 지표 카드 하단 정보 ── */
         .econ-card-info { margin-top:7px; padding-top:7px; border-top:1px solid #e8eef8; }
         .econ-card-st   { display:flex; align-items:center; gap:5px; margin-bottom:3px; }
@@ -600,7 +627,7 @@
             border: 2px solid #e2e8f0;
             border-radius: var(--radius-small);
             font-size: 1em;
-            transition: all 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .search-input:focus {
@@ -617,7 +644,7 @@
             border-radius: var(--radius-small);
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: opacity 0.2s, transform 0.2s;
         }
 
         .search-result {
@@ -650,9 +677,10 @@
             font-size: 18px; font-weight: 700; line-height: 1;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.18s;
+            transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.18s, box-shadow 0.18s;
             box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         }
+        @media (hover: hover) {
         .result-min-btn:hover {
             background: #667eea; border-color: #667eea; color: #fff;
             transform: scale(1.1);
@@ -662,12 +690,14 @@
             transform: scale(1.1);
             box-shadow: 0 3px 10px rgba(239,68,68,0.35);
         }
+        }
         .result-body {
             overflow: hidden;
-            transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.24s ease;
-            max-height: 3000px; opacity: 1;
+            transition: opacity 0.24s ease, visibility 0.24s ease;
+            opacity: 1; visibility: visible;
+            will-change: opacity;
         }
-        .result-body.minimized { max-height: 0; opacity: 0; }
+        .result-body.minimized { max-height: 0; opacity: 0; visibility: hidden; }
 
         .update-note {
             margin-top: 10px;
@@ -734,7 +764,7 @@
             padding: 15px;
             border-radius: var(--radius-small);
             border: 1px solid #edf2f7;
-            transition: all 0.2s;
+            transition: border-color 0.2s, background 0.2s;
         }
 
         .news-item:hover {
@@ -1084,15 +1114,17 @@
             border-radius: 5px;
             background: #fff;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
             min-height: 35px;
             font-size: 0.75em
         }
 
+        @media (hover: hover) {
         .date:hover:not(.empty) {
             transform: translateY(-1px);
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1)
+        }
         }
 
         .date.empty {
@@ -1127,8 +1159,10 @@
             white-space: nowrap
         }
 
+        @media (hover: hover) {
         .date:hover .tooltip {
             display: block
+        }
         }
 
         .event-summary {
@@ -1157,7 +1191,7 @@
             font-size: 0.88em;
             cursor: pointer;
             user-select: none;
-            transition: all 0.2s;
+            transition: background 0.2s, opacity 0.2s;
             position: relative
         }
 
@@ -1177,13 +1211,15 @@
         }
 
         .accordion-content {
-            max-height: 3000px;
             overflow: hidden;
-            transition: max-height 0.3s ease-out
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            opacity: 1; visibility: visible;
         }
 
         .accordion-content.collapsed {
-            max-height: 0
+            max-height: 0;
+            opacity: 0;
+            visibility: hidden;
         }
 
         .event-grid {
@@ -1201,13 +1237,15 @@
             border-radius: 5px;
             border-left: 3px solid #667eea;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-            transition: all 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
             font-size: 0.85em
         }
 
+        @media (hover: hover) {
         .event-item-cal:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06)
+        }
         }
 
         .event-icon-large {
@@ -1244,8 +1282,7 @@
         .news-card-column {
             flex: 1;
             min-width: 350px;
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-            backdrop-filter: blur(15px);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.97) 0%, rgba(15, 23, 42, 0.99) 100%);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 20px;
             padding: 25px;
@@ -1376,12 +1413,14 @@
             border-left: 4px solid #38bdf8;
             font-size: 1.05rem;
             line-height: 1.5;
-            transition: all 0.2s;
+            transition: transform 0.2s, background 0.2s;
         }
 
+        @media (hover: hover) {
         .headline-item:hover {
             background: rgba(255, 255, 255, 0.05);
             transform: translateX(5px);
+        }
         }
 
         .headline-item a {
@@ -1489,10 +1528,87 @@
             .vol-macro-grid { grid-template-columns: 1fr; gap: 10px; }
         }
 
+        /* ── 뷰 토글 버튼 ─────────────────────────────────────────── */
+        #viewToggleBtn {
+            display: inline-flex;
+            position: fixed;
+            top: 12px; left: 12px; /* env() 미지원 브라우저 fallback */
+            top: calc(env(safe-area-inset-top, 0px) + 12px);
+            left: calc(env(safe-area-inset-left, 0px) + 12px);
+            align-items: center;
+            gap: 5px;
+            padding: 8px 14px;
+            background: rgba(102,126,234,0.92);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 700;
+            transition: background 0.2s, transform 0.15s;
+            white-space: nowrap;
+            z-index: 9999;
+            touch-action: manipulation;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        @media (hover: hover) {
+        #viewToggleBtn:hover { background: rgba(102,126,234,1); transform: scale(1.05); }
+        }
+
+        /* ── .mobile-view 강제 모바일 레이아웃 ────────────────────── */
+        body.mobile-view { padding: 0 !important; overscroll-behavior: none;
+            background: #667eea; } /* 그라디언트 → 단색: 스크롤 중 full-page repaint 제거 */
+        body.mobile-view .container { border-radius: 0 !important; }
+        /* 모바일에서 카드/섹션 독립 렌더링 컨텍스트로 격리 → 스크롤 시 repaint 범위 축소 */
+        body.mobile-view .category-section,
+        body.mobile-view .card { contain: layout style; }
+        /* 모바일: will-change 전역 적용 제거 (불필요한 GPU 레이어 생성 방지) */
+        body.mobile-view .vol-macro-body,
+        body.mobile-view .result-body { will-change: none; }
+        /* 모바일: box-shadow 단순화 (스크롤 중 paint cost 절감) */
+        body.mobile-view .card,
+        body.mobile-view .category-section,
+        body.mobile-view .econ-wrap { box-shadow: 0 1px 4px rgba(0,0,0,0.10) !important; }
+        /* 모바일 터치 스크롤 힌트 */
+        body.mobile-view .controls,
+        body.mobile-view .grid-dashboard { touch-action: pan-y; }
+        body.mobile-view .header { padding: max(65px, calc(env(safe-area-inset-top, 0px) + 55px)) 15px 30px !important; }
+        body.mobile-view .header h1 { font-size: 1.5em !important; }
+        body.mobile-view .header p { font-size: 0.9em !important; }
+        body.mobile-view #visitorCounter { top: calc(env(safe-area-inset-top, 0px) + 12px); right: calc(env(safe-area-inset-right, 0px) + 12px); font-size: 0.68em; }
+        body.mobile-view #pwaInstallBtn { display: none !important; }
+        body.mobile-view .grid-dashboard { grid-template-columns: 1fr !important; padding: 10px !important; }
+        body.mobile-view .grid-top-row,
+        body.mobile-view .grid-bottom-row { grid-template-columns: 1fr !important; }
+        body.mobile-view .category-grid { grid-template-columns: 1fr !important; }
+        body.mobile-view .controls { padding: 15px !important; }
+        body.mobile-view .category-section { padding: 15px !important; }
+        body.mobile-view .selector-row { flex-direction: column !important; align-items: stretch !important; }
+        body.mobile-view .selector-row select,
+        body.mobile-view .btn-load { width: 100% !important; }
+        body.mobile-view .pdf-container { height: 420px !important; }
+        body.mobile-view .logout-btn { position: relative !important; top: 0 !important; right: 0 !important; margin: 15px auto 0 !important; display: block !important; width: fit-content !important; }
+        body.mobile-view .search-box { flex-direction: column !important; }
+        body.mobile-view .search-btn { width: 100% !important; }
+        body.mobile-view .news-card-wrapper { flex-direction: column !important; margin: 10px !important; }
+        body.mobile-view .news-card-column { min-width: unset !important; }
+        body.mobile-view .econ-grid { grid-template-columns: repeat(2,1fr) !important; }
+        body.mobile-view .vol-macro-grid { grid-template-columns: 1fr !important; }
+        body.mobile-view .econ-stats { grid-template-columns: repeat(2,1fr) !important; }
+        body.mobile-view .co-metrics { grid-template-columns: repeat(2,1fr) !important; }
+
     </style>
 </head>
 
 <body>
+    <!-- 뷰 토글 버튼 (body 직속 + inline style로 CSS 우선순위 문제 완전 차단) -->
+    <button id="viewToggleBtn"
+        onclick="toggleViewMode()"
+        title="모바일/데스크탑 화면 전환"
+        style="position:fixed;z-index:2147483647;display:flex;align-items:center;gap:5px;padding:8px 15px;background:#667eea;border:2px solid rgba(255,255,255,0.7);color:#fff;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.35);-webkit-tap-highlight-color:transparent;">
+        📱 모바일
+    </button>
+
     <!-- 메인 컨텐츠 -->
     <div id="mainContent" class="main-content">
         <div class="container">
@@ -1834,8 +1950,8 @@ var ECON_DATA = {
                     <h3 class="section-title">📊 글로벌 시장 핵심 지표</h3>
                     <div class="tradingview-widget-container" style="height: 550px;">
                         <div class="tradingview-widget-container__widget"></div>
-                        <script type="text/javascript"
-                            src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                        <script type="text/x-tradingview"
+                            data-src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" >
                                 {
                                     "colorTheme": "light", "dateRange": "12M", "showChart": true, "locale": "ko", "width": "100%", "height": 550,
                                         "largeChartUrl": "", "isTransparent": false, "showSymbolLogo": true,
@@ -1855,9 +1971,9 @@ var ECON_DATA = {
                         <div class="quote-item">
                             <p class="quote-label">🇰🇷 실시간 원/달러 환율</p>
                             <div class="tradingview-widget-container" style="height: 100px;">
-                                <script type="text/javascript"
-                                    src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js"
-                                    async>
+                                <script type="text/x-tradingview"
+                                    data-src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js"
+                                    >
                                         { "symbol": "FX_IDC:USDKRW", "width": "100%", "colorTheme": "light", "isTransparent": true, "locale": "ko" }
                                     </script>
                             </div>
@@ -1887,8 +2003,8 @@ var ECON_DATA = {
                         <!-- 금 (Gold) — TVC:GOLD = 스팟 골드, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "TVC:GOLD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(255,179,0,1)", "underLineColor": "rgba(255,179,0,0.3)", "underLineBottomColor": "rgba(255,179,0,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -1896,8 +2012,8 @@ var ECON_DATA = {
                         <!-- 은 (Silver) — TVC:SILVER = 스팟 실버, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "TVC:SILVER", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(148,163,184,1)", "underLineColor": "rgba(148,163,184,0.3)", "underLineBottomColor": "rgba(148,163,184,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -1905,8 +2021,8 @@ var ECON_DATA = {
                         <!-- 비트코인 (Bitcoin) — BITSTAMP 거래소 심볼, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "BITSTAMP:BTCUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(247,147,26,1)", "underLineColor": "rgba(247,147,26,0.3)", "underLineBottomColor": "rgba(247,147,26,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -1914,8 +2030,8 @@ var ECON_DATA = {
                         <!-- 이더리움 (Ethereum) — BITSTAMP 거래소 심볼, 등락폭 표시 -->
                         <div class="tradingview-widget-container">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "BITSTAMP:ETHUSD", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(98,126,234,1)", "underLineColor": "rgba(98,126,234,0.3)", "underLineBottomColor": "rgba(98,126,234,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -1923,8 +2039,8 @@ var ECON_DATA = {
                         <!-- BMNR (Bloomberg US MBS / Bond Market) -->
                         <div class="tradingview-widget-container" style="grid-column: 1 / -1;">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "BMNR", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(139,92,246,1)", "underLineColor": "rgba(139,92,246,0.3)", "underLineBottomColor": "rgba(139,92,246,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -1932,8 +2048,8 @@ var ECON_DATA = {
                         <!-- WTI 유가 (마지막, grid-column span으로 중앙 정렬) -->
                         <div class="tradingview-widget-container" style="grid-column: 1 / -1;">
                             <div class="tradingview-widget-container__widget"></div>
-                            <script type="text/javascript"
-                                src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+                            <script type="text/x-tradingview"
+                                data-src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" >
                                     { "symbol": "TVC:USOIL", "width": "100%", "height": 200, "locale": "ko", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "rgba(76,175,80,1)", "underLineColor": "rgba(76,175,80,0.3)", "underLineBottomColor": "rgba(76,175,80,0)", "isTransparent": true, "autosize": false, "chartOnly": false }
                             </script>
                         </div>
@@ -1950,8 +2066,8 @@ var ECON_DATA = {
                     <h3 class="section-title">🚀 실시간 섹터 주도주 (US)</h3>
                     <div class="tradingview-widget-container" style="height: 400px; width: 100%;">
                         <div class="tradingview-widget-container__widget"></div>
-                        <script type="text/javascript"
-                            src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+                        <script type="text/x-tradingview"
+                            data-src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" >
                                 {
                                     "width": "100%", "height": 400, "symbolsGroups": [
                                         {
@@ -2086,8 +2202,8 @@ var ECON_DATA = {
                 </p>
                 <div class="tradingview-widget-container" style="height: 600px;">
                     <div class="tradingview-widget-container__widget"></div>
-                    <script type="text/javascript"
-                        src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" async>
+                    <script type="text/x-tradingview"
+                        data-src="https://s3.tradingview.com/external-embedding/embed-widget-events.js" >
                             {
                                 "colorTheme": "light", "isTransparent": false,
                                 "width": "100%", "height": 600, "locale": "ko",
@@ -2102,6 +2218,8 @@ var ECON_DATA = {
                 // ── 히트맵 스크롤 제어: Ctrl+스크롤만 확대/축소 ──────────────
                 (function() {
                     function initHeatmapScrollGuard() {
+                        // 터치 전용 기기(모바일)는 마우스 휠·Ctrl+스크롤 없으므로 스킵
+                        if (window.matchMedia('(hover: none)').matches) return;
                         var overlay = document.getElementById('heatmap-scroll-overlay');
                         if (!overlay) return;
 
@@ -2110,13 +2228,13 @@ var ECON_DATA = {
                             if (e.key === 'Control' || e.key === 'Meta') {
                                 overlay.style.pointerEvents = 'none';
                             }
-                        });
+                        }, { passive: true });
                         // Ctrl 뗌 → 오버레이 복구 → iframe 스크롤 차단
                         document.addEventListener('keyup', function(e) {
                             if (e.key === 'Control' || e.key === 'Meta') {
                                 overlay.style.pointerEvents = 'auto';
                             }
-                        });
+                        }, { passive: true });
                         // 포커스 벗어날 때도 복구 (Alt+Tab 등)
                         window.addEventListener('blur', function() {
                             overlay.style.pointerEvents = 'auto';
@@ -3729,7 +3847,7 @@ var ECON_DATA = {
                 };
                 document.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape') closeEconModal();
-                });
+                }, { passive: true });
             })();
 
             // ── MK RSS 카테고리별 URL ──────────────────────────────────
@@ -3816,6 +3934,22 @@ var ECON_DATA = {
                     box.innerHTML = h || '<p style="color:#f87171;font-size:0.85em;">기사를 불러올 수 없습니다.</p>';
                 }
             }
+
+            // ── shimmer 애니메이션 오프스크린 일시정지 (E그룹) ───────────────
+            (function() {
+                var nsContainer = document.getElementById('nsContainer');
+                if (!nsContainer || !window.IntersectionObserver) return;
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            nsContainer.classList.remove('ns-shimmer-paused');
+                        } else {
+                            nsContainer.classList.add('ns-shimmer-paused');
+                        }
+                    });
+                }, { threshold: 0 });
+                observer.observe(nsContainer);
+            })();
         </script>
 
 
@@ -3872,7 +4006,8 @@ var ECON_DATA = {
             var BASE = 'https://api.counterapi.dev/v1/' + ns + '/';
 
             function fmt(n) {
-                return Number(n).toLocaleString('ko-KR');
+                var num = Number(n);
+                return isNaN(num) ? '?' : num.toLocaleString('ko-KR');
             }
 
             function updateDisplay(todayVal, totalVal) {
@@ -3882,23 +4017,44 @@ var ECON_DATA = {
                 if (v) v.textContent = fmt(totalVal);
             }
 
+            function setError() {
+                var t = document.getElementById('vcToday');
+                var v = document.getElementById('vcTotal');
+                if (t) t.textContent = '?';
+                if (v) v.textContent = '?';
+            }
+
+            // 5초 타임아웃 fetch
+            function fetchWithTimeout(url, ms) {
+                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, ms) : null;
+                var opts = ctrl ? { signal: ctrl.signal } : {};
+                return fetch(url, opts).then(function(r) {
+                    if (timer) clearTimeout(timer);
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                }).then(function(data) {
+                    // counterapi.dev 응답: { count: N } 또는 { value: N } 대응
+                    var val = data.count !== undefined ? data.count : (data.value !== undefined ? data.value : data);
+                    return { count: Number(val) };
+                });
+            }
+
             if (!counted) {
-                // 최초 방문: 두 카운터 모두 증가
                 sessionStorage.setItem('vc_counted', '1');
                 Promise.all([
-                    fetch(BASE + 'total/up').then(function(r){ return r.json(); }),
-                    fetch(BASE + 'day-' + today + '/up').then(function(r){ return r.json(); })
+                    fetchWithTimeout(BASE + 'total/up', 5000),
+                    fetchWithTimeout(BASE + 'day-' + today + '/up', 5000)
                 ]).then(function(results) {
                     updateDisplay(results[1].count, results[0].count);
-                }).catch(function() {});
+                }).catch(function() { setError(); });
             } else {
-                // 재방문(같은 세션): 증가 없이 조회만
                 Promise.all([
-                    fetch(BASE + 'total').then(function(r){ return r.json(); }),
-                    fetch(BASE + 'day-' + today).then(function(r){ return r.json(); })
+                    fetchWithTimeout(BASE + 'total', 5000),
+                    fetchWithTimeout(BASE + 'day-' + today, 5000)
                 ]).then(function(results) {
                     updateDisplay(results[1].count, results[0].count);
-                }).catch(function() {});
+                }).catch(function() { setError(); });
             }
         })();
     </script>
@@ -3912,6 +4068,130 @@ var ECON_DATA = {
                     .catch(err => console.log('SW 등록 실패:', err));
             });
         }
+    </script>
+
+    <!-- TradingView 위젯 Lazy-Init (모바일: IntersectionObserver, 데스크탑: 즉시 로드) -->
+    <script>
+    (function() {
+        function initWidget(scriptEl) {
+            if (scriptEl.dataset.tvInited) return;
+            scriptEl.dataset.tvInited = '1';
+            var newScript = document.createElement('script');
+            newScript.src = scriptEl.dataset.src;
+            newScript.textContent = scriptEl.textContent;
+            scriptEl.parentNode.appendChild(newScript);
+        }
+
+        var lazyScripts = document.querySelectorAll('script[type="text/x-tradingview"][data-src]');
+
+        if (!document.body.classList.contains('mobile-view')) {
+            // 데스크탑: 전체 즉시 초기화
+            lazyScripts.forEach(initWidget);
+        } else {
+            // 모바일: IntersectionObserver로 뷰포트 진입 시 초기화
+            if (!window.IntersectionObserver) {
+                lazyScripts.forEach(initWidget);
+                return;
+            }
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var container = entry.target;
+                        var s = container.querySelector('script[type="text/x-tradingview"][data-src]');
+                        if (s) initWidget(s);
+                        observer.unobserve(container);
+                    }
+                });
+            }, { rootMargin: '200px 0px' }); // 200px 미리 로드
+
+            lazyScripts.forEach(function(s) {
+                var container = s.closest('.tradingview-widget-container');
+                if (container) observer.observe(container);
+            });
+        }
+    })();
+    </script>
+
+    <!-- 모바일↔데스크탑 뷰 토글 + PWA 자동 모바일 뷰 -->
+    <script>
+    (function() {
+        var STORAGE_KEY = 'investflow-view-mode';
+
+        // PWA standalone 모드 여부 판별
+        function isPWAStandalone() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true;
+        }
+
+        // 저장된 설정 또는 PWA 실행 시 기본값 결정
+        var saved = localStorage.getItem(STORAGE_KEY);
+        var useMobile;
+        if (saved) {
+            useMobile = (saved === 'mobile');
+        } else {
+            useMobile = isPWAStandalone();
+        }
+
+        if (useMobile) {
+            document.body.classList.add('mobile-view');
+        }
+
+        // 버튼 텍스트/타이틀 갱신
+        function syncBtn() {
+            var btn = document.getElementById('viewToggleBtn');
+            if (!btn) return;
+            var isMobile = document.body.classList.contains('mobile-view');
+            btn.innerHTML = isMobile ? '🖥️ 데스크탑' : '📱 모바일';
+            btn.title = isMobile ? '데스크탑 화면으로 전환' : '모바일 화면으로 전환';
+        }
+
+        // 토글 버튼 위치를 JS로 직접 계산하여 적용 (iOS 노치/Dynamic Island 대응)
+        // CSS calc(env()) 조합이 일부 환경에서 무시되는 문제 방어
+        function positionToggleBtn() {
+            var btn = document.getElementById('viewToggleBtn');
+            if (!btn) return;
+            // 프로브 요소로 env(safe-area-inset-top) 실제 px 값 측정
+            var probe = document.createElement('div');
+            probe.setAttribute('style',
+                'position:fixed;top:env(safe-area-inset-top,0px);left:0;' +
+                'height:1px;width:1px;pointer-events:none;opacity:0;overflow:hidden;');
+            document.body.appendChild(probe);
+            var safeTop = parseFloat(window.getComputedStyle(probe).top) || 0;
+            document.body.removeChild(probe);
+            btn.style.top  = Math.max(12, safeTop + 12) + 'px';
+            btn.style.left = '12px';
+        }
+
+        // 초기 버튼 상태 반영 (DOM 준비 후)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                syncBtn();
+                positionToggleBtn();
+            });
+        } else {
+            syncBtn();
+            positionToggleBtn();
+        }
+
+        // 전역 토글 함수
+        window.toggleViewMode = function() {
+            var isMobile = document.body.classList.toggle('mobile-view');
+            localStorage.setItem(STORAGE_KEY, isMobile ? 'mobile' : 'desktop');
+            syncBtn();
+            // 데스크탑으로 전환 시 아직 미초기화된 위젯 즉시 로드
+            if (!isMobile) {
+                document.querySelectorAll('script[type="text/x-tradingview"][data-src]').forEach(function(s) {
+                    if (!s.dataset.tvInited) {
+                        s.dataset.tvInited = '1';
+                        var ns = document.createElement('script');
+                        ns.src = s.dataset.src;
+                        ns.textContent = s.textContent;
+                        s.parentNode.appendChild(ns);
+                    }
+                });
+            }
+        };
+    })();
     </script>
 
 </body>
