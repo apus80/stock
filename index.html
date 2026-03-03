@@ -8,7 +8,7 @@
     <!-- Version: v1771922054 -->
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>주식 분석 통합 리포트 뷰어</title>
 
     <!-- PWA 설정 -->
@@ -1532,8 +1532,8 @@
         #viewToggleBtn {
             display: inline-flex;
             position: fixed;
-            top: max(12px, env(safe-area-inset-top, 12px));
-            left: max(12px, env(safe-area-inset-left, 12px));
+            top: calc(env(safe-area-inset-top, 0px) + 12px);
+            left: calc(env(safe-area-inset-left, 0px) + 12px);
             align-items: center;
             gap: 5px;
             padding: 8px 14px;
@@ -1563,11 +1563,11 @@
         /* 모바일 터치 스크롤 힌트 */
         body.mobile-view .controls,
         body.mobile-view .grid-dashboard { touch-action: pan-y; }
-        body.mobile-view .header { padding: 65px 15px 30px !important; }
+        body.mobile-view .header { padding: max(65px, calc(env(safe-area-inset-top, 0px) + 55px)) 15px 30px !important; }
         body.mobile-view .header h1 { font-size: 1.5em !important; }
         body.mobile-view .header p { font-size: 0.9em !important; }
-        body.mobile-view #visitorCounter { top: 12px; right: 12px; font-size: 0.68em; }
-        body.mobile-view #pwaInstallBtn { top: 20px !important; left: 20px !important; }
+        body.mobile-view #visitorCounter { top: calc(env(safe-area-inset-top, 0px) + 12px); right: calc(env(safe-area-inset-right, 0px) + 12px); font-size: 0.68em; }
+        body.mobile-view #pwaInstallBtn { display: none !important; }
         body.mobile-view .grid-dashboard { grid-template-columns: 1fr !important; padding: 10px !important; }
         body.mobile-view .grid-top-row,
         body.mobile-view .grid-bottom-row { grid-template-columns: 1fr !important; }
@@ -1596,7 +1596,7 @@
     <button id="viewToggleBtn"
         onclick="toggleViewMode()"
         title="모바일/데스크탑 화면 전환"
-        style="position:fixed;top:12px;left:12px;z-index:2147483647;display:flex;align-items:center;gap:5px;padding:8px 15px;background:#667eea;border:2px solid rgba(255,255,255,0.7);color:#fff;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.35);-webkit-tap-highlight-color:transparent;">
+        style="position:fixed;z-index:2147483647;display:flex;align-items:center;gap:5px;padding:8px 15px;background:#667eea;border:2px solid rgba(255,255,255,0.7);color:#fff;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.35);-webkit-tap-highlight-color:transparent;">
         📱 모바일
     </button>
 
