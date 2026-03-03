@@ -138,7 +138,8 @@
             cursor: pointer;
             font-size: 0.85em;
             transition: background 0.3s, color 0.3s;
-            backdrop-filter: blur(5px);
+            white-space: nowrap;
+            z-index: 10;
         }
 
         @media (hover: hover) {
@@ -157,7 +158,7 @@
             align-items: center;
             gap: 6px;
             padding: 7px 14px;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.22);
             border: 1px solid rgba(255,255,255,0.45);
             color: white;
             border-radius: 20px;
@@ -165,7 +166,6 @@
             font-size: 0.82em;
             font-weight: 600;
             transition: background 0.25s, color 0.25s;
-            backdrop-filter: blur(6px);
             white-space: nowrap;
             z-index: 10;
         }
@@ -1281,8 +1281,7 @@
         .news-card-column {
             flex: 1;
             min-width: 350px;
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-            backdrop-filter: blur(15px);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.97) 0%, rgba(15, 23, 42, 0.99) 100%);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 20px;
             padding: 25px;
@@ -1528,6 +1527,66 @@
             .vol-macro-grid { grid-template-columns: 1fr; gap: 10px; }
         }
 
+        /* ── 뷰 토글 버튼 ─────────────────────────────────────────── */
+        #viewToggleBtn {
+            display: inline-flex;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 13px;
+            background: rgba(255,255,255,0.22);
+            border: 1px solid rgba(255,255,255,0.45);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: background 0.2s, color 0.2s;
+            white-space: nowrap;
+            z-index: 11;
+            touch-action: manipulation;
+        }
+        @media (hover: hover) {
+        #viewToggleBtn:hover { background: white; color: var(--primary); }
+        }
+
+        /* pwaInstallBtn는 viewToggleBtn 아래 */
+        #pwaInstallBtn {
+            top: 58px !important;
+        }
+
+        /* ── .mobile-view 강제 모바일 레이아웃 ────────────────────── */
+        body.mobile-view { padding: 0 !important; }
+        body.mobile-view .container { border-radius: 0 !important; }
+        body.mobile-view .header { padding: 60px 15px 30px !important; }
+        body.mobile-view .header h1 { font-size: 1.5em !important; }
+        body.mobile-view .header p { font-size: 0.9em !important; }
+        body.mobile-view #visitorCounter { top: 12px; right: 12px; font-size: 0.68em; }
+        body.mobile-view #viewToggleBtn,
+        body.mobile-view #pwaInstallBtn { top: 12px !important; font-size: 0.72em; padding: 5px 10px; left: 12px; }
+        body.mobile-view #pwaInstallBtn { top: 46px !important; }
+        body.mobile-view .grid-dashboard { grid-template-columns: 1fr !important; padding: 10px !important; }
+        body.mobile-view .grid-top-row,
+        body.mobile-view .grid-bottom-row { grid-template-columns: 1fr !important; }
+        body.mobile-view .category-grid { grid-template-columns: 1fr !important; }
+        body.mobile-view .controls { padding: 15px !important; }
+        body.mobile-view .category-section { padding: 15px !important; }
+        body.mobile-view .selector-row { flex-direction: column !important; align-items: stretch !important; }
+        body.mobile-view .selector-row select,
+        body.mobile-view .btn-load { width: 100% !important; }
+        body.mobile-view .pdf-container { height: 420px !important; }
+        body.mobile-view .logout-btn { position: relative !important; top: 0 !important; right: 0 !important; margin: 15px auto 0 !important; display: block !important; width: fit-content !important; }
+        body.mobile-view .search-box { flex-direction: column !important; }
+        body.mobile-view .search-btn { width: 100% !important; }
+        body.mobile-view .news-card-wrapper { flex-direction: column !important; margin: 10px !important; }
+        body.mobile-view .news-card-column { min-width: unset !important; }
+        body.mobile-view .econ-grid { grid-template-columns: repeat(2,1fr) !important; }
+        body.mobile-view .vol-macro-grid { grid-template-columns: 1fr !important; }
+        body.mobile-view .econ-stats { grid-template-columns: repeat(2,1fr) !important; }
+        body.mobile-view .co-metrics { grid-template-columns: repeat(2,1fr) !important; }
+
     </style>
 </head>
 
@@ -1536,7 +1595,11 @@
     <div id="mainContent" class="main-content">
         <div class="container">
             <div class="header">
-                <!-- PWA 홈 화면 추가 버튼 (좌측 상단) -->
+                <!-- 모바일 ↔ 데스크탑 뷰 토글 (좌측 상단) -->
+                <button id="viewToggleBtn" onclick="toggleViewMode()" title="모바일/데스크탑 화면 전환">
+                    📱 모바일
+                </button>
+                <!-- PWA 홈 화면 추가 버튼 (좌측 상단, 토글 아래) -->
                 <button id="pwaInstallBtn" onclick="pwaInstall()" title="홈 화면에 앱으로 추가">
                     📱 홈 화면에 추가
                 </button>
@@ -3967,6 +4030,55 @@ var ECON_DATA = {
                     .catch(err => console.log('SW 등록 실패:', err));
             });
         }
+    </script>
+
+    <!-- 모바일↔데스크탑 뷰 토글 + PWA 자동 모바일 뷰 -->
+    <script>
+    (function() {
+        var STORAGE_KEY = 'investflow-view-mode';
+
+        // PWA standalone 모드 여부 판별
+        function isPWAStandalone() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true;
+        }
+
+        // 저장된 설정 또는 PWA 실행 시 기본값 결정
+        var saved = localStorage.getItem(STORAGE_KEY);
+        var useMobile;
+        if (saved) {
+            useMobile = (saved === 'mobile');
+        } else {
+            useMobile = isPWAStandalone();
+        }
+
+        if (useMobile) {
+            document.body.classList.add('mobile-view');
+        }
+
+        // 버튼 텍스트/타이틀 갱신
+        function syncBtn() {
+            var btn = document.getElementById('viewToggleBtn');
+            if (!btn) return;
+            var isMobile = document.body.classList.contains('mobile-view');
+            btn.innerHTML = isMobile ? '🖥️ 데스크탑' : '📱 모바일';
+            btn.title = isMobile ? '데스크탑 화면으로 전환' : '모바일 화면으로 전환';
+        }
+
+        // 초기 버튼 상태 반영 (DOM 준비 후)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', syncBtn);
+        } else {
+            syncBtn();
+        }
+
+        // 전역 토글 함수
+        window.toggleViewMode = function() {
+            var isMobile = document.body.classList.toggle('mobile-view');
+            localStorage.setItem(STORAGE_KEY, isMobile ? 'mobile' : 'desktop');
+            syncBtn();
+        };
+    })();
     </script>
 
 </body>
