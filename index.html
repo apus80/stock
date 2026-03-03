@@ -1532,6 +1532,7 @@
         #viewToggleBtn {
             display: inline-flex;
             position: fixed;
+            top: 12px; left: 12px; /* env() 미지원 브라우저 fallback */
             top: calc(env(safe-area-inset-top, 0px) + 12px);
             left: calc(env(safe-area-inset-left, 0px) + 12px);
             align-items: center;
@@ -1555,11 +1556,19 @@
         }
 
         /* ── .mobile-view 강제 모바일 레이아웃 ────────────────────── */
-        body.mobile-view { padding: 0 !important; overscroll-behavior: none; }
+        body.mobile-view { padding: 0 !important; overscroll-behavior: none;
+            background: #667eea; } /* 그라디언트 → 단색: 스크롤 중 full-page repaint 제거 */
         body.mobile-view .container { border-radius: 0 !important; }
         /* 모바일에서 카드/섹션 독립 렌더링 컨텍스트로 격리 → 스크롤 시 repaint 범위 축소 */
         body.mobile-view .category-section,
         body.mobile-view .card { contain: layout style; }
+        /* 모바일: will-change 전역 적용 제거 (불필요한 GPU 레이어 생성 방지) */
+        body.mobile-view .vol-macro-body,
+        body.mobile-view .result-body { will-change: none; }
+        /* 모바일: box-shadow 단순화 (스크롤 중 paint cost 절감) */
+        body.mobile-view .card,
+        body.mobile-view .category-section,
+        body.mobile-view .econ-wrap { box-shadow: 0 1px 4px rgba(0,0,0,0.10) !important; }
         /* 모바일 터치 스크롤 힌트 */
         body.mobile-view .controls,
         body.mobile-view .grid-dashboard { touch-action: pan-y; }
@@ -2209,6 +2218,8 @@ var ECON_DATA = {
                 // ── 히트맵 스크롤 제어: Ctrl+스크롤만 확대/축소 ──────────────
                 (function() {
                     function initHeatmapScrollGuard() {
+                        // 터치 전용 기기(모바일)는 마우스 휠·Ctrl+스크롤 없으므로 스킵
+                        if (window.matchMedia('(hover: none)').matches) return;
                         var overlay = document.getElementById('heatmap-scroll-overlay');
                         if (!overlay) return;
 
@@ -4134,11 +4145,32 @@ var ECON_DATA = {
             btn.title = isMobile ? '데스크탑 화면으로 전환' : '모바일 화면으로 전환';
         }
 
+        // 토글 버튼 위치를 JS로 직접 계산하여 적용 (iOS 노치/Dynamic Island 대응)
+        // CSS calc(env()) 조합이 일부 환경에서 무시되는 문제 방어
+        function positionToggleBtn() {
+            var btn = document.getElementById('viewToggleBtn');
+            if (!btn) return;
+            // 프로브 요소로 env(safe-area-inset-top) 실제 px 값 측정
+            var probe = document.createElement('div');
+            probe.setAttribute('style',
+                'position:fixed;top:env(safe-area-inset-top,0px);left:0;' +
+                'height:1px;width:1px;pointer-events:none;opacity:0;overflow:hidden;');
+            document.body.appendChild(probe);
+            var safeTop = parseFloat(window.getComputedStyle(probe).top) || 0;
+            document.body.removeChild(probe);
+            btn.style.top  = Math.max(12, safeTop + 12) + 'px';
+            btn.style.left = '12px';
+        }
+
         // 초기 버튼 상태 반영 (DOM 준비 후)
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', syncBtn);
+            document.addEventListener('DOMContentLoaded', function() {
+                syncBtn();
+                positionToggleBtn();
+            });
         } else {
             syncBtn();
+            positionToggleBtn();
         }
 
         // 전역 토글 함수

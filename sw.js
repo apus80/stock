@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-report-v1';
+const CACHE_NAME = 'stock-report-v2';
 
 // 앱 셸(App Shell) — 오프라인에서도 기본 UI가 뜨도록 캐싱
 const SHELL_URLS = [
