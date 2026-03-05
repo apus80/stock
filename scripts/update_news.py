@@ -34,6 +34,11 @@ except ImportError:
 # --- 설정 ---
 INDEX_HTML_PATH = 'index.html'
 
+# --- KIS API 설정 ---
+KIS_APP_KEY = "PS3SiqsbXrPFD1HoF2tsLLZ5MQVFrni9l"
+KIS_APP_SECRET = "8Pk0m43NMEFFGJ/M01ZptaPxzCnOfAQBeL1UY1buZX6TgZPV++YQRJ82+2P0ivY5cPLClEUFucvVSWLz//XGWPg7WwUsn9T5pl+x1FiESEhbryv96EYDvR6qZwjJobCQvPAi+amy356L4qZyqNjSKOngpbDgy8c4X9vgGIC2m1ggfc9nG3c="
+KIS_BASE_URL = "https://openapi.koreainvestment.com:9443"
+
 MONTH_MAP = {
     'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06',
     'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'
@@ -51,6 +56,81 @@ MK_RSS_SECTIONS = {
     '국제':    'https://www.mk.co.kr/rss/30200030/',
     '산업·IT': 'https://www.mk.co.kr/rss/50200011/',
 }
+
+def get_kis_access_token():
+    """한국투자증권 OAuth2 접근 토큰 발급"""
+    url = f"{KIS_BASE_URL}/oauth2/tokenP"
+    body = {
+        "grant_type": "client_credentials",
+        "appkey": KIS_APP_KEY,
+        "appsecret": KIS_APP_SECRET
+    }
+    try:
+        req = urllib.request.Request(url, data=json.dumps(body).encode('utf-8'), method='POST')
+        req.add_header('Content-Type', 'application/json')
+        with urllib.request.urlopen(req) as res:
+            resp_data = json.loads(res.read().decode('utf-8'))
+            return resp_data.get("access_token")
+    except Exception as e:
+        print(f"[KIS] 토큰 발급 실패: {e}")
+        return None
+
+def fetch_kis_market_index(token):
+    """KIS API를 이용한 국내 지수(코스피/코스닥) 조회"""
+    results = {}
+    indices = {
+        "pdb-kospi": "0001", 
+        "pdb-kosdaq": "1001"
+    }
+    for key, code in indices.items():
+        url = f"{KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-index-price?fid_cond_mrkt_div_code=U&fid_input_iscd={code}"
+        try:
+            req = urllib.request.Request(url, method='GET')
+            req.add_header('authorization', f'Bearer {token}')
+            req.add_header('appkey', KIS_APP_KEY)
+            req.add_header('appsecret', KIS_APP_SECRET)
+            req.add_header('tr_id', 'FHPUP02100000')
+            req.add_header('Content-Type', 'application/json')
+            
+            with urllib.request.urlopen(req) as res:
+                data = json.loads(res.read().decode('utf-8'))['output']
+                curr = float(data['bstp_nmix_prpr'])
+                rate = float(data['bstp_nmix_prtt'])
+                results[key] = {
+                    'val': f"{curr:,.2f}",
+                    'pct': f"{'+' if rate >= 0 else ''}{rate:.2f}%",
+                    'up': rate >= 0
+                }
+        except Exception as e:
+            print(f"[KIS] {key} 조회 실패: {e}")
+    return results
+
+def fetch_kis_investor_status(token):
+    """KIS API를 이용한 투자자별 매매동향(수급) 조회"""
+    results = {"kospi": {}, "kosdaq": {}}
+    markets = {"kospi": "0001", "kosdaq": "1001"}
+    
+    for m_name, m_code in markets.items():
+        url = f"{KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-investor?fid_cond_mrkt_div_code=U&fid_input_iscd={m_code}"
+        try:
+            req = urllib.request.Request(url, method='GET')
+            req.add_header('authorization', f'Bearer {token}')
+            req.add_header('appkey', KIS_APP_KEY)
+            req.add_header('appsecret', KIS_APP_SECRET)
+            req.add_header('tr_id', 'FHPUP02130000')
+            req.add_header('Content-Type', 'application/json')
+            
+            with urllib.request.urlopen(req) as res:
+                data = json.loads(res.read().decode('utf-8'))['output'][0]
+                # '억' 단위로 변환 (백만 단위 원본 / 100)
+                results[m_name] = {
+                    "ant":     f"{int(data['prsn_ntby_qty']) // 100:+,}억",
+                    "foreign": f"{int(data['frgn_ntby_qty']) // 100:+,}억",
+                    "inst":    f"{int(data['orgn_ntby_qty']) // 100:+,}억"
+                }
+        except Exception as e:
+            print(f"[KIS] {m_name} 수급 조회 실패: {e}")
+    return results
 
 def esc(text):
     return html_lib.escape(str(text))
@@ -1402,11 +1482,224 @@ def update_index_html(data):
             </div>
 '''
 
-    updated = re.sub(pattern, rf'\1{new_card_html}\3', content, flags=re.DOTALL)
-    updated = update_econ_dashboard(updated)   # 경제지표 FRED 데이터 업데이트
+def update_premium_market_dashboard(content, data):
+    """PREMIUM_MARKET_DASHBOARD_START/END 블록 업데이트 (확장판)"""
+    
+    mapping = {
+        'pdb-kospi':  '^KS11',
+        'pdb-kosdaq': '^KQ11',
+        'pdb-nasdaq': '^NDX',
+        'pdb-sp500':  '^GSPC',
+        'pdb-dow':    '^DJI',
+        'pdb-vix':    '^VIX',
+        'pdb-us02y':  '^ZT=F',
+        'pdb-us10y':  '^TNX',
+        'pdb-wti':    'CL=F',
+        'pdb-gold':   'GC=F',
+        'pdb-silver': 'SI=F',
+        'pdb-btc':    'BTC-USD',
+        'pdb-eth':    'ETH-USD'
+    }
+    
+    fetch_results = {}
+    
+    # 1. KIS API 우선 사용 (국내 지수)
+    kis_token = get_kis_access_token()
+    if kis_token:
+        fetch_results.update(fetch_kis_market_index(kis_token))
+        print(f"[KIS] 국내 지수 업데이트 완료")
+
+    # 2. 기타 지표 (yfinance)
+    if yf:
+        for key, ticker in mapping.items():
+            if key in fetch_results: continue 
+            try:
+                if key == 'pdb-us02y' and ticker == '^ZT=F': ticker = 'ZN=F'
+                
+                h = yf.Ticker(ticker).history(period="2d")
+                if not h.empty:
+                    curr = h['Close'].iloc[-1]
+                    prev = h['Close'].iloc[-2] if len(h) > 1 else curr
+                    pct  = ((curr - prev) / prev) * 100
+                    
+                    dec = 2
+                    if 'btc' in key or 'eth' in key: dec = 0
+                    if 'silver' in key: dec = 3
+                    
+                    fetch_results[key] = {
+                        'val': f"{curr:,.{dec}f}",
+                        'pct': f"{'+' if pct >= 0 else ''}{pct:.2f}%",
+                        'up': bool(pct >= 0)
+                    }
+            except Exception as e:
+                print(f"[PDB] {key} ({ticker}) 실패: {e}")
+                
+    # 3. 투자자 현황 업데이트 (KIS 우선)
+    investors = None
+    if kis_token:
+        investors = fetch_kis_investor_status(kis_token)
+        print(f"[KIS] 수급 현황 업데이트 완료")
+        
+    if not investors:
+        investors = {"kospi": {"ant": "-", "foreign": "-", "inst": "-"}, "kosdaq": {"ant": "-", "foreign": "-", "inst": "-"}}
+    
+    for market in ['kospi', 'kosdaq']:
+        for target in ['ant', 'foreign', 'inst']:
+            val = investors[market][target]
+            content = re.sub(rf'id="pdb-{market}-{target}">[^<]*</span>', rf'id="pdb-{market}-{target}">{val}</span>', content)
+
+    # HTML 내 ID 값들을 정규식으로 교체 (가격/변동률)
+    for key, res in fetch_results.items():
+        v, p = res["val"], res["pct"]
+        content = re.sub(rf'(id="{key}-val"\s*>)[^<]*(</span>)', rf'\g<1>{v}\g<2>', content)
+        content = re.sub(rf'(id="{key}-pct"\s*>\()[^<]*(\)</span>)', rf'\g<1>{p}\g<2>', content)
+        print(f"[PDB-FIX] {key} -> {v} ({p})")
+        
+    fetch_results['kis_investors'] = investors
+    return content, fetch_results
+
+def update_index_html(data):
+    if not os.path.exists(INDEX_HTML_PATH):
+        return
+
+    with open(INDEX_HTML_PATH, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # --- 기존 카드 업데이트 로직 ---
+    indices_parts = []
+    for idx in data['market']['indices']:
+        cls   = 'change-up' if idx['up'] else 'change-down'
+        arrow = '▲' if idx['up'] else '▼'
+        indices_parts.append(
+            f'<div class="mini-box"><span class="mini-name">{idx["name"]}</span>'
+            f'<span class="mini-val">{idx["val"]}</span>'
+            f'<span class="mini-pct {cls}">{arrow} {idx["pct"]}</span></div>'
+        )
+    indices_html = ''.join(indices_parts)
+
+    sectors_parts = []
+    for s in data['market']['sectors']:
+        cls = 'change-up' if s.get('up') else 'change-down'
+        sectors_parts.append(
+            f'<div class="data-bar-row"><div class="data-bar-label"><span>{s["name"]}</span>'
+            f'<div class="data-bar-visual"><div class="data-bar-fill" style="width:{s["val"]}; background:{s["color"]};"></div></div></div>'
+            f'<span class="{cls}">{s["pct"]}</span></div>'
+        )
+    sectors_html = ''.join(sectors_parts)
+
+    bigtech_parts = []
+    for b in data['market']['bigtech']:
+        cls = 'change-up' if b['up'] else 'change-down'
+        bigtech_parts.append(
+            f'<div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">{b["name"]}</span>'
+            f'<span class="{cls}" style="font-size:0.95rem; font-weight:700;">{b["pct"]}</span></div>'
+        )
+    bigtech_html = ''.join(bigtech_parts)
+
+    left_card_content = f'''
+                        <div class="news-card-header">
+                            <div class="header-top">
+                                <span class="date-badge">{data['date']} ({data['weekday']})</span>
+                                <span style="font-size: 0.9rem; color: #94a3b8;">US Market Focus</span>
+                                <span id="leftCardUpdated" style="font-size:0.8rem;color:#94a3b8;margin-left:4px;">Updated: {data['news']['updated_time']} KST</span>
+                                <button onclick="refreshLeftCard(this)" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.15)\';this.style.color=\'#f8fafc\'" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';this.style.color=\'#94a3b8\'">⟳ 새로고침</button>
+                            </div>
+                            <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">{data['market']['title']}</div>
+                        </div>
+                        <div class="section-label">Major Indices</div>
+                        <div class="index-grid-3">{indices_html}</div>
+                        <div class="section-label">S&P 500 Sectors</div>
+                        <div style="margin-bottom:20px;">{sectors_html}</div>
+                        <div class="section-label">Magnificent 7</div>
+                        <div class="index-grid-3" style="grid-template-columns: repeat(4, 1fr);">{bigtech_html}</div>
+                        <div class="section-label">Korea Market Summary</div>
+                        <div style="font-size:1rem; line-height:1.6; color:#cbd5e1; background:rgba(255,255,255,0.03); padding:12px; border-radius:10px;">
+                            🇰🇷 {data['market']['korea']}
+                        </div>
+    '''
+
+    nn = data['news']
+    mk_dropdown_html = build_mk_dropdown_html(data.get('mk_data', {}))
+    upd_time   = nn['updated_time']
+    reload_btn = (
+        '<button onclick="refreshRightCard()" title="새로고침"'
+        ' style="margin-left:auto;background:rgba(255,255,255,0.08);'
+        'border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;'
+        'padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;"'
+        ' onmouseover="this.style.background=\'rgba(255,255,255,0.15)\';this.style.color=\'#f8fafc\'"'
+        ' onmouseout="this.style.background=\'rgba(255,255,255,0.08)\';this.style.color=\'#94a3b8\'">⟳ 새로고침</button>'
+    )
+
+    right_card_content = (
+        '<div class="news-card-header">'
+        '<div class="header-top">'
+        '<span class="date-badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;">뉴스</span>'
+        f'<span style="font-size:0.9rem;color:#94a3b8;">Updated: {upd_time} KST</span>'
+        + reload_btn +
+        '</div>'
+        '<div class="market-status-title" style="margin-top:10px;">📰 뉴스 브리핑</div>'
+        '</div>'
+        '<div>'
+        '<strong style="color:#fbbf24;font-size:0.82em;display:block;margin-bottom:8px;'
+        'letter-spacing:0.03em;border-bottom:1px solid rgba(251,191,36,0.2);padding-bottom:4px;">'
+        '📰 매일경제</strong>'
+        + mk_dropdown_html +
+        '</div>'
+    )
+
+    # --- 마커 기반 업데이트 ---
+    if 'volatility' in data:
+        vol_html = build_volatility_card_html(data['volatility'], data['news']['updated_time'])
+        vol_pat  = r'<!-- VOLATILITY_CARD_START -->.*?<!-- VOLATILITY_CARD_END -->'
+        vol_rep  = '<!-- VOLATILITY_CARD_START -->\n' + vol_html + '\n            <!-- VOLATILITY_CARD_END -->'
+        content  = re.sub(vol_pat, vol_rep, content, flags=re.DOTALL)
+
+    pattern = r'(<!-- MARKET_NEWS_CARD_START -->)(.*?)(<!-- MARKET_NEWS_CARD_END -->)'
+    left_pattern = r'<!-- LEFT_CARD_START -->(.*?)<!-- LEFT_CARD_END -->'
+    left_match = re.search(left_pattern, content, re.DOTALL)
+    if left_match and not data['is_morning_update'] and '--force' not in sys.argv:
+        left_html_to_use = re.sub(
+            r'(<span id="leftCardUpdated"[^>]*>)[^<]*(</span>)',
+            rf'\g<1>Updated: {data["news"]["updated_time"]} KST\g<2>',
+            left_match.group(1).strip()
+        )
+    else:
+        left_html_to_use = left_card_content
+
+    new_card_html = f'''
+            <div id="marketNewsCardArea">
+                <div class="news-card-wrapper">
+                    <div class="news-card-column" id="left-card-column">
+                        <!-- LEFT_CARD_START -->
+                        {left_html_to_use}
+                        <!-- LEFT_CARD_END -->
+                    </div>
+                    <div class="news-card-column" id="right-card-column">
+                        <!-- RIGHT_CARD_START -->
+                        {right_card_content}
+                        <!-- RIGHT_CARD_END -->
+                    </div>
+                </div>
+            </div>
+'''
+    content = re.sub(pattern, rf'\1{new_card_html}\3', content, flags=re.DOTALL)
+    content = update_econ_dashboard(content)
+    
+    # 프리미엄 대시보드 업데이트
+    content, premium_data = update_premium_market_dashboard(content, data)
+
     with open(INDEX_HTML_PATH, 'w', encoding='utf-8') as f:
-        f.write(updated)
-    print("index.html 업데이트 완료.")
+        f.write(content)
+    
+    # JSON 데이터 저장
+    market_data_json = {
+        'premium': premium_data,
+        'updated_at': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    with open('market_data.json', 'w', encoding='utf-8') as f:
+        json.dump(market_data_json, f, ensure_ascii=False, indent=2)
+    
+    print("index.html 및 market_data.json 업데이트 완료.")
 
 
 if __name__ == "__main__":
