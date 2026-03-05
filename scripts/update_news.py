@@ -827,23 +827,32 @@ def update_econ_dashboard(content):
 
 def get_cnn_fear_greed():
     """CNN Fear & Greed Index (무료 공개 API)
-    score 0-24: Extreme Fear, 25-44: Fear, 45-55: Neutral, 56-75: Greed, 76-100: Extreme Greed
+    상세 히스토리(1주, 1달, 1년 전) 포함
     """
     url = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata"
     try:
         req = urllib.request.Request(url, headers=HEADERS)
         with urllib.request.urlopen(req, timeout=15) as r:
             data = json.loads(r.read().decode('utf-8'))
+        
         fg = data.get('fear_and_greed', {})
         score = fg.get('score')
         rating = fg.get('rating', '')
-        prev   = fg.get('previous_close')
-        if score is not None:
-            return {
-                'score':  round(float(score), 1),
-                'rating': rating,
-                'prev':   round(float(prev), 1) if prev is not None else None
-            }
+        
+        # 히스토리 데이터 추출
+        # previous_close, one_week_ago, one_month_ago, one_year_ago
+        return {
+            'score': round(float(score), 1) if score else 0,
+            'rating': rating,
+            'scorePrev': round(float(fg.get('previous_close', 0)), 1),
+            'ratingPrev': fg.get('previous_rating', ''),
+            'score1w': round(float(fg.get('one_week_ago', 0)), 1),
+            'rating1w': fg.get('one_week_rating', ''),
+            'score1m': round(float(fg.get('one_month_ago', 0)), 1),
+            'rating1m': fg.get('one_month_rating', ''),
+            'score1y': round(float(fg.get('one_year_ago', 0)), 1),
+            'rating1y': fg.get('one_year_rating', '')
+        }
     except Exception as e:
         print(f"[CNN F&G] 실패: {e}")
     return {}
@@ -919,7 +928,8 @@ def get_volatility_macro_data():
     fg = get_cnn_fear_greed()
     vm['fg_score']  = fg.get('score')
     vm['fg_rating'] = fg.get('rating', '')
-    vm['fg_prev']   = fg.get('prev')
+    vm['fg_prev']   = fg.get('scorePrev')
+    vm['fg_all']    = fg
 
     # FRED 매크로 (공개 CSV)
     vm['dff'],     _ = get_fred_latest("DFF")              # Fed 기준금리
@@ -1341,6 +1351,7 @@ def get_latest_market_data():
             "korea": "실시간 글로벌 시장 변동에 따른 투자 심리 변화가 감지되고 있습니다. 주도 섹터 및 기관 수급 유입 상황을 주의 깊게 살펴보세요."
         },
         "volatility": vm_data,
+        "fearGreed": vm_data.get('fg_all', {}),
         "mk_data": mk_data,
         "news": {
             "updated_time": now_kst.strftime("%H:%M")
