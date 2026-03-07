@@ -3947,8 +3947,6 @@ var ECON_DATA = {
                 if (typeof ECON_DATA === 'undefined') return;
                 var D = ECON_DATA;
                 var grid = document.getElementById('econGrid');
-                var updEl = document.getElementById('econUpdated');
-                if (updEl && D.lastUpdated) updEl.textContent = '출처: FRED·ISM·BLS·BEA | 업데이트: ' + D.lastUpdated;
 
                 // ── 경제 분석 요약 렌더링 ────────────────────────────────
                 (function() {
@@ -4006,49 +4004,62 @@ var ECON_DATA = {
                     return result;
                 }
 
-                // ── 카드 렌더링 (DocumentFragment 배치 삽입으로 reflow 1회) ──
-                var fragment = document.createDocumentFragment();
-                ORDER.forEach(function(key) {
-                    var ind = D.indicators[key];
-                    if (!ind) return;
-                    var cur = ind.current, chg = ind.change || 0;
-                    var valStr = cur === null || cur === undefined ? 'N/A' :
-                        (ind.unit === 'K' ? Math.round(cur).toLocaleString() + 'K' :
-                         Number(cur).toFixed(1) + ind.unit);
-                    // 방향에 따른 색상 (인플레이션·실업률은 높으면 나쁨)
-                    var isGood = chg > 0 ? (ind.isHighGood !== false) : (ind.isHighGood === false);
-                    var chgCls = chg === 0 ? 'neu' : (isGood ? 'pos' : 'neg');
-                    var arrow  = chg > 0 ? '▲' : chg < 0 ? '▼' : '─';
-                    var chgTxt = chg !== 0 ? arrow + Math.abs(chg).toFixed(1) + ind.unit + ' 전월比' : '─ 전월 동일';
-
-                    var meta = ECON_STATUS[key];
-                    var st   = meta ? meta.status(cur === null || cur === undefined ? 0 : cur) : 'neutral';
-                    var stLbl = st === 'bull' ? '강세' : st === 'bear' ? '주의' : '중립';
-
-                    var card = document.createElement('div');
-                    card.className = 'econ-card';
-                    card.innerHTML =
-                        '<div class="econ-card-hd">' +
-                          '<span class="econ-card-lbl">'+ind.label+'</span>' +
-                          '<span class="econ-card-ico">'+ind.icon+'</span>' +
-                        '</div>' +
-                        '<div class="econ-card-val">'+valStr+'</div>' +
-                        '<div class="econ-card-chg '+chgCls+'">'+chgTxt+'</div>' +
-                        sparkSvg(ind.values, ind.threshold, ind.color || '#3b82f6') +
-                        '<div class="econ-card-info">' +
-                          '<div class="econ-card-st">' +
-                            '<span class="econ-sdot '+st+'"></span>' +
-                            '<span class="econ-stxt '+st+'">'+stLbl+'</span>' +
-                            (meta ? '<span class="econ-card-def">'+meta.def+'</span>' : '') +
-                          '</div>' +
-                          (meta ? '<div class="econ-card-sum">'+(meta.summary[st]||'')+'</div>' : '') +
-                          (meta ? '<div class="econ-card-thr">'+meta.thrStr+'</div>' : '') +
-                        '</div>' +
-                        '<div class="econ-card-frq">'+ind.freq+'</div>';
-                    card.addEventListener('click', function() { openEconModal(key); });
-                    fragment.appendChild(card);
-                });
-                grid.appendChild(fragment);
+                // ── 카드 렌더링 (FRED 갱신 후 재호출 가능 → window.renderEconGrid) ──
+                window.renderEconGrid = function(isLive) {
+                    _sparkCache = {};
+                    var g = document.getElementById('econGrid');
+                    if (!g) return;
+                    g.innerHTML = '';
+                    var hdr = document.getElementById('econUpdated');
+                    if (hdr) {
+                        if (isLive) {
+                            var kst = new Date(Date.now() + 9 * 3600000).toISOString();
+                            hdr.textContent = '출처: FRED | FRED 자동갱신: ' + kst.substring(0, 10) + ' ' + kst.substring(11, 16) + ' KST';
+                        } else {
+                            hdr.textContent = '출처: FRED·ISM·BLS·BEA | 기준: ' + (ECON_DATA.lastUpdated || '--');
+                        }
+                    }
+                    var frag = document.createDocumentFragment();
+                    ORDER.forEach(function(key) {
+                        var ind = ECON_DATA.indicators[key];
+                        if (!ind) return;
+                        var cur = ind.current, chg = ind.change || 0;
+                        var valStr = cur === null || cur === undefined ? 'N/A' :
+                            (ind.unit === 'K' ? Math.round(cur).toLocaleString() + 'K' :
+                             Number(cur).toFixed(1) + ind.unit);
+                        var isGood = chg > 0 ? (ind.isHighGood !== false) : (ind.isHighGood === false);
+                        var chgCls = chg === 0 ? 'neu' : (isGood ? 'pos' : 'neg');
+                        var arrow  = chg > 0 ? '▲' : chg < 0 ? '▼' : '─';
+                        var chgTxt = chg !== 0 ? arrow + Math.abs(chg).toFixed(1) + ind.unit + ' 전월比' : '─ 전월 동일';
+                        var meta = ECON_STATUS[key];
+                        var st   = meta ? meta.status(cur === null || cur === undefined ? 0 : cur) : 'neutral';
+                        var stLbl = st === 'bull' ? '강세' : st === 'bear' ? '주의' : '중립';
+                        var card = document.createElement('div');
+                        card.className = 'econ-card';
+                        card.innerHTML =
+                            '<div class="econ-card-hd">' +
+                              '<span class="econ-card-lbl">'+ind.label+'</span>' +
+                              '<span class="econ-card-ico">'+ind.icon+'</span>' +
+                            '</div>' +
+                            '<div class="econ-card-val">'+valStr+'</div>' +
+                            '<div class="econ-card-chg '+chgCls+'">'+chgTxt+'</div>' +
+                            sparkSvg(ind.values, ind.threshold, ind.color || '#3b82f6') +
+                            '<div class="econ-card-info">' +
+                              '<div class="econ-card-st">' +
+                                '<span class="econ-sdot '+st+'"></span>' +
+                                '<span class="econ-stxt '+st+'">'+stLbl+'</span>' +
+                                (meta ? '<span class="econ-card-def">'+meta.def+'</span>' : '') +
+                              '</div>' +
+                              (meta ? '<div class="econ-card-sum">'+(meta.summary[st]||'')+'</div>' : '') +
+                              (meta ? '<div class="econ-card-thr">'+meta.thrStr+'</div>' : '') +
+                            '</div>' +
+                            '<div class="econ-card-frq">'+ind.freq+'</div>';
+                        card.addEventListener('click', function() { openEconModal(key); });
+                        frag.appendChild(card);
+                    });
+                    g.appendChild(frag);
+                };
+                window.renderEconGrid(false); // 초기 렌더 (하드코딩 데이터)
 
                 // ── 모달 (Chart.js lazy load) ─────────────────────────────
                 var _chartInst = null;
@@ -4473,7 +4484,7 @@ var ECON_DATA = {
 
         /* ── API 키 ─────────────────────────────────────────── */
         var FMP_KEY    = 'JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK'; // 유료 – 1차 우선
-        var FRED_KEY   = '0237f97a074fe8296b3bb3b395e65057';
+        var FRED_KEY   = '8a2fc0e51f931c3f4506eba1e177c644';
         var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
         var FMP_BASE   = 'https://financialmodelingprep.com/stable';
         var FRED_BASE  = 'https://api.stlouisfed.org/fred/series/observations';
@@ -4587,15 +4598,19 @@ var ECON_DATA = {
         }
 
         function fmpQ(symbols) {
-            // CORS 우회를 위해 imdGetProxy 사용
-            return imdGetProxy(FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+            var url = FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
+            // 직접 CORS 시도 → 실패 시 프록시 폴백
+            return imdGet(url)
+                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
 
         // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
         function fmpIndexQ(symbols) {
-            return imdGetProxy(FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+            var url = FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
+            return imdGet(url)
+                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
@@ -4623,7 +4638,12 @@ var ECON_DATA = {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
-                if (!d || !d.observations) return null;
+                if (!d) return null;
+                if (d.error_message) {
+                    console.warn('[FRED] API 오류 (' + series + '):', d.error_message);
+                    return null;
+                }
+                if (!d.observations) return null;
                 var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
             }
@@ -4632,6 +4652,129 @@ var ECON_DATA = {
                 .catch(function() {
                     return imdGetProxy(url).then(_parse).catch(function(){ return null; });
                 });
+        }
+
+        /* ── FRED 다중 관측치 (경제지표 대시보드 실시간 갱신용) ──────
+         * extra: 추가 파라미터 (e.g. '&frequency=m&aggregation_method=avg')
+         * 반환: 최신순 필터링된 observations 배열 (null=실패)
+         * ──────────────────────────────────────────────────────── */
+        function fredSeries(series, limit, extra) {
+            var url = FRED_BASE + '?series_id=' + series +
+                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=' + limit +
+                (extra || '');
+            return imdGet(url)
+                .catch(function() { return imdGetProxy(url); })
+                .then(function(d) {
+                    if (!d) return null;
+                    if (d.error_message) { console.warn('[FRED]', series + ':', d.error_message); return null; }
+                    return (d.observations || []).filter(function(o) {
+                        return o.value !== '.' && o.value !== '';
+                    });
+                })
+                .catch(function() { return null; });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 경제지표 대시보드 – FRED 실시간 갱신 (월간 발표 기준)
+         *  fedfunds  → FEDFUNDS   (직접값 %)
+         *  cpi       → CPIAUCSL   (YoY 계산)
+         *  core_cpi  → CPILFESL   (YoY)
+         *  core_pce  → PCEPILFE   (YoY)
+         *  payems    → PAYEMS     (MoM 차분, K)
+         *  unrate    → UNRATE     (직접값 %)
+         *  dgs10     → DGS10      (월평균)
+         *  spread    → T10Y2Y     (월평균, 10Y-2Y 스프레드)
+         *  retail    → RSAFS      (YoY)
+         *  umcsent   → UMCSENT    (직접값)
+         *  mfg_pmi   → ISM 무료 API 없음 – 하드코딩 유지
+         *  svc_pmi   → ISM 무료 API 없음 – 하드코딩 유지
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadEconFromFRED() {
+            var MONTHLY = '&frequency=m&aggregation_method=avg';
+            var N = 24; // 차트에 표시할 개월 수
+
+            function pf(s) { return parseFloat(s) || 0; }
+            function ym(o)  { return o.date.substring(0, 7); }
+
+            // 레벨→YoY% (날짜 기반 매칭으로 빈 월 대응)
+            function toYoY(obs, n) {
+                if (!obs || obs.length < n + 1) return null;
+                var map = {};
+                obs.forEach(function(o) { map[ym(o)] = pf(o.value); });
+                var recent = obs.slice(0, Math.min(n, obs.length)).reverse(); // asc
+                var result = [];
+                recent.forEach(function(o) {
+                    var yr = o.date.substring(0, 4), mo = o.date.substring(5, 7);
+                    var yaKey = (parseInt(yr) - 1) + '-' + mo;
+                    var ya = map[yaKey];
+                    if (!ya) return;
+                    result.push({ d: ym(o), v: parseFloat(((pf(o.value) - ya) / Math.abs(ya) * 100).toFixed(2)) });
+                });
+                return result.length >= 2 ? result : null;
+            }
+
+            // 레벨→MoM 차분 (PAYEMS, 단위 K)
+            function toMoM(obs, n) {
+                if (!obs || obs.length < 2) return null;
+                var src = obs.slice(0, Math.min(n + 1, obs.length));
+                var result = [];
+                for (var i = src.length - 2; i >= 0; i--) { // asc
+                    result.push({ d: ym(src[i]), v: parseFloat((pf(src[i].value) - pf(src[i+1].value)).toFixed(1)) });
+                }
+                return result.length >= 2 ? result : null;
+            }
+
+            // 직접값 배열 (asc)
+            function toDirect(obs, n) {
+                if (!obs || obs.length < 2) return null;
+                var src = obs.slice(0, Math.min(n, obs.length)).reverse();
+                return src.map(function(o) { return { d: ym(o), v: parseFloat(pf(o.value).toFixed(2)) }; });
+            }
+
+            // ECON_DATA 업데이트 헬퍼
+            function upd(key, arr, dec) {
+                if (!arr || arr.length < 2) return false;
+                var ind = ECON_DATA.indicators[key];
+                ind.dates  = arr.map(function(p) { return p.d; });
+                ind.values = arr.map(function(p) { return p.v; });
+                var n2 = ind.values.length;
+                ind.current = parseFloat(ind.values[n2-1].toFixed(dec));
+                ind.prev    = parseFloat(ind.values[n2-2].toFixed(dec));
+                ind.change  = parseFloat((ind.current - ind.prev).toFixed(dec));
+                return true;
+            }
+
+            Promise.all([
+                fredSeries('FEDFUNDS', N + 1),          // [0]
+                fredSeries('CPIAUCSL', N + 14),          // [1] YoY 필요
+                fredSeries('CPILFESL', N + 14),          // [2]
+                fredSeries('PCEPILFE', N + 14),          // [3]
+                fredSeries('PAYEMS',   N + 2),           // [4] MoM
+                fredSeries('UNRATE',   N + 1),           // [5]
+                fredSeries('DGS10',    N + 1, MONTHLY),  // [6] 월평균
+                fredSeries('T10Y2Y',   N + 1, MONTHLY),  // [7] 스프레드 월평균
+                fredSeries('RSAFS',    N + 14),          // [8] 소매판매 YoY
+                fredSeries('UMCSENT',  N + 1)            // [9]
+            ]).then(function(r) {
+                var any = false;
+                if (upd('fedfunds', toDirect(r[0], N), 2)) any = true;
+                if (upd('cpi',      toYoY(r[1], N),    2)) any = true;
+                if (upd('core_cpi', toYoY(r[2], N),    2)) any = true;
+                if (upd('core_pce', toYoY(r[3], N),    2)) any = true;
+                if (upd('payems',   toMoM(r[4], N),    1)) any = true;
+                if (upd('unrate',   toDirect(r[5], N), 1)) any = true;
+                if (upd('dgs10',    toDirect(r[6], N), 2)) any = true;
+                if (upd('spread',   toDirect(r[7], N), 2)) any = true;
+                if (upd('retail',   toYoY(r[8], N),    2)) any = true;
+                if (upd('umcsent',  toDirect(r[9], N), 1)) any = true;
+
+                if (any && typeof window.renderEconGrid === 'function') {
+                    window.renderEconGrid(true);
+                    console.log('[ECON] FRED 실시간 경제지표 갱신 완료');
+                }
+            }).catch(function(e) {
+                console.warn('[ECON] FRED 경제지표 로드 실패:', e);
+            });
         }
 
         /* ── Twelvedata 헬퍼 (프록시 경유 – free tier CORS 미지원) ── */
@@ -4655,10 +4798,15 @@ var ECON_DATA = {
             }
             var url1 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
             var url2 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
-            return imdGetProxy(url1).then(_parse)
-                .then(function(v){
-                    if (v !== null && v !== undefined) return v;
-                    return imdGetProxy(url2).then(_parse);
+            // Yahoo chart API는 CORS 직접 지원 – 직접 시도 후 프록시 폴백
+            return imdGet(url1).then(_parse)
+                .catch(function() { return imdGet(url2).then(_parse); })
+                .catch(function() {
+                    return imdGetProxy(url1).then(_parse)
+                        .then(function(v) {
+                            if (v !== null && v !== undefined) return v;
+                            return imdGetProxy(url2).then(_parse);
+                        });
                 })
                 .catch(function(){ return null; });
         }
@@ -5054,6 +5202,11 @@ var ECON_DATA = {
         imdSetAllSync();
         imdLoadAll();
         setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 60000);
+
+        // 경제지표 대시보드 – FRED 실시간 갱신 (별도 주기: 4시간)
+        // DOMContentLoaded 이후 비동기 실행 보장
+        setTimeout(imdLoadEconFromFRED, 500);
+        setInterval(imdLoadEconFromFRED, 4 * 60 * 60 * 1000);
     })();
     </script>
 
