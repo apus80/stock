@@ -4702,6 +4702,14 @@ var ECON_DATA = {
                     var val = item.nv || item.sv;
                     if (!val) return null;
                     var price = parseFloat(String(val).replace(/,/g, ''));
+                    // 비현실적인 값 방어: 프록시/API 구조 변경 시 엉뚱한 필드를
+                    // 파싱하는 경우(예: KOSDAQ 115,467) Yahoo 폴백으로 넘김
+                    var RANGE = { KOSPI: [500, 6000], KOSDAQ: [100, 2000] };
+                    var r = RANGE[code];
+                    if (r && (price < r[0] || price > r[1])) {
+                        console.warn('[Naver] ' + code + ' 범위 초과 → 폴백:', price);
+                        return null;
+                    }
                     var cr = (item.cr !== undefined && item.cr !== null && item.cr !== '')
                         ? parseFloat(String(item.cr).replace(/,/g, '')) : null;
                     var cv = (item.cv !== undefined && item.cv !== null && item.cv !== '')
@@ -4717,7 +4725,14 @@ var ECON_DATA = {
 
         /* ── Yahoo Quote (price + previousClose) ────────────── */
         function yahooQuote(symbol) {
-            var sym = encodeURIComponent(symbol);
+            // encodeURIComponent 을 쓰면 = → %3D 로 인코딩됨.
+            // 이후 imdGetProxy 가 URL 전체를 한 번 더 인코딩하면
+            // %3D → %253D (이중 인코딩). 프록시가 한 번만 디코딩 →
+            // Yahoo 는 %3D 를 그대로 받아 ES=F 대신 ES(Eversource Energy)
+            // 주가($74)를 반환하는 버그가 발생함.
+            // 해결: ^ 만 %5E 로 인코딩 (URL 경로에서 ^ 가 불안정),
+            //       = 는 그대로 유지 → imdGetProxy 가 1회만 인코딩 → 정상.
+            var sym = symbol.replace(/\^/g, '%5E');
             var suffix = '?interval=1d&range=1d&includePrePost=false';
             function _parse(d) {
                 if (d && d.chart && d.chart.result && d.chart.result[0]) {
@@ -4788,10 +4803,10 @@ var ECON_DATA = {
 
         // Worker /quote 직접 호출 (CORS 허용 – 프록시 불필요)
         // imdGetCached: 55초 TTL + 동시 중복 요청 제거
-        // 타임아웃 5초: Cloudflare 엣지 서버는 통상 <1초 응답
+        // 타임아웃 8초: Cloudflare Worker cold start 최대 5~8초 허용
         function fmpQ(symbols) {
             var url = WORKER_BASE + '/quote?symbol=' + symbols;
-            return imdGetCached(url, 5000)
+            return imdGetCached(url, 8000)
                 .then(function(d) { return (d && !d.error) ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
@@ -4970,7 +4985,8 @@ var ECON_DATA = {
 
         /* ── Yahoo Finance (CORS 프록시, query1→query2 폴백) ─── */
         function yahooPrice(symbol) {
-            var sym = encodeURIComponent(symbol);
+            // yahooQuote 와 동일한 이중 인코딩 버그 방지 → ^ 만 인코딩
+            var sym = symbol.replace(/\^/g, '%5E');
             var suffix = '?interval=1d&range=1d&includePrePost=false';
             function _parse(d) {
                 if (d && d.chart && d.chart.result && d.chart.result[0])
