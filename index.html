@@ -397,11 +397,6 @@
             font-weight: 700;
         }
 
-        .sentiment-inner {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
 
         .quote-item {
             background: #f8fafc;
@@ -1690,6 +1685,9 @@
         body.mobile-view .vol-macro-grid { grid-template-columns: 1fr !important; }
         body.mobile-view .econ-stats { grid-template-columns: repeat(2,1fr) !important; }
         body.mobile-view .co-metrics { grid-template-columns: repeat(2,1fr) !important; }
+        /* 모바일 뷰: 전광판·시장심리 아코디언 숨김 */
+
+        body.mobile-view .vol-macro-card { display: none !important; }
 
         /* ── INVESTFLOW MARKET DASHBOARD (imd) ── */
         .imd-wrap {
@@ -1760,6 +1758,20 @@
             font-family: Consolas, monospace;
             color: var(--imd-text) !important;
         }
+
+        /* ── 네트워크 상태 도트 ── */
+        .ns { display:inline-block; width:7px; height:7px; border-radius:50%; margin-left:5px; flex-shrink:0; vertical-align:middle; }
+        .ns-sync    { background:#3b82f6; animation:nsPulse 1.1s ease-in-out infinite; }
+        .ns-online  { background:#22c55e; }
+        .ns-offline { background:#ef4444; }
+        @keyframes nsPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.65)} }
+        .imd-wrap .item-right { display:flex; align-items:center; gap:3px; }
+
+        /* ── 카드 새로고침 버튼 ── */
+        .card-rfbtn { background:none; border:none; padding:1px 5px; cursor:pointer; color:#64748b; font-size:1.05rem; line-height:1; border-radius:4px; transition:color .15s; display:inline-flex; align-items:center; }
+        .card-rfbtn:hover { color:#3b82f6; }
+        .card-rfbtn.spin { animation:rfSpin 0.65s linear infinite; color:#3b82f6; pointer-events:none; }
+        @keyframes rfSpin { to{transform:rotate(360deg)} }
 
         /* ── 모바일 상단 컴팩트 버튼 네비 ── */
         .ml-grid-compact {
@@ -1875,73 +1887,73 @@
                     <div class="grid">
 
                         <div class="card">
-                            <div class="title-area"><span class="title">1. 한국 시장</span></div>
-                            <div class="item"><span>KOSPI</span><span id="kospi" class="value">-</span></div>
-                            <div class="item"><span>KOSDAQ</span><span id="kosdaq" class="value">-</span></div>
-                            <div class="item"><span>야간선물</span><span id="kospifut" class="value">-</span></div>
-                            <div class="item"><span>외국인 수급</span><span id="foreignflow" class="value">-</span></div>
-                            <div class="item"><span>기관 수급</span><span id="instflow" class="value">-</span></div>
-                            <div class="item"><span>개인 수급</span><span id="retailflow" class="value">-</span></div>
+                            <div class="title-area"><span class="title">1. 한국 시장</span><button class="card-rfbtn" id="rfbtn-1" onclick="imdRefreshCard(1)" title="새로고침">↻</button></div>
+                            <div class="item"><span>KOSPI</span><span class="item-right"><span id="kospi" class="value">-</span><span class="ns ns-offline" id="ns-kospi"></span></span></div>
+                            <div class="item"><span>KOSDAQ</span><span class="item-right"><span id="kosdaq" class="value">-</span><span class="ns ns-offline" id="ns-kosdaq"></span></span></div>
+                            <div class="item"><span>야간선물</span><span class="item-right"><span id="kospifut" class="value">-</span><span class="ns ns-offline" id="ns-kospifut"></span></span></div>
+                            <div class="item"><span>외국인 수급</span><span class="item-right"><span id="foreignflow" class="value">-</span><span class="ns ns-offline" id="ns-foreignflow"></span></span></div>
+                            <div class="item"><span>기관 수급</span><span class="item-right"><span id="instflow" class="value">-</span><span class="ns ns-offline" id="ns-instflow"></span></span></div>
+                            <div class="item"><span>개인 수급</span><span class="item-right"><span id="retailflow" class="value">-</span><span class="ns ns-offline" id="ns-retailflow"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">2. 미국 시장</span></div>
-                            <div class="item"><span>S&amp;P500 (SPY)</span><span id="sp500" class="value">-</span></div>
-                            <div class="item"><span>NASDAQ (QQQ)</span><span id="nasdaq" class="value">-</span></div>
-                            <div class="item"><span>VIX</span><span id="vix" class="value">-</span></div>
-                            <div class="item"><span>SOX</span><span id="sox" class="value">-</span></div>
+                            <div class="title-area"><span class="title">2. 미국 시장</span><button class="card-rfbtn" id="rfbtn-2" onclick="imdRefreshCard(2)" title="새로고침">↻</button></div>
+                            <div class="item"><span>S&amp;P500 (SPY)</span><span class="item-right"><span id="sp500" class="value">-</span><span class="ns ns-offline" id="ns-sp500"></span></span></div>
+                            <div class="item"><span>NASDAQ (QQQ)</span><span class="item-right"><span id="nasdaq" class="value">-</span><span class="ns ns-offline" id="ns-nasdaq"></span></span></div>
+                            <div class="item"><span>VIX</span><span class="item-right"><span id="vix" class="value">-</span><span class="ns ns-offline" id="ns-vix"></span></span></div>
+                            <div class="item"><span>SOX</span><span class="item-right"><span id="sox" class="value">-</span><span class="ns ns-offline" id="ns-sox"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">3. 미국 선물</span></div>
-                            <div class="item"><span>S&amp;P500 Fut</span><span id="spfuture" class="value">-</span></div>
-                            <div class="item"><span>Nasdaq Fut</span><span id="nasfuture" class="value">-</span></div>
-                            <div class="item"><span>Russell Fut</span><span id="rtyfuture" class="value">-</span></div>
+                            <div class="title-area"><span class="title">3. 미국 선물</span><button class="card-rfbtn" id="rfbtn-3" onclick="imdRefreshCard(3)" title="새로고침">↻</button></div>
+                            <div class="item"><span>S&amp;P500 Fut</span><span class="item-right"><span id="spfuture" class="value">-</span><span class="ns ns-offline" id="ns-spfuture"></span></span></div>
+                            <div class="item"><span>Nasdaq Fut</span><span class="item-right"><span id="nasfuture" class="value">-</span><span class="ns ns-offline" id="ns-nasfuture"></span></span></div>
+                            <div class="item"><span>Russell Fut</span><span class="item-right"><span id="rtyfuture" class="value">-</span><span class="ns ns-offline" id="ns-rtyfuture"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">4. Crypto</span></div>
-                            <div class="item"><span>Bitcoin</span><span id="btc" class="value">-</span></div>
-                            <div class="item"><span>Ethereum</span><span id="eth" class="value">-</span></div>
-                            <div class="item"><span>Solana</span><span id="sol" class="value">-</span></div>
+                            <div class="title-area"><span class="title">4. Crypto</span><button class="card-rfbtn" id="rfbtn-4" onclick="imdRefreshCard(4)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Bitcoin</span><span class="item-right"><span id="btc" class="value">-</span><span class="ns ns-offline" id="ns-btc"></span></span></div>
+                            <div class="item"><span>Ethereum</span><span class="item-right"><span id="eth" class="value">-</span><span class="ns ns-offline" id="ns-eth"></span></span></div>
+                            <div class="item"><span>Solana</span><span class="item-right"><span id="sol" class="value">-</span><span class="ns ns-offline" id="ns-sol"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">5. Commodities</span></div>
-                            <div class="item"><span>Gold</span><span id="gold" class="value">-</span></div>
-                            <div class="item"><span>Silver</span><span id="silver" class="value">-</span></div>
-                            <div class="item"><span>Oil</span><span id="oil" class="value">-</span></div>
-                            <div class="item"><span>DXY</span><span id="dxy" class="value">-</span></div>
+                            <div class="title-area"><span class="title">5. Commodities</span><button class="card-rfbtn" id="rfbtn-5" onclick="imdRefreshCard(5)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Gold</span><span class="item-right"><span id="gold" class="value">-</span><span class="ns ns-offline" id="ns-gold"></span></span></div>
+                            <div class="item"><span>Silver</span><span class="item-right"><span id="silver" class="value">-</span><span class="ns ns-offline" id="ns-silver"></span></span></div>
+                            <div class="item"><span>Oil</span><span class="item-right"><span id="oil" class="value">-</span><span class="ns ns-offline" id="ns-oil"></span></span></div>
+                            <div class="item"><span>DXY</span><span class="item-right"><span id="dxy" class="value">-</span><span class="ns ns-offline" id="ns-dxy"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">6. FX</span></div>
-                            <div class="item"><span>USD/KRW</span><span id="uskrw" class="value">-</span></div>
-                            <div class="item"><span>USD/JPY</span><span id="usjpy" class="value">-</span></div>
-                            <div class="item"><span>EUR/USD</span><span id="eurusd" class="value">-</span></div>
+                            <div class="title-area"><span class="title">6. FX</span><button class="card-rfbtn" id="rfbtn-6" onclick="imdRefreshCard(6)" title="새로고침">↻</button></div>
+                            <div class="item"><span>USD/KRW</span><span class="item-right"><span id="uskrw" class="value">-</span><span class="ns ns-offline" id="ns-uskrw"></span></span></div>
+                            <div class="item"><span>USD/JPY</span><span class="item-right"><span id="usjpy" class="value">-</span><span class="ns ns-offline" id="ns-usjpy"></span></span></div>
+                            <div class="item"><span>EUR/USD</span><span class="item-right"><span id="eurusd" class="value">-</span><span class="ns ns-offline" id="ns-eurusd"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">7. Market Liquidity</span></div>
-                            <div class="item"><span>Fed Balance</span><span id="fedbal" class="value">-</span></div>
-                            <div class="item"><span>Reverse Repo</span><span id="repo" class="value">-</span></div>
-                            <div class="item"><span>M2</span><span id="m2" class="value">-</span></div>
-                            <div class="item"><span>10Y</span><span id="us10y" class="value">-</span></div>
-                            <div class="item"><span>2Y</span><span id="us2y" class="value">-</span></div>
+                            <div class="title-area"><span class="title">7. Market Liquidity</span><button class="card-rfbtn" id="rfbtn-7" onclick="imdRefreshCard(7)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Fed Balance</span><span class="item-right"><span id="fedbal" class="value">-</span><span class="ns ns-offline" id="ns-fedbal"></span></span></div>
+                            <div class="item"><span>Reverse Repo</span><span class="item-right"><span id="repo" class="value">-</span><span class="ns ns-offline" id="ns-repo"></span></span></div>
+                            <div class="item"><span>M2</span><span class="item-right"><span id="m2" class="value">-</span><span class="ns ns-offline" id="ns-m2"></span></span></div>
+                            <div class="item"><span>10Y</span><span class="item-right"><span id="us10y" class="value">-</span><span class="ns ns-offline" id="ns-us10y"></span></span></div>
+                            <div class="item"><span>2Y</span><span class="item-right"><span id="us2y" class="value">-</span><span class="ns ns-offline" id="ns-us2y"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">8. ETF Smart Money</span></div>
-                            <div class="item"><span>SPY Vol Flow</span><span id="spyflow" class="value">-</span></div>
-                            <div class="item"><span>QQQ Vol Flow</span><span id="qqqflow" class="value">-</span></div>
-                            <div class="item"><span>IWM Vol Flow</span><span id="iwmflow" class="value">-</span></div>
+                            <div class="title-area"><span class="title">8. ETF Smart Money</span><button class="card-rfbtn" id="rfbtn-8" onclick="imdRefreshCard(8)" title="새로고침">↻</button></div>
+                            <div class="item"><span>SPY Vol Flow</span><span class="item-right"><span id="spyflow" class="value">-</span><span class="ns ns-offline" id="ns-spyflow"></span></span></div>
+                            <div class="item"><span>QQQ Vol Flow</span><span class="item-right"><span id="qqqflow" class="value">-</span><span class="ns ns-offline" id="ns-qqqflow"></span></span></div>
+                            <div class="item"><span>IWM Vol Flow</span><span class="item-right"><span id="iwmflow" class="value">-</span><span class="ns ns-offline" id="ns-iwmflow"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">9. Sentiment &amp; Options</span></div>
-                            <div class="item"><span>Fear &amp; Greed</span><span id="fear" class="value">-</span></div>
-                            <div class="item"><span>Put/Call Ratio</span><span id="putcall" class="value">-</span></div>
-                            <div class="item"><span>SPY Gamma Wall</span><span id="gamma" class="value">-</span></div>
+                            <div class="title-area"><span class="title">9. Sentiment &amp; Options</span><button class="card-rfbtn" id="rfbtn-9" onclick="imdRefreshCard(9)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Fear &amp; Greed</span><span class="item-right"><span id="fear" class="value">-</span><span class="ns ns-offline" id="ns-fear"></span></span></div>
+                            <div class="item"><span>Put/Call Ratio</span><span class="item-right"><span id="putcall" class="value">-</span><span class="ns ns-offline" id="ns-putcall"></span></span></div>
+                            <div class="item"><span>SPY Gamma Wall</span><span class="item-right"><span id="gamma" class="value">-</span><span class="ns ns-offline" id="ns-gamma"></span></span></div>
                         </div>
 
                     </div><!-- /.grid -->
@@ -1949,60 +1961,6 @@
 
             </div><!-- /#mobileLanding -->
 
-            <!-- TradingView 실시간 전광판 -->
-            <div class="tradingview-ticker-container">
-                <div class="tradingview-widget-container">
-                    <div class="tradingview-widget-container__widget"></div>
-                    <script type="text/javascript"
-                        src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-                            {
-                                "symbols": [
-                                    {
-                                        "proName": "FOREXCOM:SPXUSD",
-                                        "title": "S&P 500"
-                                    },
-                                    {
-                                        "proName": "FOREXCOM:DJI",
-                                        "title": "Dow Jones"
-                                    },
-                                    {
-                                        "proName": "NASDAQ:AAPL",
-                                        "title": "Apple"
-                                    },
-                                    {
-                                        "proName": "NASDAQ:NVDA",
-                                        "title": "NVIDIA"
-                                    },
-                                    {
-                                        "proName": "TVC:GOLD",
-                                        "title": "Gold"
-                                    },
-                                    {
-                                        "proName": "BITSTAMP:BTCUSD",
-                                        "title": "Bitcoin"
-                                    },
-                                    {
-                                        "proName": "KRX:KOSPI",
-                                        "title": "KOSPI"
-                                    },
-                                    {
-                                        "proName": "KRX:KOSDAQ",
-                                        "title": "KOSDAQ"
-                                    },
-                                    {
-                                        "proName": "CBOE:VIX",
-                                        "title": "VIX"
-                                    }
-                                ],
-                                    "showSymbolLogo": true,
-                                        "colorTheme": "light",
-                                            "isTransparent": false,
-                                                "displayMode": "adaptive",
-                                                    "locale": "kr"
-                            }
-                        </script>
-                </div>
-            </div>
 
 
             <!-- VOLATILITY_CARD_START -->
@@ -2285,34 +2243,6 @@ var ECON_DATA = {
                     </div>
                 </div>
 
-                <!-- 시장 심리 및 환율 -->
-                <div class="card sentiment-card">
-                    <h3 class="section-title">📈 시장 심리 및 환율</h3>
-                    <div class="sentiment-inner">
-                        <div class="quote-item">
-                            <p class="quote-label">🇰🇷 실시간 원/달러 환율</p>
-                            <div class="tradingview-widget-container" style="height: 100px;">
-                                <script type="text/x-tradingview"
-                                    data-src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js"
-                                    >
-                                        { "symbol": "FX_IDC:USDKRW", "width": "100%", "colorTheme": "light", "isTransparent": true, "locale": "ko" }
-                                    </script>
-                            </div>
-                        </div>
-                        <div class="divider"></div>
-                        <div class="sentiment-selection">
-                            <p class="quote-label">📊 실시간 시장 심리 지표</p>
-                            <div class="selector-row" style="margin-bottom: 15px;">
-                                <button class="btn-sm" onclick="changeSentiment('KRX:KOSPI')">국피</button>
-                                <button class="btn-sm" onclick="changeSentiment('KRX:KOSDAQ')">국닥</button>
-                                <button class="btn-sm" onclick="changeSentiment('NASDAQ:QQQ')">나스닥</button>
-                                <button class="btn-sm" onclick="changeSentiment('AMEX:SPY')">S&P</button>
-                                <button class="btn-sm" onclick="changeSentiment('BINANCE:BTCUSDT')">코인</button>
-                            </div>
-                            <div id="sentiment-widget-container" style="height: 450px;"></div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- 시장 핵심 거시 지표 (Market Pulse) -->
                 <!-- TVC:GOLD / TVC:SILVER → 등락폭(%) 표시 위해 TVC 합성 심볼 사용 (USOIL과 동일) -->
@@ -4535,71 +4465,595 @@ var ECON_DATA = {
     })();
     </script>
 
-    <!-- INVESTFLOW MARKET DASHBOARD: 데이터 로더 -->
+    <!-- INVESTFLOW MARKET DASHBOARD: 데이터 로더 v2 -->
+    <!-- ※ FMP KEY: 향후 Cloudflare Worker로 이전 예정 -->
     <script>
     (function() {
         'use strict';
 
-        const IMD_WORKER = "https://fmp-proxy.aiinvestflow.workers.dev/?symbol=";
+        /* ── API 키 ─────────────────────────────────────────── */
+        var FMP_KEY    = 'JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK'; // 유료 – 1차 우선
+        var FRED_KEY   = '0237f97a074fe8296b3bb3b395e65057';
+        var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
+        var FMP_BASE   = 'https://financialmodelingprep.com/stable';
+        var FRED_BASE  = 'https://api.stlouisfed.org/fred/series/observations';
+        var TWELVE_BASE = 'https://api.twelvedata.com';
+        var CORS_PX    = [
+            'https://corsproxy.io/?',
+            'https://api.allorigins.win/raw?url=',
+            'https://api.codetabs.com/v1/proxy?quest='
+        ];
 
-        function imdSetValue(id, val) {
-            const el = document.getElementById(id);
+        /* ── 기본 fetch ──────────────────────────────────────── */
+        function imdGet(url, ms) {
+            ms = ms || 9000;
+            var c = new AbortController();
+            var t = setTimeout(function(){ c.abort(); }, ms);
+            var label = url.replace(/apikey=[^&]+/, 'apikey=***').split('?')[0]; // 키 마스킹
+            return fetch(url, { signal: c.signal })
+                .then(function(r){
+                    clearTimeout(t);
+                    if (!r.ok) {
+                        console.warn('[IMD] HTTP ' + r.status + '  →  ' + label);
+                        throw new Error(r.status);
+                    }
+                    return r.json();
+                })
+                .catch(function(e){
+                    clearTimeout(t);
+                    if (e.name === 'AbortError')
+                        console.warn('[IMD] TIMEOUT  →  ' + label);
+                    else if (!String(e.message).match(/^\d{3}$/))  // HTTP 오류는 이미 출력함
+                        console.warn('[IMD] FAIL  →  ' + label, e.message || e);
+                    throw e;
+                });
+        }
+
+        function imdGetProxy(url) {
+            var chain = Promise.reject();
+            CORS_PX.forEach(function(px) {
+                chain = chain.catch(function() { return imdGet(px + encodeURIComponent(url)); });
+            });
+            return chain.catch(function(){
+                console.warn('[IMD] PROXY ALL FAILED  →  ' + url.split('?')[0]);
+                return null;
+            });
+        }
+
+        /* ── 텍스트 fetch (CSV 등 비-JSON 응답 전용) ─────────── */
+        function imdGetText(url, ms) {
+            ms = ms || 9000;
+            var c = new AbortController();
+            var t = setTimeout(function(){ c.abort(); }, ms);
+            var label = url.split('?')[0];
+            return fetch(url, { signal: c.signal })
+                .then(function(r){
+                    clearTimeout(t);
+                    if (!r.ok) { console.warn('[IMD] HTTP ' + r.status + '  →  ' + label); throw new Error(r.status); }
+                    return r.text();
+                })
+                .catch(function(e){ clearTimeout(t); throw e; });
+        }
+
+        function imdGetProxyText(url) {
+            var chain = Promise.reject();
+            CORS_PX.forEach(function(px) {
+                chain = chain.catch(function() { return imdGetText(px + encodeURIComponent(url)); });
+            });
+            return chain.catch(function(){
+                console.warn('[IMD] PROXY TEXT FAILED  →  ' + url.split('?')[0]);
+                return null;
+            });
+        }
+
+        /* ── 네트워크 상태 도트 ────────────────────────────────
+         * state: 'sync' (파란 점멸) | 'online' (녹색) | 'offline' (빨강)
+         * ──────────────────────────────────────────────────── */
+        function imdSetStatus(id, state) {
+            var el = document.getElementById('ns-' + id);
             if (!el) return;
-            if (!val) { el.innerText = "-"; return; }
-            el.innerText = Number(val).toLocaleString(undefined, { maximumFractionDigits: 2 });
+            el.className = 'ns ns-' + state;
+            el.title = state === 'online' ? '데이터 정상'
+                     : state === 'sync'   ? '업데이트 중'
+                     :                     '데이터 없음';
         }
 
-        async function imdFetchPrice(symbol) {
-            try {
-                const r = await fetch(IMD_WORKER + symbol);
-                const j = await r.json();
-                if (j && j.price) return j.price;
-            } catch (e) {}
-            return null;
+        /* ── DOM 업데이트 (상태 자동 반영) ─────────────────── */
+        function imdSetValue(id, val, dec) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (val === null || val === undefined || val === '' || isNaN(Number(val))) {
+                el.innerText = '-';
+                imdSetStatus(id, 'offline');
+                return;
+            }
+            dec = (dec === undefined) ? 2 : dec;
+            el.innerText = Number(val).toLocaleString(undefined, {
+                minimumFractionDigits: dec, maximumFractionDigits: dec
+            });
+            imdSetStatus(id, 'online');
         }
 
-        async function imdSetPrice(symbol, id) {
-            const p = await imdFetchPrice(symbol);
-            imdSetValue(id, p);
+        /* ── FMP 헬퍼 (stable API – 2025.08 이후 v3 폐기) ──────
+         * 구: /api/v3/quote/SPY,QQQ
+         * 신: /stable/quote?symbol=SPY,QQQ
+         * 인덱스(^VIX 등)는 /stable/index-quote 로 폴백
+         * ──────────────────────────────────────────────────── */
+        function _fmpParse(d) {
+            var arr = Array.isArray(d) ? d : (d && d.symbol ? [d] : []);
+            var m = {};
+            arr.forEach(function(q) { if (q && q.symbol) m[q.symbol] = q; });
+            return m;
         }
 
-        async function imdLoadMarkets() {
-            imdSetPrice("SPY",        "sp500");
-            imdSetPrice("QQQ",        "nasdaq");
-            imdSetPrice("^VIX",       "vix");
-            imdSetPrice("^SOX",       "sox");
-
-            imdSetPrice("ES=F",       "spfuture");
-            imdSetPrice("NQ=F",       "nasfuture");
-            imdSetPrice("RTY=F",      "rtyfuture");
-
-            imdSetPrice("GC=F",       "gold");
-            imdSetPrice("SI=F",       "silver");
-            imdSetPrice("CL=F",       "oil");
-            imdSetPrice("DX-Y.NYB",   "dxy");
-
-            imdSetPrice("KRW=X",      "uskrw");
-            imdSetPrice("JPY=X",      "usjpy");
-            imdSetPrice("EURUSD=X",   "eurusd");
+        function fmpQ(symbols) {
+            // CORS 우회를 위해 imdGetProxy 사용
+            return imdGetProxy(FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+                .then(function(d) { return d ? _fmpParse(d) : {}; })
+                .catch(function(){ return {}; });
         }
 
-        async function imdLoadCrypto() {
-            try {
-                const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd");
-                const d = await r.json();
-                imdSetValue("btc", d.bitcoin.usd);
-                imdSetValue("eth", d.ethereum.usd);
-                imdSetValue("sol", d.solana.usd);
-            } catch (e) {}
+        // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
+        function fmpIndexQ(symbols) {
+            return imdGetProxy(FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+                .then(function(d) { return d ? _fmpParse(d) : {}; })
+                .catch(function(){ return {}; });
         }
 
+        function fmpPrice(symbol) {
+            // 인덱스 심볼(%5E = ^)은 index-quote 엔드포인트 우선 시도
+            var isIndex = symbol.indexOf('%5E') !== -1 || symbol.indexOf('^') !== -1;
+            var fetcher = isIndex ? fmpIndexQ : fmpQ;
+            return fetcher(symbol).then(function(m) {
+                var keys = Object.keys(m);
+                return keys.length > 0 ? m[keys[0]].price : null;
+            }).then(function(p) {
+                // index-quote 실패 시 일반 quote로 폴백
+                if (p !== null && p !== undefined) return p;
+                if (isIndex) return fmpQ(symbol).then(function(m) {
+                    var keys = Object.keys(m);
+                    return keys.length > 0 ? m[keys[0]].price : null;
+                });
+                return null;
+            }).catch(function(){ return null; });
+        }
+
+        /* ── FRED 헬퍼 (직접 → 프록시 폴백) ───────────────────── */
+        function fredLatest(series) {
+            var url = FRED_BASE + '?series_id=' + series +
+                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
+            function _parse(d) {
+                if (!d || !d.observations) return null;
+                var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
+                return valid.length > 0 ? parseFloat(valid[0].value) : null;
+            }
+            // FRED CORS: 직접 호출 시도 → 실패 시 프록시 경유
+            return imdGet(url).then(_parse)
+                .catch(function() {
+                    return imdGetProxy(url).then(_parse).catch(function(){ return null; });
+                });
+        }
+
+        /* ── Twelvedata 헬퍼 (프록시 경유 – free tier CORS 미지원) ── */
+        function twelvePrice(symbol) {
+            var url = TWELVE_BASE + '/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + TWELVE_KEY;
+            // 직접 시도 → CORS 차단 시 프록시 폴백
+            return imdGet(url)
+                .catch(function(){ return imdGetProxy(url); })
+                .then(function(d){ return (d && d.price) ? parseFloat(d.price) : null; })
+                .catch(function(){ return null; });
+        }
+
+        /* ── Yahoo Finance (CORS 프록시, query1→query2 폴백) ─── */
+        function yahooPrice(symbol) {
+            var sym = encodeURIComponent(symbol);
+            var suffix = '?interval=1d&range=1d&includePrePost=false';
+            function _parse(d) {
+                if (d && d.chart && d.chart.result && d.chart.result[0])
+                    return d.chart.result[0].meta.regularMarketPrice || null;
+                return null;
+            }
+            var url1 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
+            var url2 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
+            return imdGetProxy(url1).then(_parse)
+                .then(function(v){
+                    if (v !== null && v !== undefined) return v;
+                    return imdGetProxy(url2).then(_parse);
+                })
+                .catch(function(){ return null; });
+        }
+
+        /* ── Naver Finance Polling API (장중 근실시간) ────────
+         * 한국 시장 전용. 장중에는 약 수초~수분 지연.
+         * code: 'KOSPI' | 'KOSDAQ'
+         * ──────────────────────────────────────────────────── */
+        function naverIndex(code) {
+            var url = 'https://polling.finance.naver.com/api/realtime' +
+                '?query=SERVICE_INDEX:' + code;
+            return imdGetProxy(url).then(function(d) {
+                try {
+                    var item = d.result.areas[0].datas[0];
+                    var val = item.nv || item.sv; // nv: 현재값, sv: 이전값 대체
+                    return val ? parseFloat(String(val).replace(/,/g, '')) : null;
+                } catch(e) { return null; }
+            }).catch(function(){ return null; });
+        }
+
+        /* ── 멀티소스 폭포수 (1→2→3차) ─────────────────────── */
+        function fetchMulti(sources) {
+            var chain = Promise.resolve(null);
+            sources.forEach(function(src) {
+                chain = chain.then(function(v) {
+                    if (v !== null && v !== undefined && !isNaN(Number(v))) return v;
+                    return Promise.resolve().then(src).catch(function(){ return null; });
+                });
+            });
+            return chain;
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 1 – 한국 시장
+         * KOSPI/KOSDAQ: Naver(장중 근실시간) → Yahoo(~15분 지연) → Twelvedata(Pro 전용) → FMP(종가)
+         * 야간선물: Yahoo(NK=F 니케이근사) → CME MKN=F
+         * 외국인/기관/개인 수급: 공개 API 없음 → '-'
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadKorea() {
+            // KOSPI – Naver 1차 (장중 근실시간) → Yahoo 2차 → Twelvedata 3차(Pro플랜만 동작) → FMP 4차(종가)
+            fetchMulti([
+                function(){ return naverIndex('KOSPI'); },
+                function(){ return yahooPrice('^KS11'); },
+                function(){ return twelvePrice('KOSPI'); },   // Pro 플랜 전용, 무료는 null
+                function(){ return fmpPrice('%5EKS11'); }
+            ]).then(function(v){ imdSetValue('kospi', v, 2); });
+
+            // KOSDAQ
+            fetchMulti([
+                function(){ return naverIndex('KOSDAQ'); },
+                function(){ return yahooPrice('^KQ11'); },
+                function(){ return twelvePrice('KOSDAQ'); },  // Pro 플랜 전용, 무료는 null
+                function(){ return fmpPrice('%5EKQ11'); }
+            ]).then(function(v){ imdSetValue('kosdaq', v, 2); });
+
+            // 야간선물: CME Micro KOSPI 200 (MKN=F) → NK225 아님 주의
+            fetchMulti([
+                function(){ return yahooPrice('MKN=F'); },
+                function(){ return yahooPrice('^NK'); },
+                function(){ return twelvePrice('KOSPI200'); }
+            ]).then(function(v){ imdSetValue('kospifut', v, 2); });
+
+            // 외국인/기관/개인 수급 – KRX 전용 실시간 계약 데이터 필요
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 2 – 미국 시장
+         * FMP 배치 → Twelvedata → Yahoo
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadUS() {
+            // ETF 3종은 /quote, VIX 인덱스는 /index-quote 로 분리 호출
+            Promise.all([
+                fmpQ('SPY,QQQ,SOXX'),
+                fmpIndexQ('%5EVIX')   // ^VIX
+            ]).then(function(results) {
+                var m    = results[0];   // {SPY:{}, QQQ:{}, SOXX:{}}
+                var mVix = results[1];   // {'^VIX':{}} 또는 {'VIX':{}}
+
+                // SPY → S&P500
+                fetchMulti([
+                    function(){ return m.SPY ? m.SPY.price : null; },
+                    function(){ return twelvePrice('SPY'); },
+                    function(){ return yahooPrice('SPY'); }
+                ]).then(function(v){ imdSetValue('sp500', v, 2); });
+
+                // QQQ → NASDAQ
+                fetchMulti([
+                    function(){ return m.QQQ ? m.QQQ.price : null; },
+                    function(){ return twelvePrice('QQQ'); },
+                    function(){ return yahooPrice('QQQ'); }
+                ]).then(function(v){ imdSetValue('nasdaq', v, 2); });
+
+                // VIX – index-quote 응답 심볼: '^VIX' 또는 'VIX' 또는 '%5EVIX'
+                var vixItem = mVix['^VIX'] || mVix['VIX'] || mVix['%5EVIX'] || Object.values(mVix)[0];
+                var vixP = vixItem ? vixItem.price : null;
+                fetchMulti([
+                    function(){ return vixP; },
+                    function(){ return twelvePrice('VIX'); },
+                    function(){ return yahooPrice('^VIX'); }
+                ]).then(function(v){ imdSetValue('vix', v, 2); });
+
+                // SOX (반도체 지수) – SOXX ETF 대체
+                fetchMulti([
+                    function(){ return m.SOXX ? m.SOXX.price : null; },
+                    function(){ return twelvePrice('SOXX'); },
+                    function(){ return yahooPrice('SOXX'); }
+                ]).then(function(v){ imdSetValue('sox', v, 2); });
+            });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 3 – 미국 선물
+         * Yahoo(=F) → Twelvedata(1!) → FMP
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadFutures() {
+            fetchMulti([
+                function(){ return yahooPrice('ES=F'); },
+                function(){ return twelvePrice('ES1!'); },
+                function(){ return fmpPrice('ES'); }
+            ]).then(function(v){ imdSetValue('spfuture', v, 2); });
+
+            fetchMulti([
+                function(){ return yahooPrice('NQ=F'); },
+                function(){ return twelvePrice('NQ1!'); },
+                function(){ return fmpPrice('NQ'); }
+            ]).then(function(v){ imdSetValue('nasfuture', v, 2); });
+
+            fetchMulti([
+                function(){ return yahooPrice('RTY=F'); },
+                function(){ return twelvePrice('RTY1!'); },
+                function(){ return fmpPrice('RTY'); }
+            ]).then(function(v){ imdSetValue('rtyfuture', v, 2); });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 4 – 암호화폐
+         * CoinGecko → Binance → FMP
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadCrypto() {
+            // 1차: CoinGecko (CORS 허용, 무료)
+            imdGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd')
+                .then(function(d) {
+                    if (d && d.bitcoin) {
+                        imdSetValue('btc', d.bitcoin.usd, 0);
+                        imdSetValue('eth', d.ethereum.usd, 0);
+                        imdSetValue('sol', d.solana.usd, 2);
+                        return;
+                    }
+                    throw new Error('no data');
+                })
+                .catch(function() {
+                    // 2차: Binance (CORS 허용)
+                    return Promise.all([
+                        imdGet('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'),
+                        imdGet('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT'),
+                        imdGet('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT')
+                    ]).then(function(r) {
+                        imdSetValue('btc', r[0] && r[0].price, 0);
+                        imdSetValue('eth', r[1] && r[1].price, 0);
+                        imdSetValue('sol', r[2] && r[2].price, 2);
+                    }).catch(function() {
+                        // 3차: FMP
+                        return fmpQ('BTCUSD,ETHUSD,SOLUSD').then(function(m) {
+                            imdSetValue('btc', m.BTCUSD && m.BTCUSD.price, 0);
+                            imdSetValue('eth', m.ETHUSD && m.ETHUSD.price, 0);
+                            imdSetValue('sol', m.SOLUSD && m.SOLUSD.price, 2);
+                        });
+                    });
+                });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 5 – 상품 (Commodities)
+         * FMP(GCUSD/SIUSD/CLUSD/DX) → Twelvedata → Yahoo
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadCommodities() {
+            fmpQ('GCUSD,SIUSD,CLUSD,DX').then(function(m) {
+                // 금 (Gold)
+                fetchMulti([
+                    function(){ return m.GCUSD ? m.GCUSD.price : null; },
+                    function(){ return twelvePrice('XAU/USD'); },
+                    function(){ return yahooPrice('GC=F'); }
+                ]).then(function(v){ imdSetValue('gold', v, 0); });
+
+                // 은 (Silver)
+                fetchMulti([
+                    function(){ return m.SIUSD ? m.SIUSD.price : null; },
+                    function(){ return twelvePrice('XAG/USD'); },
+                    function(){ return yahooPrice('SI=F'); }
+                ]).then(function(v){ imdSetValue('silver', v, 2); });
+
+                // 원유 (WTI Crude)
+                fetchMulti([
+                    function(){ return m.CLUSD ? m.CLUSD.price : null; },
+                    function(){ return twelvePrice('WTI/USD'); },
+                    function(){ return yahooPrice('CL=F'); }
+                ]).then(function(v){ imdSetValue('oil', v, 2); });
+
+                // DXY (달러 인덱스)
+                fetchMulti([
+                    function(){ return m.DX ? m.DX.price : null; },
+                    function(){ return twelvePrice('DXY'); },
+                    function(){ return yahooPrice('DX-Y.NYB'); }
+                ]).then(function(v){ imdSetValue('dxy', v, 2); });
+            });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 6 – 외환 (FX)
+         * FMP(USDKRW/USDJPY/EURUSD) → Twelvedata → Yahoo
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadFX() {
+            fmpQ('USDKRW,USDJPY,EURUSD').then(function(m) {
+                fetchMulti([
+                    function(){ return m.USDKRW ? m.USDKRW.price : null; },
+                    function(){ return twelvePrice('USD/KRW'); },
+                    function(){ return yahooPrice('KRW=X'); }
+                ]).then(function(v){ imdSetValue('uskrw', v, 0); });
+
+                fetchMulti([
+                    function(){ return m.USDJPY ? m.USDJPY.price : null; },
+                    function(){ return twelvePrice('USD/JPY'); },
+                    function(){ return yahooPrice('JPY=X'); }
+                ]).then(function(v){ imdSetValue('usjpy', v, 2); });
+
+                fetchMulti([
+                    function(){ return m.EURUSD ? m.EURUSD.price : null; },
+                    function(){ return twelvePrice('EUR/USD'); },
+                    function(){ return yahooPrice('EURUSD=X'); }
+                ]).then(function(v){ imdSetValue('eurusd', v, 4); });
+            });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 7 – 시장 유동성
+         * 국채금리: FMP(%5ETNX/%5ETNS) → FRED → Yahoo
+         * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadLiquidity() {
+            // 미국채 10년 (^TNX)
+            fetchMulti([
+                function(){ return fmpPrice('%5ETNX'); },
+                function(){ return fredLatest('DGS10'); },
+                function(){ return yahooPrice('^TNX'); }
+            ]).then(function(v){ imdSetValue('us10y', v, 2); });
+
+            // 미국채 2년 – FRED DGS2 → Yahoo ^IRX(13주 근사)
+            fetchMulti([
+                function(){ return fredLatest('DGS2'); },
+                function(){ return fmpPrice('%5EFVX'); }, // 5Y yield (근사)
+                function(){ return yahooPrice('^IRX'); }
+            ]).then(function(v){ imdSetValue('us2y', v, 2); });
+
+            // Fed 잔고 (WALCL: 백만 달러 → 조 달러 환산)
+            fredLatest('WALCL').then(function(v) {
+                imdSetValue('fedbal', v ? v / 1000000 : null, 2);
+            });
+
+            // Reverse Repo (RRPONTSYD: 십억 달러)
+            fredLatest('RRPONTSYD').then(function(v){ imdSetValue('repo', v, 0); });
+
+            // M2 통화량 (M2SL: 십억 달러)
+            fredLatest('M2SL').then(function(v){ imdSetValue('m2', v, 0); });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 8 – ETF Smart Money (거래량, 단위: 백만 주)
+         * FMP → Twelvedata → Yahoo
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadSmartMoney() {
+            fmpQ('SPY,QQQ,IWM').then(function(m) {
+                function volM(sym) {
+                    return (m[sym] && m[sym].volume) ? Math.round(m[sym].volume / 1000000) : null;
+                }
+                // FMP 성공 시 바로 표시
+                var spyV = volM('SPY'), qqqV = volM('QQQ'), iwmV = volM('IWM');
+                if (spyV !== null) imdSetValue('spyflow', spyV, 0);
+                if (qqqV !== null) imdSetValue('qqqflow', qqqV, 0);
+                if (iwmV !== null) imdSetValue('iwmflow', iwmV, 0);
+
+                // FMP 실패한 항목은 Yahoo 폴백
+                if (spyV === null)
+                    yahooPrice('SPY').then(function(){ /* volume only via FMP */ });
+                // Twelvedata는 quote 엔드포인트에서 volume 제공
+                if (spyV === null)
+                    imdGet(TWELVE_BASE + '/quote?symbol=SPY&apikey=' + TWELVE_KEY)
+                        .then(function(d){ if (d && d.volume) imdSetValue('spyflow', Math.round(d.volume/1000000), 0); })
+                        .catch(function(){});
+                if (qqqV === null)
+                    imdGet(TWELVE_BASE + '/quote?symbol=QQQ&apikey=' + TWELVE_KEY)
+                        .then(function(d){ if (d && d.volume) imdSetValue('qqqflow', Math.round(d.volume/1000000), 0); })
+                        .catch(function(){});
+                if (iwmV === null)
+                    imdGet(TWELVE_BASE + '/quote?symbol=IWM&apikey=' + TWELVE_KEY)
+                        .then(function(d){ if (d && d.volume) imdSetValue('iwmflow', Math.round(d.volume/1000000), 0); })
+                        .catch(function(){});
+            });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 카드 9 – 심리지표 & 옵션
+         * Fear & Greed: CNN → Alternative.me
+         * Put/Call Ratio: CBOE CSV (프록시) → '-'
+         * Gamma Wall: 복잡한 옵션 계산 → '-'
+         * ══════════════════════════════════════════════════════ */
+        function imdLoadSentiment() {
+            // Fear & Greed – CNN 공식 데이터 (프록시 3종 시도)
+            imdGetProxy('https://production.dataviz.cnn.io/index/fearandgreed/graphdata')
+                .then(function(d) {
+                    // CNN 응답 구조: {fear_and_greed: {score: 45.2}} 또는 {score: 45.2}
+                    var score = (d && d.fear_and_greed && d.fear_and_greed.score !== undefined)
+                        ? d.fear_and_greed.score
+                        : (d && d.score !== undefined ? d.score : undefined);
+                    if (score !== undefined && !isNaN(Number(score))) return Math.round(Number(score));
+                    throw new Error('cnn structure mismatch');
+                })
+                .catch(function() {
+                    // Alternative.me 폴백 (CORS 직접 허용)
+                    return imdGet('https://api.alternative.me/fng/?limit=1')
+                        .then(function(d) {
+                            return (d && d.data && d.data[0]) ? parseInt(d.data[0].value) : null;
+                        }).catch(function(){ return null; });
+                })
+                .then(function(v){ imdSetValue('fear', v, 0); });
+
+            // Put/Call Ratio – CBOE total options EOD CSV
+            // ※ CSV는 JSON이 아니므로 imdGetProxyText(r.text()) 사용
+            imdGetProxyText('https://www.cboe.com/publish/scheduledtask/mktdata/datahouse/totaloptionsvolume.csv')
+                .then(function(text) {
+                    if (!text || typeof text !== 'string') throw new Error('no text');
+                    var lines = text.trim().split('\n').filter(function(l){ return l.trim().length > 0; });
+                    // 마지막 데이터 행에서 P/C ratio 파싱 (컬럼: Date,Calls,Puts,Total,PC_Ratio)
+                    var last = lines[lines.length - 1].split(',');
+                    var pc = parseFloat(last[last.length - 1]);
+                    if (!isNaN(pc) && pc > 0 && pc < 10) return pc;
+                    throw new Error('parse fail: ' + last[last.length - 1]);
+                })
+                .catch(function(){ return null; })
+                .then(function(v){ imdSetValue('putcall', v, 2); });
+
+            // Gamma Wall – 실시간 옵션 그릭 계산 필요 → '-' 유지
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * 전체 로드 & 자동 갱신 (60초)
+         * ══════════════════════════════════════════════════════ */
         function imdLoadAll() {
-            imdLoadMarkets();
+            imdLoadKorea();
+            imdLoadUS();
+            imdLoadFutures();
             imdLoadCrypto();
+            imdLoadCommodities();
+            imdLoadFX();
+            imdLoadLiquidity();
+            imdLoadSmartMoney();
+            imdLoadSentiment();
         }
 
+        /* ── 카드별 새로고침 ─────────────────────────────────── */
+        var CARD_LOADERS = {
+            1: { fn: imdLoadKorea,       ids: ['kospi','kosdaq','kospifut','foreignflow','instflow','retailflow'] },
+            2: { fn: imdLoadUS,          ids: ['sp500','nasdaq','vix','sox'] },
+            3: { fn: imdLoadFutures,     ids: ['spfuture','nasfuture','rtyfuture'] },
+            4: { fn: imdLoadCrypto,      ids: ['btc','eth','sol'] },
+            5: { fn: imdLoadCommodities, ids: ['gold','silver','oil','dxy'] },
+            6: { fn: imdLoadFX,          ids: ['uskrw','usjpy','eurusd'] },
+            7: { fn: imdLoadLiquidity,   ids: ['fedbal','repo','m2','us10y','us2y'] },
+            8: { fn: imdLoadSmartMoney,  ids: ['spyflow','qqqflow','iwmflow'] },
+            9: { fn: imdLoadSentiment,   ids: ['fear','putcall','gamma'] }
+        };
+
+        window.imdRefreshCard = function(n) {
+            var c = CARD_LOADERS[n];
+            if (!c) return;
+            // 버튼 스핀 (3초 후 자동 해제)
+            var btn = document.getElementById('rfbtn-' + n);
+            if (btn) {
+                btn.classList.add('spin');
+                setTimeout(function(){ btn.classList.remove('spin'); }, 3000);
+            }
+            // 해당 카드 항목 전체 sync 상태
+            c.ids.forEach(function(id){ imdSetStatus(id, 'sync'); });
+            c.fn();
+        };
+
+        /* 전체 로드 시 모든 항목 sync 처리 */
+        function imdSetAllSync() {
+            Object.values(CARD_LOADERS).forEach(function(c) {
+                c.ids.forEach(function(id){ imdSetStatus(id, 'sync'); });
+            });
+        }
+
+        imdSetAllSync();
         imdLoadAll();
-        setInterval(imdLoadAll, 60000);
+        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 60000);
     })();
     </script>
 
