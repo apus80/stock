@@ -4534,9 +4534,24 @@ var ECON_DATA = {
             ms = ms || 9000;
             var c = new AbortController();
             var t = setTimeout(function(){ c.abort(); }, ms);
+            var label = url.replace(/apikey=[^&]+/, 'apikey=***').split('?')[0]; // 키 마스킹
             return fetch(url, { signal: c.signal })
-                .then(function(r){ clearTimeout(t); if (!r.ok) throw new Error(r.status); return r.json(); })
-                .catch(function(e){ clearTimeout(t); throw e; });
+                .then(function(r){
+                    clearTimeout(t);
+                    if (!r.ok) {
+                        console.warn('[IMD] HTTP ' + r.status + '  →  ' + label);
+                        throw new Error(r.status);
+                    }
+                    return r.json();
+                })
+                .catch(function(e){
+                    clearTimeout(t);
+                    if (e.name === 'AbortError')
+                        console.warn('[IMD] TIMEOUT  →  ' + label);
+                    else if (!String(e.message).match(/^\d{3}$/))  // HTTP 오류는 이미 출력함
+                        console.warn('[IMD] FAIL  →  ' + label, e.message || e);
+                    throw e;
+                });
         }
 
         function imdGetProxy(url) {
@@ -4544,7 +4559,10 @@ var ECON_DATA = {
             CORS_PX.forEach(function(px) {
                 chain = chain.catch(function() { return imdGet(px + encodeURIComponent(url)); });
             });
-            return chain.catch(function(){ return null; });
+            return chain.catch(function(){
+                console.warn('[IMD] PROXY ALL FAILED  →  ' + url.split('?')[0]);
+                return null;
+            });
         }
 
         /* ── DOM 업데이트 ────────────────────────────────────── */
