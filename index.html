@@ -4664,24 +4664,24 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 1 – 한국 시장
-         * KOSPI/KOSDAQ: Yahoo(~15분 지연) → Naver(장중 근실시간) → Twelvedata → FMP(종가)
+         * KOSPI/KOSDAQ: Naver(장중 근실시간) → Yahoo(~15분 지연) → Twelvedata(Pro 전용) → FMP(종가)
          * 야간선물: Yahoo(NK=F 니케이근사) → CME MKN=F
          * 외국인/기관/개인 수급: 공개 API 없음 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
-            // KOSPI – Yahoo 1차 (장중 ~15분 지연이지만 FMP 종가보다 빠름)
+            // KOSPI – Naver 1차 (장중 근실시간) → Yahoo 2차 → Twelvedata 3차(Pro플랜만 동작) → FMP 4차(종가)
             fetchMulti([
-                function(){ return yahooPrice('^KS11'); },
                 function(){ return naverIndex('KOSPI'); },
-                function(){ return twelvePrice('KOSPI'); },
+                function(){ return yahooPrice('^KS11'); },
+                function(){ return twelvePrice('KOSPI'); },   // Pro 플랜 전용, 무료는 null
                 function(){ return fmpPrice('%5EKS11'); }
             ]).then(function(v){ imdSetValue('kospi', v, 2); });
 
             // KOSDAQ
             fetchMulti([
-                function(){ return yahooPrice('^KQ11'); },
                 function(){ return naverIndex('KOSDAQ'); },
-                function(){ return twelvePrice('KOSDAQ'); },
+                function(){ return yahooPrice('^KQ11'); },
+                function(){ return twelvePrice('KOSDAQ'); },  // Pro 플랜 전용, 무료는 null
                 function(){ return fmpPrice('%5EKQ11'); }
             ]).then(function(v){ imdSetValue('kosdaq', v, 2); });
 
