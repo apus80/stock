@@ -1766,6 +1766,10 @@
         .ns-offline { background:#ef4444; }
         @keyframes nsPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.65)} }
         .imd-wrap .item-right { display:flex; align-items:center; gap:3px; }
+        .chg-val  { font-size:0.72rem; font-family:Consolas,monospace; margin-left:3px; white-space:nowrap; }
+        .chg-up   { color:#22c55e; }
+        .chg-dn   { color:#ef4444; }
+        .chg-flat { color:#64748b; }
 
         /* ── 카드 새로고침 버튼 ── */
         .card-rfbtn { background:none; border:none; padding:1px 5px; cursor:pointer; color:#64748b; font-size:1.05rem; line-height:1; border-radius:4px; transition:color .15s; display:inline-flex; align-items:center; }
@@ -1888,72 +1892,74 @@
 
                         <div class="card">
                             <div class="title-area"><span class="title">1. 한국 시장</span><button class="card-rfbtn" id="rfbtn-1" onclick="imdRefreshCard(1)" title="새로고침">↻</button></div>
-                            <div class="item"><span>KOSPI</span><span class="item-right"><span id="kospi" class="value">-</span><span class="ns ns-offline" id="ns-kospi"></span></span></div>
-                            <div class="item"><span>KOSDAQ</span><span class="item-right"><span id="kosdaq" class="value">-</span><span class="ns ns-offline" id="ns-kosdaq"></span></span></div>
-                            <div class="item"><span>야간선물</span><span class="item-right"><span id="kospifut" class="value">-</span><span class="ns ns-offline" id="ns-kospifut"></span></span></div>
-                            <div class="item"><span>외국인 수급</span><span class="item-right"><span id="foreignflow" class="value">-</span><span class="ns ns-offline" id="ns-foreignflow"></span></span></div>
-                            <div class="item"><span>기관 수급</span><span class="item-right"><span id="instflow" class="value">-</span><span class="ns ns-offline" id="ns-instflow"></span></span></div>
-                            <div class="item"><span>개인 수급</span><span class="item-right"><span id="retailflow" class="value">-</span><span class="ns ns-offline" id="ns-retailflow"></span></span></div>
+                            <div class="item"><span>KOSPI</span><span class="item-right"><span id="kospi" class="value">-</span><span id="chg-kospi" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-kospi"></span></span></div>
+                            <div class="item"><span>KOSDAQ</span><span class="item-right"><span id="kosdaq" class="value">-</span><span id="chg-kosdaq" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-kosdaq"></span></span></div>
+                            <div class="item"><span>야간선물</span><span class="item-right"><span id="kospifut" class="value">-</span><span id="chg-kospifut" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-kospifut"></span></span></div>
+                            <div class="item"><span>외국인 수급</span><span class="item-right"><span id="foreignflow" class="value">-</span><span id="chg-foreignflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-foreignflow"></span></span></div>
+                            <div class="item"><span>기관 수급</span><span class="item-right"><span id="instflow" class="value">-</span><span id="chg-instflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-instflow"></span></span></div>
+                            <div class="item"><span>개인 수급</span><span class="item-right"><span id="retailflow" class="value">-</span><span id="chg-retailflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-retailflow"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">2. 미국 시장</span><button class="card-rfbtn" id="rfbtn-2" onclick="imdRefreshCard(2)" title="새로고침">↻</button></div>
-                            <div class="item"><span>S&amp;P500 (SPY)</span><span class="item-right"><span id="sp500" class="value">-</span><span class="ns ns-offline" id="ns-sp500"></span></span></div>
-                            <div class="item"><span>NASDAQ (QQQ)</span><span class="item-right"><span id="nasdaq" class="value">-</span><span class="ns ns-offline" id="ns-nasdaq"></span></span></div>
-                            <div class="item"><span>VIX</span><span class="item-right"><span id="vix" class="value">-</span><span class="ns ns-offline" id="ns-vix"></span></span></div>
-                            <div class="item"><span>SOX</span><span class="item-right"><span id="sox" class="value">-</span><span class="ns ns-offline" id="ns-sox"></span></span></div>
+                            <div class="item"><span>S&amp;P500 (SPY)</span><span class="item-right"><span id="sp500" class="value">-</span><span id="chg-sp500" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sp500"></span></span></div>
+                            <div class="item"><span>NASDAQ (QQQ)</span><span class="item-right"><span id="nasdaq" class="value">-</span><span id="chg-nasdaq" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-nasdaq"></span></span></div>
+                            <div class="item"><span>VIX</span><span class="item-right"><span id="vix" class="value">-</span><span id="chg-vix" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-vix"></span></span></div>
+                            <div class="item"><span>SOX (SOXX)</span><span class="item-right"><span id="sox" class="value">-</span><span id="chg-sox" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sox"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">3. 미국 선물</span><button class="card-rfbtn" id="rfbtn-3" onclick="imdRefreshCard(3)" title="새로고침">↻</button></div>
-                            <div class="item"><span>S&amp;P500 Fut</span><span class="item-right"><span id="spfuture" class="value">-</span><span class="ns ns-offline" id="ns-spfuture"></span></span></div>
-                            <div class="item"><span>Nasdaq Fut</span><span class="item-right"><span id="nasfuture" class="value">-</span><span class="ns ns-offline" id="ns-nasfuture"></span></span></div>
-                            <div class="item"><span>Russell Fut</span><span class="item-right"><span id="rtyfuture" class="value">-</span><span class="ns ns-offline" id="ns-rtyfuture"></span></span></div>
+                            <div class="item"><span>S&amp;P500 Fut</span><span class="item-right"><span id="spfuture" class="value">-</span><span id="chg-spfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-spfuture"></span></span></div>
+                            <div class="item"><span>Nasdaq Fut</span><span class="item-right"><span id="nasfuture" class="value">-</span><span id="chg-nasfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-nasfuture"></span></span></div>
+                            <div class="item"><span>Russell Fut</span><span class="item-right"><span id="rtyfuture" class="value">-</span><span id="chg-rtyfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-rtyfuture"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">4. Crypto</span><button class="card-rfbtn" id="rfbtn-4" onclick="imdRefreshCard(4)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Bitcoin</span><span class="item-right"><span id="btc" class="value">-</span><span class="ns ns-offline" id="ns-btc"></span></span></div>
-                            <div class="item"><span>Ethereum</span><span class="item-right"><span id="eth" class="value">-</span><span class="ns ns-offline" id="ns-eth"></span></span></div>
-                            <div class="item"><span>Solana</span><span class="item-right"><span id="sol" class="value">-</span><span class="ns ns-offline" id="ns-sol"></span></span></div>
+                            <div class="item"><span>Bitcoin</span><span class="item-right"><span id="btc" class="value">-</span><span id="chg-btc" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-btc"></span></span></div>
+                            <div class="item"><span>Ethereum</span><span class="item-right"><span id="eth" class="value">-</span><span id="chg-eth" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-eth"></span></span></div>
+                            <div class="item"><span>Solana</span><span class="item-right"><span id="sol" class="value">-</span><span id="chg-sol" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sol"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">5. Commodities</span><button class="card-rfbtn" id="rfbtn-5" onclick="imdRefreshCard(5)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Gold</span><span class="item-right"><span id="gold" class="value">-</span><span class="ns ns-offline" id="ns-gold"></span></span></div>
-                            <div class="item"><span>Silver</span><span class="item-right"><span id="silver" class="value">-</span><span class="ns ns-offline" id="ns-silver"></span></span></div>
-                            <div class="item"><span>Oil</span><span class="item-right"><span id="oil" class="value">-</span><span class="ns ns-offline" id="ns-oil"></span></span></div>
-                            <div class="item"><span>DXY</span><span class="item-right"><span id="dxy" class="value">-</span><span class="ns ns-offline" id="ns-dxy"></span></span></div>
+                            <div class="item"><span>Gold</span><span class="item-right"><span id="gold" class="value">-</span><span id="chg-gold" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-gold"></span></span></div>
+                            <div class="item"><span>Silver</span><span class="item-right"><span id="silver" class="value">-</span><span id="chg-silver" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-silver"></span></span></div>
+                            <div class="item"><span>Oil (WTI)</span><span class="item-right"><span id="oil" class="value">-</span><span id="chg-oil" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-oil"></span></span></div>
+                            <div class="item"><span>DXY</span><span class="item-right"><span id="dxy" class="value">-</span><span id="chg-dxy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-dxy"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">6. FX</span><button class="card-rfbtn" id="rfbtn-6" onclick="imdRefreshCard(6)" title="새로고침">↻</button></div>
-                            <div class="item"><span>USD/KRW</span><span class="item-right"><span id="uskrw" class="value">-</span><span class="ns ns-offline" id="ns-uskrw"></span></span></div>
-                            <div class="item"><span>USD/JPY</span><span class="item-right"><span id="usjpy" class="value">-</span><span class="ns ns-offline" id="ns-usjpy"></span></span></div>
-                            <div class="item"><span>EUR/USD</span><span class="item-right"><span id="eurusd" class="value">-</span><span class="ns ns-offline" id="ns-eurusd"></span></span></div>
+                            <div class="item"><span>USD/KRW</span><span class="item-right"><span id="uskrw" class="value">-</span><span id="chg-uskrw" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-uskrw"></span></span></div>
+                            <div class="item"><span>USD/JPY</span><span class="item-right"><span id="usjpy" class="value">-</span><span id="chg-usjpy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-usjpy"></span></span></div>
+                            <div class="item"><span>EUR/USD</span><span class="item-right"><span id="eurusd" class="value">-</span><span id="chg-eurusd" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-eurusd"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">7. Market Liquidity</span><button class="card-rfbtn" id="rfbtn-7" onclick="imdRefreshCard(7)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Fed Balance</span><span class="item-right"><span id="fedbal" class="value">-</span><span class="ns ns-offline" id="ns-fedbal"></span></span></div>
-                            <div class="item"><span>Reverse Repo</span><span class="item-right"><span id="repo" class="value">-</span><span class="ns ns-offline" id="ns-repo"></span></span></div>
-                            <div class="item"><span>M2</span><span class="item-right"><span id="m2" class="value">-</span><span class="ns ns-offline" id="ns-m2"></span></span></div>
-                            <div class="item"><span>10Y</span><span class="item-right"><span id="us10y" class="value">-</span><span class="ns ns-offline" id="ns-us10y"></span></span></div>
-                            <div class="item"><span>2Y</span><span class="item-right"><span id="us2y" class="value">-</span><span class="ns ns-offline" id="ns-us2y"></span></span></div>
+                            <div class="item"><span>Fed Balance</span><span class="item-right"><span id="fedbal" class="value">-</span><span id="chg-fedbal" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-fedbal"></span></span></div>
+                            <div class="item"><span>Reverse Repo</span><span class="item-right"><span id="repo" class="value">-</span><span id="chg-repo" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-repo"></span></span></div>
+                            <div class="item"><span>TGA</span><span class="item-right"><span id="tga" class="value">-</span><span id="chg-tga" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-tga"></span></span></div>
+                            <div class="item"><span>M2</span><span class="item-right"><span id="m2" class="value">-</span><span id="chg-m2" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-m2"></span></span></div>
+                            <div class="item"><span>10Y Yield</span><span class="item-right"><span id="us10y" class="value">-</span><span id="chg-us10y" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-us10y"></span></span></div>
+                            <div class="item"><span>2Y Yield</span><span class="item-right"><span id="us2y" class="value">-</span><span id="chg-us2y" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-us2y"></span></span></div>
+                            <div class="item"><span>Yield Curve</span><span class="item-right"><span id="yieldcurve" class="value">-</span><span id="chg-yieldcurve" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-yieldcurve"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">8. ETF Smart Money</span><button class="card-rfbtn" id="rfbtn-8" onclick="imdRefreshCard(8)" title="새로고침">↻</button></div>
-                            <div class="item"><span>SPY Vol Flow</span><span class="item-right"><span id="spyflow" class="value">-</span><span class="ns ns-offline" id="ns-spyflow"></span></span></div>
-                            <div class="item"><span>QQQ Vol Flow</span><span class="item-right"><span id="qqqflow" class="value">-</span><span class="ns ns-offline" id="ns-qqqflow"></span></span></div>
-                            <div class="item"><span>IWM Vol Flow</span><span class="item-right"><span id="iwmflow" class="value">-</span><span class="ns ns-offline" id="ns-iwmflow"></span></span></div>
+                            <div class="item"><span>SPY Vol Flow</span><span class="item-right"><span id="spyflow" class="value">-</span><span id="chg-spyflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-spyflow"></span></span></div>
+                            <div class="item"><span>QQQ Vol Flow</span><span class="item-right"><span id="qqqflow" class="value">-</span><span id="chg-qqqflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-qqqflow"></span></span></div>
+                            <div class="item"><span>IWM Vol Flow</span><span class="item-right"><span id="iwmflow" class="value">-</span><span id="chg-iwmflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-iwmflow"></span></span></div>
                         </div>
 
                         <div class="card">
                             <div class="title-area"><span class="title">9. Sentiment &amp; Options</span><button class="card-rfbtn" id="rfbtn-9" onclick="imdRefreshCard(9)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Fear &amp; Greed</span><span class="item-right"><span id="fear" class="value">-</span><span class="ns ns-offline" id="ns-fear"></span></span></div>
-                            <div class="item"><span>Put/Call Ratio</span><span class="item-right"><span id="putcall" class="value">-</span><span class="ns ns-offline" id="ns-putcall"></span></span></div>
-                            <div class="item"><span>SPY Gamma Wall</span><span class="item-right"><span id="gamma" class="value">-</span><span class="ns ns-offline" id="ns-gamma"></span></span></div>
+                            <div class="item"><span>Fear &amp; Greed</span><span class="item-right"><span id="fear" class="value">-</span><span id="chg-fear" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-fear"></span></span></div>
+                            <div class="item"><span>Put/Call Ratio</span><span class="item-right"><span id="putcall" class="value">-</span><span id="chg-putcall" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-putcall"></span></span></div>
+                            <div class="item"><span>SPY Gamma Wall</span><span class="item-right"><span id="gamma" class="value">-</span><span id="chg-gamma" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-gamma"></span></span></div>
                         </div>
 
                     </div><!-- /.grid -->
@@ -1990,19 +1996,19 @@
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">VIX 공포지수</span>
-                            <span class="vol-metric-value">29.49 <span style="color:#f87171;font-size:0.68rem;margin-left:2px;">▲5.74</span> <span class="vol-badge vol-badge-orange">⚠️높음</span></span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">52주 범위</span>
-                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">13.47 ~ 52.33</span>
+                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">52주 위치</span>
-                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">상위 59%</span>
+                            <span class="vol-metric-value" style="color:#64748b;font-size:0.71rem;">-</span>
                         </div>
                         <div class="vol-metric-row" style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);">
                             <span class="vol-metric-label">Total P/C 비율</span>
-                            <span class="vol-metric-value">1.13 <span class="vol-badge vol-badge-green">방어</span></span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">Equity P/C</span>
@@ -2014,7 +2020,7 @@
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">SPY P/C (실시간)</span>
-                            <span class="vol-metric-value">1.13 <span class="vol-badge vol-badge-green">방어</span></span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div style="margin-top:5px;font-size:0.64rem;color:#64748b;"> CBOE / yfinance</div>
                     </div>
@@ -2024,15 +2030,15 @@
                         <div class="vol-section-title">📈 옵션 신호 &amp; 금리</div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">미국 10년물</span>
-                            <span class="vol-metric-value">4.13%</span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">미국 3개월물</span>
-                            <span class="vol-metric-value">3.57%</span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">장단기 스프레드</span>
-                            <span class="vol-metric-value" style="color:#4ade80;">0.56% <span class="vol-badge vol-badge-green">정상</span></span>
+                            <span class="vol-metric-value" style="color:#4ade80;">-</span>
                         </div>
                         <div class="vol-metric-row" style="margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.05);">
                             <span class="vol-metric-label">Index P/C 신호</span>
@@ -2040,11 +2046,11 @@
                         </div>
                         <div class="vol-metric-row" style="margin-top:4px;">
                             <span class="vol-metric-label">달러 DXY</span>
-                            <span class="vol-metric-value">99.0</span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">금 ($/oz)</span>
-                            <span class="vol-metric-value">$5146</span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                     </div>
 
@@ -2053,15 +2059,15 @@
                         <div class="vol-section-title">🏦 월별 매크로 요약</div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">Fed 기준금리</span>
-                            <span class="vol-metric-value">3.64% <span class="vol-badge vol-badge-yellow">중립</span></span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">CPI 물가 YoY</span>
-                            <span class="vol-metric-value">2.39% <span class="vol-badge vol-badge-green">안정</span></span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">실업률</span>
-                            <span class="vol-metric-value">4.40%</span>
+                            <span class="vol-metric-value">-</span>
                         </div>
                         <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08);
                                     font-size:0.65rem;color:#94a3b8;line-height:2.0;">
@@ -2373,7 +2379,7 @@ var ECON_DATA = {
                             <div class="header-top">
                                 <span class="date-badge">2026.03.07 (토)</span>
                                 <span style="font-size: 0.9rem; color: #94a3b8;">US Market Focus</span>
-                                <span id="leftCardUpdated" style="font-size:0.8rem;color:#94a3b8;margin-left:4px;">Updated: 00:15 KST</span>
+                                <span id="leftCardUpdated" style="font-size:0.8rem;color:#94a3b8;margin-left:4px;">Updated: 19:16 KST</span>
                                 <button onclick="refreshLeftCard(this)" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button>
                             </div>
                             <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">실시간 시장 지표 & 섹터 현황 📊</div>
@@ -2392,7 +2398,7 @@ var ECON_DATA = {
                     </div>
                     <div class="news-card-column" id="right-card-column">
                         <!-- RIGHT_CARD_START -->
-                        <div class="news-card-header"><div class="header-top"><span class="date-badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;">뉴스</span><span style="font-size:0.9rem;color:#94a3b8;">Updated: 00:15 KST</span><button onclick="refreshRightCard()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button></div><div class="market-status-title" style="margin-top:10px;">📰 뉴스 브리핑</div></div><div><strong style="color:#fbbf24;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(251,191,36,0.2);padding-bottom:4px;">📰 매일경제</strong><script>var _MKD={"증권": [{"t": "퇴근길 지하철에서 이유 없이 눈물을 쏟고 나서  결심한 일 [여책저책]", "l": "https://www.mk.co.kr/news/culture/11981752", "d": "2026-03-07"}, {"t": "‘아깝다’ 밀어내기 볼넷·만루 기회 무산… 한국 야구, WBC서 日에 석패", "l": "https://www.mk.co.kr/news/sports/11981750", "d": "2026-03-07"}, {"t": "7회초까지 5-5 팽팽했는데…한국 야구, 일본에 6-8 역전패", "l": "https://www.mk.co.kr/news/world/11981748", "d": "2026-03-07"}, {"t": "꽃이 피기 시작한다…벚꽃부터 산수유까지 전국서 열리는 봄꽃축제 [제철축제]", "l": "https://www.mk.co.kr/news/culture/11981747", "d": "2026-03-07"}, {"t": "“이게 진짜 되네”…걸프 해역 선박들, 이란 공격 피하려고 한 행동", "l": "https://www.mk.co.kr/news/world/11981743", "d": "2026-03-07"}, {"t": "중국 빈자리 기대했는데…중동발 악재에 하늘길 뚝, 일본 ‘망연자실’", "l": "https://www.mk.co.kr/news/world/11981740", "d": "2026-03-07"}, {"t": "“이란 오늘 매우 강한 타격 입을 것”…‘공격 확대’ 시사한 트럼프", "l": "https://www.mk.co.kr/news/world/11981739", "d": "2026-03-07"}, {"t": "트럼프, 이란 공격 확대 시사 “오늘 매우 강한 타격 입을 것”", "l": "https://www.mk.co.kr/news/business/11981734", "d": "2026-03-07"}, {"t": "“테슬라 잡고 포르쉐 노린다”...‘슈퍼 전기 SUV’ 폴스타3, 한국 온다 [CAR톡]", "l": "https://www.mk.co.kr/news/business/11981729", "d": "2026-03-07"}, {"t": "“결국 사과했지만”…이스라엘 전투기 80대 공습에 이란의 보복 방법", "l": "https://www.mk.co.kr/news/world/11981727", "d": "2026-03-07"}], "경제": [{"t": "“신용카드 잘못 썼다 빚더미”…돈 버는 카드 활용법 따로 있다 [캥거루족 탈출기⑧]", "l": "https://www.mk.co.kr/news/economy/11981690", "d": "2026-03-07"}, {"t": "“이번엔 형님이 드시고 다음엔 내가”…‘등골 브레이커’ 교복 짬짜미 이번엔 잡을까", "l": "https://www.mk.co.kr/news/economy/11981677", "d": "2026-03-07"}, {"t": "낮은 생산성·투자 부족·원화 약세…한국 국민소득 성장판 닫혔다", "l": "https://www.mk.co.kr/news/economy/11981532", "d": "2026-03-07"}, {"t": "“찬성” 한마디하고 연봉 8500만원…신도 부러워 할 이 직업 뭐길래", "l": "https://www.mk.co.kr/news/economy/11981531", "d": "2026-03-07"}, {"t": "뉴욕 한인 금융인들 부총리 표창 수상", "l": "https://www.mk.co.kr/news/economy/11981528", "d": "2026-03-07"}, {"t": "글로벌 비료·석탄 가격도 급등…식량·에너지 ‘이중위기’ 덮치나", "l": "https://www.mk.co.kr/news/economy/11981506", "d": "2026-03-07"}, {"t": "한국 소득, 12년째 3만불 정체…대만은 “올해 4만5천불”", "l": "https://www.mk.co.kr/news/economy/11981473", "d": "2026-03-07"}, {"t": "“내 입에 들어가는건 다 담합했나”…액상과당·물엿값도 짬짜미 혐의", "l": "https://www.mk.co.kr/news/economy/11981471", "d": "2026-03-07"}, {"t": "미국도 오일쇼크 공포…트럼프 행정부 “모든 대책 검토”", "l": "https://www.mk.co.kr/news/economy/11981396", "d": "2026-03-06"}, {"t": "국제유가 전쟁…한국 고유가·고환율·고금리 ‘3중高’", "l": "https://www.mk.co.kr/news/economy/11981297", "d": "2026-03-06"}], "부동산": [{"t": "“강남은 꺾였는데 여기는 여전하네”…서울 전월세난 우려에 수지·동탄 강세", "l": "https://www.mk.co.kr/news/realestate/11981714", "d": "2026-03-07"}, {"t": "아무리 벌어도 세 내느라 돈 다나간다…월세 150만원 시대, 임대아파트로", "l": "https://www.mk.co.kr/news/realestate/11981628", "d": "2026-03-07"}, {"t": "오세훈·권영세 “주택 1만 가구는 용산 미래 경쟁력 훼손…‘국제업무기능’ 이 우선”", "l": "https://www.mk.co.kr/news/realestate/11981366", "d": "2026-03-06"}, {"t": "신한카드 본사 ‘파인애비뉴A동’ 매각 자문에 세빌스-컬리어스", "l": "https://www.mk.co.kr/news/realestate/11981012", "d": "2026-03-06"}, {"t": "중동 상황 불확실성으로 공사비 상승 압력... “분양가 더 오르나”", "l": "https://www.mk.co.kr/news/realestate/11981004", "d": "2026-03-06"}, {"t": "송파구 가락프라자, 1059가구 대단지로 재건축", "l": "https://www.mk.co.kr/news/realestate/11980878", "d": "2026-03-06"}, {"t": "국민 절반 “집값 내려갈 것”…62% “다주택자 규제로 시장 안정화될 것” [한국갤럽]", "l": "https://www.mk.co.kr/news/realestate/11980854", "d": "2026-03-06"}, {"t": "신안산선·KTX·GTX‘...경기 서남부 트리플 교통호재에 뜬다", "l": "https://www.mk.co.kr/news/realestate/11980834", "d": "2026-03-06"}, {"t": "앞으로 4년 간 서울 아파트 입주량 ‘반토막’…신축 품귀에 몸값 더 오를까", "l": "https://www.mk.co.kr/news/economy/11980724", "d": "2026-03-06"}, {"t": "“이사 가야하는데 월세밖에 없어, 난감하네”…서울 전세 물건 40% 줄었다", "l": "https://www.mk.co.kr/news/realestate/11980703", "d": "2026-03-06"}], "국제": [{"t": "정동영, 제3의 북한 우라늄농축 지역으로 ‘평안북도 구성’ 찍었다", "l": "https://www.mk.co.kr/news/politics/11981275", "d": "2026-03-06"}, {"t": "트럼프 “미친 사람이 핵 가지면 나쁜 일”…김정은은 핵무장 과시", "l": "https://www.mk.co.kr/news/world/11980276", "d": "2026-03-05"}, {"t": "트럼프 \"미친 사람 핵 가지면 나쁜일\"… 김정은은 보란듯 핵 과시", "l": "https://www.mk.co.kr/news/politics/11980006", "d": "2026-03-05"}, {"t": "“이 와중에도 과시”…북한 김정은, 함대지 순항미사일 시험발사 참관", "l": "https://www.mk.co.kr/news/politics/11979272", "d": "2026-03-05"}, {"t": "북한, 15일 최고인민회의 대의원 선거…헌법에 ‘영토조항’ 신설 주목", "l": "https://www.mk.co.kr/news/politics/11978562", "d": "2026-03-04"}, {"t": "“‘이란 참수작전’ 본 김정은, 겁먹었다 생각하겠지만”…美 전문가의 진단", "l": "https://www.mk.co.kr/news/politics/11978022", "d": "2026-03-04"}, {"t": "유용원 국힘 의원, “우크라 북한군 포로 송환 위해 대통령 특사 파견 시급”", "l": "https://www.mk.co.kr/news/politics/11977398", "d": "2026-03-03"}, {"t": "김정은 경제시찰 … 시멘트공장서 증산 독려", "l": "https://www.mk.co.kr/news/politics/11976286", "d": "2026-03-02"}, {"t": "박지원 “김정은, 이란 사태에 철렁했겠지만…핵 보유 자신감 있을것”", "l": "https://www.mk.co.kr/news/politics/11976143", "d": "2026-03-02"}, {"t": "‘하메네이 사망 14시간만’ 미국 규탄한 중국…“정상회담 앞두고 수위 고심한듯”", "l": "https://www.mk.co.kr/news/politics/11975887", "d": "2026-03-01"}], "산업·IT": [{"t": "주가 두달만에 180% 뛰자 일어난 일…삼성생명·신한지주 시총 넘보는 미래에셋증권", "l": "https://www.mk.co.kr/news/stock/11981651", "d": "2026-03-07"}, {"t": "“주식이 생수 한병보다 싸네”…코스닥 이달에만 7개사 ‘동전주’ 전락", "l": "https://www.mk.co.kr/news/stock/11981505", "d": "2026-03-07"}, {"t": "미래에셋증권, 우리카드 5000만달러 소셜 김치본드 주관 완료", "l": "https://www.mk.co.kr/news/stock/11981204", "d": "2026-03-06"}, {"t": "코스닥만 3% 상승", "l": "https://www.mk.co.kr/news/stock/11981172", "d": "2026-03-06"}, {"t": "지놈앤컴퍼니, 30억원 규모 유상증자 실시", "l": "https://www.mk.co.kr/news/stock/11981166", "d": "2026-03-06"}, {"t": "코스닥시장 회복세에도 1천원 미만 동전株 증가", "l": "https://www.mk.co.kr/news/stock/11981120", "d": "2026-03-06"}, {"t": "실적불안에 유가까지…전기·가스株 '울상'", "l": "https://www.mk.co.kr/news/stock/11981116", "d": "2026-03-06"}, {"t": "“韓 자산시장의 대격변 시작…코스피 7000까지 가능하다” [K주식, 이걸 사? 말아?]", "l": "https://www.mk.co.kr/news/stock/11980044", "d": "2026-03-06"}, {"t": "한국회계기준원 ‘위험경감회계 공개초안’ 세미나 개최", "l": "https://www.mk.co.kr/news/stock/11981086", "d": "2026-03-06"}, {"t": "삼일PwC “韓 여성 고용환경 OECD 최하위권…성별 임금격차 등 개선해야”", "l": "https://www.mk.co.kr/news/stock/11981038", "d": "2026-03-06"}]};</script><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><strong style="color:#fbbf24;font-size:0.82em;letter-spacing:0.03em;">📰 매일경제</strong><select id="mk-cat-sel" onchange="mkShow(this.value)" style="background:#1e2535;color:#f8fafc;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:2px 10px;font-size:0.75rem;cursor:pointer;"><option value="증권" selected>증권</option><option value="경제" >경제</option><option value="부동산" >부동산</option><option value="국제" >국제</option><option value="산업·IT" >산업·IT</option></select></div><div id="mk-articles-box"></div><script>if(typeof mkShow==="function"){mkShow("증권");}</script></div>
+                        <div class="news-card-header"><div class="header-top"><span class="date-badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;">뉴스</span><span style="font-size:0.9rem;color:#94a3b8;">Updated: 19:16 KST</span><button onclick="refreshRightCard()" title="새로고침" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#94a3b8;font-size:0.8rem;padding:3px 10px;border-radius:6px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='#94a3b8'">⟳ 새로고침</button></div><div class="market-status-title" style="margin-top:10px;">📰 뉴스 브리핑</div></div><div><strong style="color:#fbbf24;font-size:0.82em;display:block;margin-bottom:8px;letter-spacing:0.03em;border-bottom:1px solid rgba(251,191,36,0.2);padding-bottom:4px;">📰 매일경제</strong><script>var _MKD={"증권": [{"t": "\u201c강남은 꺾였는데 여기는 여전하네\u201d\u2026서울 전월세난 우려에 수지·동탄 강세", "l": "https://www.mk.co.kr/news/realestate/11981714", "d": "2026-03-07"}, {"t": "\u201c발코니에서 미사일 요격 직접 봤어요\u201d\u2026두바이 \u2018금융 허브\u2019 위상 흔들", "l": "https://www.mk.co.kr/news/world/11981706", "d": "2026-03-07"}, {"t": "\u201c국물이 건강에 좋다\u201d\u2026외국인들이 마라탕에 푹 빠진 황당 이유", "l": "https://www.mk.co.kr/news/world/11981705", "d": "2026-03-07"}, {"t": "한우 투자했더니 수익률 17% \u201cSTO로 한우 생태계 키운다\u201d", "l": "https://www.mk.co.kr/news/business/11980885", "d": "2026-03-07"}, {"t": "\u201c적들 소망은 무덤까지\u201d\u2026\u2018무조건 항복\u2019 트럼프에 이란 대통령이 한말", "l": "https://www.mk.co.kr/news/world/11981699", "d": "2026-03-07"}, {"t": "\u201c시민들에 담장 없앴다\u201d\u2026용산시대 맞이한 서울교육청, 사무공간 부족은 \u2018옥에 티\u2019 [톡톡에듀]", "l": "https://www.mk.co.kr/news/society/11981698", "d": "2026-03-07"}, {"t": "\u201c홈리스지만 직업은 있습니다\u201d 잡지판매하는 여성 홈리스들", "l": "https://www.mk.co.kr/news/society/11981697", "d": "2026-03-07"}, {"t": "\u201c제 이상형은 나솔 13기 영철\u201d\u2026결정사 이상형, 연예인서 연프 출연자로", "l": "https://www.mk.co.kr/news/business/11981696", "d": "2026-03-07"}, {"t": "미 최정예 공수사단, 이란전 투입 가능성\u2026예정 훈련 돌연 취소", "l": "https://www.mk.co.kr/news/world/11981695", "d": "2026-03-07"}, {"t": "\u201c더이상 홀로 싸우지 않도록 하겠다\u201d\u2026인도네시아가 내린 \u2018중대결단\u2019", "l": "https://www.mk.co.kr/news/world/11981694", "d": "2026-03-07"}], "경제": [{"t": "\u201c신용카드 잘못 썼다 빚더미\u201d\u2026돈 버는 카드 활용법 따로 있다 [캥거루족 탈출기\u2468]", "l": "https://www.mk.co.kr/news/economy/11981690", "d": "2026-03-07"}, {"t": "\u201c이번엔 형님이 드시고 다음엔 내가\u201d\u2026\u2018등골 브레이커\u2019 교복 짬짜미 이번엔 잡을까", "l": "https://www.mk.co.kr/news/economy/11981677", "d": "2026-03-07"}, {"t": "낮은 생산성·투자 부족·원화 약세\u2026한국 국민소득 성장판 닫혔다", "l": "https://www.mk.co.kr/news/economy/11981532", "d": "2026-03-07"}, {"t": "\u201c찬성\u201d 한마디하고 연봉 8500만원\u2026신도 부러워 할 이 직업 뭐길래", "l": "https://www.mk.co.kr/news/economy/11981531", "d": "2026-03-07"}, {"t": "뉴욕 한인 금융인들 부총리 표창 수상", "l": "https://www.mk.co.kr/news/economy/11981528", "d": "2026-03-07"}, {"t": "글로벌 비료·석탄 가격도 급등\u2026식량·에너지 \u2018이중위기\u2019 덮치나", "l": "https://www.mk.co.kr/news/economy/11981506", "d": "2026-03-07"}, {"t": "한국 소득, 12년째 3만불 정체\u2026대만은 \u201c올해 4만5천불\u201d", "l": "https://www.mk.co.kr/news/economy/11981473", "d": "2026-03-07"}, {"t": "\u201c내 입에 들어가는건 다 담합했나\u201d\u2026액상과당·물엿값도 짬짜미 혐의", "l": "https://www.mk.co.kr/news/economy/11981471", "d": "2026-03-07"}, {"t": "미국도 오일쇼크 공포\u2026트럼프 행정부 \u201c모든 대책 검토\u201d", "l": "https://www.mk.co.kr/news/economy/11981396", "d": "2026-03-06"}, {"t": "국제유가 전쟁\u2026한국 고유가·고환율·고금리 \u20183중高\u2019", "l": "https://www.mk.co.kr/news/economy/11981297", "d": "2026-03-06"}], "부동산": [{"t": "\u201c강남은 꺾였는데 여기는 여전하네\u201d\u2026서울 전월세난 우려에 수지·동탄 강세", "l": "https://www.mk.co.kr/news/realestate/11981714", "d": "2026-03-07"}, {"t": "아무리 벌어도 세 내느라 돈 다나간다\u2026월세 150만원 시대, 임대아파트로", "l": "https://www.mk.co.kr/news/realestate/11981628", "d": "2026-03-07"}, {"t": "오세훈·권영세 \u201c주택 1만 가구는 용산 미래 경쟁력 훼손\u2026\u2018국제업무기능\u2019 이 우선\u201d", "l": "https://www.mk.co.kr/news/realestate/11981366", "d": "2026-03-06"}, {"t": "신한카드 본사 \u2018파인애비뉴A동\u2019 매각 자문에 세빌스-컬리어스", "l": "https://www.mk.co.kr/news/realestate/11981012", "d": "2026-03-06"}, {"t": "중동 상황 불확실성으로 공사비 상승 압력... \u201c분양가 더 오르나\u201d", "l": "https://www.mk.co.kr/news/realestate/11981004", "d": "2026-03-06"}, {"t": "송파구 가락프라자, 1059가구 대단지로 재건축", "l": "https://www.mk.co.kr/news/realestate/11980878", "d": "2026-03-06"}, {"t": "국민 절반 \u201c집값 내려갈 것\u201d\u202662% \u201c다주택자 규제로 시장 안정화될 것\u201d [한국갤럽]", "l": "https://www.mk.co.kr/news/realestate/11980854", "d": "2026-03-06"}, {"t": "신안산선·KTX·GTX\u2019...경기 서남부 트리플 교통호재에 뜬다", "l": "https://www.mk.co.kr/news/realestate/11980834", "d": "2026-03-06"}, {"t": "앞으로 4년 간 서울 아파트 입주량 \u2018반토막\u2019\u2026신축 품귀에 몸값 더 오를까", "l": "https://www.mk.co.kr/news/economy/11980724", "d": "2026-03-06"}, {"t": "\u201c이사 가야하는데 월세밖에 없어, 난감하네\u201d\u2026서울 전세 물건 40% 줄었다", "l": "https://www.mk.co.kr/news/realestate/11980703", "d": "2026-03-06"}], "국제": [{"t": "정동영, 제3의 북한 우라늄농축 지역으로 \u2018평안북도 구성\u2019 찍었다", "l": "https://www.mk.co.kr/news/politics/11981275", "d": "2026-03-06"}, {"t": "트럼프 \u201c미친 사람이 핵 가지면 나쁜 일\u201d\u2026김정은은 핵무장 과시", "l": "https://www.mk.co.kr/news/world/11980276", "d": "2026-03-05"}, {"t": "트럼프 \"미친 사람 핵 가지면 나쁜일\"\u2026 김정은은 보란듯 핵 과시", "l": "https://www.mk.co.kr/news/politics/11980006", "d": "2026-03-05"}, {"t": "\u201c이 와중에도 과시\u201d\u2026북한 김정은, 함대지 순항미사일 시험발사 참관", "l": "https://www.mk.co.kr/news/politics/11979272", "d": "2026-03-05"}, {"t": "북한, 15일 최고인민회의 대의원 선거\u2026헌법에 \u2018영토조항\u2019 신설 주목", "l": "https://www.mk.co.kr/news/politics/11978562", "d": "2026-03-04"}, {"t": "\u201c\u2018이란 참수작전\u2019 본 김정은, 겁먹었다 생각하겠지만\u201d\u2026美 전문가의 진단", "l": "https://www.mk.co.kr/news/politics/11978022", "d": "2026-03-04"}, {"t": "유용원 국힘 의원, \u201c우크라 북한군 포로 송환 위해 대통령 특사 파견 시급\u201d", "l": "https://www.mk.co.kr/news/politics/11977398", "d": "2026-03-03"}, {"t": "김정은 경제시찰 \u2026 시멘트공장서 증산 독려", "l": "https://www.mk.co.kr/news/politics/11976286", "d": "2026-03-02"}, {"t": "박지원 \u201c김정은, 이란 사태에 철렁했겠지만\u2026핵 보유 자신감 있을것\u201d", "l": "https://www.mk.co.kr/news/politics/11976143", "d": "2026-03-02"}, {"t": "\u2018하메네이 사망 14시간만\u2019 미국 규탄한 중국\u2026\u201c정상회담 앞두고 수위 고심한듯\u201d", "l": "https://www.mk.co.kr/news/politics/11975887", "d": "2026-03-01"}], "산업·IT": [{"t": "주가 두달만에 180% 뛰자 일어난 일\u2026삼성생명·신한지주 시총 넘보는 미래에셋증권", "l": "https://www.mk.co.kr/news/stock/11981651", "d": "2026-03-07"}, {"t": "\u201c주식이 생수 한병보다 싸네\u201d\u2026코스닥 이달에만 7개사 \u2018동전주\u2019 전락", "l": "https://www.mk.co.kr/news/stock/11981505", "d": "2026-03-07"}, {"t": "미래에셋증권, 우리카드 5000만달러 소셜 김치본드 주관 완료", "l": "https://www.mk.co.kr/news/stock/11981204", "d": "2026-03-06"}, {"t": "코스닥만 3% 상승", "l": "https://www.mk.co.kr/news/stock/11981172", "d": "2026-03-06"}, {"t": "지놈앤컴퍼니, 30억원 규모 유상증자 실시", "l": "https://www.mk.co.kr/news/stock/11981166", "d": "2026-03-06"}, {"t": "코스닥시장 회복세에도 1천원 미만 동전株 증가", "l": "https://www.mk.co.kr/news/stock/11981120", "d": "2026-03-06"}, {"t": "실적불안에 유가까지\u2026전기·가스株 \u2018울상\u2019", "l": "https://www.mk.co.kr/news/stock/11981116", "d": "2026-03-06"}, {"t": "\u201c韓 자산시장의 대격변 시작\u2026코스피 7000까지 가능하다\u201d [K주식, 이걸 사? 말아?]", "l": "https://www.mk.co.kr/news/stock/11980044", "d": "2026-03-06"}, {"t": "한국회계기준원 \u2018위험경감회계 공개초안\u2019 세미나 개최", "l": "https://www.mk.co.kr/news/stock/11981086", "d": "2026-03-06"}, {"t": "삼일PwC \u201c韓 여성 고용환경 OECD 최하위권\u2026성별 임금격차 등 개선해야\u201d", "l": "https://www.mk.co.kr/news/stock/11981038", "d": "2026-03-06"}]};</script><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><strong style="color:#fbbf24;font-size:0.82em;letter-spacing:0.03em;">📰 매일경제</strong><select id="mk-cat-sel" onchange="mkShow(this.value)" style="background:#1e2535;color:#f8fafc;border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:2px 10px;font-size:0.75rem;cursor:pointer;"><option value="증권" selected>증권</option><option value="경제" >경제</option><option value="부동산" >부동산</option><option value="국제" >국제</option><option value="산업·IT" >산업·IT</option></select></div><div id="mk-articles-box"></div><script>if(typeof mkShow==="function"){mkShow("증권");}</script></div>
                         <!-- RIGHT_CARD_END -->
                     </div>
                 </div>
@@ -4585,6 +4591,106 @@ var ECON_DATA = {
             imdSetStatus(id, 'online');
         }
 
+        /* ── 등락값 표시 ────────────────────────────────────
+         * type: 'pct'  → +0.82%   (주식·코인·원자재)
+         *       'bp'   → +6bp     (금리: 입력값은 % 단위, ×100=bp)
+         *       'val'  → +12      (환율: 절대값 차이)
+         *       'amt'  → +320     (수급·유동성: 금액 차이)
+         * ──────────────────────────────────────────────────── */
+        function imdSetChange(id, chg, type, dec) {
+            var el = document.getElementById('chg-' + id);
+            if (!el) return;
+            if (chg === null || chg === undefined || isNaN(Number(chg))) {
+                el.textContent = '';
+                el.className = 'chg-val chg-flat';
+                return;
+            }
+            var n = Number(chg);
+            var isUp = n > 0.000001, isDn = n < -0.000001;
+            var sign = isUp ? '+' : '';
+            var txt;
+            if (type === 'pct') {
+                var ap = Math.abs(n);
+                txt = sign + (ap < 10 ? n.toFixed(2) : n.toFixed(1)) + '%';
+            } else if (type === 'bp') {
+                var bp = Math.round(n * 100);
+                txt = (bp > 0 ? '+' : '') + bp + 'bp';
+            } else if (type === 'val') {
+                dec = (dec === undefined) ? 2 : dec;
+                txt = sign + n.toFixed(dec);
+            } else { /* 'amt' */
+                txt = sign + Math.round(n).toLocaleString();
+            }
+            el.textContent = txt;
+            el.className = 'chg-val ' + (isUp ? 'chg-up' : isDn ? 'chg-dn' : 'chg-flat');
+        }
+
+        /* ── Naver Index Full (price + change) ─────────────── */
+        function naverIndexFull(code) {
+            var url = 'https://polling.finance.naver.com/api/realtime?query=SERVICE_INDEX:' + code;
+            return imdGetProxy(url).then(function(d) {
+                try {
+                    var item = d.result.areas[0].datas[0];
+                    var val = item.nv || item.sv;
+                    if (!val) return null;
+                    var price = parseFloat(String(val).replace(/,/g, ''));
+                    var cr = (item.cr !== undefined && item.cr !== null && item.cr !== '')
+                        ? parseFloat(String(item.cr).replace(/,/g, '')) : null;
+                    var cv = (item.cv !== undefined && item.cv !== null && item.cv !== '')
+                        ? parseFloat(String(item.cv).replace(/,/g, '')) : null;
+                    // rf: '2'=상승,'5'=하락,'1'=보합 (Naver 관례)
+                    var rf = item.rf ? String(item.rf) : '';
+                    if (cr !== null && rf === '5') cr = -Math.abs(cr);
+                    if (cv !== null && rf === '5') cv = -Math.abs(cv);
+                    return { price: price, cr: cr, cv: cv };
+                } catch(e) { return null; }
+            }).catch(function(){ return null; });
+        }
+
+        /* ── Yahoo Quote (price + previousClose) ────────────── */
+        function yahooQuote(symbol) {
+            var sym = encodeURIComponent(symbol);
+            var suffix = '?interval=1d&range=1d&includePrePost=false';
+            function _parse(d) {
+                if (d && d.chart && d.chart.result && d.chart.result[0]) {
+                    var meta = d.chart.result[0].meta;
+                    var price = meta.regularMarketPrice || null;
+                    var prev  = meta.chartPreviousClose || meta.previousClose || null;
+                    return (price !== null) ? { price: price, prev: prev } : null;
+                }
+                return null;
+            }
+            var url1 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
+            var url2 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
+            return imdGetProxy(url1).then(_parse)
+                .then(function(v){
+                    if (v && v.price !== null) return v;
+                    return imdGetProxy(url2).then(_parse);
+                })
+                .catch(function(){ return null; });
+        }
+
+        /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
+        function fredLatestTwo(series) {
+            var url = FRED_BASE + '?series_id=' + series +
+                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
+            function _parse(d) {
+                if (!d || !d.observations) return null;
+                var valid = d.observations.filter(function(o){
+                    return o.value !== '.' && o.value !== '';
+                });
+                if (valid.length < 1) return null;
+                return {
+                    cur:  parseFloat(valid[0].value),
+                    prev: valid.length > 1 ? parseFloat(valid[1].value) : null
+                };
+            }
+            return imdGet(url).then(_parse)
+                .catch(function() {
+                    return imdGetProxy(url).then(_parse).catch(function(){ return null; });
+                });
+        }
+
         /* ── FMP 헬퍼 (stable API – 2025.08 이후 v3 폐기) ──────
          * 구: /api/v3/quote/SPY,QQQ
          * 신: /stable/quote?symbol=SPY,QQQ
@@ -4846,28 +4952,58 @@ var ECON_DATA = {
          * 외국인/기관/개인 수급: 공개 API 없음 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
-            // KOSPI – Naver 1차 (장중 근실시간) → Yahoo 2차 → Twelvedata 3차(Pro플랜만 동작) → FMP 4차(종가)
-            fetchMulti([
-                function(){ return naverIndex('KOSPI'); },
-                function(){ return yahooPrice('^KS11'); },
-                function(){ return twelvePrice('KOSPI'); },   // Pro 플랜 전용, 무료는 null
-                function(){ return fmpPrice('%5EKS11'); }
-            ]).then(function(v){ imdSetValue('kospi', v, 2); });
+            // KOSPI – Naver(근실시간) → Yahoo → Twelvedata → FMP
+            naverIndexFull('KOSPI').then(function(r) {
+                if (r && r.price !== null) {
+                    imdSetValue('kospi', r.price, 2);
+                    if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return yahooPrice('^KS11'); },
+                    function(){ return twelvePrice('KOSPI'); },
+                    function(){ return fmpPrice('%5EKS11'); }
+                ]).then(function(v){
+                    imdSetValue('kospi', v, 2);
+                    yahooQuote('^KS11').then(function(q){
+                        if (q && q.price && q.prev)
+                            imdSetChange('kospi', (q.price - q.prev) / q.prev * 100, 'pct');
+                    });
+                });
+            });
 
             // KOSDAQ
-            fetchMulti([
-                function(){ return naverIndex('KOSDAQ'); },
-                function(){ return yahooPrice('^KQ11'); },
-                function(){ return twelvePrice('KOSDAQ'); },  // Pro 플랜 전용, 무료는 null
-                function(){ return fmpPrice('%5EKQ11'); }
-            ]).then(function(v){ imdSetValue('kosdaq', v, 2); });
+            naverIndexFull('KOSDAQ').then(function(r) {
+                if (r && r.price !== null) {
+                    imdSetValue('kosdaq', r.price, 2);
+                    if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return yahooPrice('^KQ11'); },
+                    function(){ return twelvePrice('KOSDAQ'); },
+                    function(){ return fmpPrice('%5EKQ11'); }
+                ]).then(function(v){
+                    imdSetValue('kosdaq', v, 2);
+                    yahooQuote('^KQ11').then(function(q){
+                        if (q && q.price && q.prev)
+                            imdSetChange('kosdaq', (q.price - q.prev) / q.prev * 100, 'pct');
+                    });
+                });
+            });
 
-            // 야간선물: CME Micro KOSPI 200 (MKN=F) → NK225 아님 주의
-            fetchMulti([
-                function(){ return yahooPrice('MKN=F'); },
-                function(){ return yahooPrice('^NK'); },
-                function(){ return twelvePrice('KOSPI200'); }
-            ]).then(function(v){ imdSetValue('kospifut', v, 2); });
+            // 야간선물: CME Micro KOSPI 200 (MKN=F)
+            yahooQuote('MKN=F').then(function(q) {
+                if (q && q.price !== null) {
+                    imdSetValue('kospifut', q.price, 2);
+                    if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return yahooPrice('^NK'); },
+                    function(){ return twelvePrice('KOSPI200'); }
+                ]).then(function(v){ imdSetValue('kospifut', v, 2); });
+            });
 
             // 외국인/기관/개인 수급 – KRX 전용 실시간 계약 데이터 필요
         }
@@ -4886,34 +5022,78 @@ var ECON_DATA = {
                 var mVix = results[1];   // {'^VIX':{}} 또는 {'VIX':{}}
 
                 // SPY → S&P500
+                var spyChg = m.SPY ? m.SPY.changesPercentage : null;
                 fetchMulti([
                     function(){ return m.SPY ? m.SPY.price : null; },
                     function(){ return twelvePrice('SPY'); },
                     function(){ return yahooPrice('SPY'); }
-                ]).then(function(v){ imdSetValue('sp500', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('sp500', v, 2);
+                    if (spyChg !== null && spyChg !== undefined) {
+                        imdSetChange('sp500', spyChg, 'pct');
+                    } else {
+                        yahooQuote('SPY').then(function(q){
+                            if (q && q.price && q.prev)
+                                imdSetChange('sp500', (q.price - q.prev) / q.prev * 100, 'pct');
+                        });
+                    }
+                });
 
                 // QQQ → NASDAQ
+                var qqqChg = m.QQQ ? m.QQQ.changesPercentage : null;
                 fetchMulti([
                     function(){ return m.QQQ ? m.QQQ.price : null; },
                     function(){ return twelvePrice('QQQ'); },
                     function(){ return yahooPrice('QQQ'); }
-                ]).then(function(v){ imdSetValue('nasdaq', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('nasdaq', v, 2);
+                    if (qqqChg !== null && qqqChg !== undefined) {
+                        imdSetChange('nasdaq', qqqChg, 'pct');
+                    } else {
+                        yahooQuote('QQQ').then(function(q){
+                            if (q && q.price && q.prev)
+                                imdSetChange('nasdaq', (q.price - q.prev) / q.prev * 100, 'pct');
+                        });
+                    }
+                });
 
                 // VIX – index-quote 응답 심볼: '^VIX' 또는 'VIX' 또는 '%5EVIX'
                 var vixItem = mVix['^VIX'] || mVix['VIX'] || mVix['%5EVIX'] || Object.values(mVix)[0];
-                var vixP = vixItem ? vixItem.price : null;
+                var vixP   = vixItem ? vixItem.price : null;
+                var vixChg = vixItem ? vixItem.changesPercentage : null;
                 fetchMulti([
                     function(){ return vixP; },
                     function(){ return twelvePrice('VIX'); },
                     function(){ return yahooPrice('^VIX'); }
-                ]).then(function(v){ imdSetValue('vix', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('vix', v, 2);
+                    if (vixChg !== null && vixChg !== undefined) {
+                        imdSetChange('vix', vixChg, 'pct');
+                    } else {
+                        yahooQuote('^VIX').then(function(q){
+                            if (q && q.price && q.prev)
+                                imdSetChange('vix', (q.price - q.prev) / q.prev * 100, 'pct');
+                        });
+                    }
+                });
 
                 // SOX (반도체 지수) – SOXX ETF 대체
+                var soxxChg = m.SOXX ? m.SOXX.changesPercentage : null;
                 fetchMulti([
                     function(){ return m.SOXX ? m.SOXX.price : null; },
                     function(){ return twelvePrice('SOXX'); },
                     function(){ return yahooPrice('SOXX'); }
-                ]).then(function(v){ imdSetValue('sox', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('sox', v, 2);
+                    if (soxxChg !== null && soxxChg !== undefined) {
+                        imdSetChange('sox', soxxChg, 'pct');
+                    } else {
+                        yahooQuote('SOXX').then(function(q){
+                            if (q && q.price && q.prev)
+                                imdSetChange('sox', (q.price - q.prev) / q.prev * 100, 'pct');
+                        });
+                    }
+                });
             });
         }
 
@@ -4922,23 +5102,41 @@ var ECON_DATA = {
          * Yahoo(=F) → Twelvedata(1!) → FMP
          * ══════════════════════════════════════════════════════ */
         function imdLoadFutures() {
-            fetchMulti([
-                function(){ return yahooPrice('ES=F'); },
-                function(){ return twelvePrice('ES1!'); },
-                function(){ return fmpPrice('ES'); }
-            ]).then(function(v){ imdSetValue('spfuture', v, 2); });
+            yahooQuote('ES=F').then(function(q) {
+                if (q && q.price) {
+                    imdSetValue('spfuture', q.price, 2);
+                    if (q.prev) imdSetChange('spfuture', (q.price - q.prev) / q.prev * 100, 'pct');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return twelvePrice('ES1!'); },
+                    function(){ return fmpPrice('ES'); }
+                ]).then(function(v){ imdSetValue('spfuture', v, 2); });
+            });
 
-            fetchMulti([
-                function(){ return yahooPrice('NQ=F'); },
-                function(){ return twelvePrice('NQ1!'); },
-                function(){ return fmpPrice('NQ'); }
-            ]).then(function(v){ imdSetValue('nasfuture', v, 2); });
+            yahooQuote('NQ=F').then(function(q) {
+                if (q && q.price) {
+                    imdSetValue('nasfuture', q.price, 2);
+                    if (q.prev) imdSetChange('nasfuture', (q.price - q.prev) / q.prev * 100, 'pct');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return twelvePrice('NQ1!'); },
+                    function(){ return fmpPrice('NQ'); }
+                ]).then(function(v){ imdSetValue('nasfuture', v, 2); });
+            });
 
-            fetchMulti([
-                function(){ return yahooPrice('RTY=F'); },
-                function(){ return twelvePrice('RTY1!'); },
-                function(){ return fmpPrice('RTY'); }
-            ]).then(function(v){ imdSetValue('rtyfuture', v, 2); });
+            yahooQuote('RTY=F').then(function(q) {
+                if (q && q.price) {
+                    imdSetValue('rtyfuture', q.price, 2);
+                    if (q.prev) imdSetChange('rtyfuture', (q.price - q.prev) / q.prev * 100, 'pct');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return twelvePrice('RTY1!'); },
+                    function(){ return fmpPrice('RTY'); }
+                ]).then(function(v){ imdSetValue('rtyfuture', v, 2); });
+            });
         }
 
         /* ══════════════════════════════════════════════════════
@@ -4946,33 +5144,45 @@ var ECON_DATA = {
          * CoinGecko → Binance → FMP
          * ══════════════════════════════════════════════════════ */
         function imdLoadCrypto() {
-            // 1차: CoinGecko (CORS 허용, 무료)
-            imdGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd')
+            // 1차: CoinGecko – price_change_percentage_24h 포함
+            imdGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true')
                 .then(function(d) {
                     if (d && d.bitcoin) {
                         imdSetValue('btc', d.bitcoin.usd, 0);
                         imdSetValue('eth', d.ethereum.usd, 0);
                         imdSetValue('sol', d.solana.usd, 2);
+                        if (d.bitcoin.usd_24h_change !== undefined)
+                            imdSetChange('btc', d.bitcoin.usd_24h_change, 'pct');
+                        if (d.ethereum.usd_24h_change !== undefined)
+                            imdSetChange('eth', d.ethereum.usd_24h_change, 'pct');
+                        if (d.solana.usd_24h_change !== undefined)
+                            imdSetChange('sol', d.solana.usd_24h_change, 'pct');
                         return;
                     }
                     throw new Error('no data');
                 })
                 .catch(function() {
-                    // 2차: Binance (CORS 허용)
+                    // 2차: Binance – 24h ticker
                     return Promise.all([
-                        imdGet('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'),
-                        imdGet('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT'),
-                        imdGet('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT')
+                        imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
+                        imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
+                        imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT')
                     ]).then(function(r) {
-                        imdSetValue('btc', r[0] && r[0].price, 0);
-                        imdSetValue('eth', r[1] && r[1].price, 0);
-                        imdSetValue('sol', r[2] && r[2].price, 2);
+                        imdSetValue('btc', r[0] && r[0].lastPrice, 0);
+                        imdSetValue('eth', r[1] && r[1].lastPrice, 0);
+                        imdSetValue('sol', r[2] && r[2].lastPrice, 2);
+                        if (r[0] && r[0].priceChangePercent) imdSetChange('btc', parseFloat(r[0].priceChangePercent), 'pct');
+                        if (r[1] && r[1].priceChangePercent) imdSetChange('eth', parseFloat(r[1].priceChangePercent), 'pct');
+                        if (r[2] && r[2].priceChangePercent) imdSetChange('sol', parseFloat(r[2].priceChangePercent), 'pct');
                     }).catch(function() {
                         // 3차: FMP
                         return fmpQ('BTCUSD,ETHUSD,SOLUSD').then(function(m) {
                             imdSetValue('btc', m.BTCUSD && m.BTCUSD.price, 0);
                             imdSetValue('eth', m.ETHUSD && m.ETHUSD.price, 0);
                             imdSetValue('sol', m.SOLUSD && m.SOLUSD.price, 2);
+                            if (m.BTCUSD && m.BTCUSD.changesPercentage) imdSetChange('btc', m.BTCUSD.changesPercentage, 'pct');
+                            if (m.ETHUSD && m.ETHUSD.changesPercentage) imdSetChange('eth', m.ETHUSD.changesPercentage, 'pct');
+                            if (m.SOLUSD && m.SOLUSD.changesPercentage) imdSetChange('sol', m.SOLUSD.changesPercentage, 'pct');
                         });
                     });
                 });
@@ -4985,32 +5195,62 @@ var ECON_DATA = {
         function imdLoadCommodities() {
             fmpQ('GCUSD,SIUSD,CLUSD,DX').then(function(m) {
                 // 금 (Gold)
+                var goldChg = m.GCUSD ? m.GCUSD.changesPercentage : null;
                 fetchMulti([
                     function(){ return m.GCUSD ? m.GCUSD.price : null; },
                     function(){ return twelvePrice('XAU/USD'); },
                     function(){ return yahooPrice('GC=F'); }
-                ]).then(function(v){ imdSetValue('gold', v, 0); });
+                ]).then(function(v){
+                    imdSetValue('gold', v, 0);
+                    if (goldChg !== null && goldChg !== undefined) imdSetChange('gold', goldChg, 'pct');
+                    else yahooQuote('GC=F').then(function(q){
+                        if (q && q.price && q.prev) imdSetChange('gold', (q.price - q.prev) / q.prev * 100, 'pct');
+                    });
+                });
 
                 // 은 (Silver)
+                var silvChg = m.SIUSD ? m.SIUSD.changesPercentage : null;
                 fetchMulti([
                     function(){ return m.SIUSD ? m.SIUSD.price : null; },
                     function(){ return twelvePrice('XAG/USD'); },
                     function(){ return yahooPrice('SI=F'); }
-                ]).then(function(v){ imdSetValue('silver', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('silver', v, 2);
+                    if (silvChg !== null && silvChg !== undefined) imdSetChange('silver', silvChg, 'pct');
+                    else yahooQuote('SI=F').then(function(q){
+                        if (q && q.price && q.prev) imdSetChange('silver', (q.price - q.prev) / q.prev * 100, 'pct');
+                    });
+                });
 
                 // 원유 (WTI Crude)
+                var oilChg = m.CLUSD ? m.CLUSD.changesPercentage : null;
                 fetchMulti([
                     function(){ return m.CLUSD ? m.CLUSD.price : null; },
                     function(){ return twelvePrice('WTI/USD'); },
                     function(){ return yahooPrice('CL=F'); }
-                ]).then(function(v){ imdSetValue('oil', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('oil', v, 2);
+                    if (oilChg !== null && oilChg !== undefined) imdSetChange('oil', oilChg, 'pct');
+                    else yahooQuote('CL=F').then(function(q){
+                        if (q && q.price && q.prev) imdSetChange('oil', (q.price - q.prev) / q.prev * 100, 'pct');
+                    });
+                });
 
-                // DXY (달러 인덱스)
+                // DXY (달러 인덱스) – 절대값 변화 표시
+                var dxyChg  = m.DX ? m.DX.change : null;
+                var dxyChgP = m.DX ? m.DX.changesPercentage : null;
                 fetchMulti([
                     function(){ return m.DX ? m.DX.price : null; },
                     function(){ return twelvePrice('DXY'); },
                     function(){ return yahooPrice('DX-Y.NYB'); }
-                ]).then(function(v){ imdSetValue('dxy', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('dxy', v, 2);
+                    if (dxyChg !== null && dxyChg !== undefined) imdSetChange('dxy', dxyChg, 'val', 2);
+                    else if (dxyChgP !== null && dxyChgP !== undefined) imdSetChange('dxy', dxyChgP, 'pct');
+                    else yahooQuote('DX-Y.NYB').then(function(q){
+                        if (q && q.price && q.prev) imdSetChange('dxy', q.price - q.prev, 'val', 2);
+                    });
+                });
             });
         }
 
@@ -5020,23 +5260,47 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadFX() {
             fmpQ('USDKRW,USDJPY,EURUSD').then(function(m) {
+                // USD/KRW – 변화값 (절대, 정수)
+                var krwChg = m.USDKRW ? m.USDKRW.change : null;
                 fetchMulti([
                     function(){ return m.USDKRW ? m.USDKRW.price : null; },
                     function(){ return twelvePrice('USD/KRW'); },
                     function(){ return yahooPrice('KRW=X'); }
-                ]).then(function(v){ imdSetValue('uskrw', v, 0); });
+                ]).then(function(v){
+                    imdSetValue('uskrw', v, 0);
+                    if (krwChg !== null && krwChg !== undefined) imdSetChange('uskrw', krwChg, 'val', 0);
+                    else yahooQuote('KRW=X').then(function(q){
+                        if (q && q.price && q.prev) imdSetChange('uskrw', q.price - q.prev, 'val', 0);
+                    });
+                });
 
+                // USD/JPY – 변화값 (소수점 2자리)
+                var jpyChg = m.USDJPY ? m.USDJPY.change : null;
                 fetchMulti([
                     function(){ return m.USDJPY ? m.USDJPY.price : null; },
                     function(){ return twelvePrice('USD/JPY'); },
                     function(){ return yahooPrice('JPY=X'); }
-                ]).then(function(v){ imdSetValue('usjpy', v, 2); });
+                ]).then(function(v){
+                    imdSetValue('usjpy', v, 2);
+                    if (jpyChg !== null && jpyChg !== undefined) imdSetChange('usjpy', jpyChg, 'val', 2);
+                    else yahooQuote('JPY=X').then(function(q){
+                        if (q && q.price && q.prev) imdSetChange('usjpy', q.price - q.prev, 'val', 2);
+                    });
+                });
 
+                // EUR/USD – 변화값 (소수점 4자리)
+                var eurChg = m.EURUSD ? m.EURUSD.change : null;
                 fetchMulti([
                     function(){ return m.EURUSD ? m.EURUSD.price : null; },
                     function(){ return twelvePrice('EUR/USD'); },
                     function(){ return yahooPrice('EURUSD=X'); }
-                ]).then(function(v){ imdSetValue('eurusd', v, 4); });
+                ]).then(function(v){
+                    imdSetValue('eurusd', v, 4);
+                    if (eurChg !== null && eurChg !== undefined) imdSetChange('eurusd', eurChg, 'val', 4);
+                    else yahooQuote('EURUSD=X').then(function(q){
+                        if (q && q.price && q.prev) imdSetChange('eurusd', q.price - q.prev, 'val', 4);
+                    });
+                });
             });
         }
 
@@ -5046,30 +5310,81 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // 미국채 10년 (^TNX)
-            fetchMulti([
-                function(){ return fmpPrice('%5ETNX'); },
-                function(){ return fredLatest('DGS10'); },
-                function(){ return yahooPrice('^TNX'); }
-            ]).then(function(v){ imdSetValue('us10y', v, 2); });
-
-            // 미국채 2년 – FRED DGS2 → Yahoo ^IRX(13주 근사)
-            fetchMulti([
-                function(){ return fredLatest('DGS2'); },
-                function(){ return fmpPrice('%5EFVX'); }, // 5Y yield (근사)
-                function(){ return yahooPrice('^IRX'); }
-            ]).then(function(v){ imdSetValue('us2y', v, 2); });
-
-            // Fed 잔고 (WALCL: 백만 달러 → 조 달러 환산)
-            fredLatest('WALCL').then(function(v) {
-                imdSetValue('fedbal', v ? v / 1000000 : null, 2);
+            // 미국채 10년 – FRED DGS10 + change(bp)
+            fredLatestTwo('DGS10').then(function(r) {
+                if (r) {
+                    imdSetValue('us10y', r.cur, 2);
+                    if (r.prev !== null) imdSetChange('us10y', r.cur - r.prev, 'bp');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return fmpPrice('%5ETNX'); },
+                    function(){ return yahooPrice('^TNX'); }
+                ]).then(function(v){ imdSetValue('us10y', v, 2); });
             });
 
-            // Reverse Repo (RRPONTSYD: 십억 달러)
-            fredLatest('RRPONTSYD').then(function(v){ imdSetValue('repo', v, 0); });
+            // 미국채 2년 – FRED DGS2 + change(bp)
+            fredLatestTwo('DGS2').then(function(r) {
+                if (r) {
+                    imdSetValue('us2y', r.cur, 2);
+                    if (r.prev !== null) imdSetChange('us2y', r.cur - r.prev, 'bp');
+                    return;
+                }
+                fetchMulti([
+                    function(){ return fmpPrice('%5EFVX'); },
+                    function(){ return yahooPrice('^IRX'); }
+                ]).then(function(v){ imdSetValue('us2y', v, 2); });
+            });
 
-            // M2 통화량 (M2SL: 십억 달러)
-            fredLatest('M2SL').then(function(v){ imdSetValue('m2', v, 0); });
+            // Yield Curve: FRED T10Y2Y (10Y-2Y spread, % 단위) + change(bp)
+            fredLatestTwo('T10Y2Y').then(function(r) {
+                if (r) {
+                    imdSetValue('yieldcurve', r.cur, 2);
+                    if (r.prev !== null) imdSetChange('yieldcurve', r.cur - r.prev, 'bp');
+                }
+            });
+
+            // TGA (WDTGAL: 일별 TGA 잔고, 십억 달러) + change(amt)
+            fredLatestTwo('WDTGAL').then(function(r) {
+                if (r) {
+                    imdSetValue('tga', r.cur, 0);
+                    if (r.prev !== null) imdSetChange('tga', r.cur - r.prev, 'amt');
+                }
+            });
+
+            // Fed 잔고 (WALCL: 백만 달러 → 조 달러 환산) + change(val)
+            fredLatestTwo('WALCL').then(function(r) {
+                if (r) {
+                    var cur  = r.cur  / 1000000;
+                    var prev = r.prev !== null ? r.prev / 1000000 : null;
+                    imdSetValue('fedbal', cur, 2);
+                    if (prev !== null) imdSetChange('fedbal', cur - prev, 'val', 2);
+                    return;
+                }
+                fredLatest('WALCL').then(function(v){
+                    imdSetValue('fedbal', v ? v / 1000000 : null, 2);
+                });
+            });
+
+            // Reverse Repo (RRPONTSYD: 십억 달러) + change(amt)
+            fredLatestTwo('RRPONTSYD').then(function(r) {
+                if (r) {
+                    imdSetValue('repo', r.cur, 0);
+                    if (r.prev !== null) imdSetChange('repo', r.cur - r.prev, 'amt');
+                    return;
+                }
+                fredLatest('RRPONTSYD').then(function(v){ imdSetValue('repo', v, 0); });
+            });
+
+            // M2 통화량 (M2SL: 십억 달러) + change(amt)
+            fredLatestTwo('M2SL').then(function(r) {
+                if (r) {
+                    imdSetValue('m2', r.cur, 0);
+                    if (r.prev !== null) imdSetChange('m2', r.cur - r.prev, 'amt');
+                    return;
+                }
+                fredLatest('M2SL').then(function(v){ imdSetValue('m2', v, 0); });
+            });
         }
 
         /* ══════════════════════════════════════════════════════
@@ -5173,7 +5488,7 @@ var ECON_DATA = {
             4: { fn: imdLoadCrypto,      ids: ['btc','eth','sol'] },
             5: { fn: imdLoadCommodities, ids: ['gold','silver','oil','dxy'] },
             6: { fn: imdLoadFX,          ids: ['uskrw','usjpy','eurusd'] },
-            7: { fn: imdLoadLiquidity,   ids: ['fedbal','repo','m2','us10y','us2y'] },
+            7: { fn: imdLoadLiquidity,   ids: ['fedbal','repo','tga','m2','us10y','us2y','yieldcurve'] },
             8: { fn: imdLoadSmartMoney,  ids: ['spyflow','qqqflow','iwmflow'] },
             9: { fn: imdLoadSentiment,   ids: ['fear','putcall','gamma'] }
         };
