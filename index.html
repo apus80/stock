@@ -4504,6 +4504,21 @@ var ECON_DATA = {
             'https://api.codetabs.com/v1/proxy?quest='
         ];
 
+        /* ── API 응답 캐시 (중복 요청 방지 + TTL 55초) ──────────
+         * 60초 갱신 주기 이내의 동일 URL 재요청을 캐시로 처리.
+         * 카드별 새로고침·카드2·카드8이 같은 심볼을 동시 요청해도
+         * in-flight 중복 제거로 네트워크 호출 1회만 발생.
+         * ──────────────────────────────────────────────────────── */
+        var _cache    = {};     // { url: { val, ts } }
+        var _inFlight = {};     // { url: Promise }        진행 중 요청 맵
+        var CACHE_TTL = 55000;  // 55초 (60초 갱신 주기보다 짧게)
+
+        function _cacheGet(url) {
+            var e = _cache[url];
+            return (e && Date.now() - e.ts < CACHE_TTL) ? e.val : undefined;
+        }
+        function _cacheSet(url, val) { _cache[url] = { val: val, ts: Date.now() }; }
+
         /* ── 기본 fetch ──────────────────────────────────────── */
         function imdGet(url, ms) {
             ms = ms || 9000;
@@ -4564,6 +4579,37 @@ var ECON_DATA = {
                 console.warn('[IMD] PROXY TEXT FAILED  →  ' + url.split('?')[0]);
                 return null;
             });
+        }
+
+        /* ── 캐시 적용 fetch (CORS 허용 엔드포인트 전용) ────────
+         * 1) 캐시 히트  → 즉시 반환 (네트워크 요청 없음)
+         * 2) 진행 중 요청 → 동일 Promise 반환 (중복 제거)
+         * 3) 신규 요청  → imdGet() 실행 후 캐시 저장
+         *
+         * 사용처: fmpQ, fredLatestTwo, fredLatest, fredSeries
+         * ──────────────────────────────────────────────────────── */
+        function imdGetCached(url, ms) {
+            var cached = _cacheGet(url);
+            if (cached !== undefined) {
+                console.log('[IMD] CACHE HIT  →  ' + url.split('?')[0]);
+                return Promise.resolve(cached);
+            }
+            if (_inFlight[url]) {
+                console.log('[IMD] DEDUP  →  ' + url.split('?')[0]);
+                return _inFlight[url];
+            }
+            var p = imdGet(url, ms)
+                .then(function(d) {
+                    _cacheSet(url, d);
+                    delete _inFlight[url];
+                    return d;
+                })
+                .catch(function(e) {
+                    delete _inFlight[url];
+                    throw e;
+                });
+            _inFlight[url] = p;
+            return p;
         }
 
         /* ── 네트워크 상태 도트 ────────────────────────────────
@@ -4674,11 +4720,17 @@ var ECON_DATA = {
         }
 
         /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
+        // imdGetCached: 55초 TTL + in-flight 중복 제거 적용
         function fredLatestTwo(series) {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d || !d.observations) return null;
+                // FRED error_message 체크
+                if (d.error_message) {
+                    console.warn('[FRED] API 오류 (' + series + '):', d.error_message);
+                    return null;
+                }
                 var valid = d.observations.filter(function(o){
                     return o.value !== '.' && o.value !== '';
                 });
@@ -4688,7 +4740,7 @@ var ECON_DATA = {
                     prev: valid.length > 1 ? parseFloat(valid[1].value) : null
                 };
             }
-            return imdGet(url).then(_parse)
+            return imdGetCached(url).then(_parse)
                 .catch(function() {
                     return imdGetProxy(url).then(_parse).catch(function(){ return null; });
                 });
@@ -4715,9 +4767,10 @@ var ECON_DATA = {
         }
 
         // Worker /quote 직접 호출 (CORS 허용 – 프록시 불필요)
+        // imdGetCached: 55초 TTL + 동시 중복 요청 제거
         function fmpQ(symbols) {
             var url = WORKER_BASE + '/quote?symbol=' + symbols;
-            return imdGet(url)
+            return imdGetCached(url)
                 .then(function(d) { return (d && !d.error) ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
@@ -4737,7 +4790,10 @@ var ECON_DATA = {
             }).catch(function(){ return null; });
         }
 
-        /* ── FRED 헬퍼 (직접 → 프록시 폴백) ───────────────────── */
+        /* ── FRED 헬퍼 (캐시 → 프록시 폴백) ────────────────────
+         * fredLatestTwo와 동일 URL을 사용하므로, fredLatestTwo 이후
+         * 호출 시 캐시 히트로 FRED 재요청 없이 단일값만 파싱.
+         * ──────────────────────────────────────────────────────── */
         function fredLatest(series) {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
@@ -4751,8 +4807,8 @@ var ECON_DATA = {
                 var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
             }
-            // FRED CORS: 직접 호출 시도 → 실패 시 프록시 경유
-            return imdGet(url).then(_parse)
+            // 캐시 히트 시 네트워크 요청 없음 → 실패 시만 프록시 경유
+            return imdGetCached(url).then(_parse)
                 .catch(function() {
                     return imdGetProxy(url).then(_parse).catch(function(){ return null; });
                 });
@@ -4766,7 +4822,7 @@ var ECON_DATA = {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=' + limit +
                 (extra || '');
-            return imdGet(url)
+            return imdGetCached(url)
                 .catch(function() { return imdGetProxy(url); })
                 .then(function(d) {
                     if (!d) return null;
@@ -5390,32 +5446,35 @@ var ECON_DATA = {
          * FMP → Twelvedata → Yahoo
          * ══════════════════════════════════════════════════════ */
         function imdLoadSmartMoney() {
+            /* Twelvedata /quote 폴백 헬퍼 (volume 필드 포함)
+             * Twelvedata free tier는 CORS 미지원 → 직접 시도 후 프록시 폴백. */
+            function _twelveVol(sym, id) {
+                var url = TWELVE_BASE + '/quote?symbol=' + sym + '&apikey=' + TWELVE_KEY;
+                imdGet(url)
+                    .catch(function(){ return imdGetProxy(url); })
+                    .then(function(d){
+                        if (d && d.volume != null)
+                            imdSetValue(id, Math.round(parseFloat(d.volume) / 1000000), 0);
+                    })
+                    .catch(function(){});
+            }
+
             fmpQ('SPY,QQQ,IWM').then(function(m) {
                 function volM(sym) {
+                    // FMP volume 필드가 0 또는 null/undefined이면 null 처리
                     return (m[sym] && m[sym].volume) ? Math.round(m[sym].volume / 1000000) : null;
                 }
-                // FMP 성공 시 바로 표시
                 var spyV = volM('SPY'), qqqV = volM('QQQ'), iwmV = volM('IWM');
+
                 if (spyV !== null) imdSetValue('spyflow', spyV, 0);
                 if (qqqV !== null) imdSetValue('qqqflow', qqqV, 0);
                 if (iwmV !== null) imdSetValue('iwmflow', iwmV, 0);
 
-                // FMP 실패한 항목은 Yahoo 폴백
-                if (spyV === null)
-                    yahooPrice('SPY').then(function(){ /* volume only via FMP */ });
-                // Twelvedata는 quote 엔드포인트에서 volume 제공
-                if (spyV === null)
-                    imdGet(TWELVE_BASE + '/quote?symbol=SPY&apikey=' + TWELVE_KEY)
-                        .then(function(d){ if (d && d.volume) imdSetValue('spyflow', Math.round(d.volume/1000000), 0); })
-                        .catch(function(){});
-                if (qqqV === null)
-                    imdGet(TWELVE_BASE + '/quote?symbol=QQQ&apikey=' + TWELVE_KEY)
-                        .then(function(d){ if (d && d.volume) imdSetValue('qqqflow', Math.round(d.volume/1000000), 0); })
-                        .catch(function(){});
-                if (iwmV === null)
-                    imdGet(TWELVE_BASE + '/quote?symbol=IWM&apikey=' + TWELVE_KEY)
-                        .then(function(d){ if (d && d.volume) imdSetValue('iwmflow', Math.round(d.volume/1000000), 0); })
-                        .catch(function(){});
+                // FMP에서 volume을 받지 못한 항목만 Twelvedata로 폴백
+                // (Yahoo Finance는 volume API를 제공하지 않음)
+                if (spyV === null) _twelveVol('SPY', 'spyflow');
+                if (qqqV === null) _twelveVol('QQQ', 'qqqflow');
+                if (iwmV === null) _twelveVol('IWM', 'iwmflow');
             });
         }
 
