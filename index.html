@@ -4483,19 +4483,22 @@ var ECON_DATA = {
     </script>
 
     <!-- INVESTFLOW MARKET DASHBOARD: 데이터 로더 v2 -->
-    <!-- ※ FMP KEY: 향후 Cloudflare Worker로 이전 예정 -->
+    <!-- ※ FMP: Cloudflare Worker 프록시 경유 (API 키 서버 측 관리) -->
     <script>
     (function() {
         'use strict';
 
-        /* ── API 키 ─────────────────────────────────────────── */
-        var FMP_KEY    = 'JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK'; // 유료 – 1차 우선
-        var FRED_KEY   = '8a2fc0e51f931c3f4506eba1e177c644';
-        var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
-        var FMP_BASE   = 'https://financialmodelingprep.com/stable';
-        var FRED_BASE  = 'https://api.stlouisfed.org/fred/series/observations';
+        /* ── API 설정 ────────────────────────────────────────────
+         * FMP API 키는 Cloudflare Worker 서버 측에서 관리.
+         * 프론트엔드에서 FMP_KEY 직접 노출 없음.
+         * Worker 엔드포인트: /quote /profile /income /balance /cashflow /ratios
+         * ──────────────────────────────────────────────────────── */
+        var WORKER_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev'; // Cloudflare Worker
+        var FRED_KEY    = '8a2fc0e51f931c3f4506eba1e177c644';
+        var TWELVE_KEY  = 'd137ebbec6c9463d8ce5a7decaf99d36';
+        var FRED_BASE   = 'https://api.stlouisfed.org/fred/series/observations';
         var TWELVE_BASE = 'https://api.twelvedata.com';
-        var CORS_PX    = [
+        var CORS_PX     = [
             'https://corsproxy.io/?',
             'https://api.allorigins.win/raw?url=',
             'https://api.codetabs.com/v1/proxy?quest='
@@ -4691,51 +4694,46 @@ var ECON_DATA = {
                 });
         }
 
-        /* ── FMP 헬퍼 (stable API – 2025.08 이후 v3 폐기) ──────
-         * 구: /api/v3/quote/SPY,QQQ
-         * 신: /stable/quote?symbol=SPY,QQQ
-         * 인덱스(^VIX 등)는 /stable/index-quote 로 폴백
-         * ──────────────────────────────────────────────────── */
+        /* ── FMP Cloudflare Worker 헬퍼 ─────────────────────────
+         * 변경 이력:
+         *   구: https://financialmodelingprep.com/stable/quote?symbol=...&apikey=KEY
+         *   신: https://fmp-proxy.aiinvestflow.workers.dev/quote?symbol=...
+         *       (API 키는 Worker 서버 측 보관 – 프론트 노출 없음)
+         *
+         * Worker 지원 엔드포인트:
+         *   /quote /profile /income /balance /cashflow /ratios
+         *
+         * 구 /stable/index-quote → /quote 통합 (Worker에서 처리)
+         * Worker는 CORS를 허용하므로 CORS 프록시 불필요.
+         * ──────────────────────────────────────────────────────── */
         function _fmpParse(d) {
+            if (!d || (Array.isArray(d) && d.length === 0)) return {};
             var arr = Array.isArray(d) ? d : (d && d.symbol ? [d] : []);
             var m = {};
             arr.forEach(function(q) { if (q && q.symbol) m[q.symbol] = q; });
             return m;
         }
 
+        // Worker /quote 직접 호출 (CORS 허용 – 프록시 불필요)
         function fmpQ(symbols) {
-            var url = FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
-            // 직접 CORS 시도 → 실패 시 프록시 폴백
+            var url = WORKER_BASE + '/quote?symbol=' + symbols;
             return imdGet(url)
-                .catch(function(){ return imdGetProxy(url); })
-                .then(function(d) { return d ? _fmpParse(d) : {}; })
+                .then(function(d) { return (d && !d.error) ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
 
-        // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
+        // 인덱스(^VIX 등)도 Worker /quote 로 통합 처리
+        // 구 /stable/index-quote 엔드포인트는 Worker에 없음
         function fmpIndexQ(symbols) {
-            var url = FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
-            return imdGet(url)
-                .catch(function(){ return imdGetProxy(url); })
-                .then(function(d) { return d ? _fmpParse(d) : {}; })
-                .catch(function(){ return {}; });
+            return fmpQ(symbols);
         }
 
         function fmpPrice(symbol) {
-            // 인덱스 심볼(%5E = ^)은 index-quote 엔드포인트 우선 시도
-            var isIndex = symbol.indexOf('%5E') !== -1 || symbol.indexOf('^') !== -1;
-            var fetcher = isIndex ? fmpIndexQ : fmpQ;
-            return fetcher(symbol).then(function(m) {
+            return fmpQ(symbol).then(function(m) {
                 var keys = Object.keys(m);
-                return keys.length > 0 ? m[keys[0]].price : null;
-            }).then(function(p) {
-                // index-quote 실패 시 일반 quote로 폴백
-                if (p !== null && p !== undefined) return p;
-                if (isIndex) return fmpQ(symbol).then(function(m) {
-                    var keys = Object.keys(m);
-                    return keys.length > 0 ? m[keys[0]].price : null;
-                });
-                return null;
+                return (keys.length > 0 && m[keys[0]] && m[keys[0]].price != null)
+                    ? m[keys[0]].price
+                    : null;
             }).catch(function(){ return null; });
         }
 
@@ -5013,7 +5011,7 @@ var ECON_DATA = {
          * FMP 배치 → Twelvedata → Yahoo
          * ══════════════════════════════════════════════════════ */
         function imdLoadUS() {
-            // ETF 3종은 /quote, VIX 인덱스는 /index-quote 로 분리 호출
+            // ETF 3종 + VIX 모두 Worker /quote 엔드포인트로 통합 처리
             Promise.all([
                 fmpQ('SPY,QQQ,SOXX'),
                 fmpIndexQ('%5EVIX')   // ^VIX
