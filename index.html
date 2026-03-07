@@ -4587,15 +4587,19 @@ var ECON_DATA = {
         }
 
         function fmpQ(symbols) {
-            // CORS 우회를 위해 imdGetProxy 사용
-            return imdGetProxy(FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+            var url = FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
+            // 직접 CORS 시도 → 실패 시 프록시 폴백
+            return imdGet(url)
+                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
 
         // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
         function fmpIndexQ(symbols) {
-            return imdGetProxy(FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+            var url = FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
+            return imdGet(url)
+                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
@@ -4623,7 +4627,12 @@ var ECON_DATA = {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
-                if (!d || !d.observations) return null;
+                if (!d) return null;
+                if (d.error_message) {
+                    console.warn('[FRED] API 오류 (' + series + '):', d.error_message);
+                    return null;
+                }
+                if (!d.observations) return null;
                 var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
             }
@@ -4655,10 +4664,15 @@ var ECON_DATA = {
             }
             var url1 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
             var url2 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
-            return imdGetProxy(url1).then(_parse)
-                .then(function(v){
-                    if (v !== null && v !== undefined) return v;
-                    return imdGetProxy(url2).then(_parse);
+            // Yahoo chart API는 CORS 직접 지원 – 직접 시도 후 프록시 폴백
+            return imdGet(url1).then(_parse)
+                .catch(function() { return imdGet(url2).then(_parse); })
+                .catch(function() {
+                    return imdGetProxy(url1).then(_parse)
+                        .then(function(v) {
+                            if (v !== null && v !== undefined) return v;
+                            return imdGetProxy(url2).then(_parse);
+                        });
                 })
                 .catch(function(){ return null; });
         }
