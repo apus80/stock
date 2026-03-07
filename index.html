@@ -1759,6 +1759,20 @@
             color: var(--imd-text) !important;
         }
 
+        /* ── 네트워크 상태 도트 ── */
+        .ns { display:inline-block; width:7px; height:7px; border-radius:50%; margin-left:5px; flex-shrink:0; vertical-align:middle; }
+        .ns-sync    { background:#3b82f6; animation:nsPulse 1.1s ease-in-out infinite; }
+        .ns-online  { background:#22c55e; }
+        .ns-offline { background:#ef4444; }
+        @keyframes nsPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.65)} }
+        .imd-wrap .item-right { display:flex; align-items:center; gap:3px; }
+
+        /* ── 카드 새로고침 버튼 ── */
+        .card-rfbtn { background:none; border:none; padding:1px 5px; cursor:pointer; color:#64748b; font-size:1.05rem; line-height:1; border-radius:4px; transition:color .15s; display:inline-flex; align-items:center; }
+        .card-rfbtn:hover { color:#3b82f6; }
+        .card-rfbtn.spin { animation:rfSpin 0.65s linear infinite; color:#3b82f6; pointer-events:none; }
+        @keyframes rfSpin { to{transform:rotate(360deg)} }
+
         /* ── 모바일 상단 컴팩트 버튼 네비 ── */
         .ml-grid-compact {
             display: grid;
@@ -1873,73 +1887,73 @@
                     <div class="grid">
 
                         <div class="card">
-                            <div class="title-area"><span class="title">1. 한국 시장</span></div>
-                            <div class="item"><span>KOSPI</span><span id="kospi" class="value">-</span></div>
-                            <div class="item"><span>KOSDAQ</span><span id="kosdaq" class="value">-</span></div>
-                            <div class="item"><span>야간선물</span><span id="kospifut" class="value">-</span></div>
-                            <div class="item"><span>외국인 수급</span><span id="foreignflow" class="value">-</span></div>
-                            <div class="item"><span>기관 수급</span><span id="instflow" class="value">-</span></div>
-                            <div class="item"><span>개인 수급</span><span id="retailflow" class="value">-</span></div>
+                            <div class="title-area"><span class="title">1. 한국 시장</span><button class="card-rfbtn" id="rfbtn-1" onclick="imdRefreshCard(1)" title="새로고침">↻</button></div>
+                            <div class="item"><span>KOSPI</span><span class="item-right"><span id="kospi" class="value">-</span><span class="ns ns-offline" id="ns-kospi"></span></span></div>
+                            <div class="item"><span>KOSDAQ</span><span class="item-right"><span id="kosdaq" class="value">-</span><span class="ns ns-offline" id="ns-kosdaq"></span></span></div>
+                            <div class="item"><span>야간선물</span><span class="item-right"><span id="kospifut" class="value">-</span><span class="ns ns-offline" id="ns-kospifut"></span></span></div>
+                            <div class="item"><span>외국인 수급</span><span class="item-right"><span id="foreignflow" class="value">-</span><span class="ns ns-offline" id="ns-foreignflow"></span></span></div>
+                            <div class="item"><span>기관 수급</span><span class="item-right"><span id="instflow" class="value">-</span><span class="ns ns-offline" id="ns-instflow"></span></span></div>
+                            <div class="item"><span>개인 수급</span><span class="item-right"><span id="retailflow" class="value">-</span><span class="ns ns-offline" id="ns-retailflow"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">2. 미국 시장</span></div>
-                            <div class="item"><span>S&amp;P500 (SPY)</span><span id="sp500" class="value">-</span></div>
-                            <div class="item"><span>NASDAQ (QQQ)</span><span id="nasdaq" class="value">-</span></div>
-                            <div class="item"><span>VIX</span><span id="vix" class="value">-</span></div>
-                            <div class="item"><span>SOX</span><span id="sox" class="value">-</span></div>
+                            <div class="title-area"><span class="title">2. 미국 시장</span><button class="card-rfbtn" id="rfbtn-2" onclick="imdRefreshCard(2)" title="새로고침">↻</button></div>
+                            <div class="item"><span>S&amp;P500 (SPY)</span><span class="item-right"><span id="sp500" class="value">-</span><span class="ns ns-offline" id="ns-sp500"></span></span></div>
+                            <div class="item"><span>NASDAQ (QQQ)</span><span class="item-right"><span id="nasdaq" class="value">-</span><span class="ns ns-offline" id="ns-nasdaq"></span></span></div>
+                            <div class="item"><span>VIX</span><span class="item-right"><span id="vix" class="value">-</span><span class="ns ns-offline" id="ns-vix"></span></span></div>
+                            <div class="item"><span>SOX</span><span class="item-right"><span id="sox" class="value">-</span><span class="ns ns-offline" id="ns-sox"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">3. 미국 선물</span></div>
-                            <div class="item"><span>S&amp;P500 Fut</span><span id="spfuture" class="value">-</span></div>
-                            <div class="item"><span>Nasdaq Fut</span><span id="nasfuture" class="value">-</span></div>
-                            <div class="item"><span>Russell Fut</span><span id="rtyfuture" class="value">-</span></div>
+                            <div class="title-area"><span class="title">3. 미국 선물</span><button class="card-rfbtn" id="rfbtn-3" onclick="imdRefreshCard(3)" title="새로고침">↻</button></div>
+                            <div class="item"><span>S&amp;P500 Fut</span><span class="item-right"><span id="spfuture" class="value">-</span><span class="ns ns-offline" id="ns-spfuture"></span></span></div>
+                            <div class="item"><span>Nasdaq Fut</span><span class="item-right"><span id="nasfuture" class="value">-</span><span class="ns ns-offline" id="ns-nasfuture"></span></span></div>
+                            <div class="item"><span>Russell Fut</span><span class="item-right"><span id="rtyfuture" class="value">-</span><span class="ns ns-offline" id="ns-rtyfuture"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">4. Crypto</span></div>
-                            <div class="item"><span>Bitcoin</span><span id="btc" class="value">-</span></div>
-                            <div class="item"><span>Ethereum</span><span id="eth" class="value">-</span></div>
-                            <div class="item"><span>Solana</span><span id="sol" class="value">-</span></div>
+                            <div class="title-area"><span class="title">4. Crypto</span><button class="card-rfbtn" id="rfbtn-4" onclick="imdRefreshCard(4)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Bitcoin</span><span class="item-right"><span id="btc" class="value">-</span><span class="ns ns-offline" id="ns-btc"></span></span></div>
+                            <div class="item"><span>Ethereum</span><span class="item-right"><span id="eth" class="value">-</span><span class="ns ns-offline" id="ns-eth"></span></span></div>
+                            <div class="item"><span>Solana</span><span class="item-right"><span id="sol" class="value">-</span><span class="ns ns-offline" id="ns-sol"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">5. Commodities</span></div>
-                            <div class="item"><span>Gold</span><span id="gold" class="value">-</span></div>
-                            <div class="item"><span>Silver</span><span id="silver" class="value">-</span></div>
-                            <div class="item"><span>Oil</span><span id="oil" class="value">-</span></div>
-                            <div class="item"><span>DXY</span><span id="dxy" class="value">-</span></div>
+                            <div class="title-area"><span class="title">5. Commodities</span><button class="card-rfbtn" id="rfbtn-5" onclick="imdRefreshCard(5)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Gold</span><span class="item-right"><span id="gold" class="value">-</span><span class="ns ns-offline" id="ns-gold"></span></span></div>
+                            <div class="item"><span>Silver</span><span class="item-right"><span id="silver" class="value">-</span><span class="ns ns-offline" id="ns-silver"></span></span></div>
+                            <div class="item"><span>Oil</span><span class="item-right"><span id="oil" class="value">-</span><span class="ns ns-offline" id="ns-oil"></span></span></div>
+                            <div class="item"><span>DXY</span><span class="item-right"><span id="dxy" class="value">-</span><span class="ns ns-offline" id="ns-dxy"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">6. FX</span></div>
-                            <div class="item"><span>USD/KRW</span><span id="uskrw" class="value">-</span></div>
-                            <div class="item"><span>USD/JPY</span><span id="usjpy" class="value">-</span></div>
-                            <div class="item"><span>EUR/USD</span><span id="eurusd" class="value">-</span></div>
+                            <div class="title-area"><span class="title">6. FX</span><button class="card-rfbtn" id="rfbtn-6" onclick="imdRefreshCard(6)" title="새로고침">↻</button></div>
+                            <div class="item"><span>USD/KRW</span><span class="item-right"><span id="uskrw" class="value">-</span><span class="ns ns-offline" id="ns-uskrw"></span></span></div>
+                            <div class="item"><span>USD/JPY</span><span class="item-right"><span id="usjpy" class="value">-</span><span class="ns ns-offline" id="ns-usjpy"></span></span></div>
+                            <div class="item"><span>EUR/USD</span><span class="item-right"><span id="eurusd" class="value">-</span><span class="ns ns-offline" id="ns-eurusd"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">7. Market Liquidity</span></div>
-                            <div class="item"><span>Fed Balance</span><span id="fedbal" class="value">-</span></div>
-                            <div class="item"><span>Reverse Repo</span><span id="repo" class="value">-</span></div>
-                            <div class="item"><span>M2</span><span id="m2" class="value">-</span></div>
-                            <div class="item"><span>10Y</span><span id="us10y" class="value">-</span></div>
-                            <div class="item"><span>2Y</span><span id="us2y" class="value">-</span></div>
+                            <div class="title-area"><span class="title">7. Market Liquidity</span><button class="card-rfbtn" id="rfbtn-7" onclick="imdRefreshCard(7)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Fed Balance</span><span class="item-right"><span id="fedbal" class="value">-</span><span class="ns ns-offline" id="ns-fedbal"></span></span></div>
+                            <div class="item"><span>Reverse Repo</span><span class="item-right"><span id="repo" class="value">-</span><span class="ns ns-offline" id="ns-repo"></span></span></div>
+                            <div class="item"><span>M2</span><span class="item-right"><span id="m2" class="value">-</span><span class="ns ns-offline" id="ns-m2"></span></span></div>
+                            <div class="item"><span>10Y</span><span class="item-right"><span id="us10y" class="value">-</span><span class="ns ns-offline" id="ns-us10y"></span></span></div>
+                            <div class="item"><span>2Y</span><span class="item-right"><span id="us2y" class="value">-</span><span class="ns ns-offline" id="ns-us2y"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">8. ETF Smart Money</span></div>
-                            <div class="item"><span>SPY Vol Flow</span><span id="spyflow" class="value">-</span></div>
-                            <div class="item"><span>QQQ Vol Flow</span><span id="qqqflow" class="value">-</span></div>
-                            <div class="item"><span>IWM Vol Flow</span><span id="iwmflow" class="value">-</span></div>
+                            <div class="title-area"><span class="title">8. ETF Smart Money</span><button class="card-rfbtn" id="rfbtn-8" onclick="imdRefreshCard(8)" title="새로고침">↻</button></div>
+                            <div class="item"><span>SPY Vol Flow</span><span class="item-right"><span id="spyflow" class="value">-</span><span class="ns ns-offline" id="ns-spyflow"></span></span></div>
+                            <div class="item"><span>QQQ Vol Flow</span><span class="item-right"><span id="qqqflow" class="value">-</span><span class="ns ns-offline" id="ns-qqqflow"></span></span></div>
+                            <div class="item"><span>IWM Vol Flow</span><span class="item-right"><span id="iwmflow" class="value">-</span><span class="ns ns-offline" id="ns-iwmflow"></span></span></div>
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">9. Sentiment &amp; Options</span></div>
-                            <div class="item"><span>Fear &amp; Greed</span><span id="fear" class="value">-</span></div>
-                            <div class="item"><span>Put/Call Ratio</span><span id="putcall" class="value">-</span></div>
-                            <div class="item"><span>SPY Gamma Wall</span><span id="gamma" class="value">-</span></div>
+                            <div class="title-area"><span class="title">9. Sentiment &amp; Options</span><button class="card-rfbtn" id="rfbtn-9" onclick="imdRefreshCard(9)" title="새로고침">↻</button></div>
+                            <div class="item"><span>Fear &amp; Greed</span><span class="item-right"><span id="fear" class="value">-</span><span class="ns ns-offline" id="ns-fear"></span></span></div>
+                            <div class="item"><span>Put/Call Ratio</span><span class="item-right"><span id="putcall" class="value">-</span><span class="ns ns-offline" id="ns-putcall"></span></span></div>
+                            <div class="item"><span>SPY Gamma Wall</span><span class="item-right"><span id="gamma" class="value">-</span><span class="ns ns-offline" id="ns-gamma"></span></span></div>
                         </div>
 
                     </div><!-- /.grid -->
@@ -4505,17 +4519,32 @@ var ECON_DATA = {
             });
         }
 
-        /* ── DOM 업데이트 ────────────────────────────────────── */
+        /* ── 네트워크 상태 도트 ────────────────────────────────
+         * state: 'sync' (파란 점멸) | 'online' (녹색) | 'offline' (빨강)
+         * ──────────────────────────────────────────────────── */
+        function imdSetStatus(id, state) {
+            var el = document.getElementById('ns-' + id);
+            if (!el) return;
+            el.className = 'ns ns-' + state;
+            el.title = state === 'online' ? '데이터 정상'
+                     : state === 'sync'   ? '업데이트 중'
+                     :                     '데이터 없음';
+        }
+
+        /* ── DOM 업데이트 (상태 자동 반영) ─────────────────── */
         function imdSetValue(id, val, dec) {
             var el = document.getElementById(id);
             if (!el) return;
             if (val === null || val === undefined || val === '' || isNaN(Number(val))) {
-                el.innerText = '-'; return;
+                el.innerText = '-';
+                imdSetStatus(id, 'offline');
+                return;
             }
             dec = (dec === undefined) ? 2 : dec;
             el.innerText = Number(val).toLocaleString(undefined, {
                 minimumFractionDigits: dec, maximumFractionDigits: dec
             });
+            imdSetStatus(id, 'online');
         }
 
         /* ── FMP 헬퍼 (stable API – 2025.08 이후 v3 폐기) ──────
@@ -4941,8 +4970,43 @@ var ECON_DATA = {
             imdLoadSentiment();
         }
 
+        /* ── 카드별 새로고침 ─────────────────────────────────── */
+        var CARD_LOADERS = {
+            1: { fn: imdLoadKorea,       ids: ['kospi','kosdaq','kospifut','foreignflow','instflow','retailflow'] },
+            2: { fn: imdLoadUS,          ids: ['sp500','nasdaq','vix','sox'] },
+            3: { fn: imdLoadFutures,     ids: ['spfuture','nasfuture','rtyfuture'] },
+            4: { fn: imdLoadCrypto,      ids: ['btc','eth','sol'] },
+            5: { fn: imdLoadCommodities, ids: ['gold','silver','oil','dxy'] },
+            6: { fn: imdLoadFX,          ids: ['uskrw','usjpy','eurusd'] },
+            7: { fn: imdLoadLiquidity,   ids: ['fedbal','repo','m2','us10y','us2y'] },
+            8: { fn: imdLoadSmartMoney,  ids: ['spyflow','qqqflow','iwmflow'] },
+            9: { fn: imdLoadSentiment,   ids: ['fear','putcall','gamma'] }
+        };
+
+        window.imdRefreshCard = function(n) {
+            var c = CARD_LOADERS[n];
+            if (!c) return;
+            // 버튼 스핀 (3초 후 자동 해제)
+            var btn = document.getElementById('rfbtn-' + n);
+            if (btn) {
+                btn.classList.add('spin');
+                setTimeout(function(){ btn.classList.remove('spin'); }, 3000);
+            }
+            // 해당 카드 항목 전체 sync 상태
+            c.ids.forEach(function(id){ imdSetStatus(id, 'sync'); });
+            c.fn();
+        };
+
+        /* 전체 로드 시 모든 항목 sync 처리 */
+        function imdSetAllSync() {
+            Object.values(CARD_LOADERS).forEach(function(c) {
+                c.ids.forEach(function(id){ imdSetStatus(id, 'sync'); });
+            });
+        }
+
+        imdSetAllSync();
         imdLoadAll();
-        setInterval(imdLoadAll, 60000);
+        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 60000);
     })();
     </script>
 
