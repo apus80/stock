@@ -4521,7 +4521,7 @@ var ECON_DATA = {
         var FMP_KEY    = 'JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK'; // 유료 – 1차 우선
         var FRED_KEY   = '0237f97a074fe8296b3bb3b395e65057';
         var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
-        var FMP_BASE   = 'https://financialmodelingprep.com/api/v3';
+        var FMP_BASE   = 'https://financialmodelingprep.com/stable';
         var FRED_BASE  = 'https://api.stlouisfed.org/fred/series/observations';
         var TWELVE_BASE = 'https://api.twelvedata.com';
         var CORS_PX    = [
@@ -4578,21 +4578,51 @@ var ECON_DATA = {
             });
         }
 
-        /* ── FMP 헬퍼 ────────────────────────────────────────── */
+        /* ── FMP 헬퍼 (stable API – 2025.08 이후 v3 폐기) ──────
+         * 구: /api/v3/quote/SPY,QQQ
+         * 신: /stable/quote?symbol=SPY,QQQ
+         * 인덱스(^VIX 등)는 /stable/index-quote 로 폴백
+         * ──────────────────────────────────────────────────── */
         function fmpQ(symbols) {
-            return imdGet(FMP_BASE + '/quote/' + symbols + '?apikey=' + FMP_KEY)
+            // 신 stable API: 심볼을 쿼리 파라미터로 전달
+            return imdGet(FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
                 .then(function(d) {
-                    if (!Array.isArray(d) || d.length === 0) return {};
+                    // 응답: 배열 또는 단일 객체 모두 처리
+                    var arr = Array.isArray(d) ? d : (d && d.symbol ? [d] : []);
+                    if (arr.length === 0) return {};
                     var m = {};
-                    d.forEach(function(q) { m[q.symbol] = q; });
+                    arr.forEach(function(q) { if (q && q.symbol) m[q.symbol] = q; });
+                    return m;
+                }).catch(function(){ return {}; });
+        }
+
+        // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
+        function fmpIndexQ(symbols) {
+            return imdGet(FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+                .then(function(d) {
+                    var arr = Array.isArray(d) ? d : (d && d.symbol ? [d] : []);
+                    if (arr.length === 0) return {};
+                    var m = {};
+                    arr.forEach(function(q) { if (q && q.symbol) m[q.symbol] = q; });
                     return m;
                 }).catch(function(){ return {}; });
         }
 
         function fmpPrice(symbol) {
-            return fmpQ(symbol).then(function(m) {
+            // 인덱스 심볼(%5E = ^)은 index-quote 엔드포인트 우선 시도
+            var isIndex = symbol.indexOf('%5E') !== -1 || symbol.indexOf('^') !== -1;
+            var fetcher = isIndex ? fmpIndexQ : fmpQ;
+            return fetcher(symbol).then(function(m) {
                 var keys = Object.keys(m);
                 return keys.length > 0 ? m[keys[0]].price : null;
+            }).then(function(p) {
+                // index-quote 실패 시 일반 quote로 폴백
+                if (p !== null && p !== undefined) return p;
+                if (isIndex) return fmpQ(symbol).then(function(m) {
+                    var keys = Object.keys(m);
+                    return keys.length > 0 ? m[keys[0]].price : null;
+                });
+                return null;
             }).catch(function(){ return null; });
         }
 
@@ -4691,7 +4721,14 @@ var ECON_DATA = {
          * FMP 배치 → Twelvedata → Yahoo
          * ══════════════════════════════════════════════════════ */
         function imdLoadUS() {
-            fmpQ('SPY,QQQ,%5EVIX,SOXX').then(function(m) {
+            // ETF 3종은 /quote, VIX 인덱스는 /index-quote 로 분리 호출
+            Promise.all([
+                fmpQ('SPY,QQQ,SOXX'),
+                fmpIndexQ('%5EVIX')   // ^VIX
+            ]).then(function(results) {
+                var m    = results[0];   // {SPY:{}, QQQ:{}, SOXX:{}}
+                var mVix = results[1];   // {'^VIX':{}} 또는 {'VIX':{}}
+
                 // SPY → S&P500
                 fetchMulti([
                     function(){ return m.SPY ? m.SPY.price : null; },
@@ -4706,8 +4743,9 @@ var ECON_DATA = {
                     function(){ return yahooPrice('QQQ'); }
                 ]).then(function(v){ imdSetValue('nasdaq', v, 2); });
 
-                // VIX – FMP 반환 심볼은 '^VIX' 또는 'VIX'
-                var vixP = (m['^VIX'] || m['VIX']) ? (m['^VIX'] || m['VIX']).price : null;
+                // VIX – index-quote 응답 심볼: '^VIX' 또는 'VIX' 또는 '%5EVIX'
+                var vixItem = mVix['^VIX'] || mVix['VIX'] || mVix['%5EVIX'] || Object.values(mVix)[0];
+                var vixP = vixItem ? vixItem.price : null;
                 fetchMulti([
                     function(){ return vixP; },
                     function(){ return twelvePrice('VIX'); },
