@@ -4624,19 +4624,34 @@ var ECON_DATA = {
                      :                     '데이터 없음';
         }
 
+        /* ── Stale-while-revalidate 상태 추적 ───────────────
+         * 한 번이라도 실제 값을 표시한 항목은 이후 API 실패 시
+         * '-'로 지우지 않고 기존 값을 유지한다 (stale 표시).
+         * 새로고침 중 값이 사라지는 UX 문제 방지.
+         * ──────────────────────────────────────────────────── */
+        var _hasValue  = {};   // { id: true }  값이 한 번 이상 설정된 항목
+        var _hasChange = {};   // { id: true }  등락값이 한 번 이상 설정된 항목
+
         /* ── DOM 업데이트 (상태 자동 반영) ─────────────────── */
         function imdSetValue(id, val, dec) {
             var el = document.getElementById(id);
             if (!el) return;
             if (val === null || val === undefined || val === '' || isNaN(Number(val))) {
-                el.innerText = '-';
-                imdSetStatus(id, 'offline');
+                if (_hasValue[id]) {
+                    // 이전 값 유지 – 상태 도트만 offline으로 변경
+                    imdSetStatus(id, 'offline');
+                } else {
+                    // 최초 로드 실패 시에만 '-' 표시
+                    el.innerText = '-';
+                    imdSetStatus(id, 'offline');
+                }
                 return;
             }
             dec = (dec === undefined) ? 2 : dec;
             el.innerText = Number(val).toLocaleString(undefined, {
                 minimumFractionDigits: dec, maximumFractionDigits: dec
             });
+            _hasValue[id] = true;
             imdSetStatus(id, 'online');
         }
 
@@ -4650,8 +4665,11 @@ var ECON_DATA = {
             var el = document.getElementById('chg-' + id);
             if (!el) return;
             if (chg === null || chg === undefined || isNaN(Number(chg))) {
-                el.textContent = '';
-                el.className = 'chg-val chg-flat';
+                // 이전 등락값 유지 (stale-while-revalidate)
+                if (!_hasChange[id]) {
+                    el.textContent = '';
+                    el.className = 'chg-val chg-flat';
+                }
                 return;
             }
             var n = Number(chg);
@@ -4672,6 +4690,7 @@ var ECON_DATA = {
             }
             el.textContent = txt;
             el.className = 'chg-val ' + (isUp ? 'chg-up' : isDn ? 'chg-dn' : 'chg-flat');
+            _hasChange[id] = true;
         }
 
         /* ── Naver Index Full (price + change) ─────────────── */
@@ -4721,6 +4740,7 @@ var ECON_DATA = {
 
         /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
         // imdGetCached: 55초 TTL + in-flight 중복 제거 적용
+        // 타임아웃 7초: FRED 직접 실패 시 빠르게 프록시 폴백
         function fredLatestTwo(series) {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
@@ -4740,7 +4760,7 @@ var ECON_DATA = {
                     prev: valid.length > 1 ? parseFloat(valid[1].value) : null
                 };
             }
-            return imdGetCached(url).then(_parse)
+            return imdGetCached(url, 7000).then(_parse)
                 .catch(function() {
                     return imdGetProxy(url).then(_parse).catch(function(){ return null; });
                 });
@@ -4768,9 +4788,10 @@ var ECON_DATA = {
 
         // Worker /quote 직접 호출 (CORS 허용 – 프록시 불필요)
         // imdGetCached: 55초 TTL + 동시 중복 요청 제거
+        // 타임아웃 5초: Cloudflare 엣지 서버는 통상 <1초 응답
         function fmpQ(symbols) {
             var url = WORKER_BASE + '/quote?symbol=' + symbols;
-            return imdGetCached(url)
+            return imdGetCached(url, 5000)
                 .then(function(d) { return (d && !d.error) ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
@@ -4808,7 +4829,7 @@ var ECON_DATA = {
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
             }
             // 캐시 히트 시 네트워크 요청 없음 → 실패 시만 프록시 경유
-            return imdGetCached(url).then(_parse)
+            return imdGetCached(url, 7000).then(_parse)
                 .catch(function() {
                     return imdGetProxy(url).then(_parse).catch(function(){ return null; });
                 });
@@ -4822,7 +4843,7 @@ var ECON_DATA = {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=' + limit +
                 (extra || '');
-            return imdGetCached(url)
+            return imdGetCached(url, 7000)
                 .catch(function() { return imdGetProxy(url); })
                 .then(function(d) {
                     if (!d) return null;
@@ -5577,8 +5598,12 @@ var ECON_DATA = {
             });
         }
 
+        /* 최초 로드: 모든 항목을 sync 상태로 초기화 후 데이터 로드 */
         imdSetAllSync();
         imdLoadAll();
+
+        /* 자동 갱신: 값은 유지(stale)한 채 도트만 sync → 로드 완료 후 online/offline
+         * _hasValue가 있는 항목은 로드 실패해도 기존 값이 보임 */
         setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 60000);
 
         // 경제지표 대시보드 – FRED 실시간 갱신 (별도 주기: 4시간)
