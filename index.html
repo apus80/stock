@@ -1691,6 +1691,98 @@
         body.mobile-view .econ-stats { grid-template-columns: repeat(2,1fr) !important; }
         body.mobile-view .co-metrics { grid-template-columns: repeat(2,1fr) !important; }
 
+        /* ── INVESTFLOW MARKET DASHBOARD (imd) ── */
+        .imd-wrap {
+            --imd-primary: #38bdf8;
+            --imd-card: #1e293b;
+            --imd-text: #f8fafc;
+            margin-top: 14px;
+            background: #0f172a;
+            border-radius: 14px;
+            padding: 16px;
+        }
+        .imd-wrap h1 {
+            text-align: center;
+            margin: 0 0 16px;
+            color: var(--imd-primary);
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            font-size: 0.88em;
+            background: none;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            text-shadow: none;
+        }
+        .imd-wrap .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+        .imd-wrap .card {
+            background: var(--imd-card) !important;
+            padding: 14px !important;
+            border-radius: 10px !important;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.45) !important;
+            border-left: none !important;
+            margin-bottom: 0 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+        .imd-wrap .card:hover { transform: none !important; }
+        .imd-wrap .title-area {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155 !important;
+            border-left: none !important;
+            padding: 0 0 8px !important;
+            margin-bottom: 10px !important;
+        }
+        .imd-wrap .title {
+            font-size: 14px;
+            color: var(--imd-primary);
+            font-weight: bold;
+        }
+        .imd-wrap .item {
+            display: flex !important;
+            justify-content: space-between;
+            margin: 6px 0 !important;
+            font-size: 13px;
+            color: var(--imd-text) !important;
+            background: none !important;
+            padding: 0 !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        .imd-wrap .value {
+            font-weight: bold;
+            font-family: Consolas, monospace;
+            color: var(--imd-text) !important;
+        }
+
+        /* ── 모바일 상단 컴팩트 버튼 네비 ── */
+        .ml-grid-compact {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 7px;
+            margin-bottom: 14px;
+        }
+        .ml-grid-compact .ml-btn {
+            padding: 10px 8px;
+            gap: 5px;
+            border-radius: 12px;
+        }
+        .ml-grid-compact .ml-icon { font-size: 1.35em; }
+        .ml-grid-compact .ml-label { font-size: 0.68em; }
+        .ml-grid-compact .ml-btn.ml-wide {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            padding: 11px 16px;
+            gap: 10px;
+        }
+        .ml-grid-compact .ml-btn.ml-wide .ml-label { font-size: 0.78em; }
+
     </style>
 </head>
 
@@ -1742,8 +1834,9 @@
 
             <!-- ── 모바일 랜딩 그리드 ── -->
             <div class="mobile-landing" id="mobileLanding">
-                <h2>메뉴 선택</h2>
-                <div class="ml-grid">
+
+                <!-- 카테고리 버튼 (상단 컴팩트) -->
+                <div class="ml-grid-compact">
                     <button class="ml-btn" onclick="showMobileSection('dashboard')">
                         <span class="ml-icon">📊</span>
                         <span class="ml-label">실시간<br>대시보드</span>
@@ -1773,7 +1866,88 @@
                         <span class="ml-label">분석 보고서</span>
                     </button>
                 </div>
-            </div>
+
+                <!-- INVESTFLOW MARKET DASHBOARD -->
+                <div class="imd-wrap">
+
+                    <h1>INVESTFLOW AI MARKET DASHBOARD</h1>
+
+                    <div class="grid">
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">1. 한국 시장</span></div>
+                            <div class="item"><span>KOSPI</span><span id="kospi" class="value">-</span></div>
+                            <div class="item"><span>KOSDAQ</span><span id="kosdaq" class="value">-</span></div>
+                            <div class="item"><span>야간선물</span><span id="kospifut" class="value">-</span></div>
+                            <div class="item"><span>외국인 수급</span><span id="foreignflow" class="value">-</span></div>
+                            <div class="item"><span>기관 수급</span><span id="instflow" class="value">-</span></div>
+                            <div class="item"><span>개인 수급</span><span id="retailflow" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">2. 미국 시장</span></div>
+                            <div class="item"><span>S&amp;P500 (SPY)</span><span id="sp500" class="value">-</span></div>
+                            <div class="item"><span>NASDAQ (QQQ)</span><span id="nasdaq" class="value">-</span></div>
+                            <div class="item"><span>VIX</span><span id="vix" class="value">-</span></div>
+                            <div class="item"><span>SOX</span><span id="sox" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">3. 미국 선물</span></div>
+                            <div class="item"><span>S&amp;P500 Fut</span><span id="spfuture" class="value">-</span></div>
+                            <div class="item"><span>Nasdaq Fut</span><span id="nasfuture" class="value">-</span></div>
+                            <div class="item"><span>Russell Fut</span><span id="rtyfuture" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">4. Crypto</span></div>
+                            <div class="item"><span>Bitcoin</span><span id="btc" class="value">-</span></div>
+                            <div class="item"><span>Ethereum</span><span id="eth" class="value">-</span></div>
+                            <div class="item"><span>Solana</span><span id="sol" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">5. Commodities</span></div>
+                            <div class="item"><span>Gold</span><span id="gold" class="value">-</span></div>
+                            <div class="item"><span>Silver</span><span id="silver" class="value">-</span></div>
+                            <div class="item"><span>Oil</span><span id="oil" class="value">-</span></div>
+                            <div class="item"><span>DXY</span><span id="dxy" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">6. FX</span></div>
+                            <div class="item"><span>USD/KRW</span><span id="uskrw" class="value">-</span></div>
+                            <div class="item"><span>USD/JPY</span><span id="usjpy" class="value">-</span></div>
+                            <div class="item"><span>EUR/USD</span><span id="eurusd" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">7. Market Liquidity</span></div>
+                            <div class="item"><span>Fed Balance</span><span id="fedbal" class="value">-</span></div>
+                            <div class="item"><span>Reverse Repo</span><span id="repo" class="value">-</span></div>
+                            <div class="item"><span>M2</span><span id="m2" class="value">-</span></div>
+                            <div class="item"><span>10Y</span><span id="us10y" class="value">-</span></div>
+                            <div class="item"><span>2Y</span><span id="us2y" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">8. ETF Smart Money</span></div>
+                            <div class="item"><span>SPY Vol Flow</span><span id="spyflow" class="value">-</span></div>
+                            <div class="item"><span>QQQ Vol Flow</span><span id="qqqflow" class="value">-</span></div>
+                            <div class="item"><span>IWM Vol Flow</span><span id="iwmflow" class="value">-</span></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="title-area"><span class="title">9. Sentiment &amp; Options</span></div>
+                            <div class="item"><span>Fear &amp; Greed</span><span id="fear" class="value">-</span></div>
+                            <div class="item"><span>Put/Call Ratio</span><span id="putcall" class="value">-</span></div>
+                            <div class="item"><span>SPY Gamma Wall</span><span id="gamma" class="value">-</span></div>
+                        </div>
+
+                    </div><!-- /.grid -->
+                </div><!-- /.imd-wrap -->
+
+            </div><!-- /#mobileLanding -->
 
             <!-- TradingView 실시간 전광판 -->
             <div class="tradingview-ticker-container">
@@ -4358,6 +4532,74 @@ var ECON_DATA = {
                 backToMobileLanding();
             }
         };
+    })();
+    </script>
+
+    <!-- INVESTFLOW MARKET DASHBOARD: 데이터 로더 -->
+    <script>
+    (function() {
+        'use strict';
+
+        const IMD_WORKER = "https://fmp-proxy.aiinvestflow.workers.dev/?symbol=";
+
+        function imdSetValue(id, val) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (!val) { el.innerText = "-"; return; }
+            el.innerText = Number(val).toLocaleString(undefined, { maximumFractionDigits: 2 });
+        }
+
+        async function imdFetchPrice(symbol) {
+            try {
+                const r = await fetch(IMD_WORKER + symbol);
+                const j = await r.json();
+                if (j && j.price) return j.price;
+            } catch (e) {}
+            return null;
+        }
+
+        async function imdSetPrice(symbol, id) {
+            const p = await imdFetchPrice(symbol);
+            imdSetValue(id, p);
+        }
+
+        async function imdLoadMarkets() {
+            imdSetPrice("SPY",        "sp500");
+            imdSetPrice("QQQ",        "nasdaq");
+            imdSetPrice("^VIX",       "vix");
+            imdSetPrice("^SOX",       "sox");
+
+            imdSetPrice("ES=F",       "spfuture");
+            imdSetPrice("NQ=F",       "nasfuture");
+            imdSetPrice("RTY=F",      "rtyfuture");
+
+            imdSetPrice("GC=F",       "gold");
+            imdSetPrice("SI=F",       "silver");
+            imdSetPrice("CL=F",       "oil");
+            imdSetPrice("DX-Y.NYB",   "dxy");
+
+            imdSetPrice("KRW=X",      "uskrw");
+            imdSetPrice("JPY=X",      "usjpy");
+            imdSetPrice("EURUSD=X",   "eurusd");
+        }
+
+        async function imdLoadCrypto() {
+            try {
+                const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd");
+                const d = await r.json();
+                imdSetValue("btc", d.bitcoin.usd);
+                imdSetValue("eth", d.ethereum.usd);
+                imdSetValue("sol", d.solana.usd);
+            } catch (e) {}
+        }
+
+        function imdLoadAll() {
+            imdLoadMarkets();
+            imdLoadCrypto();
+        }
+
+        imdLoadAll();
+        setInterval(imdLoadAll, 60000);
     })();
     </script>
 
