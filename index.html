@@ -397,11 +397,6 @@
             font-weight: 700;
         }
 
-        .sentiment-inner {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
 
         .quote-item {
             background: #f8fafc;
@@ -1691,7 +1686,7 @@
         body.mobile-view .econ-stats { grid-template-columns: repeat(2,1fr) !important; }
         body.mobile-view .co-metrics { grid-template-columns: repeat(2,1fr) !important; }
         /* 모바일 뷰: 전광판·시장심리 아코디언 숨김 */
-        body.mobile-view .tradingview-ticker-container { display: none !important; }
+
         body.mobile-view .vol-macro-card { display: none !important; }
 
         /* ── INVESTFLOW MARKET DASHBOARD (imd) ── */
@@ -1952,33 +1947,6 @@
 
             </div><!-- /#mobileLanding -->
 
-            <!-- TradingView 실시간 전광판 (데스크탑 전용 – 모바일은 lazy-init 미실행) -->
-            <div class="tradingview-ticker-container">
-                <div class="tradingview-widget-container">
-                    <div class="tradingview-widget-container__widget"></div>
-                    <script type="text/x-tradingview"
-                        data-src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js">
-                            {
-                                "symbols": [
-                                    { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
-                                    { "proName": "FOREXCOM:DJI",    "title": "Dow Jones" },
-                                    { "proName": "NASDAQ:AAPL",     "title": "Apple" },
-                                    { "proName": "NASDAQ:NVDA",     "title": "NVIDIA" },
-                                    { "proName": "TVC:GOLD",        "title": "Gold" },
-                                    { "proName": "BITSTAMP:BTCUSD", "title": "Bitcoin" },
-                                    { "proName": "KRX:KOSPI",       "title": "KOSPI" },
-                                    { "proName": "KRX:KOSDAQ",      "title": "KOSDAQ" },
-                                    { "proName": "CBOE:VIX",        "title": "VIX" }
-                                ],
-                                "showSymbolLogo": true,
-                                "colorTheme": "light",
-                                "isTransparent": false,
-                                "displayMode": "adaptive",
-                                "locale": "kr"
-                            }
-                        </script>
-                </div>
-            </div>
 
 
             <!-- VOLATILITY_CARD_START -->
@@ -2261,34 +2229,6 @@ var ECON_DATA = {
                     </div>
                 </div>
 
-                <!-- 시장 심리 및 환율 -->
-                <div class="card sentiment-card">
-                    <h3 class="section-title">📈 시장 심리 및 환율</h3>
-                    <div class="sentiment-inner">
-                        <div class="quote-item">
-                            <p class="quote-label">🇰🇷 실시간 원/달러 환율</p>
-                            <div class="tradingview-widget-container" style="height: 100px;">
-                                <script type="text/x-tradingview"
-                                    data-src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js"
-                                    >
-                                        { "symbol": "FX_IDC:USDKRW", "width": "100%", "colorTheme": "light", "isTransparent": true, "locale": "ko" }
-                                    </script>
-                            </div>
-                        </div>
-                        <div class="divider"></div>
-                        <div class="sentiment-selection">
-                            <p class="quote-label">📊 실시간 시장 심리 지표</p>
-                            <div class="selector-row" style="margin-bottom: 15px;">
-                                <button class="btn-sm" onclick="changeSentiment('KRX:KOSPI')">국피</button>
-                                <button class="btn-sm" onclick="changeSentiment('KRX:KOSDAQ')">국닥</button>
-                                <button class="btn-sm" onclick="changeSentiment('NASDAQ:QQQ')">나스닥</button>
-                                <button class="btn-sm" onclick="changeSentiment('AMEX:SPY')">S&P</button>
-                                <button class="btn-sm" onclick="changeSentiment('BINANCE:BTCUSDT')">코인</button>
-                            </div>
-                            <div id="sentiment-widget-container" style="height: 450px;"></div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- 시장 핵심 거시 지표 (Market Pulse) -->
                 <!-- TVC:GOLD / TVC:SILVER → 등락폭(%) 표시 위해 TVC 합성 심볼 사용 (USOIL과 동일) -->
@@ -4583,29 +4523,25 @@ var ECON_DATA = {
          * 신: /stable/quote?symbol=SPY,QQQ
          * 인덱스(^VIX 등)는 /stable/index-quote 로 폴백
          * ──────────────────────────────────────────────────── */
+        function _fmpParse(d) {
+            var arr = Array.isArray(d) ? d : (d && d.symbol ? [d] : []);
+            var m = {};
+            arr.forEach(function(q) { if (q && q.symbol) m[q.symbol] = q; });
+            return m;
+        }
+
         function fmpQ(symbols) {
-            // 신 stable API: 심볼을 쿼리 파라미터로 전달
-            return imdGet(FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
-                .then(function(d) {
-                    // 응답: 배열 또는 단일 객체 모두 처리
-                    var arr = Array.isArray(d) ? d : (d && d.symbol ? [d] : []);
-                    if (arr.length === 0) return {};
-                    var m = {};
-                    arr.forEach(function(q) { if (q && q.symbol) m[q.symbol] = q; });
-                    return m;
-                }).catch(function(){ return {}; });
+            // CORS 우회를 위해 imdGetProxy 사용
+            return imdGetProxy(FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+                .then(function(d) { return d ? _fmpParse(d) : {}; })
+                .catch(function(){ return {}; });
         }
 
         // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
         function fmpIndexQ(symbols) {
-            return imdGet(FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
-                .then(function(d) {
-                    var arr = Array.isArray(d) ? d : (d && d.symbol ? [d] : []);
-                    if (arr.length === 0) return {};
-                    var m = {};
-                    arr.forEach(function(q) { if (q && q.symbol) m[q.symbol] = q; });
-                    return m;
-                }).catch(function(){ return {}; });
+            return imdGetProxy(FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY)
+                .then(function(d) { return d ? _fmpParse(d) : {}; })
+                .catch(function(){ return {}; });
         }
 
         function fmpPrice(symbol) {
