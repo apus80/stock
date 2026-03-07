@@ -4634,6 +4634,22 @@ var ECON_DATA = {
             }).catch(function(){ return null; });
         }
 
+        /* ── Naver Finance Polling API (장중 근실시간) ────────
+         * 한국 시장 전용. 장중에는 약 수초~수분 지연.
+         * code: 'KOSPI' | 'KOSDAQ'
+         * ──────────────────────────────────────────────────── */
+        function naverIndex(code) {
+            var url = 'https://polling.finance.naver.com/api/realtime' +
+                '?query=SERVICE_INDEX:' + code;
+            return imdGetProxy(url).then(function(d) {
+                try {
+                    var item = d.result.areas[0].datas[0];
+                    var val = item.nv || item.sv; // nv: 현재값, sv: 이전값 대체
+                    return val ? parseFloat(String(val).replace(/,/g, '')) : null;
+                } catch(e) { return null; }
+            }).catch(function(){ return null; });
+        }
+
         /* ── 멀티소스 폭포수 (1→2→3차) ─────────────────────── */
         function fetchMulti(sources) {
             var chain = Promise.resolve(null);
@@ -4648,31 +4664,35 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 1 – 한국 시장
-         * KOSPI/KOSDAQ: FMP → Twelvedata → Yahoo
-         * 야간선물: Yahoo(MKN=F) → Twelvedata
+         * KOSPI/KOSDAQ: Yahoo(~15분 지연) → Naver(장중 근실시간) → Twelvedata → FMP(종가)
+         * 야간선물: Yahoo(NK=F 니케이근사) → CME MKN=F
          * 외국인/기관/개인 수급: 공개 API 없음 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
+            // KOSPI – Yahoo 1차 (장중 ~15분 지연이지만 FMP 종가보다 빠름)
             fetchMulti([
-                function(){ return fmpPrice('%5EKS11'); },
+                function(){ return yahooPrice('^KS11'); },
+                function(){ return naverIndex('KOSPI'); },
                 function(){ return twelvePrice('KOSPI'); },
-                function(){ return yahooPrice('^KS11'); }
+                function(){ return fmpPrice('%5EKS11'); }
             ]).then(function(v){ imdSetValue('kospi', v, 2); });
 
+            // KOSDAQ
             fetchMulti([
-                function(){ return fmpPrice('%5EKQ11'); },
+                function(){ return yahooPrice('^KQ11'); },
+                function(){ return naverIndex('KOSDAQ'); },
                 function(){ return twelvePrice('KOSDAQ'); },
-                function(){ return yahooPrice('^KQ11'); }
+                function(){ return fmpPrice('%5EKQ11'); }
             ]).then(function(v){ imdSetValue('kosdaq', v, 2); });
 
-            // 야간선물: CME Micro KOSPI (MKN=F)
+            // 야간선물: CME Micro KOSPI 200 (MKN=F) → NK225 아님 주의
             fetchMulti([
                 function(){ return yahooPrice('MKN=F'); },
+                function(){ return yahooPrice('^NK'); },
                 function(){ return twelvePrice('KOSPI200'); }
             ]).then(function(v){ imdSetValue('kospifut', v, 2); });
 
-            // 외국인/기관/개인 수급 – KRX 전용 데이터, 공개 API 없음
-            // imdSetValue('foreignflow', null); // 이미 '-'
+            // 외국인/기관/개인 수급 – KRX 전용 실시간 계약 데이터 필요
         }
 
         /* ══════════════════════════════════════════════════════
