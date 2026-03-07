@@ -5059,7 +5059,11 @@ var ECON_DATA = {
                 ]).then(function(v){ imdSetValue('kospifut', v, 2); });
             });
 
-            // 외국인/기관/개인 수급 – KRX 전용 실시간 계약 데이터 필요
+            // 외국인/기관/개인 수급 – KRX 전용 실시간 계약 데이터 필요 (공개 API 없음)
+            // sync 상태에서 멈추지 않도록 offline으로 명시 전환
+            imdSetStatus('foreignflow', 'offline');
+            imdSetStatus('instflow',    'offline');
+            imdSetStatus('retailflow',  'offline');
         }
 
         /* ══════════════════════════════════════════════════════
@@ -5519,7 +5523,9 @@ var ECON_DATA = {
                 .catch(function(){ return null; })
                 .then(function(v){ imdSetValue('putcall', v, 2); });
 
-            // Gamma Wall – 실시간 옵션 그릭 계산 필요 → '-' 유지
+            // Gamma Wall – 실시간 옵션 그릭 계산 필요 (공개 API 없음) → '-' 유지
+            // sync 상태에서 멈추지 않도록 offline으로 명시 전환
+            imdSetStatus('gamma', 'offline');
         }
 
         /* ══════════════════════════════════════════════════════
