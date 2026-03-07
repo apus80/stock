@@ -4480,7 +4480,8 @@ var ECON_DATA = {
         var TWELVE_BASE = 'https://api.twelvedata.com';
         var CORS_PX    = [
             'https://corsproxy.io/?',
-            'https://api.allorigins.win/raw?url='
+            'https://api.allorigins.win/raw?url=',
+            'https://api.codetabs.com/v1/proxy?quest='
         ];
 
         /* ── 기본 fetch ──────────────────────────────────────── */
@@ -4515,6 +4516,32 @@ var ECON_DATA = {
             });
             return chain.catch(function(){
                 console.warn('[IMD] PROXY ALL FAILED  →  ' + url.split('?')[0]);
+                return null;
+            });
+        }
+
+        /* ── 텍스트 fetch (CSV 등 비-JSON 응답 전용) ─────────── */
+        function imdGetText(url, ms) {
+            ms = ms || 9000;
+            var c = new AbortController();
+            var t = setTimeout(function(){ c.abort(); }, ms);
+            var label = url.split('?')[0];
+            return fetch(url, { signal: c.signal })
+                .then(function(r){
+                    clearTimeout(t);
+                    if (!r.ok) { console.warn('[IMD] HTTP ' + r.status + '  →  ' + label); throw new Error(r.status); }
+                    return r.text();
+                })
+                .catch(function(e){ clearTimeout(t); throw e; });
+        }
+
+        function imdGetProxyText(url) {
+            var chain = Promise.reject();
+            CORS_PX.forEach(function(px) {
+                chain = chain.catch(function() { return imdGetText(px + encodeURIComponent(url)); });
+            });
+            return chain.catch(function(){
+                console.warn('[IMD] PROXY TEXT FAILED  →  ' + url.split('?')[0]);
                 return null;
             });
         }
@@ -4591,33 +4618,49 @@ var ECON_DATA = {
             }).catch(function(){ return null; });
         }
 
-        /* ── FRED 헬퍼 ───────────────────────────────────────── */
+        /* ── FRED 헬퍼 (직접 → 프록시 폴백) ───────────────────── */
         function fredLatest(series) {
             var url = FRED_BASE + '?series_id=' + series +
                 '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
-            return imdGet(url).then(function(d) {
+            function _parse(d) {
                 if (!d || !d.observations) return null;
                 var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
-            }).catch(function(){ return null; });
+            }
+            // FRED CORS: 직접 호출 시도 → 실패 시 프록시 경유
+            return imdGet(url).then(_parse)
+                .catch(function() {
+                    return imdGetProxy(url).then(_parse).catch(function(){ return null; });
+                });
         }
 
-        /* ── Twelvedata 헬퍼 ─────────────────────────────────── */
+        /* ── Twelvedata 헬퍼 (프록시 경유 – free tier CORS 미지원) ── */
         function twelvePrice(symbol) {
-            return imdGet(TWELVE_BASE + '/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + TWELVE_KEY)
+            var url = TWELVE_BASE + '/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + TWELVE_KEY;
+            // 직접 시도 → CORS 차단 시 프록시 폴백
+            return imdGet(url)
+                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d){ return (d && d.price) ? parseFloat(d.price) : null; })
                 .catch(function(){ return null; });
         }
 
-        /* ── Yahoo Finance (CORS 프록시) ─────────────────────── */
+        /* ── Yahoo Finance (CORS 프록시, query1→query2 폴백) ─── */
         function yahooPrice(symbol) {
-            var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' +
-                encodeURIComponent(symbol) + '?interval=1d&range=1d';
-            return imdGetProxy(url).then(function(d) {
+            var sym = encodeURIComponent(symbol);
+            var suffix = '?interval=1d&range=1d&includePrePost=false';
+            function _parse(d) {
                 if (d && d.chart && d.chart.result && d.chart.result[0])
                     return d.chart.result[0].meta.regularMarketPrice || null;
                 return null;
-            }).catch(function(){ return null; });
+            }
+            var url1 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
+            var url2 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + sym + suffix;
+            return imdGetProxy(url1).then(_parse)
+                .then(function(v){
+                    if (v !== null && v !== undefined) return v;
+                    return imdGetProxy(url2).then(_parse);
+                })
+                .catch(function(){ return null; });
         }
 
         /* ── Naver Finance Polling API (장중 근실시간) ────────
@@ -4922,15 +4965,18 @@ var ECON_DATA = {
          * Gamma Wall: 복잡한 옵션 계산 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadSentiment() {
-            // Fear & Greed – CNN 공식 데이터
+            // Fear & Greed – CNN 공식 데이터 (프록시 3종 시도)
             imdGetProxy('https://production.dataviz.cnn.io/index/fearandgreed/graphdata')
                 .then(function(d) {
-                    if (d && d.fear_and_greed && d.fear_and_greed.score !== undefined)
-                        return Math.round(d.fear_and_greed.score);
-                    throw new Error('no cnn data');
+                    // CNN 응답 구조: {fear_and_greed: {score: 45.2}} 또는 {score: 45.2}
+                    var score = (d && d.fear_and_greed && d.fear_and_greed.score !== undefined)
+                        ? d.fear_and_greed.score
+                        : (d && d.score !== undefined ? d.score : undefined);
+                    if (score !== undefined && !isNaN(Number(score))) return Math.round(Number(score));
+                    throw new Error('cnn structure mismatch');
                 })
                 .catch(function() {
-                    // Alternative.me 폴백 (암호화폐 기반 F&G 지수)
+                    // Alternative.me 폴백 (CORS 직접 허용)
                     return imdGet('https://api.alternative.me/fng/?limit=1')
                         .then(function(d) {
                             return (d && d.data && d.data[0]) ? parseInt(d.data[0].value) : null;
@@ -4939,15 +4985,16 @@ var ECON_DATA = {
                 .then(function(v){ imdSetValue('fear', v, 0); });
 
             // Put/Call Ratio – CBOE total options EOD CSV
-            imdGetProxy('https://www.cboe.com/publish/scheduledtask/mktdata/datahouse/totaloptionsvolume.csv')
+            // ※ CSV는 JSON이 아니므로 imdGetProxyText(r.text()) 사용
+            imdGetProxyText('https://www.cboe.com/publish/scheduledtask/mktdata/datahouse/totaloptionsvolume.csv')
                 .then(function(text) {
-                    if (typeof text !== 'string') throw new Error('not text');
-                    var lines = text.trim().split('\n');
+                    if (!text || typeof text !== 'string') throw new Error('no text');
+                    var lines = text.trim().split('\n').filter(function(l){ return l.trim().length > 0; });
                     // 마지막 데이터 행에서 P/C ratio 파싱 (컬럼: Date,Calls,Puts,Total,PC_Ratio)
                     var last = lines[lines.length - 1].split(',');
                     var pc = parseFloat(last[last.length - 1]);
-                    if (!isNaN(pc)) return pc;
-                    throw new Error('parse fail');
+                    if (!isNaN(pc) && pc > 0 && pc < 10) return pc;
+                    throw new Error('parse fail: ' + last[last.length - 1]);
                 })
                 .catch(function(){ return null; })
                 .then(function(v){ imdSetValue('putcall', v, 2); });
