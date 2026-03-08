@@ -5231,19 +5231,20 @@ var ECON_DATA = {
                 if (data && data.KOREA_MARKET) {
                     var kr = data.KOREA_MARKET;
 
+                    // ✅ FMP API는 센트 단위로 반환하므로 100으로 나눔
                     if (kr.KOSPI && kr.KOSPI.price) {
-                        imdSetValue('kospi', kr.KOSPI.price, 2);
-                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change, 'pct');
+                        imdSetValue('kospi', kr.KOSPI.price / 100, 0);
+                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change / 100, 'pct');
                     }
 
                     if (kr.KOSDAQ && kr.KOSDAQ.price) {
-                        imdSetValue('kosdaq', kr.KOSDAQ.price, 2);
-                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change, 'pct');
+                        imdSetValue('kosdaq', kr.KOSDAQ.price / 100, 0);
+                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change / 100, 'pct');
                     }
 
                     if (kr.KOSPI_FUT && kr.KOSPI_FUT.price) {
-                        imdSetValue('kospifut', kr.KOSPI_FUT.price, 2);
-                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change, 'pct');
+                        imdSetValue('kospifut', kr.KOSPI_FUT.price / 100, 0);
+                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change / 100, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5254,7 +5255,7 @@ var ECON_DATA = {
                 // KOSPI – Naver
                 naverIndexFull('KOSPI').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kospi', r.price, 2);
+                        imdSetValue('kospi', r.price, 0);
                         if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
                         return;
                     }
@@ -5263,7 +5264,7 @@ var ECON_DATA = {
                         function(){ return twelvePrice('KOSPI'); },
                         function(){ return fmpPrice('%5EKS11'); }
                     ]).then(function(v){
-                        imdSetValue('kospi', v, 2);
+                        imdSetValue('kospi', v ? (v / 100) : v, 0);
                         yahooQuote('^KS11').then(function(q){
                             if (q && q.price && q.prev)
                                 imdSetChange('kospi', (q.price - q.prev) / q.prev * 100, 'pct');
@@ -5274,7 +5275,7 @@ var ECON_DATA = {
                 // KOSDAQ
                 naverIndexFull('KOSDAQ').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kosdaq', r.price, 2);
+                        imdSetValue('kosdaq', r.price, 0);
                         if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
                         return;
                     }
@@ -5283,7 +5284,7 @@ var ECON_DATA = {
                         function(){ return twelvePrice('KOSDAQ'); },
                         function(){ return fmpPrice('%5EKQ11'); }
                     ]).then(function(v){
-                        imdSetValue('kosdaq', v, 2);
+                        imdSetValue('kosdaq', v ? (v / 100) : v, 0);
                         yahooQuote('^KQ11').then(function(q){
                             if (q && q.price && q.prev)
                                 imdSetChange('kosdaq', (q.price - q.prev) / q.prev * 100, 'pct');
@@ -5294,33 +5295,33 @@ var ECON_DATA = {
                 // KOSPI Future
                 yahooQuote('MKN=F').then(function(q) {
                     if (q && q.price !== null) {
-                        imdSetValue('kospifut', q.price, 2);
+                        imdSetValue('kospifut', q.price / 100, 0);
                         if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
                         return;
                     }
                     fetchMulti([
                         function(){ return yahooPrice('^NK'); },
                         function(){ return twelvePrice('KOSPI200'); }
-                    ]).then(function(v){ imdSetValue('kospifut', v, 2); });
+                    ]).then(function(v){ imdSetValue('kospifut', v ? (v / 100) : v, 0); });
                 });
             }).catch(function(){
                 // If Worker fails, use legacy Naver API
                 console.log('[FALLBACK] Worker Korea failed, using legacy APIs');
                 naverIndexFull('KOSPI').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kospi', r.price, 2);
+                        imdSetValue('kospi', r.price, 0);
                         if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
                     }
                 });
                 naverIndexFull('KOSDAQ').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kosdaq', r.price, 2);
+                        imdSetValue('kosdaq', r.price, 0);
                         if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
                     }
                 });
                 yahooQuote('MKN=F').then(function(q) {
                     if (q && q.price !== null) {
-                        imdSetValue('kospifut', q.price, 2);
+                        imdSetValue('kospifut', q.price / 100, 0);
                         if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
                     }
                 });

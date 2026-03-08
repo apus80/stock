@@ -21,12 +21,12 @@ export default {
             id: 1,
             title: "1. 한국 시장",
             items: [
-              { id: "kospi", label: "KOSPI", unit: "", dataKey: "KOREA_MARKET.KOSPI.price" },
-              { id: "kosdaq", label: "KOSDAQ", unit: "", dataKey: "KOREA_MARKET.KOSDAQ.price" },
-              { id: "kospifut", label: "야간선물", unit: "", dataKey: "KOREA_MARKET.KOSPI_FUT.price" },
-              { id: "foreignflow", label: "외국인 수급", unit: "", dataKey: null },
-              { id: "instflow", label: "기관 수급", unit: "", dataKey: null },
-              { id: "retailflow", label: "개인 수급", unit: "", dataKey: null }
+              { id: "kospi", label: "KOSPI", unit: "pt", dataKey: "KOREA_MARKET.KOSPI.price", divisor: 100 },
+              { id: "kosdaq", label: "KOSDAQ", unit: "pt", dataKey: "KOREA_MARKET.KOSDAQ.price", divisor: 100 },
+              { id: "kospifut", label: "야간선물", unit: "pt", dataKey: "KOREA_MARKET.KOSPI_FUT.price", divisor: 100 },
+              { id: "foreignflow", label: "외국인 수급", unit: "억원", dataKey: null },
+              { id: "instflow", label: "기관 수급", unit: "억원", dataKey: null },
+              { id: "retailflow", label: "개인 수급", unit: "억원", dataKey: null }
             ]
           },
           {
