@@ -57,6 +57,20 @@ export default {
         }
       }
 
+      async function yahooFinanceGet(symbol) {
+        try {
+          const r = await fetch(
+            `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=price`
+          )
+          const j = await r.json()
+          const price = j?.quoteSummary?.result?.[0]?.price?.regularMarketPrice?.raw
+          return price ? { symbol, price } : null
+        } catch (e) {
+          console.error(`❌ Yahoo Finance ${symbol} 실패:`, e.message)
+          return null
+        }
+      }
+
       /* ================================
          0️⃣ FRED 단일 시리즈 (⭐ 가장 먼저 처리)
       ================================ */
@@ -165,6 +179,20 @@ export default {
         const silver = price("SIUSD")
         const oil = oilValue || price("WTIUSD")  // FRED 또는 FMP fallback
 
+        // FX Fallback - Yahoo Finance
+        let usdJpyPrice = price("USDJPY")
+        let eurUsdPrice = price("EURUSD")
+
+        if (!usdJpyPrice) {
+          const yf_usdjpy = await yahooFinanceGet("USDJPY=X")
+          usdJpyPrice = yf_usdjpy?.price
+        }
+
+        if (!eurUsdPrice) {
+          const yf_eurusd = await yahooFinanceGet("EURUSD=X")
+          eurUsdPrice = yf_eurusd?.price
+        }
+
         return {
           timestamp: new Date().toISOString(),
           dataType: "market",
@@ -213,8 +241,8 @@ export default {
           },
 
           FX: {
-            USDJPY: { price: price("USDJPY") ? `¥${price("USDJPY")}/USD` : null, change: change("USDJPY"), changePercent: `${changePercent("USDJPY")}%` },
-            EURUSD: { price: price("EURUSD") ? `€${price("EURUSD")}/USD` : null, change: change("EURUSD"), changePercent: `${changePercent("EURUSD")}%` },
+            USDJPY: { price: usdJpyPrice ? `¥${usdJpyPrice.toFixed(2)}/USD` : null, change: change("USDJPY"), changePercent: `${changePercent("USDJPY")}%` },
+            EURUSD: { price: eurUsdPrice ? `€${eurUsdPrice.toFixed(4)}/USD` : null, change: change("EURUSD"), changePercent: `${changePercent("EURUSD")}%` },
             DXY: { price: price("DX") ? `${(price("DX") * 10).toFixed(2)}pts` : null, change: change("DX"), changePercent: `${changePercent("DX")}%` }
           },
 
