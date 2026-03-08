@@ -5119,21 +5119,27 @@ var ECON_DATA = {
          * Worker API → FMP 배치 → Twelvedata → Yahoo (Fallback)
          * ══════════════════════════════════════════════════════ */
         function imdLoadUS() {
-            // Primary: Worker API
+            // Worker API
             workerFetchMarket().then(function(data) {
                 if (data && data.US_MARKET) {
                     var m = data.US_MARKET;
 
-                    // SP500 (심볼 SPY)
+                    // SP500
                     if (m.SP500 && m.SP500.price) {
                         imdSetValue('sp500', m.SP500.price, 2);
                         if (m.SP500.changePercentage !== undefined) imdSetChange('sp500', m.SP500.changePercentage, 'pct');
                     }
 
-                    // NASDAQ (심볼 QQQ)
+                    // NASDAQ
                     if (m.NASDAQ && m.NASDAQ.price) {
                         imdSetValue('nasdaq', m.NASDAQ.price, 2);
                         if (m.NASDAQ.changePercentage !== undefined) imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
+                    }
+
+                    // DOW
+                    if (m.DOW && m.DOW.price) {
+                        imdSetValue('dow', m.DOW.price, 2);
+                        if (m.DOW.changePercentage !== undefined) imdSetChange('dow', m.DOW.changePercentage, 'pct');
                     }
 
                     // VIX
@@ -5142,19 +5148,25 @@ var ECON_DATA = {
                         if (m.VIX.changePercentage !== undefined) imdSetChange('vix', m.VIX.changePercentage, 'pct');
                     }
 
-                    // SOX (심볼 SOXX)
+                    // SOX
                     if (m.SOX && m.SOX.price) {
                         imdSetValue('sox', m.SOX.price, 2);
                         if (m.SOX.changePercentage !== undefined) imdSetChange('sox', m.SOX.changePercentage, 'pct');
+                    }
+
+                    // RUSSELL2000
+                    if (m.RUSSELL2000 && m.RUSSELL2000.price) {
+                        imdSetValue('rtyfuture', m.RUSSELL2000.price, 2);
+                        if (m.RUSSELL2000.changePercentage !== undefined) imdSetChange('rtyfuture', m.RUSSELL2000.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
                 }
 
                 // Fallback: Legacy FMP API
-                console.log('[FALLBACK] Using legacy FMP API for US market');
+                console.log('[FALLBACK] Worker US market failed, using legacy FMP API');
                 Promise.all([
-                    fmpQ('SPY,QQQ,SOXX'),
+                    fmpQ('SPY,QQQ,DIA,SOXX,IWM'),
                     fmpIndexQ('%5EVIX')
                 ]).then(function(results) {
                     var m    = results[0];
