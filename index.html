@@ -5124,28 +5124,28 @@ var ECON_DATA = {
                 if (data && data.US_MARKET) {
                     var m = data.US_MARKET;
 
-                    // SPY → S&P500
-                    if (m.SPY && m.SPY.price) {
-                        imdSetValue('sp500', m.SPY.price, 2);
-                        if (m.SPY.change !== undefined) imdSetChange('sp500', m.SPY.change, 'pct');
+                    // SP500 (심볼 SPY)
+                    if (m.SP500 && m.SP500.price) {
+                        imdSetValue('sp500', m.SP500.price, 2);
+                        if (m.SP500.changePercentage !== undefined) imdSetChange('sp500', m.SP500.changePercentage, 'pct');
                     }
 
-                    // QQQ → NASDAQ
-                    if (m.QQQ && m.QQQ.price) {
-                        imdSetValue('nasdaq', m.QQQ.price, 2);
-                        if (m.QQQ.change !== undefined) imdSetChange('nasdaq', m.QQQ.change, 'pct');
+                    // NASDAQ (심볼 QQQ)
+                    if (m.NASDAQ && m.NASDAQ.price) {
+                        imdSetValue('nasdaq', m.NASDAQ.price, 2);
+                        if (m.NASDAQ.changePercentage !== undefined) imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
                     }
 
                     // VIX
                     if (m.VIX && m.VIX.price) {
                         imdSetValue('vix', m.VIX.price, 2);
-                        if (m.VIX.change !== undefined) imdSetChange('vix', m.VIX.change, 'pct');
+                        if (m.VIX.changePercentage !== undefined) imdSetChange('vix', m.VIX.changePercentage, 'pct');
                     }
 
-                    // SOX
-                    if (m.SOXX && m.SOXX.price) {
-                        imdSetValue('sox', m.SOXX.price, 2);
-                        if (m.SOXX.change !== undefined) imdSetChange('sox', m.SOXX.change, 'pct');
+                    // SOX (심볼 SOXX)
+                    if (m.SOX && m.SOX.price) {
+                        imdSetValue('sox', m.SOX.price, 2);
+                        if (m.SOX.changePercentage !== undefined) imdSetChange('sox', m.SOX.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5310,17 +5310,17 @@ var ECON_DATA = {
 
                     if (c.BTC && c.BTC.price) {
                         imdSetValue('btc', c.BTC.price, 0);
-                        if (c.BTC.change !== undefined) imdSetChange('btc', c.BTC.change, 'pct');
+                        if (c.BTC.changePercentage !== undefined) imdSetChange('btc', c.BTC.changePercentage, 'pct');
                     }
 
                     if (c.ETH && c.ETH.price) {
                         imdSetValue('eth', c.ETH.price, 0);
-                        if (c.ETH.change !== undefined) imdSetChange('eth', c.ETH.change, 'pct');
+                        if (c.ETH.changePercentage !== undefined) imdSetChange('eth', c.ETH.changePercentage, 'pct');
                     }
 
                     if (c.SOL && c.SOL.price) {
                         imdSetValue('sol', c.SOL.price, 2);
-                        if (c.SOL.change !== undefined) imdSetChange('sol', c.SOL.change, 'pct');
+                        if (c.SOL.changePercentage !== undefined) imdSetChange('sol', c.SOL.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5406,22 +5406,12 @@ var ECON_DATA = {
 
                     if (cm.GOLD && cm.GOLD.price) {
                         imdSetValue('gold', cm.GOLD.price, 0);
-                        if (cm.GOLD.change !== undefined) imdSetChange('gold', cm.GOLD.change, 'pct');
+                        if (cm.GOLD.changePercentage !== undefined) imdSetChange('gold', cm.GOLD.changePercentage, 'pct');
                     }
 
                     if (cm.SILVER && cm.SILVER.price) {
                         imdSetValue('silver', cm.SILVER.price, 2);
-                        if (cm.SILVER.change !== undefined) imdSetChange('silver', cm.SILVER.change, 'pct');
-                    }
-
-                    if (cm.OIL && cm.OIL.price) {
-                        imdSetValue('oil', cm.OIL.price, 2);
-                        if (cm.OIL.change !== undefined) imdSetChange('oil', cm.OIL.change, 'pct');
-                    }
-
-                    if (cm.DXY && cm.DXY.price) {
-                        imdSetValue('dxy', cm.DXY.price, 2);
-                        if (cm.DXY.change !== undefined) imdSetChange('dxy', cm.DXY.change, 'val', 2);
+                        if (cm.SILVER.changePercentage !== undefined) imdSetChange('silver', cm.SILVER.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5505,19 +5495,22 @@ var ECON_DATA = {
                 if (data && data.FX) {
                     var fx = data.FX;
 
-                    if (fx.USDKRW && fx.USDKRW.price) {
-                        imdSetValue('uskrw', fx.USDKRW.price, 0);
-                        if (fx.USDKRW.change !== undefined) imdSetChange('uskrw', fx.USDKRW.change, 'val', 0);
-                    }
-
+                    // USDJPY
                     if (fx.USDJPY && fx.USDJPY.price) {
                         imdSetValue('usjpy', fx.USDJPY.price, 2);
-                        if (fx.USDJPY.change !== undefined) imdSetChange('usjpy', fx.USDJPY.change, 'val', 2);
+                        if (fx.USDJPY.changePercentage !== undefined) imdSetChange('usjpy', fx.USDJPY.changePercentage, 'pct');
                     }
 
+                    // EURUSD
                     if (fx.EURUSD && fx.EURUSD.price) {
                         imdSetValue('eurusd', fx.EURUSD.price, 4);
-                        if (fx.EURUSD.change !== undefined) imdSetChange('eurusd', fx.EURUSD.change, 'val', 4);
+                        if (fx.EURUSD.changePercentage !== undefined) imdSetChange('eurusd', fx.EURUSD.changePercentage, 'pct');
+                    }
+
+                    // DXY (USD Index)
+                    if (fx.DXY && fx.DXY.price) {
+                        imdSetValue('dxy', fx.DXY.price, 2);
+                        if (fx.DXY.changePercentage !== undefined) imdSetChange('dxy', fx.DXY.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
