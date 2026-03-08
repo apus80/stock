@@ -4491,15 +4491,9 @@ var ECON_DATA = {
         /* ── Cloudflare Worker API ─────────────────────────────── */
         var WORKER_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
 
-        /* ── Fallback API 엔드포인트 (Worker 장애 시) ──────────── */
-        var FRED_BASE  = 'https://api.stlouisfed.org/fred/series/observations';
-        var TWELVE_BASE = 'https://api.twelvedata.com';
-        var FMP_BASE   = 'https://financialmodelingprep.com/stable';
+        /* ── Fallback API 엔드포인트 (모두 Worker 프록시로 처리) ─── */
 
-        /* ── Legacy API 키 (Fallback 전용, Worker에서 관리됨) ───── */
-        // 주의: 이 키들은 Worker 장애 시에만 사용되며, 본래는 backend에서 관리되어야 함
-        var FRED_KEY   = '8a2fc0e51f931c3f4506eba1e177c644';
-        var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
+        /* ── API 키는 모두 Worker에서 관리됨 (HTML에서 제거) ───── */
 
         var CORS_PX    = [
             'https://corsproxy.io/?',
@@ -4745,8 +4739,9 @@ var ECON_DATA = {
 
         /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
         function fredLatestTwo(series) {
-            var url = FRED_BASE + '?series_id=' + series +
-                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
+            // Worker 프록시를 통한 FRED API 호출 (API 키 불필요)
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
+                '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d || !d.observations) return null;
                 var valid = d.observations.filter(function(o){
@@ -4759,9 +4754,7 @@ var ECON_DATA = {
                 };
             }
             return imdGet(url).then(_parse)
-                .catch(function() {
-                    return imdGetProxy(url).then(_parse).catch(function(){ return null; });
-                });
+                .catch(function(){ return null; });
         }
 
         /* ── FMP 헬퍼 (stable API – 2025.08 이후 v3 폐기) ──────
@@ -4811,10 +4804,10 @@ var ECON_DATA = {
             }).catch(function(){ return null; });
         }
 
-        /* ── FRED 헬퍼 (직접 → 프록시 폴백) ───────────────────── */
+        /* ── FRED 헬퍼 (Worker 프록시 사용) ─────────────────────── */
         function fredLatest(series) {
-            var url = FRED_BASE + '?series_id=' + series +
-                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
+                '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d) return null;
                 if (d.error_message) {
@@ -4825,11 +4818,8 @@ var ECON_DATA = {
                 var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
             }
-            // FRED CORS: 직접 호출 시도 → 실패 시 프록시 경유
             return imdGet(url).then(_parse)
-                .catch(function() {
-                    return imdGetProxy(url).then(_parse).catch(function(){ return null; });
-                });
+                .catch(function(){ return null; });
         }
 
         /* ── FRED 다중 관측치 (경제지표 대시보드 실시간 갱신용) ──────
@@ -4837,11 +4827,10 @@ var ECON_DATA = {
          * 반환: 최신순 필터링된 observations 배열 (null=실패)
          * ──────────────────────────────────────────────────────── */
         function fredSeries(series, limit, extra) {
-            var url = FRED_BASE + '?series_id=' + series +
-                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=' + limit +
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
+                '&file_type=json&sort_order=desc&limit=' + limit +
                 (extra || '');
             return imdGet(url)
-                .catch(function() { return imdGetProxy(url); })
                 .then(function(d) {
                     if (!d) return null;
                     if (d.error_message) { console.warn('[FRED]', series + ':', d.error_message); return null; }
@@ -4955,12 +4944,11 @@ var ECON_DATA = {
             });
         }
 
-        /* ── Twelvedata 헬퍼 (프록시 경유 – free tier CORS 미지원) ── */
+        /* ── Twelvedata 헬퍼 (Worker 프록시 사용) ────────────────── */
         function twelvePrice(symbol) {
-            var url = TWELVE_BASE + '/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + TWELVE_KEY;
-            // 직접 시도 → CORS 차단 시 프록시 폴백
+            // Worker 프록시를 통한 Twelvedata API 호출
+            var url = WORKER_BASE + '/twelvedata/price?symbol=' + encodeURIComponent(symbol);
             return imdGet(url)
-                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d){ return (d && d.price) ? parseFloat(d.price) : null; })
                 .catch(function(){ return null; });
         }
@@ -5687,17 +5675,17 @@ var ECON_DATA = {
                 // FMP 실패한 항목은 Yahoo 폴백
                 if (spyV === null)
                     yahooPrice('SPY').then(function(){ /* volume only via FMP */ });
-                // Twelvedata는 quote 엔드포인트에서 volume 제공
+                // Twelvedata는 quote 엔드포인트에서 volume 제공 (Worker 프록시)
                 if (spyV === null)
-                    imdGet(TWELVE_BASE + '/quote?symbol=SPY&apikey=' + TWELVE_KEY)
+                    imdGet(WORKER_BASE + '/twelvedata/quote?symbol=SPY')
                         .then(function(d){ if (d && d.volume) imdSetValue('spyflow', Math.round(d.volume/1000000), 0); })
                         .catch(function(){});
                 if (qqqV === null)
-                    imdGet(TWELVE_BASE + '/quote?symbol=QQQ&apikey=' + TWELVE_KEY)
+                    imdGet(WORKER_BASE + '/twelvedata/quote?symbol=QQQ')
                         .then(function(d){ if (d && d.volume) imdSetValue('qqqflow', Math.round(d.volume/1000000), 0); })
                         .catch(function(){});
                 if (iwmV === null)
-                    imdGet(TWELVE_BASE + '/quote?symbol=IWM&apikey=' + TWELVE_KEY)
+                    imdGet(WORKER_BASE + '/twelvedata/quote?symbol=IWM')
                         .then(function(d){ if (d && d.volume) imdSetValue('iwmflow', Math.round(d.volume/1000000), 0); })
                         .catch(function(){});
             });
