@@ -5597,80 +5597,55 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // 미국채 10년 – FRED DGS10 + change(bp)
-            fredLatestTwo('DGS10').then(function(r) {
-                if (r) {
-                    imdSetValue('us10y', r.cur, 2);
-                    if (r.prev !== null) imdSetChange('us10y', r.cur - r.prev, 'bp');
-                    return;
+            // 미국채 10년 – Yahoo/FMP (FRED 폴백 제거)
+            fetchMulti([
+                function(){ return fmpPrice('%5ETNX'); },
+                function(){ return yahooPrice('^TNX'); }
+            ]).then(function(v){ imdSetValue('us10y', v, 2); });
+
+            // 미국채 2년 – Yahoo/FMP
+            fetchMulti([
+                function(){ return fmpPrice('%5EFVX'); },
+                function(){ return yahooPrice('^IRX'); }
+            ]).then(function(v){ imdSetValue('us2y', v, 2); });
+
+            // Yield Curve – Worker에서 직접 받기
+            workerFetchMarket().then(function(data) {
+                if (data && data.RATES && data.RATES.YIELD_CURVE !== undefined && data.RATES.YIELD_CURVE !== null) {
+                    imdSetValue('yieldcurve', data.RATES.YIELD_CURVE, 2);
                 }
-                fetchMulti([
-                    function(){ return fmpPrice('%5ETNX'); },
-                    function(){ return yahooPrice('^TNX'); }
-                ]).then(function(v){ imdSetValue('us10y', v, 2); });
+            }).catch(function(){
+                console.log('[FALLBACK] Worker yield curve failed');
             });
 
-            // 미국채 2년 – FRED DGS2 + change(bp)
-            fredLatestTwo('DGS2').then(function(r) {
-                if (r) {
-                    imdSetValue('us2y', r.cur, 2);
-                    if (r.prev !== null) imdSetChange('us2y', r.cur - r.prev, 'bp');
-                    return;
-                }
-                fetchMulti([
-                    function(){ return fmpPrice('%5EFVX'); },
-                    function(){ return yahooPrice('^IRX'); }
-                ]).then(function(v){ imdSetValue('us2y', v, 2); });
-            });
+            // Fed 잔고, Reverse Repo, TGA, M2 – Worker에서 받기
+            workerFetchMarket().then(function(data) {
+                if (!data) return;
 
-            // Yield Curve: FRED T10Y2Y (10Y-2Y spread, % 단위) + change(bp)
-            fredLatestTwo('T10Y2Y').then(function(r) {
-                if (r) {
-                    imdSetValue('yieldcurve', r.cur, 2);
-                    if (r.prev !== null) imdSetChange('yieldcurve', r.cur - r.prev, 'bp');
-                }
-            });
+                var liq = data.LIQUIDITY || {};
+                var macro = data.MACRO_BASE || {};
 
-            // TGA (WDTGAL: 일별 TGA 잔고, 십억 달러) + change(amt)
-            fredLatestTwo('WDTGAL').then(function(r) {
-                if (r) {
-                    imdSetValue('tga', r.cur, 0);
-                    if (r.prev !== null) imdSetChange('tga', r.cur - r.prev, 'amt');
+                // Fed Balance (백만 → 조 달러)
+                if (liq.FED_BALANCE !== null && liq.FED_BALANCE !== undefined) {
+                    imdSetValue('fedbal', liq.FED_BALANCE / 1000, 2);
                 }
-            });
 
-            // Fed 잔고 (WALCL: 백만 달러 → 조 달러 환산) + change(val)
-            fredLatestTwo('WALCL').then(function(r) {
-                if (r) {
-                    var cur  = r.cur  / 1000000;
-                    var prev = r.prev !== null ? r.prev / 1000000 : null;
-                    imdSetValue('fedbal', cur, 2);
-                    if (prev !== null) imdSetChange('fedbal', cur - prev, 'val', 2);
-                    return;
+                // Reverse Repo
+                if (liq.REVERSE_REPO !== null && liq.REVERSE_REPO !== undefined) {
+                    imdSetValue('repo', liq.REVERSE_REPO, 0);
                 }
-                fredLatest('WALCL').then(function(v){
-                    imdSetValue('fedbal', v ? v / 1000000 : null, 2);
-                });
-            });
 
-            // Reverse Repo (RRPONTSYD: 십억 달러) + change(amt)
-            fredLatestTwo('RRPONTSYD').then(function(r) {
-                if (r) {
-                    imdSetValue('repo', r.cur, 0);
-                    if (r.prev !== null) imdSetChange('repo', r.cur - r.prev, 'amt');
-                    return;
+                // TGA
+                if (liq.TGA !== null && liq.TGA !== undefined) {
+                    imdSetValue('tga', liq.TGA, 0);
                 }
-                fredLatest('RRPONTSYD').then(function(v){ imdSetValue('repo', v, 0); });
-            });
 
-            // M2 통화량 (M2SL: 십억 달러) + change(amt)
-            fredLatestTwo('M2SL').then(function(r) {
-                if (r) {
-                    imdSetValue('m2', r.cur, 0);
-                    if (r.prev !== null) imdSetChange('m2', r.cur - r.prev, 'amt');
-                    return;
+                // M2
+                if (macro.M2 !== null && macro.M2 !== undefined) {
+                    imdSetValue('m2', macro.M2, 0);
                 }
-                fredLatest('M2SL').then(function(v){ imdSetValue('m2', v, 0); });
+            }).catch(function(e){
+                console.log('[FALLBACK] Worker liquidity data failed:', e);
             });
         }
 
