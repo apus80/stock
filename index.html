@@ -5602,68 +5602,36 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // Worker에서 Treasury 수익률 및 유동성 지표 가져오기
-            workerFetchMarket().then(function(data) {
-                if (!data) {
-                    // Worker 실패 시 Yahoo/FMP 폴백
-                    fallbackToYahooFMP();
-                    return;
-                }
+            // FRED API로 국채 수익률 조회 (안정적)
+            fredLatest('DGS10').then(function(v){ imdSetValue('us10y', v, 2); });
+            fredLatest('DGS2').then(function(v){ imdSetValue('us2y', v, 2); });
 
-                var rates = data.RATES || {};
-                var liq = data.LIQUIDITY || {};
-                var macro = data.MACRO_BASE || {};
+            // Yield Curve (10Y - 2Y)
+            Promise.all([
+                fredLatest('DGS10'),
+                fredLatest('DGS2')
+            ]).then(function(vals){
+                if (vals[0] !== null && vals[1] !== null) {
+                    imdSetValue('yieldcurve', vals[0] - vals[1], 2);
+                }
+            }).catch(function(){});
 
-                // US 10Y Treasury (Worker 우선)
-                if (rates.US10Y !== null && rates.US10Y !== undefined) {
-                    imdSetValue('us10y', rates.US10Y, 2);
-                } else {
-                    // Worker 실패 시 Yahoo/FMP 폴백
-                    fetchMulti([
-                        function(){ return fmpPrice('%5ETNX'); },
-                        function(){ return yahooPrice('^TNX'); }
-                    ]).then(function(v){ imdSetValue('us10y', v, 2); });
+            // 유동성 지표 (FRED)
+            fredLatest('WALCL').then(function(v){
+                if (v !== null) {
+                    imdSetValue('fedbal', Math.round(v / 1000 / 1000), 0);
                 }
-
-                // US 2Y Treasury (Worker 우선)
-                if (rates.US2Y !== null && rates.US2Y !== undefined) {
-                    imdSetValue('us2y', rates.US2Y, 2);
-                }
-
-                // Yield Curve (10Y - 2Y)
-                if (rates.US10Y !== null && rates.US2Y !== null && rates.US10Y !== undefined && rates.US2Y !== undefined) {
-                    imdSetValue('yieldcurve', rates.US10Y - rates.US2Y, 2);
-                }
-
-                // Fed Balance, Reverse Repo, TGA, M2
-                if (liq.FED_BALANCE !== null && liq.FED_BALANCE !== undefined) {
-                    imdSetValue('fedbal', Math.round(liq.FED_BALANCE / 1000 / 1000), 2);
-                }
-                if (liq.REVERSE_REPO !== null && liq.REVERSE_REPO !== undefined) {
-                    imdSetValue('repo', liq.REVERSE_REPO, 0);
-                }
-                if (liq.TGA !== null && liq.TGA !== undefined) {
-                    imdSetValue('tga', liq.TGA, 0);
-                }
-                if (macro.M2 !== null && macro.M2 !== undefined) {
-                    imdSetValue('m2', Math.round(macro.M2 / 1000 / 1000), 0);
-                }
-            }).catch(function(){
-                // Worker 완전 실패 시 Yahoo/FMP 폴백
-                fallbackToYahooFMP();
             });
-
-            function fallbackToYahooFMP() {
-                // 미국채 10년 (Yahoo/FMP 폴백)
-                fetchMulti([
-                    function(){ return fmpPrice('%5ETNX'); },
-                    function(){ return yahooPrice('^TNX'); }
-                ]).then(function(v){ imdSetValue('us10y', v, 2); });
-
-                // 미국채 2년: Yahoo/FMP에는 2Y 직접 데이터 없음
-                // 대신 5Y(FVX)로 근사 또는 '-' 표시
-                // (TNX는 10Y이므로 다른 symbol 사용 불가)
-            }
+            fredLatest('RRPONTSYD').then(function(v){
+                if (v !== null) {
+                    imdSetValue('repo', Math.round(v / 1000), 0);
+                }
+            });
+            fredLatest('M2SL').then(function(v){
+                if (v !== null) {
+                    imdSetValue('m2', Math.round(v / 1000 / 1000), 0);
+                }
+            });
         }
 
         /* ══════════════════════════════════════════════════════
