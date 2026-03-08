@@ -5603,35 +5603,59 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // FRED API로 국채 수익률 조회 (안정적)
-            fredLatest('DGS10').then(function(v){ imdSetValue('us10y', v, 2); });
-            fredLatest('DGS2').then(function(v){ imdSetValue('us2y', v, 2); });
+            // Worker /market 엔드포인트에서 모든 유동성 데이터 가져오기
+            workerFetchMarket().then(function(data) {
+                if (!data) {
+                    console.error('[IMD] Worker market data is null');
+                    return;
+                }
 
-            // Yield Curve (10Y - 2Y)
-            Promise.all([
-                fredLatest('DGS10'),
-                fredLatest('DGS2')
-            ]).then(function(vals){
-                if (vals[0] !== null && vals[1] !== null) {
-                    imdSetValue('yieldcurve', vals[0] - vals[1], 2);
-                }
-            }).catch(function(){});
+                console.log('[IMD] Worker market response keys:', Object.keys(data));
+                console.log('[IMD] Full market data:', JSON.stringify(data).substring(0, 500));
 
-            // 유동성 지표 (FRED)
-            fredLatest('WALCL').then(function(v){
-                if (v !== null) {
-                    imdSetValue('fedbal', Math.round(v / 1000 / 1000), 0);
+                // Treasury Yields (RATES 또는 최상위 필드 확인)
+                var rates = data.RATES || {};
+                console.log('[IMD] RATES object keys:', Object.keys(rates));
+
+                // 10Y Treasury
+                var us10y = rates.US10Y || rates.DGS10 || data.US10Y || data.DGS10;
+                if (us10y !== null && us10y !== undefined) {
+                    imdSetValue('us10y', us10y, 2);
+                    console.log('[IMD] 10Y Yield:', us10y);
                 }
-            });
-            fredLatest('RRPONTSYD').then(function(v){
-                if (v !== null) {
-                    imdSetValue('repo', Math.round(v / 1000), 0);
+
+                // 2Y Treasury
+                var us2y = rates.US2Y || rates.DGS2 || data.US2Y || data.DGS2;
+                if (us2y !== null && us2y !== undefined) {
+                    imdSetValue('us2y', us2y, 2);
+                    console.log('[IMD] 2Y Yield:', us2y);
                 }
-            });
-            fredLatest('M2SL').then(function(v){
-                if (v !== null) {
-                    imdSetValue('m2', Math.round(v / 1000 / 1000), 0);
+
+                // Yield Curve
+                if (us10y && us2y) {
+                    imdSetValue('yieldcurve', us10y - us2y, 2);
+                    console.log('[IMD] Yield Curve:', us10y - us2y);
                 }
+
+                // Liquidity Indicators
+                var liq = data.LIQUIDITY || {};
+                console.log('[IMD] LIQUIDITY object keys:', Object.keys(liq));
+
+                var fedbal = liq.FED_BALANCE || liq.WALCL || data.FED_BALANCE || data.WALCL;
+                if (fedbal) imdSetValue('fedbal', Math.round(fedbal / 1000 / 1000), 0);
+
+                var repo = liq.REVERSE_REPO || liq.RRPONTSYD || data.REVERSE_REPO || data.RRPONTSYD;
+                if (repo) imdSetValue('repo', Math.round(repo / 1000), 0);
+
+                var tga = liq.TGA || data.TGA;
+                if (tga) imdSetValue('tga', Math.round(tga / 1000), 0);
+
+                var m2 = data.M2SL || data.M2 || (data.MACRO_BASE && data.MACRO_BASE.M2);
+                if (m2) imdSetValue('m2', Math.round(m2 / 1000 / 1000), 0);
+
+                console.log('[IMD] Market Liquidity load complete');
+            }).catch(function(e) {
+                console.error('[IMD] Worker market fetch failed:', e);
             });
         }
 
