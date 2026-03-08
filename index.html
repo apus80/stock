@@ -4777,19 +4777,18 @@ var ECON_DATA = {
         }
 
         function fmpQ(symbols) {
-            var url = FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
-            // 직접 CORS 시도 → 실패 시 프록시 폴백
+            // FMP 프록시를 통한 호출 (API 키 불필요)
+            var url = WORKER_BASE + '/stable/quote?symbol=' + symbols;
             return imdGet(url)
-                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
 
         // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
         function fmpIndexQ(symbols) {
-            var url = FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
+            // FMP 프록시를 통한 호출 (API 키 불필요)
+            var url = WORKER_BASE + '/stable/index-quote?symbol=' + symbols;
             return imdGet(url)
-                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
