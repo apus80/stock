@@ -137,7 +137,15 @@ export default {
         )
 
         function getLatestValue(fredArray) {
-          return fredArray && fredArray.length > 0 ? parseFloat(fredArray[fredArray.length - 1].value) : null
+          if (!fredArray || fredArray.length === 0) return null
+          // "." 값을 건너뛰고 유효한 값 찾기
+          for (let i = fredArray.length - 1; i >= 0; i--) {
+            const val = fredArray[i].value
+            if (val && val !== '.' && val !== '') {
+              return parseFloat(val)
+            }
+          }
+          return null
         }
 
         const [cpiValue, inflationValue, unemploymentValue, m2Value, fedBalanceValue, rrpValue, tgaValue, us10yValue, us2yValue] =
@@ -198,7 +206,7 @@ export default {
           FX: {
             USDJPY: { price: price("USDJPY"), change: change("USDJPY"), changePercent: changePercent("USDJPY") },
             EURUSD: { price: price("EURUSD"), change: change("EURUSD"), changePercent: changePercent("EURUSD") },
-            DXY: { price: price("DX"), change: change("DX"), changePercent: changePercent("DX") }
+            DXY: { price: price("DX") ? price("DX") * 10 : null, change: change("DX"), changePercent: changePercent("DX") }
           },
 
           MACRO_BASE: {
@@ -224,9 +232,9 @@ export default {
           },
 
           LIQUIDITY: {
-            FED_BALANCE: fedBalanceValue,
-            REVERSE_REPO: rrpValue,
-            TGA: tgaValue,
+            FED_BALANCE: fedBalanceValue ? `${(fedBalanceValue / 1000000).toFixed(1)}T` : null,
+            REVERSE_REPO: rrpValue ? `${(rrpValue / 1000).toFixed(0)}B` : null,
+            TGA: tgaValue ? `${(tgaValue / 1000000).toFixed(1)}T` : null,
             REAL_LIQUIDITY: fedBalanceValue && rrpValue && tgaValue ? (fedBalanceValue / 1000) - rrpValue - (tgaValue / 1000) : null
           }
         }
