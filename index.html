@@ -4578,7 +4578,7 @@ var ECON_DATA = {
                 return Promise.resolve(workerMarketCache);
             }
 
-            var url = WORKER_BASE + '/?action=market';
+            var url = WORKER_BASE + '/market';
             return imdGet(url, 15000)
                 .then(function(data) {
                     workerMarketCache = data;
