@@ -1780,7 +1780,7 @@
         /* ── 모바일 상단 컴팩트 버튼 네비 ── */
         .ml-grid-compact {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 7px;
             margin-bottom: 14px;
         }
@@ -1792,12 +1792,12 @@
         .ml-grid-compact .ml-icon { font-size: 1.35em; }
         .ml-grid-compact .ml-label { font-size: 0.68em; }
         .ml-grid-compact .ml-btn.ml-wide {
-            grid-column: 1 / -1;
-            flex-direction: row;
-            padding: 11px 16px;
-            gap: 10px;
+            grid-column: auto;
+            flex-direction: column;
+            padding: 10px 8px;
+            gap: 5px;
         }
-        .ml-grid-compact .ml-btn.ml-wide .ml-label { font-size: 0.78em; }
+        .ml-grid-compact .ml-btn.ml-wide .ml-label { font-size: 0.68em; }
 
     </style>
 </head>
@@ -1877,9 +1877,13 @@
                         <span class="ml-icon">🔍</span>
                         <span class="ml-label">종목·뉴스<br>검색</span>
                     </button>
-                    <button class="ml-btn ml-wide" onclick="showMobileSection('report')">
+                    <button class="ml-btn" onclick="showMobileSection('report')">
                         <span class="ml-icon">📄</span>
-                        <span class="ml-label">분석 보고서</span>
+                        <span class="ml-label">분석<br>보고서</span>
+                    </button>
+                    <button class="ml-btn" onclick="window.location.href='ai-analysis.html'">
+                        <span class="ml-icon">🤖</span>
+                        <span class="ml-label">AI<br>분석</span>
                     </button>
                 </div>
 

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI 분석 - 주식 분석 통합 리포트 뷰어</title>
+
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --text-light: #ffffff;
+            --radius-main: 15px;
+            --radius-small: 8px;
+            --shadow-main: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --shadow-deep: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            font-size: 0.9em;
+            z-index: 100;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--radius-main);
+            box-shadow: var(--shadow-deep);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--bg-gradient);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+            font-weight: 400;
+        }
+
+        .content {
+            padding: 40px 30px;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .placeholder {
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .placeholder-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .placeholder h2 {
+            font-size: 1.5em;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .placeholder p {
+            font-size: 1.05em;
+        }
+
+        @media (max-width: 768px) {
+            .back-btn {
+                padding: 8px 16px;
+                font-size: 0.8em;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 30px 20px;
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="window.history.back()">← 뒤로가기</button>
+
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI 분석</h1>
+            <p>인공지능 기반 종목 분석 및 투자 인사이트</p>
+        </div>
+
+        <div class="content">
+            <div class="placeholder">
+                <div class="placeholder-icon">🚀</div>
+                <h2>AI 분석 페이지</h2>
+                <p>이곳에 AI 분석 컨텐츠가 표시될 예정입니다.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
