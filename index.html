@@ -4483,18 +4483,24 @@ var ECON_DATA = {
     </script>
 
     <!-- INVESTFLOW MARKET DASHBOARD: 데이터 로더 v2 -->
-    <!-- ※ FMP KEY: 향후 Cloudflare Worker로 이전 예정 -->
+    <!-- ※ Cloudflare Worker API 통합 -->
     <script>
     (function() {
         'use strict';
 
-        /* ── API 키 ─────────────────────────────────────────── */
-        var FMP_KEY    = 'JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK'; // 유료 – 1차 우선
-        var FRED_KEY   = '8a2fc0e51f931c3f4506eba1e177c644';
-        var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
-        var FMP_BASE   = 'https://financialmodelingprep.com/stable';
+        /* ── Cloudflare Worker API ─────────────────────────────── */
+        var WORKER_BASE = 'https://aiinvestflow.workers.dev';
+
+        /* ── Fallback API 엔드포인트 (Worker 장애 시) ──────────── */
         var FRED_BASE  = 'https://api.stlouisfed.org/fred/series/observations';
         var TWELVE_BASE = 'https://api.twelvedata.com';
+        var FMP_BASE   = 'https://financialmodelingprep.com/stable';
+
+        /* ── Legacy API 키 (Fallback 전용, Worker에서 관리됨) ───── */
+        // 주의: 이 키들은 Worker 장애 시에만 사용되며, 본래는 backend에서 관리되어야 함
+        var FRED_KEY   = '8a2fc0e51f931c3f4506eba1e177c644';
+        var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
+
         var CORS_PX    = [
             'https://corsproxy.io/?',
             'https://api.allorigins.win/raw?url=',
@@ -4561,6 +4567,73 @@ var ECON_DATA = {
                 console.warn('[IMD] PROXY TEXT FAILED  →  ' + url.split('?')[0]);
                 return null;
             });
+        }
+
+        /* ══════════════════════════════════════════════════════
+         * Cloudflare Worker API 통합 (Primary Data Source)
+         * ══════════════════════════════════════════════════════ */
+
+        /* ── Worker 마켓 데이터 (모든 자산 클래스) ────────────── */
+        var workerMarketCache = null;
+        var workerMarketCacheTime = 0;
+
+        function workerFetchMarket(skipCache) {
+            var now = Date.now();
+            // 캐시: 30초 유지
+            if (!skipCache && workerMarketCache && (now - workerMarketCacheTime) < 30000) {
+                return Promise.resolve(workerMarketCache);
+            }
+
+            var url = WORKER_BASE + '/?action=market';
+            return imdGet(url, 15000)
+                .then(function(data) {
+                    workerMarketCache = data;
+                    workerMarketCacheTime = now;
+                    console.log('[WORKER] Market data loaded successfully');
+                    return data;
+                })
+                .catch(function(e) {
+                    console.warn('[WORKER] Market data fetch failed:', e.message);
+                    return null;
+                });
+        }
+
+        /* ── Worker 개별 주식 분석 ───────────────────────────── */
+        function workerFetchStock(symbol) {
+            var url = WORKER_BASE + '/?action=stock&symbol=' + encodeURIComponent(symbol);
+            return imdGet(url, 15000)
+                .then(function(data) {
+                    console.log('[WORKER] Stock data loaded:', symbol);
+                    return data;
+                })
+                .catch(function(e) {
+                    console.warn('[WORKER] Stock data fetch failed for', symbol, ':', e.message);
+                    return null;
+                });
+        }
+
+        /* ── Worker 데이터로부터 마켓 지표 추출 ──────────────── */
+        function extractMarketValue(data, path) {
+            if (!data) return null;
+            var parts = path.split('.');
+            var val = data;
+            for (var i = 0; i < parts.length; i++) {
+                if (val === null || val === undefined) return null;
+                val = val[parts[i]];
+            }
+            return val;
+        }
+
+        /* ── Worker 데이터로부터 여러 값 추출 ────────────────── */
+        function extractMarketValues(data, paths) {
+            if (!data) return {};
+            var result = {};
+            for (var key in paths) {
+                if (paths.hasOwnProperty(key)) {
+                    result[key] = extractMarketValue(data, paths[key]);
+                }
+            }
+            return result;
         }
 
         /* ── 네트워크 상태 도트 ────────────────────────────────
@@ -4947,152 +5020,250 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 1 – 한국 시장
-         * KOSPI/KOSDAQ: Naver(장중 근실시간) → Yahoo(~15분 지연) → Twelvedata(Pro 전용) → FMP(종가)
+         * Worker API → Naver(장중 근실시간) → Yahoo → Twelvedata → FMP (Fallback)
          * 야간선물: Yahoo(NK=F 니케이근사) → CME MKN=F
          * 외국인/기관/개인 수급: 공개 API 없음 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
-            // KOSPI – Naver(근실시간) → Yahoo → Twelvedata → FMP
-            naverIndexFull('KOSPI').then(function(r) {
-                if (r && r.price !== null) {
-                    imdSetValue('kospi', r.price, 2);
-                    if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
-                    return;
+            // Primary: Worker API
+            workerFetchMarket().then(function(data) {
+                if (data && data.KOREA_MARKET) {
+                    var kr = data.KOREA_MARKET;
+
+                    if (kr.KOSPI && kr.KOSPI.price) {
+                        imdSetValue('kospi', kr.KOSPI.price, 2);
+                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change, 'pct');
+                    }
+
+                    if (kr.KOSDAQ && kr.KOSDAQ.price) {
+                        imdSetValue('kosdaq', kr.KOSDAQ.price, 2);
+                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change, 'pct');
+                    }
+
+                    if (kr.KOSPI_FUT && kr.KOSPI_FUT.price) {
+                        imdSetValue('kospifut', kr.KOSPI_FUT.price, 2);
+                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change, 'pct');
+                    }
+
+                    return; // Success – no fallback needed
                 }
-                fetchMulti([
-                    function(){ return yahooPrice('^KS11'); },
-                    function(){ return twelvePrice('KOSPI'); },
-                    function(){ return fmpPrice('%5EKS11'); }
-                ]).then(function(v){
-                    imdSetValue('kospi', v, 2);
-                    yahooQuote('^KS11').then(function(q){
-                        if (q && q.price && q.prev)
-                            imdSetChange('kospi', (q.price - q.prev) / q.prev * 100, 'pct');
+
+                // Fallback: Legacy Naver → Yahoo → Twelvedata → FMP
+                console.log('[FALLBACK] Using legacy APIs for Korea market');
+                // KOSPI – Naver
+                naverIndexFull('KOSPI').then(function(r) {
+                    if (r && r.price !== null) {
+                        imdSetValue('kospi', r.price, 2);
+                        if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
+                        return;
+                    }
+                    fetchMulti([
+                        function(){ return yahooPrice('^KS11'); },
+                        function(){ return twelvePrice('KOSPI'); },
+                        function(){ return fmpPrice('%5EKS11'); }
+                    ]).then(function(v){
+                        imdSetValue('kospi', v, 2);
+                        yahooQuote('^KS11').then(function(q){
+                            if (q && q.price && q.prev)
+                                imdSetChange('kospi', (q.price - q.prev) / q.prev * 100, 'pct');
+                        });
                     });
                 });
-            });
 
-            // KOSDAQ
-            naverIndexFull('KOSDAQ').then(function(r) {
-                if (r && r.price !== null) {
-                    imdSetValue('kosdaq', r.price, 2);
-                    if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
-                    return;
-                }
-                fetchMulti([
-                    function(){ return yahooPrice('^KQ11'); },
-                    function(){ return twelvePrice('KOSDAQ'); },
-                    function(){ return fmpPrice('%5EKQ11'); }
-                ]).then(function(v){
-                    imdSetValue('kosdaq', v, 2);
-                    yahooQuote('^KQ11').then(function(q){
-                        if (q && q.price && q.prev)
-                            imdSetChange('kosdaq', (q.price - q.prev) / q.prev * 100, 'pct');
+                // KOSDAQ
+                naverIndexFull('KOSDAQ').then(function(r) {
+                    if (r && r.price !== null) {
+                        imdSetValue('kosdaq', r.price, 2);
+                        if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
+                        return;
+                    }
+                    fetchMulti([
+                        function(){ return yahooPrice('^KQ11'); },
+                        function(){ return twelvePrice('KOSDAQ'); },
+                        function(){ return fmpPrice('%5EKQ11'); }
+                    ]).then(function(v){
+                        imdSetValue('kosdaq', v, 2);
+                        yahooQuote('^KQ11').then(function(q){
+                            if (q && q.price && q.prev)
+                                imdSetChange('kosdaq', (q.price - q.prev) / q.prev * 100, 'pct');
+                        });
                     });
                 });
-            });
 
-            // 야간선물: CME Micro KOSPI 200 (MKN=F)
-            yahooQuote('MKN=F').then(function(q) {
-                if (q && q.price !== null) {
-                    imdSetValue('kospifut', q.price, 2);
-                    if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
-                    return;
-                }
-                fetchMulti([
-                    function(){ return yahooPrice('^NK'); },
-                    function(){ return twelvePrice('KOSPI200'); }
-                ]).then(function(v){ imdSetValue('kospifut', v, 2); });
+                // KOSPI Future
+                yahooQuote('MKN=F').then(function(q) {
+                    if (q && q.price !== null) {
+                        imdSetValue('kospifut', q.price, 2);
+                        if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
+                        return;
+                    }
+                    fetchMulti([
+                        function(){ return yahooPrice('^NK'); },
+                        function(){ return twelvePrice('KOSPI200'); }
+                    ]).then(function(v){ imdSetValue('kospifut', v, 2); });
+                });
+            }).catch(function(){
+                // If Worker fails, use legacy Naver API
+                console.log('[FALLBACK] Worker Korea failed, using legacy APIs');
+                naverIndexFull('KOSPI').then(function(r) {
+                    if (r && r.price !== null) {
+                        imdSetValue('kospi', r.price, 2);
+                        if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
+                    }
+                });
+                naverIndexFull('KOSDAQ').then(function(r) {
+                    if (r && r.price !== null) {
+                        imdSetValue('kosdaq', r.price, 2);
+                        if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
+                    }
+                });
+                yahooQuote('MKN=F').then(function(q) {
+                    if (q && q.price !== null) {
+                        imdSetValue('kospifut', q.price, 2);
+                        if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
+                    }
+                });
             });
-
-            // 외국인/기관/개인 수급 – KRX 전용 실시간 계약 데이터 필요
         }
 
         /* ══════════════════════════════════════════════════════
          * 카드 2 – 미국 시장
-         * FMP 배치 → Twelvedata → Yahoo
+         * Worker API → FMP 배치 → Twelvedata → Yahoo (Fallback)
          * ══════════════════════════════════════════════════════ */
         function imdLoadUS() {
-            // ETF 3종은 /quote, VIX 인덱스는 /index-quote 로 분리 호출
-            Promise.all([
-                fmpQ('SPY,QQQ,SOXX'),
-                fmpIndexQ('%5EVIX')   // ^VIX
-            ]).then(function(results) {
-                var m    = results[0];   // {SPY:{}, QQQ:{}, SOXX:{}}
-                var mVix = results[1];   // {'^VIX':{}} 또는 {'VIX':{}}
+            // Primary: Worker API
+            workerFetchMarket().then(function(data) {
+                if (data && data.US_MARKET) {
+                    var m = data.US_MARKET;
 
-                // SPY → S&P500
-                var spyChg = m.SPY ? m.SPY.changesPercentage : null;
-                fetchMulti([
-                    function(){ return m.SPY ? m.SPY.price : null; },
-                    function(){ return twelvePrice('SPY'); },
-                    function(){ return yahooPrice('SPY'); }
-                ]).then(function(v){
-                    imdSetValue('sp500', v, 2);
-                    if (spyChg !== null && spyChg !== undefined) {
-                        imdSetChange('sp500', spyChg, 'pct');
-                    } else {
-                        yahooQuote('SPY').then(function(q){
-                            if (q && q.price && q.prev)
-                                imdSetChange('sp500', (q.price - q.prev) / q.prev * 100, 'pct');
-                        });
+                    // SPY → S&P500
+                    if (m.SPY && m.SPY.price) {
+                        imdSetValue('sp500', m.SPY.price, 2);
+                        if (m.SPY.change !== undefined) imdSetChange('sp500', m.SPY.change, 'pct');
                     }
+
+                    // QQQ → NASDAQ
+                    if (m.QQQ && m.QQQ.price) {
+                        imdSetValue('nasdaq', m.QQQ.price, 2);
+                        if (m.QQQ.change !== undefined) imdSetChange('nasdaq', m.QQQ.change, 'pct');
+                    }
+
+                    // VIX
+                    if (m.VIX && m.VIX.price) {
+                        imdSetValue('vix', m.VIX.price, 2);
+                        if (m.VIX.change !== undefined) imdSetChange('vix', m.VIX.change, 'pct');
+                    }
+
+                    // SOX
+                    if (m.SOXX && m.SOXX.price) {
+                        imdSetValue('sox', m.SOXX.price, 2);
+                        if (m.SOXX.change !== undefined) imdSetChange('sox', m.SOXX.change, 'pct');
+                    }
+
+                    return; // Success – no fallback needed
+                }
+
+                // Fallback: Legacy FMP API
+                console.log('[FALLBACK] Using legacy FMP API for US market');
+                Promise.all([
+                    fmpQ('SPY,QQQ,SOXX'),
+                    fmpIndexQ('%5EVIX')
+                ]).then(function(results) {
+                    var m    = results[0];
+                    var mVix = results[1];
+
+                    // SPY → S&P500
+                    var spyChg = m.SPY ? m.SPY.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.SPY ? m.SPY.price : null; },
+                        function(){ return twelvePrice('SPY'); },
+                        function(){ return yahooPrice('SPY'); }
+                    ]).then(function(v){
+                        imdSetValue('sp500', v, 2);
+                        if (spyChg !== null && spyChg !== undefined) {
+                            imdSetChange('sp500', spyChg, 'pct');
+                        }
+                    });
+
+                    // QQQ → NASDAQ
+                    var qqqChg = m.QQQ ? m.QQQ.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.QQQ ? m.QQQ.price : null; },
+                        function(){ return twelvePrice('QQQ'); },
+                        function(){ return yahooPrice('QQQ'); }
+                    ]).then(function(v){
+                        imdSetValue('nasdaq', v, 2);
+                        if (qqqChg !== null && qqqChg !== undefined) {
+                            imdSetChange('nasdaq', qqqChg, 'pct');
+                        }
+                    });
+
+                    // VIX
+                    var vixItem = mVix['^VIX'] || mVix['VIX'] || mVix['%5EVIX'] || Object.values(mVix)[0];
+                    var vixP   = vixItem ? vixItem.price : null;
+                    var vixChg = vixItem ? vixItem.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return vixP; },
+                        function(){ return twelvePrice('VIX'); },
+                        function(){ return yahooPrice('^VIX'); }
+                    ]).then(function(v){
+                        imdSetValue('vix', v, 2);
+                        if (vixChg !== null && vixChg !== undefined) {
+                            imdSetChange('vix', vixChg, 'pct');
+                        }
+                    });
+
+                    // SOX
+                    var soxxChg = m.SOXX ? m.SOXX.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.SOXX ? m.SOXX.price : null; },
+                        function(){ return twelvePrice('SOXX'); },
+                        function(){ return yahooPrice('SOXX'); }
+                    ]).then(function(v){
+                        imdSetValue('sox', v, 2);
+                        if (soxxChg !== null && soxxChg !== undefined) {
+                            imdSetChange('sox', soxxChg, 'pct');
+                        }
+                    });
                 });
+            }).catch(function(){
+                // If Worker also fails, use legacy FMP
+                console.log('[FALLBACK] Worker API failed, using legacy FMP');
+                Promise.all([
+                    fmpQ('SPY,QQQ,SOXX'),
+                    fmpIndexQ('%5EVIX')
+                ]).then(function(results) {
+                    var m    = results[0];
+                    var mVix = results[1];
 
-                // QQQ → NASDAQ
-                var qqqChg = m.QQQ ? m.QQQ.changesPercentage : null;
-                fetchMulti([
-                    function(){ return m.QQQ ? m.QQQ.price : null; },
-                    function(){ return twelvePrice('QQQ'); },
-                    function(){ return yahooPrice('QQQ'); }
-                ]).then(function(v){
-                    imdSetValue('nasdaq', v, 2);
-                    if (qqqChg !== null && qqqChg !== undefined) {
-                        imdSetChange('nasdaq', qqqChg, 'pct');
-                    } else {
-                        yahooQuote('QQQ').then(function(q){
-                            if (q && q.price && q.prev)
-                                imdSetChange('nasdaq', (q.price - q.prev) / q.prev * 100, 'pct');
-                        });
-                    }
-                });
+                    var spyChg = m.SPY ? m.SPY.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.SPY ? m.SPY.price : null; },
+                        function(){ return twelvePrice('SPY'); },
+                        function(){ return yahooPrice('SPY'); }
+                    ]).then(function(v){ imdSetValue('sp500', v, 2); if (spyChg !== null) imdSetChange('sp500', spyChg, 'pct'); });
 
-                // VIX – index-quote 응답 심볼: '^VIX' 또는 'VIX' 또는 '%5EVIX'
-                var vixItem = mVix['^VIX'] || mVix['VIX'] || mVix['%5EVIX'] || Object.values(mVix)[0];
-                var vixP   = vixItem ? vixItem.price : null;
-                var vixChg = vixItem ? vixItem.changesPercentage : null;
-                fetchMulti([
-                    function(){ return vixP; },
-                    function(){ return twelvePrice('VIX'); },
-                    function(){ return yahooPrice('^VIX'); }
-                ]).then(function(v){
-                    imdSetValue('vix', v, 2);
-                    if (vixChg !== null && vixChg !== undefined) {
-                        imdSetChange('vix', vixChg, 'pct');
-                    } else {
-                        yahooQuote('^VIX').then(function(q){
-                            if (q && q.price && q.prev)
-                                imdSetChange('vix', (q.price - q.prev) / q.prev * 100, 'pct');
-                        });
-                    }
-                });
+                    var qqqChg = m.QQQ ? m.QQQ.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.QQQ ? m.QQQ.price : null; },
+                        function(){ return twelvePrice('QQQ'); },
+                        function(){ return yahooPrice('QQQ'); }
+                    ]).then(function(v){ imdSetValue('nasdaq', v, 2); if (qqqChg !== null) imdSetChange('nasdaq', qqqChg, 'pct'); });
 
-                // SOX (반도체 지수) – SOXX ETF 대체
-                var soxxChg = m.SOXX ? m.SOXX.changesPercentage : null;
-                fetchMulti([
-                    function(){ return m.SOXX ? m.SOXX.price : null; },
-                    function(){ return twelvePrice('SOXX'); },
-                    function(){ return yahooPrice('SOXX'); }
-                ]).then(function(v){
-                    imdSetValue('sox', v, 2);
-                    if (soxxChg !== null && soxxChg !== undefined) {
-                        imdSetChange('sox', soxxChg, 'pct');
-                    } else {
-                        yahooQuote('SOXX').then(function(q){
-                            if (q && q.price && q.prev)
-                                imdSetChange('sox', (q.price - q.prev) / q.prev * 100, 'pct');
-                        });
-                    }
+                    var vixItem = mVix['^VIX'] || mVix['VIX'] || Object.values(mVix)[0];
+                    var vixChg = vixItem ? vixItem.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return vixItem ? vixItem.price : null; },
+                        function(){ return twelvePrice('VIX'); },
+                        function(){ return yahooPrice('^VIX'); }
+                    ]).then(function(v){ imdSetValue('vix', v, 2); if (vixChg !== null) imdSetChange('vix', vixChg, 'pct'); });
+
+                    var soxxChg = m.SOXX ? m.SOXX.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.SOXX ? m.SOXX.price : null; },
+                        function(){ return twelvePrice('SOXX'); },
+                        function(){ return yahooPrice('SOXX'); }
+                    ]).then(function(v){ imdSetValue('sox', v, 2); if (soxxChg !== null) imdSetChange('sox', soxxChg, 'pct'); });
                 });
             });
         }
@@ -5144,162 +5315,274 @@ var ECON_DATA = {
          * CoinGecko → Binance → FMP
          * ══════════════════════════════════════════════════════ */
         function imdLoadCrypto() {
-            // 1차: CoinGecko – price_change_percentage_24h 포함
-            imdGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true')
-                .then(function(d) {
-                    if (d && d.bitcoin) {
-                        imdSetValue('btc', d.bitcoin.usd, 0);
-                        imdSetValue('eth', d.ethereum.usd, 0);
-                        imdSetValue('sol', d.solana.usd, 2);
-                        if (d.bitcoin.usd_24h_change !== undefined)
-                            imdSetChange('btc', d.bitcoin.usd_24h_change, 'pct');
-                        if (d.ethereum.usd_24h_change !== undefined)
-                            imdSetChange('eth', d.ethereum.usd_24h_change, 'pct');
-                        if (d.solana.usd_24h_change !== undefined)
-                            imdSetChange('sol', d.solana.usd_24h_change, 'pct');
-                        return;
+            // Primary: Worker API
+            workerFetchMarket().then(function(data) {
+                if (data && data.CRYPTO) {
+                    var c = data.CRYPTO;
+
+                    if (c.BTC && c.BTC.price) {
+                        imdSetValue('btc', c.BTC.price, 0);
+                        if (c.BTC.change !== undefined) imdSetChange('btc', c.BTC.change, 'pct');
                     }
-                    throw new Error('no data');
-                })
-                .catch(function() {
-                    // 2차: Binance – 24h ticker
-                    return Promise.all([
-                        imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
-                        imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
-                        imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT')
-                    ]).then(function(r) {
-                        imdSetValue('btc', r[0] && r[0].lastPrice, 0);
-                        imdSetValue('eth', r[1] && r[1].lastPrice, 0);
-                        imdSetValue('sol', r[2] && r[2].lastPrice, 2);
-                        if (r[0] && r[0].priceChangePercent) imdSetChange('btc', parseFloat(r[0].priceChangePercent), 'pct');
-                        if (r[1] && r[1].priceChangePercent) imdSetChange('eth', parseFloat(r[1].priceChangePercent), 'pct');
-                        if (r[2] && r[2].priceChangePercent) imdSetChange('sol', parseFloat(r[2].priceChangePercent), 'pct');
-                    }).catch(function() {
-                        // 3차: FMP
-                        return fmpQ('BTCUSD,ETHUSD,SOLUSD').then(function(m) {
-                            imdSetValue('btc', m.BTCUSD && m.BTCUSD.price, 0);
-                            imdSetValue('eth', m.ETHUSD && m.ETHUSD.price, 0);
-                            imdSetValue('sol', m.SOLUSD && m.SOLUSD.price, 2);
-                            if (m.BTCUSD && m.BTCUSD.changesPercentage) imdSetChange('btc', m.BTCUSD.changesPercentage, 'pct');
-                            if (m.ETHUSD && m.ETHUSD.changesPercentage) imdSetChange('eth', m.ETHUSD.changesPercentage, 'pct');
-                            if (m.SOLUSD && m.SOLUSD.changesPercentage) imdSetChange('sol', m.SOLUSD.changesPercentage, 'pct');
+
+                    if (c.ETH && c.ETH.price) {
+                        imdSetValue('eth', c.ETH.price, 0);
+                        if (c.ETH.change !== undefined) imdSetChange('eth', c.ETH.change, 'pct');
+                    }
+
+                    if (c.SOL && c.SOL.price) {
+                        imdSetValue('sol', c.SOL.price, 2);
+                        if (c.SOL.change !== undefined) imdSetChange('sol', c.SOL.change, 'pct');
+                    }
+
+                    return; // Success – no fallback needed
+                }
+
+                // Fallback: CoinGecko → Binance → FMP
+                console.log('[FALLBACK] Using legacy crypto APIs');
+                imdGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true')
+                    .then(function(d) {
+                        if (d && d.bitcoin) {
+                            imdSetValue('btc', d.bitcoin.usd, 0);
+                            imdSetValue('eth', d.ethereum.usd, 0);
+                            imdSetValue('sol', d.solana.usd, 2);
+                            if (d.bitcoin.usd_24h_change !== undefined)
+                                imdSetChange('btc', d.bitcoin.usd_24h_change, 'pct');
+                            if (d.ethereum.usd_24h_change !== undefined)
+                                imdSetChange('eth', d.ethereum.usd_24h_change, 'pct');
+                            if (d.solana.usd_24h_change !== undefined)
+                                imdSetChange('sol', d.solana.usd_24h_change, 'pct');
+                            return;
+                        }
+                        throw new Error('no data');
+                    })
+                    .catch(function() {
+                        // Fallback to Binance
+                        return Promise.all([
+                            imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
+                            imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
+                            imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT')
+                        ]).then(function(r) {
+                            imdSetValue('btc', r[0] && r[0].lastPrice, 0);
+                            imdSetValue('eth', r[1] && r[1].lastPrice, 0);
+                            imdSetValue('sol', r[2] && r[2].lastPrice, 2);
+                            if (r[0] && r[0].priceChangePercent) imdSetChange('btc', parseFloat(r[0].priceChangePercent), 'pct');
+                            if (r[1] && r[1].priceChangePercent) imdSetChange('eth', parseFloat(r[1].priceChangePercent), 'pct');
+                            if (r[2] && r[2].priceChangePercent) imdSetChange('sol', parseFloat(r[2].priceChangePercent), 'pct');
                         });
                     });
-                });
+            }).catch(function(){
+                // If Worker fails, use legacy CoinGecko → Binance → FMP
+                console.log('[FALLBACK] Worker crypto failed, using legacy APIs');
+                imdGet('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true')
+                    .then(function(d) {
+                        if (d && d.bitcoin) {
+                            imdSetValue('btc', d.bitcoin.usd, 0);
+                            imdSetValue('eth', d.ethereum.usd, 0);
+                            imdSetValue('sol', d.solana.usd, 2);
+                            if (d.bitcoin.usd_24h_change !== undefined)
+                                imdSetChange('btc', d.bitcoin.usd_24h_change, 'pct');
+                            if (d.ethereum.usd_24h_change !== undefined)
+                                imdSetChange('eth', d.ethereum.usd_24h_change, 'pct');
+                            if (d.solana.usd_24h_change !== undefined)
+                                imdSetChange('sol', d.solana.usd_24h_change, 'pct');
+                        }
+                    })
+                    .catch(function() {
+                        // Fallback to Binance
+                        Promise.all([
+                            imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
+                            imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
+                            imdGet('https://api.binance.com/api/v3/ticker/24hr?symbol=SOLUSDT')
+                        ]).then(function(r) {
+                            imdSetValue('btc', r[0] && r[0].lastPrice, 0);
+                            imdSetValue('eth', r[1] && r[1].lastPrice, 0);
+                            imdSetValue('sol', r[2] && r[2].lastPrice, 2);
+                            if (r[0] && r[0].priceChangePercent) imdSetChange('btc', parseFloat(r[0].priceChangePercent), 'pct');
+                            if (r[1] && r[1].priceChangePercent) imdSetChange('eth', parseFloat(r[1].priceChangePercent), 'pct');
+                            if (r[2] && r[2].priceChangePercent) imdSetChange('sol', parseFloat(r[2].priceChangePercent), 'pct');
+                        });
+                    });
+            });
         }
 
         /* ══════════════════════════════════════════════════════
          * 카드 5 – 상품 (Commodities)
-         * FMP(GCUSD/SIUSD/CLUSD/DX) → Twelvedata → Yahoo
+         * Worker API → FMP(GCUSD/SIUSD/CLUSD/DX) → Twelvedata → Yahoo
          * ══════════════════════════════════════════════════════ */
         function imdLoadCommodities() {
-            fmpQ('GCUSD,SIUSD,CLUSD,DX').then(function(m) {
-                // 금 (Gold)
-                var goldChg = m.GCUSD ? m.GCUSD.changesPercentage : null;
-                fetchMulti([
-                    function(){ return m.GCUSD ? m.GCUSD.price : null; },
-                    function(){ return twelvePrice('XAU/USD'); },
-                    function(){ return yahooPrice('GC=F'); }
-                ]).then(function(v){
-                    imdSetValue('gold', v, 0);
-                    if (goldChg !== null && goldChg !== undefined) imdSetChange('gold', goldChg, 'pct');
-                    else yahooQuote('GC=F').then(function(q){
-                        if (q && q.price && q.prev) imdSetChange('gold', (q.price - q.prev) / q.prev * 100, 'pct');
-                    });
-                });
+            // Primary: Worker API
+            workerFetchMarket().then(function(data) {
+                if (data && data.COMMODITIES) {
+                    var cm = data.COMMODITIES;
 
-                // 은 (Silver)
-                var silvChg = m.SIUSD ? m.SIUSD.changesPercentage : null;
-                fetchMulti([
-                    function(){ return m.SIUSD ? m.SIUSD.price : null; },
-                    function(){ return twelvePrice('XAG/USD'); },
-                    function(){ return yahooPrice('SI=F'); }
-                ]).then(function(v){
-                    imdSetValue('silver', v, 2);
-                    if (silvChg !== null && silvChg !== undefined) imdSetChange('silver', silvChg, 'pct');
-                    else yahooQuote('SI=F').then(function(q){
-                        if (q && q.price && q.prev) imdSetChange('silver', (q.price - q.prev) / q.prev * 100, 'pct');
-                    });
-                });
+                    if (cm.GOLD && cm.GOLD.price) {
+                        imdSetValue('gold', cm.GOLD.price, 0);
+                        if (cm.GOLD.change !== undefined) imdSetChange('gold', cm.GOLD.change, 'pct');
+                    }
 
-                // 원유 (WTI Crude)
-                var oilChg = m.CLUSD ? m.CLUSD.changesPercentage : null;
-                fetchMulti([
-                    function(){ return m.CLUSD ? m.CLUSD.price : null; },
-                    function(){ return twelvePrice('WTI/USD'); },
-                    function(){ return yahooPrice('CL=F'); }
-                ]).then(function(v){
-                    imdSetValue('oil', v, 2);
-                    if (oilChg !== null && oilChg !== undefined) imdSetChange('oil', oilChg, 'pct');
-                    else yahooQuote('CL=F').then(function(q){
-                        if (q && q.price && q.prev) imdSetChange('oil', (q.price - q.prev) / q.prev * 100, 'pct');
-                    });
-                });
+                    if (cm.SILVER && cm.SILVER.price) {
+                        imdSetValue('silver', cm.SILVER.price, 2);
+                        if (cm.SILVER.change !== undefined) imdSetChange('silver', cm.SILVER.change, 'pct');
+                    }
 
-                // DXY (달러 인덱스) – 절대값 변화 표시
-                var dxyChg  = m.DX ? m.DX.change : null;
-                var dxyChgP = m.DX ? m.DX.changesPercentage : null;
-                fetchMulti([
-                    function(){ return m.DX ? m.DX.price : null; },
-                    function(){ return twelvePrice('DXY'); },
-                    function(){ return yahooPrice('DX-Y.NYB'); }
-                ]).then(function(v){
-                    imdSetValue('dxy', v, 2);
-                    if (dxyChg !== null && dxyChg !== undefined) imdSetChange('dxy', dxyChg, 'val', 2);
-                    else if (dxyChgP !== null && dxyChgP !== undefined) imdSetChange('dxy', dxyChgP, 'pct');
-                    else yahooQuote('DX-Y.NYB').then(function(q){
-                        if (q && q.price && q.prev) imdSetChange('dxy', q.price - q.prev, 'val', 2);
-                    });
+                    if (cm.OIL && cm.OIL.price) {
+                        imdSetValue('oil', cm.OIL.price, 2);
+                        if (cm.OIL.change !== undefined) imdSetChange('oil', cm.OIL.change, 'pct');
+                    }
+
+                    if (cm.DXY && cm.DXY.price) {
+                        imdSetValue('dxy', cm.DXY.price, 2);
+                        if (cm.DXY.change !== undefined) imdSetChange('dxy', cm.DXY.change, 'val', 2);
+                    }
+
+                    return; // Success – no fallback needed
+                }
+
+                // Fallback: Legacy FMP API
+                console.log('[FALLBACK] Using legacy FMP API for commodities');
+                fmpQ('GCUSD,SIUSD,CLUSD,DX').then(function(m) {
+                    var goldChg = m.GCUSD ? m.GCUSD.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.GCUSD ? m.GCUSD.price : null; },
+                        function(){ return twelvePrice('XAU/USD'); },
+                        function(){ return yahooPrice('GC=F'); }
+                    ]).then(function(v){ imdSetValue('gold', v, 0); if (goldChg !== null) imdSetChange('gold', goldChg, 'pct'); });
+
+                    var silvChg = m.SIUSD ? m.SIUSD.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.SIUSD ? m.SIUSD.price : null; },
+                        function(){ return twelvePrice('XAG/USD'); },
+                        function(){ return yahooPrice('SI=F'); }
+                    ]).then(function(v){ imdSetValue('silver', v, 2); if (silvChg !== null) imdSetChange('silver', silvChg, 'pct'); });
+
+                    var oilChg = m.CLUSD ? m.CLUSD.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.CLUSD ? m.CLUSD.price : null; },
+                        function(){ return twelvePrice('WTI/USD'); },
+                        function(){ return yahooPrice('CL=F'); }
+                    ]).then(function(v){ imdSetValue('oil', v, 2); if (oilChg !== null) imdSetChange('oil', oilChg, 'pct'); });
+
+                    var dxyChg  = m.DX ? m.DX.change : null;
+                    var dxyChgP = m.DX ? m.DX.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.DX ? m.DX.price : null; },
+                        function(){ return twelvePrice('DXY'); },
+                        function(){ return yahooPrice('DX-Y.NYB'); }
+                    ]).then(function(v){ imdSetValue('dxy', v, 2); if (dxyChg !== null) imdSetChange('dxy', dxyChg, 'val', 2); });
+                });
+            }).catch(function(){
+                // If Worker fails, use legacy FMP
+                console.log('[FALLBACK] Worker commodities failed, using legacy FMP');
+                fmpQ('GCUSD,SIUSD,CLUSD,DX').then(function(m) {
+                    var goldChg = m.GCUSD ? m.GCUSD.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.GCUSD ? m.GCUSD.price : null; },
+                        function(){ return twelvePrice('XAU/USD'); },
+                        function(){ return yahooPrice('GC=F'); }
+                    ]).then(function(v){ imdSetValue('gold', v, 0); if (goldChg !== null) imdSetChange('gold', goldChg, 'pct'); });
+
+                    var silvChg = m.SIUSD ? m.SIUSD.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.SIUSD ? m.SIUSD.price : null; },
+                        function(){ return twelvePrice('XAG/USD'); },
+                        function(){ return yahooPrice('SI=F'); }
+                    ]).then(function(v){ imdSetValue('silver', v, 2); if (silvChg !== null) imdSetChange('silver', silvChg, 'pct'); });
+
+                    var oilChg = m.CLUSD ? m.CLUSD.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.CLUSD ? m.CLUSD.price : null; },
+                        function(){ return twelvePrice('WTI/USD'); },
+                        function(){ return yahooPrice('CL=F'); }
+                    ]).then(function(v){ imdSetValue('oil', v, 2); if (oilChg !== null) imdSetChange('oil', oilChg, 'pct'); });
+
+                    var dxyChg  = m.DX ? m.DX.change : null;
+                    var dxyChgP = m.DX ? m.DX.changesPercentage : null;
+                    fetchMulti([
+                        function(){ return m.DX ? m.DX.price : null; },
+                        function(){ return twelvePrice('DXY'); },
+                        function(){ return yahooPrice('DX-Y.NYB'); }
+                    ]).then(function(v){ imdSetValue('dxy', v, 2); if (dxyChg !== null) imdSetChange('dxy', dxyChg, 'val', 2); });
                 });
             });
         }
 
         /* ══════════════════════════════════════════════════════
          * 카드 6 – 외환 (FX)
-         * FMP(USDKRW/USDJPY/EURUSD) → Twelvedata → Yahoo
+         * Worker API → FMP(USDKRW/USDJPY/EURUSD) → Twelvedata → Yahoo
          * ══════════════════════════════════════════════════════ */
         function imdLoadFX() {
-            fmpQ('USDKRW,USDJPY,EURUSD').then(function(m) {
-                // USD/KRW – 변화값 (절대, 정수)
-                var krwChg = m.USDKRW ? m.USDKRW.change : null;
-                fetchMulti([
-                    function(){ return m.USDKRW ? m.USDKRW.price : null; },
-                    function(){ return twelvePrice('USD/KRW'); },
-                    function(){ return yahooPrice('KRW=X'); }
-                ]).then(function(v){
-                    imdSetValue('uskrw', v, 0);
-                    if (krwChg !== null && krwChg !== undefined) imdSetChange('uskrw', krwChg, 'val', 0);
-                    else yahooQuote('KRW=X').then(function(q){
-                        if (q && q.price && q.prev) imdSetChange('uskrw', q.price - q.prev, 'val', 0);
-                    });
-                });
+            // Primary: Worker API
+            workerFetchMarket().then(function(data) {
+                if (data && data.FX) {
+                    var fx = data.FX;
 
-                // USD/JPY – 변화값 (소수점 2자리)
-                var jpyChg = m.USDJPY ? m.USDJPY.change : null;
-                fetchMulti([
-                    function(){ return m.USDJPY ? m.USDJPY.price : null; },
-                    function(){ return twelvePrice('USD/JPY'); },
-                    function(){ return yahooPrice('JPY=X'); }
-                ]).then(function(v){
-                    imdSetValue('usjpy', v, 2);
-                    if (jpyChg !== null && jpyChg !== undefined) imdSetChange('usjpy', jpyChg, 'val', 2);
-                    else yahooQuote('JPY=X').then(function(q){
-                        if (q && q.price && q.prev) imdSetChange('usjpy', q.price - q.prev, 'val', 2);
-                    });
-                });
+                    if (fx.USDKRW && fx.USDKRW.price) {
+                        imdSetValue('uskrw', fx.USDKRW.price, 0);
+                        if (fx.USDKRW.change !== undefined) imdSetChange('uskrw', fx.USDKRW.change, 'val', 0);
+                    }
 
-                // EUR/USD – 변화값 (소수점 4자리)
-                var eurChg = m.EURUSD ? m.EURUSD.change : null;
-                fetchMulti([
-                    function(){ return m.EURUSD ? m.EURUSD.price : null; },
-                    function(){ return twelvePrice('EUR/USD'); },
-                    function(){ return yahooPrice('EURUSD=X'); }
-                ]).then(function(v){
-                    imdSetValue('eurusd', v, 4);
-                    if (eurChg !== null && eurChg !== undefined) imdSetChange('eurusd', eurChg, 'val', 4);
-                    else yahooQuote('EURUSD=X').then(function(q){
-                        if (q && q.price && q.prev) imdSetChange('eurusd', q.price - q.prev, 'val', 4);
-                    });
+                    if (fx.USDJPY && fx.USDJPY.price) {
+                        imdSetValue('usjpy', fx.USDJPY.price, 2);
+                        if (fx.USDJPY.change !== undefined) imdSetChange('usjpy', fx.USDJPY.change, 'val', 2);
+                    }
+
+                    if (fx.EURUSD && fx.EURUSD.price) {
+                        imdSetValue('eurusd', fx.EURUSD.price, 4);
+                        if (fx.EURUSD.change !== undefined) imdSetChange('eurusd', fx.EURUSD.change, 'val', 4);
+                    }
+
+                    return; // Success – no fallback needed
+                }
+
+                // Fallback: Legacy FMP API
+                console.log('[FALLBACK] Using legacy FMP API for FX');
+                fmpQ('USDKRW,USDJPY,EURUSD').then(function(m) {
+                    var krwChg = m.USDKRW ? m.USDKRW.change : null;
+                    fetchMulti([
+                        function(){ return m.USDKRW ? m.USDKRW.price : null; },
+                        function(){ return twelvePrice('USD/KRW'); },
+                        function(){ return yahooPrice('KRW=X'); }
+                    ]).then(function(v){ imdSetValue('uskrw', v, 0); if (krwChg !== null) imdSetChange('uskrw', krwChg, 'val', 0); });
+
+                    var jpyChg = m.USDJPY ? m.USDJPY.change : null;
+                    fetchMulti([
+                        function(){ return m.USDJPY ? m.USDJPY.price : null; },
+                        function(){ return twelvePrice('USD/JPY'); },
+                        function(){ return yahooPrice('JPY=X'); }
+                    ]).then(function(v){ imdSetValue('usjpy', v, 2); if (jpyChg !== null) imdSetChange('usjpy', jpyChg, 'val', 2); });
+
+                    var eurChg = m.EURUSD ? m.EURUSD.change : null;
+                    fetchMulti([
+                        function(){ return m.EURUSD ? m.EURUSD.price : null; },
+                        function(){ return twelvePrice('EUR/USD'); },
+                        function(){ return yahooPrice('EURUSD=X'); }
+                    ]).then(function(v){ imdSetValue('eurusd', v, 4); if (eurChg !== null) imdSetChange('eurusd', eurChg, 'val', 4); });
+                });
+            }).catch(function(){
+                // If Worker fails, use legacy FMP
+                console.log('[FALLBACK] Worker FX failed, using legacy FMP');
+                fmpQ('USDKRW,USDJPY,EURUSD').then(function(m) {
+                    var krwChg = m.USDKRW ? m.USDKRW.change : null;
+                    fetchMulti([
+                        function(){ return m.USDKRW ? m.USDKRW.price : null; },
+                        function(){ return twelvePrice('USD/KRW'); },
+                        function(){ return yahooPrice('KRW=X'); }
+                    ]).then(function(v){ imdSetValue('uskrw', v, 0); if (krwChg !== null) imdSetChange('uskrw', krwChg, 'val', 0); });
+
+                    var jpyChg = m.USDJPY ? m.USDJPY.change : null;
+                    fetchMulti([
+                        function(){ return m.USDJPY ? m.USDJPY.price : null; },
+                        function(){ return twelvePrice('USD/JPY'); },
+                        function(){ return yahooPrice('JPY=X'); }
+                    ]).then(function(v){ imdSetValue('usjpy', v, 2); if (jpyChg !== null) imdSetChange('usjpy', jpyChg, 'val', 2); });
+
+                    var eurChg = m.EURUSD ? m.EURUSD.change : null;
+                    fetchMulti([
+                        function(){ return m.EURUSD ? m.EURUSD.price : null; },
+                        function(){ return twelvePrice('EUR/USD'); },
+                        function(){ return yahooPrice('EURUSD=X'); }
+                    ]).then(function(v){ imdSetValue('eurusd', v, 4); if (eurChg !== null) imdSetChange('eurusd', eurChg, 'val', 4); });
                 });
             });
         }
@@ -5516,7 +5799,8 @@ var ECON_DATA = {
 
         imdSetAllSync();
         imdLoadAll();
-        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 60000);
+        // Auto-refresh market data every 5 minutes (Worker API)
+        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 300000);
 
         // 경제지표 대시보드 – FRED 실시간 갱신 (별도 주기: 4시간)
         // DOMContentLoaded 이후 비동기 실행 보장
