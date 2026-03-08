@@ -4754,7 +4754,7 @@ var ECON_DATA = {
         /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
         function fredLatestTwo(series) {
             // Worker 프록시를 통한 FRED API 호출 (API 키 불필요)
-            var url = API_BASE + '/fred/series/observations?series_id=' + series +
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
                 '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d || !d.observations) return null;
@@ -4820,7 +4820,7 @@ var ECON_DATA = {
 
         /* ── FRED 헬퍼 (Worker 프록시 사용) ─────────────────────── */
         function fredLatest(series) {
-            var url = API_BASE + '/fred/series/observations?series_id=' + series +
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
                 '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d) return null;
