@@ -4489,17 +4489,12 @@ var ECON_DATA = {
         'use strict';
 
         /* ── Cloudflare Worker API ─────────────────────────────── */
-        var WORKER_BASE = 'https://aiinvestflow.workers.dev';
+        var WORKER_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+        var API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
 
-        /* ── Fallback API 엔드포인트 (Worker 장애 시) ──────────── */
-        var FRED_BASE  = 'https://api.stlouisfed.org/fred/series/observations';
-        var TWELVE_BASE = 'https://api.twelvedata.com';
-        var FMP_BASE   = 'https://financialmodelingprep.com/stable';
-
-        /* ── Legacy API 키 (Fallback 전용, Worker에서 관리됨) ───── */
-        // 주의: 이 키들은 Worker 장애 시에만 사용되며, 본래는 backend에서 관리되어야 함
-        var FRED_KEY   = '8a2fc0e51f931c3f4506eba1e177c644';
+        /* ── API 키 (Worker 미등록된 것만) ──────────────────────── */
         var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
+        var TWELVE_BASE = 'https://api.twelvedata.com';
 
         var CORS_PX    = [
             'https://corsproxy.io/?',
@@ -4581,19 +4576,32 @@ var ECON_DATA = {
             var now = Date.now();
             // 캐시: 30초 유지
             if (!skipCache && workerMarketCache && (now - workerMarketCacheTime) < 30000) {
+                console.log('[WORKER] Using cached market data');
                 return Promise.resolve(workerMarketCache);
             }
 
-            var url = WORKER_BASE + '/?action=market';
-            return imdGet(url, 15000)
+            var url = API_BASE + '/?action=market';
+            console.log('[WORKER] Fetching market data from:', url);
+
+            return fetch(url)
+                .then(function(r) {
+                    console.log('[WORKER] Response status:', r.status);
+                    if (!r.ok) {
+                        throw new Error('HTTP ' + r.status);
+                    }
+                    return r.json();
+                })
                 .then(function(data) {
-                    workerMarketCache = data;
-                    workerMarketCacheTime = now;
-                    console.log('[WORKER] Market data loaded successfully');
-                    return data;
+                    if (data) {
+                        workerMarketCache = data;
+                        workerMarketCacheTime = Date.now();
+                        console.log('[WORKER] Market data loaded successfully, keys:', Object.keys(data));
+                        return data;
+                    }
+                    throw new Error('Empty response');
                 })
                 .catch(function(e) {
-                    console.warn('[WORKER] Market data fetch failed:', e.message);
+                    console.error('[WORKER] Market data fetch failed:', e.message, e);
                     return null;
                 });
         }
@@ -4745,8 +4753,9 @@ var ECON_DATA = {
 
         /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
         function fredLatestTwo(series) {
-            var url = FRED_BASE + '?series_id=' + series +
-                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
+            // Worker 프록시를 통한 FRED API 호출 (API 키 불필요)
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
+                '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d || !d.observations) return null;
                 var valid = d.observations.filter(function(o){
@@ -4759,9 +4768,7 @@ var ECON_DATA = {
                 };
             }
             return imdGet(url).then(_parse)
-                .catch(function() {
-                    return imdGetProxy(url).then(_parse).catch(function(){ return null; });
-                });
+                .catch(function(){ return null; });
         }
 
         /* ── FMP 헬퍼 (stable API – 2025.08 이후 v3 폐기) ──────
@@ -4777,19 +4784,18 @@ var ECON_DATA = {
         }
 
         function fmpQ(symbols) {
-            var url = FMP_BASE + '/quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
-            // 직접 CORS 시도 → 실패 시 프록시 폴백
+            // FMP 프록시를 통한 호출 (API 키 불필요)
+            var url = WORKER_BASE + '/stable/quote?symbol=' + symbols;
             return imdGet(url)
-                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
 
         // 인덱스 전용 엔드포인트 (^VIX, ^GSPC 등)
         function fmpIndexQ(symbols) {
-            var url = FMP_BASE + '/index-quote?symbol=' + symbols + '&apikey=' + FMP_KEY;
+            // FMP 프록시를 통한 호출 (API 키 불필요)
+            var url = WORKER_BASE + '/stable/index-quote?symbol=' + symbols;
             return imdGet(url)
-                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d) { return d ? _fmpParse(d) : {}; })
                 .catch(function(){ return {}; });
         }
@@ -4812,10 +4818,10 @@ var ECON_DATA = {
             }).catch(function(){ return null; });
         }
 
-        /* ── FRED 헬퍼 (직접 → 프록시 폴백) ───────────────────── */
+        /* ── FRED 헬퍼 (Worker 프록시 사용) ─────────────────────── */
         function fredLatest(series) {
-            var url = FRED_BASE + '?series_id=' + series +
-                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
+                '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d) return null;
                 if (d.error_message) {
@@ -4826,11 +4832,8 @@ var ECON_DATA = {
                 var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
             }
-            // FRED CORS: 직접 호출 시도 → 실패 시 프록시 경유
             return imdGet(url).then(_parse)
-                .catch(function() {
-                    return imdGetProxy(url).then(_parse).catch(function(){ return null; });
-                });
+                .catch(function(){ return null; });
         }
 
         /* ── FRED 다중 관측치 (경제지표 대시보드 실시간 갱신용) ──────
@@ -4838,11 +4841,10 @@ var ECON_DATA = {
          * 반환: 최신순 필터링된 observations 배열 (null=실패)
          * ──────────────────────────────────────────────────────── */
         function fredSeries(series, limit, extra) {
-            var url = FRED_BASE + '?series_id=' + series +
-                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=' + limit +
+            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
+                '&file_type=json&sort_order=desc&limit=' + limit +
                 (extra || '');
             return imdGet(url)
-                .catch(function() { return imdGetProxy(url); })
                 .then(function(d) {
                     if (!d) return null;
                     if (d.error_message) { console.warn('[FRED]', series + ':', d.error_message); return null; }
@@ -5131,42 +5133,55 @@ var ECON_DATA = {
          * Worker API → FMP 배치 → Twelvedata → Yahoo (Fallback)
          * ══════════════════════════════════════════════════════ */
         function imdLoadUS() {
-            // Primary: Worker API
+            // Worker API
             workerFetchMarket().then(function(data) {
                 if (data && data.US_MARKET) {
+                    console.log('[US] Worker data loaded, processing...');
                     var m = data.US_MARKET;
 
-                    // SPY → S&P500
-                    if (m.SPY && m.SPY.price) {
-                        imdSetValue('sp500', m.SPY.price, 2);
-                        if (m.SPY.change !== undefined) imdSetChange('sp500', m.SPY.change, 'pct');
+                    // SP500
+                    if (m.SP500 && m.SP500.price) {
+                        imdSetValue('sp500', m.SP500.price, 2);
+                        if (m.SP500.changePercentage !== undefined) imdSetChange('sp500', m.SP500.changePercentage, 'pct');
                     }
 
-                    // QQQ → NASDAQ
-                    if (m.QQQ && m.QQQ.price) {
-                        imdSetValue('nasdaq', m.QQQ.price, 2);
-                        if (m.QQQ.change !== undefined) imdSetChange('nasdaq', m.QQQ.change, 'pct');
+                    // NASDAQ
+                    if (m.NASDAQ && m.NASDAQ.price) {
+                        imdSetValue('nasdaq', m.NASDAQ.price, 2);
+                        if (m.NASDAQ.changePercentage !== undefined) imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
+                    }
+
+                    // DOW
+                    if (m.DOW && m.DOW.price) {
+                        imdSetValue('dow', m.DOW.price, 2);
+                        if (m.DOW.changePercentage !== undefined) imdSetChange('dow', m.DOW.changePercentage, 'pct');
                     }
 
                     // VIX
                     if (m.VIX && m.VIX.price) {
                         imdSetValue('vix', m.VIX.price, 2);
-                        if (m.VIX.change !== undefined) imdSetChange('vix', m.VIX.change, 'pct');
+                        if (m.VIX.changePercentage !== undefined) imdSetChange('vix', m.VIX.changePercentage, 'pct');
                     }
 
                     // SOX
-                    if (m.SOXX && m.SOXX.price) {
-                        imdSetValue('sox', m.SOXX.price, 2);
-                        if (m.SOXX.change !== undefined) imdSetChange('sox', m.SOXX.change, 'pct');
+                    if (m.SOX && m.SOX.price) {
+                        imdSetValue('sox', m.SOX.price, 2);
+                        if (m.SOX.changePercentage !== undefined) imdSetChange('sox', m.SOX.changePercentage, 'pct');
+                    }
+
+                    // RUSSELL2000
+                    if (m.RUSSELL2000 && m.RUSSELL2000.price) {
+                        imdSetValue('rtyfuture', m.RUSSELL2000.price, 2);
+                        if (m.RUSSELL2000.changePercentage !== undefined) imdSetChange('rtyfuture', m.RUSSELL2000.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
                 }
 
                 // Fallback: Legacy FMP API
-                console.log('[FALLBACK] Using legacy FMP API for US market');
+                console.log('[FALLBACK] Worker US market data missing or failed, using legacy FMP API');
                 Promise.all([
-                    fmpQ('SPY,QQQ,SOXX'),
+                    fmpQ('SPY,QQQ,DIA,SOXX,IWM'),
                     fmpIndexQ('%5EVIX')
                 ]).then(function(results) {
                     var m    = results[0];
@@ -5322,17 +5337,17 @@ var ECON_DATA = {
 
                     if (c.BTC && c.BTC.price) {
                         imdSetValue('btc', c.BTC.price, 0);
-                        if (c.BTC.change !== undefined) imdSetChange('btc', c.BTC.change, 'pct');
+                        if (c.BTC.changePercentage !== undefined) imdSetChange('btc', c.BTC.changePercentage, 'pct');
                     }
 
                     if (c.ETH && c.ETH.price) {
                         imdSetValue('eth', c.ETH.price, 0);
-                        if (c.ETH.change !== undefined) imdSetChange('eth', c.ETH.change, 'pct');
+                        if (c.ETH.changePercentage !== undefined) imdSetChange('eth', c.ETH.changePercentage, 'pct');
                     }
 
                     if (c.SOL && c.SOL.price) {
                         imdSetValue('sol', c.SOL.price, 2);
-                        if (c.SOL.change !== undefined) imdSetChange('sol', c.SOL.change, 'pct');
+                        if (c.SOL.changePercentage !== undefined) imdSetChange('sol', c.SOL.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5418,22 +5433,12 @@ var ECON_DATA = {
 
                     if (cm.GOLD && cm.GOLD.price) {
                         imdSetValue('gold', cm.GOLD.price, 0);
-                        if (cm.GOLD.change !== undefined) imdSetChange('gold', cm.GOLD.change, 'pct');
+                        if (cm.GOLD.changePercentage !== undefined) imdSetChange('gold', cm.GOLD.changePercentage, 'pct');
                     }
 
                     if (cm.SILVER && cm.SILVER.price) {
                         imdSetValue('silver', cm.SILVER.price, 2);
-                        if (cm.SILVER.change !== undefined) imdSetChange('silver', cm.SILVER.change, 'pct');
-                    }
-
-                    if (cm.OIL && cm.OIL.price) {
-                        imdSetValue('oil', cm.OIL.price, 2);
-                        if (cm.OIL.change !== undefined) imdSetChange('oil', cm.OIL.change, 'pct');
-                    }
-
-                    if (cm.DXY && cm.DXY.price) {
-                        imdSetValue('dxy', cm.DXY.price, 2);
-                        if (cm.DXY.change !== undefined) imdSetChange('dxy', cm.DXY.change, 'val', 2);
+                        if (cm.SILVER.changePercentage !== undefined) imdSetChange('silver', cm.SILVER.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5517,19 +5522,22 @@ var ECON_DATA = {
                 if (data && data.FX) {
                     var fx = data.FX;
 
-                    if (fx.USDKRW && fx.USDKRW.price) {
-                        imdSetValue('uskrw', fx.USDKRW.price, 0);
-                        if (fx.USDKRW.change !== undefined) imdSetChange('uskrw', fx.USDKRW.change, 'val', 0);
-                    }
-
+                    // USDJPY
                     if (fx.USDJPY && fx.USDJPY.price) {
                         imdSetValue('usjpy', fx.USDJPY.price, 2);
-                        if (fx.USDJPY.change !== undefined) imdSetChange('usjpy', fx.USDJPY.change, 'val', 2);
+                        if (fx.USDJPY.changePercentage !== undefined) imdSetChange('usjpy', fx.USDJPY.changePercentage, 'pct');
                     }
 
+                    // EURUSD
                     if (fx.EURUSD && fx.EURUSD.price) {
                         imdSetValue('eurusd', fx.EURUSD.price, 4);
-                        if (fx.EURUSD.change !== undefined) imdSetChange('eurusd', fx.EURUSD.change, 'val', 4);
+                        if (fx.EURUSD.changePercentage !== undefined) imdSetChange('eurusd', fx.EURUSD.changePercentage, 'pct');
+                    }
+
+                    // DXY (USD Index)
+                    if (fx.DXY && fx.DXY.price) {
+                        imdSetValue('dxy', fx.DXY.price, 2);
+                        if (fx.DXY.changePercentage !== undefined) imdSetChange('dxy', fx.DXY.changePercentage, 'pct');
                     }
 
                     return; // Success – no fallback needed
