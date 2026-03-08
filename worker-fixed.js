@@ -13,13 +13,190 @@ export default {
       console.log(`📊 요청: action=${action}, symbol=${symbol}, series=${series}`)
 
       /* ================================
-         설정
+         메타데이터 정의 (1차 데이터 구조)
       ================================ */
+      const DASHBOARD_METADATA = {
+        cards: [
+          {
+            id: 1,
+            title: "1. 한국 시장",
+            items: [
+              { id: "kospi", label: "KOSPI", unit: "", dataKey: "KOREA_MARKET.KOSPI.price" },
+              { id: "kosdaq", label: "KOSDAQ", unit: "", dataKey: "KOREA_MARKET.KOSDAQ.price" },
+              { id: "kospifut", label: "야간선물", unit: "", dataKey: "KOREA_MARKET.KOSPI_FUT.price" },
+              { id: "foreignflow", label: "외국인 수급", unit: "", dataKey: null },
+              { id: "instflow", label: "기관 수급", unit: "", dataKey: null },
+              { id: "retailflow", label: "개인 수급", unit: "", dataKey: null }
+            ]
+          },
+          {
+            id: 2,
+            title: "2. 미국 시장",
+            items: [
+              { id: "sp500", label: "S&P500 (SPY)", unit: "$", dataKey: "US_MARKET.SP500.price" },
+              { id: "nasdaq", label: "NASDAQ (QQQ)", unit: "$", dataKey: "US_MARKET.NASDAQ.price" },
+              { id: "vix", label: "VIX", unit: "", dataKey: "US_MARKET.VIX.price" },
+              { id: "sox", label: "SOX (SOXX)", unit: "$", dataKey: "US_MARKET.SOX.price" }
+            ]
+          },
+          {
+            id: 3,
+            title: "3. 미국 선물",
+            items: [
+              { id: "spfuture", label: "S&P500 Fut", unit: "", dataKey: null },
+              { id: "nasfuture", label: "Nasdaq Fut", unit: "", dataKey: null },
+              { id: "rtyfuture", label: "Russell Fut", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price" }
+            ]
+          },
+          {
+            id: 4,
+            title: "4. Crypto",
+            items: [
+              { id: "btc", label: "Bitcoin", unit: "$", dataKey: "CRYPTO.BTC.price" },
+              { id: "eth", label: "Ethereum", unit: "$", dataKey: "CRYPTO.ETH.price" },
+              { id: "sol", label: "Solana", unit: "$", dataKey: "CRYPTO.SOL.price" }
+            ]
+          },
+          {
+            id: 5,
+            title: "5. Commodities",
+            items: [
+              { id: "gold", label: "Gold", unit: "$", dataKey: "COMMODITIES.GOLD.price" },
+              { id: "silver", label: "Silver", unit: "$", dataKey: "COMMODITIES.SILVER.price" },
+              { id: "oil", label: "Oil (WTI)", unit: "$", dataKey: "COMMODITIES.OIL_WTI.price" },
+              { id: "dxy", label: "DXY", unit: "", dataKey: "FX.DXY.price" }
+            ]
+          },
+          {
+            id: 6,
+            title: "6. FX",
+            items: [
+              { id: "uskrw", label: "USD/KRW", unit: "₩", dataKey: null },
+              { id: "usjpy", label: "USD/JPY", unit: "¥", dataKey: "FX.USDJPY.price" },
+              { id: "eurusd", label: "EUR/USD", unit: "€", dataKey: "FX.EURUSD.price" }
+            ]
+          },
+          {
+            id: 7,
+            title: "7. Market Liquidity",
+            items: [
+              { id: "fedbal", label: "Fed Balance", unit: "T", dataKey: "LIQUIDITY.FED_BALANCE" },
+              { id: "repo", label: "Reverse Repo", unit: "B", dataKey: "LIQUIDITY.REVERSE_REPO" },
+              { id: "tga", label: "TGA", unit: "T", dataKey: "LIQUIDITY.TGA" },
+              { id: "m2", label: "M2", unit: "T", dataKey: "LIQUIDITY.M2" },
+              { id: "us10y", label: "10Y Yield", unit: "%", dataKey: "RATES.US10Y" },
+              { id: "us2y", label: "2Y Yield", unit: "%", dataKey: "RATES.US2Y" },
+              { id: "yieldcurve", label: "Yield Curve", unit: "%", dataKey: "RATES.YIELD_CURVE" }
+            ]
+          },
+          {
+            id: 8,
+            title: "8. ETF Smart Money",
+            items: [
+              { id: "spyflow", label: "SPY Vol Flow", unit: "M", dataKey: null },
+              { id: "qqqflow", label: "QQQ Vol Flow", unit: "M", dataKey: null },
+              { id: "iwmflow", label: "IWM Vol Flow", unit: "M", dataKey: null }
+            ]
+          },
+          {
+            id: 9,
+            title: "9. Sentiment & Options",
+            items: [
+              { id: "fear", label: "Fear & Greed", unit: "", dataKey: null },
+              { id: "putcall", label: "Put/Call Ratio", unit: "", dataKey: null },
+              { id: "gamma", label: "SPY Gamma Wall", unit: "", dataKey: null }
+            ]
+          },
+          {
+            id: 10,
+            title: "10. Sectors",
+            items: [
+              { id: "xlk", label: "Technology (XLK)", unit: "$", dataKey: "SECTORS.TECHNOLOGY.price" },
+              { id: "xlf", label: "Financials (XLF)", unit: "$", dataKey: "SECTORS.FINANCIALS.price" },
+              { id: "xle", label: "Energy (XLE)", unit: "$", dataKey: "SECTORS.ENERGY.price" },
+              { id: "xlv", label: "Healthcare (XLV)", unit: "$", dataKey: "SECTORS.HEALTHCARE.price" },
+              { id: "xly", label: "Consumer Disc (XLY)", unit: "$", dataKey: "SECTORS.CONSUMER_DISCRETIONARY.price" },
+              { id: "xli", label: "Industrials (XLI)", unit: "$", dataKey: "SECTORS.INDUSTRIALS.price" },
+              { id: "xlu", label: "Utilities (XLU)", unit: "$", dataKey: "SECTORS.UTILITIES.price" },
+              { id: "xlre", label: "Real Estate (XLRE)", unit: "$", dataKey: "SECTORS.REAL_ESTATE.price" }
+            ]
+          },
+          {
+            id: 11,
+            title: "11. Credit & Breadth",
+            items: [
+              { id: "hyg", label: "High Yield (HYG)", unit: "$", dataKey: "CREDIT.HIGH_YIELD.price" },
+              { id: "lqd", label: "Investment Grade (LQD)", unit: "$", dataKey: "CREDIT.INVESTMENT_GRADE.price" },
+              { id: "vti", label: "Total Market (VTI)", unit: "$", dataKey: "BREADTH.TOTAL_MARKET.price" },
+              { id: "tlt", label: "Long Treasury (TLT)", unit: "$", dataKey: "BREADTH.LONG_TREASURY.price" }
+            ]
+          },
+          {
+            id: 12,
+            title: "12. Macro Base",
+            items: [
+              { id: "cpi", label: "CPI", unit: "idx", dataKey: "MACRO_BASE.CPI" },
+              { id: "inflation_exp", label: "Inflation Exp", unit: "%", dataKey: "MACRO_BASE.INFLATION_EXPECTATION" },
+              { id: "unemployment", label: "Unemployment", unit: "%", dataKey: "MACRO_BASE.UNEMPLOYMENT" },
+              { id: "m2_macro", label: "M2 Money Supply", unit: "T", dataKey: "MACRO_BASE.M2" },
+              { id: "real_rates", label: "Real Rates", unit: "%", dataKey: "MACRO_BASE.REAL_RATES" }
+            ]
+          },
+          {
+            id: 13,
+            title: "13. Macro Indicators",
+            items: [
+              { id: "sentiment", label: "Consumer Sentiment", unit: "idx", dataKey: "MACRO_INDICATORS.CONSUMER_SENTIMENT" },
+              { id: "gdp", label: "Real GDP", unit: "B", dataKey: "MACRO_INDICATORS.REAL_GDP" },
+              { id: "indpro", label: "Industrial Production", unit: "idx", dataKey: "MACRO_INDICATORS.INDUSTRIAL_PRODUCTION" },
+              { id: "payems", label: "Nonfarm Payrolls", unit: "K", dataKey: "MACRO_INDICATORS.NONFARM_PAYROLLS" },
+              { id: "pce_inf", label: "PCE Inflation", unit: "%", dataKey: "MACRO_INDICATORS.PCE_INFLATION" }
+            ]
+          },
+          {
+            id: 14,
+            title: "14. US Market Extended",
+            items: [
+              { id: "dow", label: "DOW", unit: "$", dataKey: "US_MARKET.DOW.price" },
+              { id: "russell", label: "Russell 2000", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price" }
+            ]
+          }
+        ],
+        sections: {
+          "major_indices": [
+            { id: "dow_idx", label: "DOW", apiId: "dow", type: "index" },
+            { id: "sp500_idx", label: "S&P 500", apiId: "sp500", type: "index" },
+            { id: "nasdaq_idx", label: "NASDAQ", apiId: "nasdaq", type: "index" },
+            { id: "russell2k_idx", label: "Russell 2K", apiId: "russell", type: "index" },
+            { id: "soxx_idx", label: "Phil. Semi", apiId: "sox", type: "index" },
+            { id: "vix_idx", label: "VIX Index", apiId: "vix", type: "index" }
+          ],
+          "sp500_sectors": [
+            { id: "xlf_sec", label: "Financials (XLF)", apiId: "xlf", type: "sector" },
+            { id: "xli_sec", label: "Industrials (XLI)", apiId: "xli", type: "sector" },
+            { id: "xlk_sec", label: "Technology (XLK)", apiId: "xlk", type: "sector" },
+            { id: "xlv_sec", label: "Health Care (XLV)", apiId: "xlv", type: "sector" }
+          ],
+          "magnificent_7": [
+            { id: "msft", label: "MSFT", symbol: "MSFT", type: "stock" },
+            { id: "aapl", label: "AAPL", symbol: "AAPL", type: "stock" },
+            { id: "nvda", label: "NVDA", symbol: "NVDA", type: "stock" },
+            { id: "googl", label: "GOOGL", symbol: "GOOGL", type: "stock" },
+            { id: "amzn", label: "AMZN", symbol: "AMZN", type: "stock" },
+            { id: "tsla", label: "TSLA", symbol: "TSLA", type: "stock" },
+            { id: "meta", label: "META", symbol: "META", type: "stock" }
+          ]
+        }
+      }
+
+      console.log(`📊 요청: action=${action}, symbol=${symbol}, series=${series}`)
+
       const MARKET_SYMBOLS = {
         base: ["SPY", "QQQ", "DIA", "^VIX", "SOXX", "IWM", "BTCUSD", "ETHUSD", "SOLUSD", "GCUSD", "SIUSD", "USDJPY", "EURUSD", "DX"],
         sectors: ["XLK", "XLF", "XLE", "XLV", "XLY", "XLI", "XLU", "XLRE"],
         credit: ["HYG", "LQD"],
-        breadth: ["VTI", "TLT"]
+        breadth: ["VTI", "TLT"],
+        korea: ["^KS11", "^KQ11", "MKN=F"]  // ✅ KOSPI, KOSDAQ, KOSPI200 Futures
       }
 
       const FRED_SYMBOLS = {
@@ -120,11 +297,16 @@ export default {
           MARKET_SYMBOLS.breadth.map(sym => getQuote(sym))
         )
 
+        const koreaQuotes = await Promise.all(
+          MARKET_SYMBOLS.korea.map(sym => getQuote(sym))
+        )
+
         const allMarketData = [
           ...baseMarketQuotes,
           ...sectorQuotes,
           ...creditQuotes,
-          ...breadthQuotes
+          ...breadthQuotes,
+          ...koreaQuotes
         ].filter(q => q !== null)
 
         function price(sym) {
@@ -197,82 +379,88 @@ export default {
           timestamp: new Date().toISOString(),
           dataType: "market",
 
+          KOREA_MARKET: {
+            KOSPI: { price: price("^KS11"), change: change("^KS11"), changePercentage: `${changePercent("^KS11")}%` },
+            KOSDAQ: { price: price("^KQ11"), change: change("^KQ11"), changePercentage: `${changePercent("^KQ11")}%` },
+            KOSPI_FUT: { price: price("MKN=F"), change: change("MKN=F"), changePercentage: `${changePercent("MKN=F")}%` }
+          },
+
           US_MARKET: {
-            SP500: { price: price("SPY") ? `$${price("SPY")}` : null, change: change("SPY"), changePercent: `${changePercent("SPY")}%` },
-            NASDAQ: { price: price("QQQ") ? `$${price("QQQ")}` : null, change: change("QQQ"), changePercent: `${changePercent("QQQ")}%` },
-            DOW: { price: price("DIA") ? `$${price("DIA")}` : null, change: change("DIA"), changePercent: `${changePercent("DIA")}%` },
-            VIX: { price: price("^VIX") ? `${price("^VIX")}pts` : null, change: change("^VIX"), changePercent: `${changePercent("^VIX")}%` },
-            SOX: { price: price("SOXX") ? `$${price("SOXX")}` : null, change: change("SOXX"), changePercent: `${changePercent("SOXX")}%` },
-            RUSSELL2000: { price: price("IWM") ? `$${price("IWM")}` : null, change: change("IWM"), changePercent: `${changePercent("IWM")}%` }
+            SP500: { price: price("SPY"), change: change("SPY"), changePercentage: changePercent("SPY") },
+            NASDAQ: { price: price("QQQ"), change: change("QQQ"), changePercentage: changePercent("QQQ") },
+            DOW: { price: price("DIA"), change: change("DIA"), changePercentage: changePercent("DIA") },
+            VIX: { price: price("^VIX"), change: change("^VIX"), changePercentage: changePercent("^VIX") },
+            SOX: { price: price("SOXX"), change: change("SOXX"), changePercentage: changePercent("SOXX") },
+            RUSSELL2000: { price: price("IWM"), change: change("IWM"), changePercentage: changePercent("IWM") }
           },
 
           SECTORS: {
-            TECHNOLOGY: { symbol: "XLK", price: price("XLK") ? `$${price("XLK")}` : null, change: change("XLK"), changePercent: `${changePercent("XLK")}%` },
-            FINANCIALS: { symbol: "XLF", price: price("XLF") ? `$${price("XLF")}` : null, change: change("XLF"), changePercent: `${changePercent("XLF")}%` },
-            ENERGY: { symbol: "XLE", price: price("XLE") ? `$${price("XLE")}` : null, change: change("XLE"), changePercent: `${changePercent("XLE")}%` },
-            HEALTHCARE: { symbol: "XLV", price: price("XLV") ? `$${price("XLV")}` : null, change: change("XLV"), changePercent: `${changePercent("XLV")}%` },
-            CONSUMER_DISCRETIONARY: { symbol: "XLY", price: price("XLY") ? `$${price("XLY")}` : null, change: change("XLY"), changePercent: `${changePercent("XLY")}%` },
-            INDUSTRIALS: { symbol: "XLI", price: price("XLI") ? `$${price("XLI")}` : null, change: change("XLI"), changePercent: `${changePercent("XLI")}%` },
-            UTILITIES: { symbol: "XLU", price: price("XLU") ? `$${price("XLU")}` : null, change: change("XLU"), changePercent: `${changePercent("XLU")}%` },
-            REAL_ESTATE: { symbol: "XLRE", price: price("XLRE") ? `$${price("XLRE")}` : null, change: change("XLRE"), changePercent: `${changePercent("XLRE")}%` }
+            TECHNOLOGY: { symbol: "XLK", price: price("XLK"), change: change("XLK"), changePercentage: changePercent("XLK") },
+            FINANCIALS: { symbol: "XLF", price: price("XLF"), change: change("XLF"), changePercentage: changePercent("XLF") },
+            ENERGY: { symbol: "XLE", price: price("XLE"), change: change("XLE"), changePercentage: changePercent("XLE") },
+            HEALTHCARE: { symbol: "XLV", price: price("XLV"), change: change("XLV"), changePercentage: changePercent("XLV") },
+            CONSUMER_DISCRETIONARY: { symbol: "XLY", price: price("XLY"), change: change("XLY"), changePercentage: changePercent("XLY") },
+            INDUSTRIALS: { symbol: "XLI", price: price("XLI"), change: change("XLI"), changePercentage: changePercent("XLI") },
+            UTILITIES: { symbol: "XLU", price: price("XLU"), change: change("XLU"), changePercentage: changePercent("XLU") },
+            REAL_ESTATE: { symbol: "XLRE", price: price("XLRE"), change: change("XLRE"), changePercentage: changePercent("XLRE") }
           },
 
           CREDIT: {
-            HIGH_YIELD: { symbol: "HYG", price: price("HYG") ? `$${price("HYG")}` : null, change: change("HYG"), changePercent: `${changePercent("HYG")}%` },
-            INVESTMENT_GRADE: { symbol: "LQD", price: price("LQD") ? `$${price("LQD")}` : null, change: change("LQD"), changePercent: `${changePercent("LQD")}%` }
+            HIGH_YIELD: { symbol: "HYG", price: price("HYG"), change: change("HYG"), changePercentage: changePercent("HYG") },
+            INVESTMENT_GRADE: { symbol: "LQD", price: price("LQD"), change: change("LQD"), changePercentage: changePercent("LQD") }
           },
 
           BREADTH: {
-            TOTAL_MARKET: { symbol: "VTI", price: price("VTI") ? `$${price("VTI")}` : null, change: change("VTI"), changePercent: `${changePercent("VTI")}%` },
-            LONG_TREASURY: { symbol: "TLT", price: price("TLT") ? `$${price("TLT")}` : null, change: change("TLT"), changePercent: `${changePercent("TLT")}%` }
+            TOTAL_MARKET: { symbol: "VTI", price: price("VTI"), change: change("VTI"), changePercentage: changePercent("VTI") },
+            LONG_TREASURY: { symbol: "TLT", price: price("TLT"), change: change("TLT"), changePercentage: changePercent("TLT") }
           },
 
           CRYPTO: {
-            BTC: { price: price("BTCUSD") ? `$${price("BTCUSD")}` : null, change: change("BTCUSD"), changePercent: `${changePercent("BTCUSD")}%` },
-            ETH: { price: price("ETHUSD") ? `$${price("ETHUSD")}` : null, change: change("ETHUSD"), changePercent: `${changePercent("ETHUSD")}%` },
-            SOL: { price: price("SOLUSD") ? `$${price("SOLUSD")}` : null, change: change("SOLUSD"), changePercent: `${changePercent("SOLUSD")}%` }
+            BTC: { price: price("BTCUSD"), change: change("BTCUSD"), changePercentage: changePercent("BTCUSD") },
+            ETH: { price: price("ETHUSD"), change: change("ETHUSD"), changePercentage: changePercent("ETHUSD") },
+            SOL: { price: price("SOLUSD"), change: change("SOLUSD"), changePercentage: changePercent("SOLUSD") }
           },
 
           COMMODITIES: {
-            GOLD: { price: gold ? `$${gold}/oz` : null, change: change("GCUSD"), changePercent: `${changePercent("GCUSD")}%` },
-            SILVER: { price: silver ? `$${silver}/oz` : null, change: change("SIUSD"), changePercent: `${changePercent("SIUSD")}%` },
-            OIL_WTI: { price: oil ? `$${oil.toFixed(2)}/bbl` : null, change: null, changePercent: null },
-            GOLD_SILVER_RATIO: gold && silver ? `${(gold / silver).toFixed(2)}:1` : null
+            GOLD: { price: gold, change: change("GCUSD"), changePercentage: changePercent("GCUSD") },
+            SILVER: { price: silver, change: change("SIUSD"), changePercentage: changePercent("SIUSD") },
+            OIL_WTI: { price: oil, change: null, changePercentage: null },
+            GOLD_SILVER_RATIO: gold && silver ? (gold / silver) : null
           },
 
           FX: {
-            USDJPY: { price: usdJpyPrice ? `¥${usdJpyPrice.toFixed(2)}/USD` : null, change: change("USDJPY"), changePercent: `${changePercent("USDJPY")}%` },
-            EURUSD: { price: eurUsdPrice ? `€${eurUsdPrice.toFixed(4)}/USD` : null, change: change("EURUSD"), changePercent: `${changePercent("EURUSD")}%` },
-            DXY: { price: price("DX") ? `${(price("DX") * 10).toFixed(2)}pts` : null, change: change("DX"), changePercent: `${changePercent("DX")}%` }
+            USDJPY: { price: usdJpyPrice, change: change("USDJPY"), changePercentage: changePercent("USDJPY") },
+            EURUSD: { price: eurUsdPrice, change: change("EURUSD"), changePercentage: changePercent("EURUSD") },
+            DXY: { price: price("DX") ? (price("DX") * 10) : null, change: change("DX"), changePercentage: changePercent("DX") }
           },
 
           MACRO_BASE: {
-            CPI: cpiValue ? `${cpiValue.toFixed(2)}idx` : null,
-            INFLATION_EXPECTATION: inflationValue ? `${inflationValue.toFixed(2)}%` : null,
-            UNEMPLOYMENT: unemploymentValue ? `${unemploymentValue.toFixed(2)}%` : null,
-            M2: m2Value ? `${(m2Value / 1000000).toFixed(2)}T` : null,
-            REAL_RATES: us10yValue && inflationValue ? `${(us10yValue - inflationValue).toFixed(2)}%` : null
+            CPI: cpiValue,
+            INFLATION_EXPECTATION: inflationValue,
+            UNEMPLOYMENT: unemploymentValue,
+            M2: m2Value,
+            REAL_RATES: us10yValue && inflationValue ? (us10yValue - inflationValue) : null
           },
 
           MACRO_INDICATORS: {
-            CONSUMER_SENTIMENT: sentimentValue ? `${sentimentValue.toFixed(2)}idx` : null,
-            REAL_GDP: gdpValue ? `${(gdpValue / 1000).toFixed(2)}B` : null,
-            INDUSTRIAL_PRODUCTION: industrialValue ? `${industrialValue.toFixed(2)}idx` : null,
-            NONFARM_PAYROLLS: payrollValue ? `${(payrollValue / 1000).toFixed(0)}K` : null,
-            PCE_INFLATION: pceInflationValue ? `${pceInflationValue.toFixed(2)}%` : null
+            CONSUMER_SENTIMENT: sentimentValue,
+            REAL_GDP: gdpValue,
+            INDUSTRIAL_PRODUCTION: industrialValue,
+            NONFARM_PAYROLLS: payrollValue,
+            PCE_INFLATION: pceInflationValue
           },
 
           RATES: {
-            US10Y: us10yValue ? `${us10yValue.toFixed(2)}%` : null,
-            US2Y: us2yValue ? `${us2yValue.toFixed(2)}%` : null,
-            YIELD_CURVE: us10yValue && us2yValue ? `${(us10yValue - us2yValue).toFixed(2)}%` : null
+            US10Y: us10yValue,
+            US2Y: us2yValue,
+            YIELD_CURVE: us10yValue && us2yValue ? (us10yValue - us2yValue) : null
           },
 
           LIQUIDITY: {
-            FED_BALANCE: fedBalanceValue ? `${(fedBalanceValue / 1000000).toFixed(1)}T` : null,
-            REVERSE_REPO: rrpValue ? `${(rrpValue / 1000).toFixed(0)}B` : null,
-            TGA: tgaValue ? `${(tgaValue / 1000000).toFixed(1)}T` : null,
-            REAL_LIQUIDITY: fedBalanceValue && rrpValue && tgaValue ? `${((fedBalanceValue / 1000) - rrpValue - (tgaValue / 1000)).toFixed(0)}B` : null
+            FED_BALANCE: fedBalanceValue,
+            REVERSE_REPO: rrpValue,
+            TGA: tgaValue,
+            REAL_LIQUIDITY: fedBalanceValue && rrpValue && tgaValue ? ((fedBalanceValue / 1000) - rrpValue - (tgaValue / 1000)) : null
           }
         }
       }
@@ -368,7 +556,15 @@ export default {
       ================================ */
       let response
 
-      if (action === 'market') {
+      /* 🔹 메타데이터 요청 */
+      if (action === 'metadata') {
+        response = {
+          timestamp: new Date().toISOString(),
+          dataType: "metadata",
+          dashboard: DASHBOARD_METADATA
+        }
+
+      } else if (action === 'market') {
         response = await getMarketData()
 
       } else if (action === 'stock') {
@@ -385,6 +581,7 @@ export default {
         response = {
           error: "잘못된 요청",
           usage: {
+            metadata: "?action=metadata (대시보드 메타데이터)",
             fred_single: "?series=DGS10 (개별 FRED)",
             market: "?action=market (마켓 + FRED 전체)",
             stock: "?action=stock&symbol=AAPL (개별 주식)"

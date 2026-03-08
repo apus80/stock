@@ -2430,11 +2430,11 @@ var ECON_DATA = {
                             <div class="market-status-title" style="margin-top: 5px; font-size: 1.25rem;">실시간 시장 지표 & 섹터 현황 📊</div>
                         </div>
                         <div class="section-label">Major Indices</div>
-                        <div class="index-grid-3"><div class="mini-box"><span class="mini-name">DOW</span><span class="mini-val">47,501.6</span><span class="mini-pct change-down">▼ -0.95%</span></div><div class="mini-box"><span class="mini-name">S&P 500</span><span class="mini-val">6,740.0</span><span class="mini-pct change-down">▼ -1.33%</span></div><div class="mini-box"><span class="mini-name">NASDAQ</span><span class="mini-val">22,387.7</span><span class="mini-pct change-down">▼ -1.59%</span></div><div class="mini-box"><span class="mini-name">Russell 2K</span><span class="mini-val">2,525.3</span><span class="mini-pct change-down">▼ -2.33%</span></div><div class="mini-box"><span class="mini-name">Phil. Semi</span><span class="mini-val">7,514.7</span><span class="mini-pct change-down">▼ -3.93%</span></div><div class="mini-box"><span class="mini-name">VIX Index</span><span class="mini-val">29.5</span><span class="mini-pct change-up">▲ +24.17%</span></div></div>
+                        <div class="index-grid-3" id="major-indices-grid"><div class="mini-box" data-item-id="dow_idx"><span class="mini-name">DOW</span><span class="mini-val">-</span><span class="mini-pct chg-flat">-</span></div><div class="mini-box" data-item-id="sp500_idx"><span class="mini-name">S&P 500</span><span class="mini-val">-</span><span class="mini-pct chg-flat">-</span></div><div class="mini-box" data-item-id="nasdaq_idx"><span class="mini-name">NASDAQ</span><span class="mini-val">-</span><span class="mini-pct chg-flat">-</span></div><div class="mini-box" data-item-id="russell2k_idx"><span class="mini-name">Russell 2K</span><span class="mini-val">-</span><span class="mini-pct chg-flat">-</span></div><div class="mini-box" data-item-id="soxx_idx"><span class="mini-name">Phil. Semi</span><span class="mini-val">-</span><span class="mini-pct chg-flat">-</span></div><div class="mini-box" data-item-id="vix_idx"><span class="mini-name">VIX Index</span><span class="mini-val">-</span><span class="mini-pct chg-flat">-</span></div></div>
                         <div class="section-label">S&P 500 Sectors</div>
                         <div style="margin-bottom:20px;"><div class="data-bar-row"><div class="data-bar-label"><span>Financials (XLF)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:37%; background:#f43f5e;"></div></div></div><span class="change-down">-1.29%</span></div><div class="data-bar-row"><div class="data-bar-label"><span>Industrials (XLI)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:38%; background:#f43f5e;"></div></div></div><span class="change-down">-1.23%</span></div><div class="data-bar-row"><div class="data-bar-label"><span>Technology (XLK)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:29%; background:#f43f5e;"></div></div></div><span class="change-down">-2.06%</span></div><div class="data-bar-row"><div class="data-bar-label"><span>Health Care (XLV)</span><div class="data-bar-visual"><div class="data-bar-fill" style="width:42%; background:#f43f5e;"></div></div></div><span class="change-down">-0.79%</span></div></div>
                         <div class="section-label">Magnificent 7</div>
-                        <div class="index-grid-3" style="grid-template-columns: repeat(4, 1fr);"><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">MSFT</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-0.42%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">AAPL</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-1.09%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">NVDA</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-3.01%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">GOOGL</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-0.78%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">AMZN</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-2.62%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">TSLA</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-2.17%</span></div><div class="mini-box" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">META</span><span class="change-down" style="font-size:0.95rem; font-weight:700;">-2.38%</span></div></div>
+                        <div class="index-grid-3" id="magnificent-7-grid" style="grid-template-columns: repeat(4, 1fr);"><div class="mini-box" data-item-id="msft" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">MSFT</span><span class="chg-pct" style="font-size:0.95rem; font-weight:700;">-</span></div><div class="mini-box" data-item-id="aapl" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">AAPL</span><span class="chg-pct" style="font-size:0.95rem; font-weight:700;">-</span></div><div class="mini-box" data-item-id="nvda" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">NVDA</span><span class="chg-pct" style="font-size:0.95rem; font-weight:700;">-</span></div><div class="mini-box" data-item-id="googl" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">GOOGL</span><span class="chg-pct" style="font-size:0.95rem; font-weight:700;">-</span></div><div class="mini-box" data-item-id="amzn" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">AMZN</span><span class="chg-pct" style="font-size:0.95rem; font-weight:700;">-</span></div><div class="mini-box" data-item-id="tsla" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">TSLA</span><span class="chg-pct" style="font-size:0.95rem; font-weight:700;">-</span></div><div class="mini-box" data-item-id="meta" style="padding:8px 4px;"><span class="mini-name" style="font-size:0.8rem;">META</span><span class="chg-pct" style="font-size:0.95rem; font-weight:700;">-</span></div></div>
                         <div class="section-label">Korea Market Summary</div>
                         <div style="font-size:1rem; line-height:1.6; color:#cbd5e1; background:rgba(255,255,255,0.03); padding:12px; border-radius:10px;">
                             🇰🇷 실시간 글로벌 시장 변동에 따른 투자 심리 변화가 감지되고 있습니다. 주도 섹터 및 기관 수급 유입 상황을 주의 깊게 살펴보세요.
@@ -4625,6 +4625,147 @@ var ECON_DATA = {
          * Cloudflare Worker API 통합 (Primary Data Source)
          * ══════════════════════════════════════════════════════ */
 
+        /* ══════════════════════════════════════════════════════
+         * 메타데이터 시스템 (동적 라벨 및 단위)
+         * ══════════════════════════════════════════════════════ */
+        var dashboardMetadata = null;
+        var labelMap = {}; // id → { label, unit, dataKey }
+
+        function loadDashboardMetadata() {
+            return imdGet(API_BASE + '/metadata')
+                .then(function(data) {
+                    if (!data || !data.dashboard) {
+                        throw new Error('No metadata');
+                    }
+                    dashboardMetadata = data.dashboard;
+
+                    // 라벨 맵 생성 (빠른 조회용)
+                    dashboardMetadata.cards.forEach(function(card) {
+                        card.items.forEach(function(item) {
+                            labelMap[item.id] = {
+                                label: item.label,
+                                unit: item.unit,
+                                dataKey: item.dataKey,
+                                cardTitle: card.title
+                            };
+                        });
+                    });
+
+                    console.log('[METADATA] Loaded successfully, items:', Object.keys(labelMap).length);
+                    applyLabelsToDOM();
+                    return dashboardMetadata;
+                })
+                .catch(function(e) {
+                    console.error('[METADATA] Failed to load:', e.message);
+                    return null;
+                });
+        }
+
+        function applyLabelsToDOM() {
+            // 1️⃣ 카드 제목 업데이트
+            if (dashboardMetadata && dashboardMetadata.cards) {
+                var titleElements = document.querySelectorAll('span.title');
+                titleElements.forEach(function(titleEl, idx) {
+                    var currentText = titleEl.textContent || '';
+                    var cardNum = parseInt(currentText.split('.')[0]);
+
+                    if (cardNum > 0 && cardNum <= dashboardMetadata.cards.length) {
+                        var card = dashboardMetadata.cards.find(function(c) { return c.id === cardNum; });
+                        if (card) {
+                            titleEl.textContent = card.title;
+                        }
+                    }
+                });
+                console.log('[METADATA] Updated card titles');
+            }
+
+            // 2️⃣ 항목 라벨 업데이트
+            for (var id in labelMap) {
+                var el = document.getElementById(id);
+                if (el && el.parentElement) {
+                    // 형제 요소인 span 찾기 (라벨 위치)
+                    var labelSpan = el.parentElement.previousElementSibling;
+                    if (labelSpan && labelSpan.tagName === 'SPAN') {
+                        var displayLabel = labelMap[id].label;
+                        if (labelMap[id].unit) {
+                            displayLabel = displayLabel + ' (' + labelMap[id].unit + ')';
+                        }
+                        labelSpan.textContent = displayLabel;
+                    }
+                }
+            }
+            console.log('[METADATA] Applied labels to DOM, total items:', Object.keys(labelMap).length);
+        }
+
+        function updateIndexSections(marketData) {
+            if (!dashboardMetadata || !dashboardMetadata.sections) return;
+
+            // Major Indices 업데이트
+            if (dashboardMetadata.sections.major_indices) {
+                dashboardMetadata.sections.major_indices.forEach(function(item) {
+                    var box = document.querySelector('[data-item-id="' + item.id + '"]');
+                    if (box && marketData) {
+                        var key = item.apiId;
+                        var value = null;
+                        var change = null;
+
+                        // marketData에서 값 추출
+                        if (key === 'dow' && marketData.US_MARKET && marketData.US_MARKET.DOW) {
+                            value = marketData.US_MARKET.DOW.price;
+                            change = marketData.US_MARKET.DOW.changePercentage;
+                        } else if (key === 'sp500' && marketData.US_MARKET && marketData.US_MARKET.SP500) {
+                            value = marketData.US_MARKET.SP500.price;
+                            change = marketData.US_MARKET.SP500.changePercentage;
+                        } else if (key === 'nasdaq' && marketData.US_MARKET && marketData.US_MARKET.NASDAQ) {
+                            value = marketData.US_MARKET.NASDAQ.price;
+                            change = marketData.US_MARKET.NASDAQ.changePercentage;
+                        } else if (key === 'russell' && marketData.US_MARKET && marketData.US_MARKET.RUSSELL2000) {
+                            value = marketData.US_MARKET.RUSSELL2000.price;
+                            change = marketData.US_MARKET.RUSSELL2000.changePercentage;
+                        } else if (key === 'sox' && marketData.US_MARKET && marketData.US_MARKET.SOX) {
+                            value = marketData.US_MARKET.SOX.price;
+                            change = marketData.US_MARKET.SOX.changePercentage;
+                        } else if (key === 'vix' && marketData.US_MARKET && marketData.US_MARKET.VIX) {
+                            value = marketData.US_MARKET.VIX.price;
+                            change = marketData.US_MARKET.VIX.changePercentage;
+                        }
+
+                        if (value !== null) {
+                            var valSpan = box.querySelector('.mini-val');
+                            var pctSpan = box.querySelector('.mini-pct');
+                            if (valSpan) valSpan.textContent = Number(value).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 2});
+                            if (pctSpan && change !== null) {
+                                var sign = change > 0 ? '▲ +' : '▼ ';
+                                pctSpan.textContent = sign + Math.abs(change).toFixed(2) + '%';
+                                pctSpan.className = 'mini-pct ' + (change >= 0 ? 'change-up' : 'change-down');
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Magnificent 7 업데이트 (FMP Quote 데이터 사용)
+            if (dashboardMetadata.sections.magnificent_7) {
+                var symbols = dashboardMetadata.sections.magnificent_7.map(function(item) { return item.symbol; }).join(',');
+                fmpQ(symbols).then(function(data) {
+                    dashboardMetadata.sections.magnificent_7.forEach(function(item) {
+                        var box = document.querySelector('[data-item-id="' + item.id + '"]');
+                        if (box && data && data[item.symbol]) {
+                            var change = data[item.symbol].changePercentage;
+                            var pctSpan = box.querySelector('.chg-pct');
+                            if (pctSpan && change !== null && change !== undefined) {
+                                var sign = change > 0 ? '▲ +' : '▼ ';
+                                pctSpan.textContent = sign + Math.abs(change).toFixed(2) + '%';
+                                pctSpan.className = 'chg-pct ' + (change >= 0 ? 'change-up' : 'change-down');
+                            }
+                        }
+                    });
+                }).catch(function(e) {
+                    console.warn('[MAGNIFICENT 7] Failed to load:', e.message);
+                });
+            }
+        }
+
         /* ── Worker 마켓 데이터 (모든 자산 클래스) ────────────── */
         var workerMarketCache = null;
         var workerMarketCacheTime = 0;
@@ -4714,7 +4855,7 @@ var ECON_DATA = {
         }
 
         /* ── DOM 업데이트 (상태 자동 반영) ─────────────────── */
-        function imdSetValue(id, val, dec) {
+        function imdSetValue(id, val, dec, unit) {
             var el = document.getElementById(id);
             if (!el) return;
             if (val === null || val === undefined || val === '' || isNaN(Number(val))) {
@@ -4723,9 +4864,10 @@ var ECON_DATA = {
                 return;
             }
             dec = (dec === undefined) ? 2 : dec;
-            el.innerText = Number(val).toLocaleString(undefined, {
+            var numStr = Number(val).toLocaleString(undefined, {
                 minimumFractionDigits: dec, maximumFractionDigits: dec
             });
+            el.innerText = unit ? (numStr + unit) : numStr;
             imdSetStatus(id, 'online');
         }
 
@@ -5194,6 +5336,10 @@ var ECON_DATA = {
             workerFetchMarket().then(function(data) {
                 if (data && data.US_MARKET) {
                     console.log('[US] Worker data loaded, processing...');
+
+                    // ✅ Major Indices 섹션 업데이트
+                    updateIndexSections(data);
+
                     var m = data.US_MARKET;
 
                     // SP500
@@ -5659,7 +5805,7 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
             // Worker의 ?action=market 엔드포인트에서 모든 데이터 한 번에 가져오기
-            imdGet('/worker?action=market').then(function(data) {
+            workerFetchMarket().then(function(data) {
                 if (!data) {
                     console.error('[IMD] Market data is null');
                     return;
@@ -5670,32 +5816,36 @@ var ECON_DATA = {
                 // RATES - Treasury Yields
                 if (data.RATES) {
                     if (data.RATES.US10Y) {
-                        imdSetValue('us10y', parseFloat(data.RATES.US10Y), 2);
+                        imdSetValue('us10y', data.RATES.US10Y, 2, '%');
                     }
                     if (data.RATES.US2Y) {
-                        imdSetValue('us2y', parseFloat(data.RATES.US2Y), 2);
+                        imdSetValue('us2y', data.RATES.US2Y, 2, '%');
                     }
                     if (data.RATES.YIELD_CURVE) {
-                        imdSetValue('yieldcurve', parseFloat(data.RATES.YIELD_CURVE), 2);
+                        imdSetValue('yieldcurve', data.RATES.YIELD_CURVE, 2, '%');
                     }
                 }
 
                 // LIQUIDITY - Fed Balance, Reverse Repo, TGA
                 if (data.LIQUIDITY) {
                     if (data.LIQUIDITY.FED_BALANCE) {
-                        imdSetValue('fedbal', Math.round(parseFloat(data.LIQUIDITY.FED_BALANCE) / 1000 / 1000), 0);
+                        // FED_BALANCE는 원래 raw 값, T(Trillions) 단위로 변환: /1,000,000
+                        imdSetValue('fedbal', (data.LIQUIDITY.FED_BALANCE / 1000000), 1, 'T');
                     }
                     if (data.LIQUIDITY.REVERSE_REPO) {
-                        imdSetValue('repo', Math.round(parseFloat(data.LIQUIDITY.REVERSE_REPO) / 1000), 0);
+                        // REVERSE_REPO는 B(Billions) 단위: /1,000
+                        imdSetValue('repo', (data.LIQUIDITY.REVERSE_REPO / 1000), 0, 'B');
                     }
                     if (data.LIQUIDITY.TGA) {
-                        imdSetValue('tga', Math.round(parseFloat(data.LIQUIDITY.TGA) / 1000), 0);
+                        // TGA는 T(Trillions) 단위: /1,000,000
+                        imdSetValue('tga', (data.LIQUIDITY.TGA / 1000000), 1, 'T');
                     }
                 }
 
                 // MACRO_BASE - M2 Money Supply
                 if (data.MACRO_BASE && data.MACRO_BASE.M2) {
-                    imdSetValue('m2', Math.round(parseFloat(data.MACRO_BASE.M2) / 1000 / 1000), 0);
+                    // M2는 raw 값 (millions), T(Trillions)로 변환: /1,000,000
+                    imdSetValue('m2', (data.MACRO_BASE.M2 / 1000000), 1, 'T');
                 }
 
                 console.log('[IMD] Market Liquidity loaded successfully');
@@ -5862,16 +6012,16 @@ var ECON_DATA = {
                 if (data && data.MACRO_BASE) {
                     var macro = data.MACRO_BASE;
                     var items = [
-                        {id: 'cpi', value: macro.CPI},
-                        {id: 'inflation_exp', value: macro.INFLATION_EXPECTATION},
-                        {id: 'unemployment', value: macro.UNEMPLOYMENT},
-                        {id: 'm2_macro', value: macro.M2},
-                        {id: 'real_rates', value: macro.REAL_RATES}
+                        {id: 'cpi', value: macro.CPI, unit: 'idx'},
+                        {id: 'inflation_exp', value: macro.INFLATION_EXPECTATION, unit: '%'},
+                        {id: 'unemployment', value: macro.UNEMPLOYMENT, unit: '%'},
+                        {id: 'm2_macro', value: macro.M2 ? (macro.M2 / 1000000) : null, unit: 'T'},
+                        {id: 'real_rates', value: macro.REAL_RATES, unit: '%'}
                     ];
 
                     items.forEach(function(item) {
                         if (item.value) {
-                            imdSetValue(item.id, item.value, 2);
+                            imdSetValue(item.id, item.value, 2, item.unit);
                             imdSetStatus(item.id, 'sync');
                         } else {
                             imdSetStatus(item.id, 'error');
@@ -5897,16 +6047,16 @@ var ECON_DATA = {
                 if (data && data.MACRO_INDICATORS) {
                     var indicators = data.MACRO_INDICATORS;
                     var items = [
-                        {id: 'sentiment', value: indicators.CONSUMER_SENTIMENT},
-                        {id: 'gdp', value: indicators.REAL_GDP},
-                        {id: 'indpro', value: indicators.INDUSTRIAL_PRODUCTION},
-                        {id: 'payems', value: indicators.NONFARM_PAYROLLS},
-                        {id: 'pce_inf', value: indicators.PCE_INFLATION}
+                        {id: 'sentiment', value: indicators.CONSUMER_SENTIMENT, unit: 'idx'},
+                        {id: 'gdp', value: indicators.REAL_GDP ? (indicators.REAL_GDP / 1000) : null, unit: 'B'},
+                        {id: 'indpro', value: indicators.INDUSTRIAL_PRODUCTION, unit: 'idx'},
+                        {id: 'payems', value: indicators.NONFARM_PAYROLLS ? (indicators.NONFARM_PAYROLLS / 1000) : null, unit: 'K'},
+                        {id: 'pce_inf', value: indicators.PCE_INFLATION, unit: '%'}
                     ];
 
                     items.forEach(function(item) {
                         if (item.value) {
-                            imdSetValue(item.id, item.value, 2);
+                            imdSetValue(item.id, item.value, 2, item.unit);
                             imdSetStatus(item.id, 'sync');
                         } else {
                             imdSetStatus(item.id, 'error');
@@ -5961,20 +6111,23 @@ var ECON_DATA = {
          * 전체 로드 & 자동 갱신 (60초)
          * ══════════════════════════════════════════════════════ */
         function imdLoadAll() {
-            imdLoadKorea();
-            imdLoadUS();
-            imdLoadFutures();
-            imdLoadCrypto();
-            imdLoadCommodities();
-            imdLoadFX();
-            imdLoadLiquidity();
-            imdLoadSmartMoney();
-            imdLoadSentiment();
-            imdLoadSectors();
-            imdLoadCreditBreadth();
-            imdLoadMacroBase();
-            imdLoadMacroIndicators();
-            imdLoadUSExtended();
+            // 메타데이터 먼저 로드 (라벨 및 단위 초기화)
+            loadDashboardMetadata().then(function() {
+                imdLoadKorea();
+                imdLoadUS();
+                imdLoadFutures();
+                imdLoadCrypto();
+                imdLoadCommodities();
+                imdLoadFX();
+                imdLoadLiquidity();
+                imdLoadSmartMoney();
+                imdLoadSentiment();
+                imdLoadSectors();
+                imdLoadCreditBreadth();
+                imdLoadMacroBase();
+                imdLoadMacroIndicators();
+                imdLoadUSExtended();
+            });
         }
 
         /* ── 카드별 새로고침 ─────────────────────────────────── */
