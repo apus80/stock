@@ -4575,19 +4575,32 @@ var ECON_DATA = {
             var now = Date.now();
             // 캐시: 30초 유지
             if (!skipCache && workerMarketCache && (now - workerMarketCacheTime) < 30000) {
+                console.log('[WORKER] Using cached market data');
                 return Promise.resolve(workerMarketCache);
             }
 
             var url = WORKER_BASE + '/market';
-            return imdGet(url, 15000)
+            console.log('[WORKER] Fetching market data from:', url);
+
+            return fetch(url)
+                .then(function(r) {
+                    console.log('[WORKER] Response status:', r.status);
+                    if (!r.ok) {
+                        throw new Error('HTTP ' + r.status);
+                    }
+                    return r.json();
+                })
                 .then(function(data) {
-                    workerMarketCache = data;
-                    workerMarketCacheTime = Date.now();
-                    console.log('[WORKER] Market data loaded successfully');
-                    return data;
+                    if (data) {
+                        workerMarketCache = data;
+                        workerMarketCacheTime = Date.now();
+                        console.log('[WORKER] Market data loaded successfully, keys:', Object.keys(data));
+                        return data;
+                    }
+                    throw new Error('Empty response');
                 })
                 .catch(function(e) {
-                    console.warn('[WORKER] Market data fetch failed:', e.message);
+                    console.error('[WORKER] Market data fetch failed:', e.message, e);
                     return null;
                 });
         }
@@ -5122,6 +5135,7 @@ var ECON_DATA = {
             // Worker API
             workerFetchMarket().then(function(data) {
                 if (data && data.US_MARKET) {
+                    console.log('[US] Worker data loaded, processing...');
                     var m = data.US_MARKET;
 
                     // SP500
@@ -5164,7 +5178,7 @@ var ECON_DATA = {
                 }
 
                 // Fallback: Legacy FMP API
-                console.log('[FALLBACK] Worker US market failed, using legacy FMP API');
+                console.log('[FALLBACK] Worker US market data missing or failed, using legacy FMP API');
                 Promise.all([
                     fmpQ('SPY,QQQ,DIA,SOXX,IWM'),
                     fmpIndexQ('%5EVIX')
