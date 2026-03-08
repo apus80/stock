@@ -5612,56 +5612,50 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // FRED 데이터를 Worker의 ?series= 엔드포인트로 직접 요청
-            // Treasury Yields
-            imdGet('/worker?series=DGS10').then(function(r) {
-                if (r && r.value) {
-                    imdSetValue('us10y', parseFloat(r.value), 2);
+            // Worker의 ?action=market 엔드포인트에서 모든 데이터 한 번에 가져오기
+            imdGet('/worker?action=market').then(function(data) {
+                if (!data) {
+                    console.error('[IMD] Market data is null');
+                    return;
                 }
-            }).catch(function(){});
 
-            imdGet('/worker?series=DGS2').then(function(r) {
-                if (r && r.value) {
-                    imdSetValue('us2y', parseFloat(r.value), 2);
-                }
-            }).catch(function(){});
+                console.log('[IMD] Market data received:', data.dataType);
 
-            // Yield Curve (10Y - 2Y)
-            Promise.all([
-                imdGet('/worker?series=DGS10'),
-                imdGet('/worker?series=DGS2')
-            ]).then(function(responses) {
-                if (responses[0] && responses[0].value && responses[1] && responses[1].value) {
-                    var curve = parseFloat(responses[0].value) - parseFloat(responses[1].value);
-                    imdSetValue('yieldcurve', curve, 2);
+                // RATES - Treasury Yields
+                if (data.RATES) {
+                    if (data.RATES.US10Y) {
+                        imdSetValue('us10y', parseFloat(data.RATES.US10Y), 2);
+                    }
+                    if (data.RATES.US2Y) {
+                        imdSetValue('us2y', parseFloat(data.RATES.US2Y), 2);
+                    }
+                    if (data.RATES.YIELD_CURVE) {
+                        imdSetValue('yieldcurve', parseFloat(data.RATES.YIELD_CURVE), 2);
+                    }
                 }
-            }).catch(function(){});
 
-            // Liquidity Indicators (FRED)
-            imdGet('/worker?series=WALCL').then(function(r) {
-                if (r && r.value) {
-                    imdSetValue('fedbal', Math.round(parseFloat(r.value) / 1000 / 1000), 0);
+                // LIQUIDITY - Fed Balance, Reverse Repo, TGA
+                if (data.LIQUIDITY) {
+                    if (data.LIQUIDITY.FED_BALANCE) {
+                        imdSetValue('fedbal', Math.round(parseFloat(data.LIQUIDITY.FED_BALANCE) / 1000 / 1000), 0);
+                    }
+                    if (data.LIQUIDITY.REVERSE_REPO) {
+                        imdSetValue('repo', Math.round(parseFloat(data.LIQUIDITY.REVERSE_REPO) / 1000), 0);
+                    }
+                    if (data.LIQUIDITY.TGA) {
+                        imdSetValue('tga', Math.round(parseFloat(data.LIQUIDITY.TGA) / 1000), 0);
+                    }
                 }
-            }).catch(function(){});
 
-            imdGet('/worker?series=RRPONTSYD').then(function(r) {
-                if (r && r.value) {
-                    imdSetValue('repo', Math.round(parseFloat(r.value) / 1000), 0);
+                // MACRO_BASE - M2 Money Supply
+                if (data.MACRO_BASE && data.MACRO_BASE.M2) {
+                    imdSetValue('m2', Math.round(parseFloat(data.MACRO_BASE.M2) / 1000 / 1000), 0);
                 }
-            }).catch(function(){});
 
-            imdGet('/worker?series=M2SL').then(function(r) {
-                if (r && r.value) {
-                    imdSetValue('m2', Math.round(parseFloat(r.value) / 1000 / 1000), 0);
-                }
-            }).catch(function(){});
-
-            // TGA (Treasury General Account) - 있으면 추가
-            imdGet('/worker?series=WIMFSL').then(function(r) {
-                if (r && r.value) {
-                    imdSetValue('tga', Math.round(parseFloat(r.value) / 1000), 0);
-                }
-            }).catch(function(){});
+                console.log('[IMD] Market Liquidity loaded successfully');
+            }).catch(function(e) {
+                console.error('[IMD] Market data load failed:', e);
+            });
         }
 
         /* ══════════════════════════════════════════════════════
