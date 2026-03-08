@@ -4491,9 +4491,9 @@ var ECON_DATA = {
         /* ── Cloudflare Worker API ─────────────────────────────── */
         var WORKER_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
 
-        /* ── Fallback API 엔드포인트 (모두 Worker 프록시로 처리) ─── */
-
-        /* ── API 키는 모두 Worker에서 관리됨 (HTML에서 제거) ───── */
+        /* ── API 키 (Worker 미등록된 것만) ──────────────────────── */
+        var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
+        var TWELVE_BASE = 'https://api.twelvedata.com';
 
         var CORS_PX    = [
             'https://corsproxy.io/?',
@@ -4944,11 +4944,12 @@ var ECON_DATA = {
             });
         }
 
-        /* ── Twelvedata 헬퍼 (Worker 프록시 사용) ────────────────── */
+        /* ── Twelvedata 헬퍼 (프록시 경유 – free tier CORS 미지원) ── */
         function twelvePrice(symbol) {
-            // Worker 프록시를 통한 Twelvedata API 호출
-            var url = WORKER_BASE + '/twelvedata/price?symbol=' + encodeURIComponent(symbol);
+            var url = TWELVE_BASE + '/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + TWELVE_KEY;
+            // 직접 시도 → CORS 차단 시 프록시 폴백
             return imdGet(url)
+                .catch(function(){ return imdGetProxy(url); })
                 .then(function(d){ return (d && d.price) ? parseFloat(d.price) : null; })
                 .catch(function(){ return null; });
         }
@@ -5675,17 +5676,17 @@ var ECON_DATA = {
                 // FMP 실패한 항목은 Yahoo 폴백
                 if (spyV === null)
                     yahooPrice('SPY').then(function(){ /* volume only via FMP */ });
-                // Twelvedata는 quote 엔드포인트에서 volume 제공 (Worker 프록시)
+                // Twelvedata는 quote 엔드포인트에서 volume 제공
                 if (spyV === null)
-                    imdGet(WORKER_BASE + '/twelvedata/quote?symbol=SPY')
+                    imdGet(TWELVE_BASE + '/quote?symbol=SPY&apikey=' + TWELVE_KEY)
                         .then(function(d){ if (d && d.volume) imdSetValue('spyflow', Math.round(d.volume/1000000), 0); })
                         .catch(function(){});
                 if (qqqV === null)
-                    imdGet(WORKER_BASE + '/twelvedata/quote?symbol=QQQ')
+                    imdGet(TWELVE_BASE + '/quote?symbol=QQQ&apikey=' + TWELVE_KEY)
                         .then(function(d){ if (d && d.volume) imdSetValue('qqqflow', Math.round(d.volume/1000000), 0); })
                         .catch(function(){});
                 if (iwmV === null)
-                    imdGet(WORKER_BASE + '/twelvedata/quote?symbol=IWM')
+                    imdGet(TWELVE_BASE + '/quote?symbol=IWM&apikey=' + TWELVE_KEY)
                         .then(function(d){ if (d && d.volume) imdSetValue('iwmflow', Math.round(d.volume/1000000), 0); })
                         .catch(function(){});
             });
