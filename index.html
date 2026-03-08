@@ -4743,6 +4743,27 @@ var ECON_DATA = {
                     }
                 });
             }
+
+            // Magnificent 7 업데이트 (FMP Quote 데이터 사용)
+            if (dashboardMetadata.sections.magnificent_7) {
+                var symbols = dashboardMetadata.sections.magnificent_7.map(function(item) { return item.symbol; }).join(',');
+                fmpQ(symbols).then(function(data) {
+                    dashboardMetadata.sections.magnificent_7.forEach(function(item) {
+                        var box = document.querySelector('[data-item-id="' + item.id + '"]');
+                        if (box && data && data[item.symbol]) {
+                            var change = data[item.symbol].changePercentage;
+                            var pctSpan = box.querySelector('.chg-pct');
+                            if (pctSpan && change !== null && change !== undefined) {
+                                var sign = change > 0 ? '▲ +' : '▼ ';
+                                pctSpan.textContent = sign + Math.abs(change).toFixed(2) + '%';
+                                pctSpan.className = 'chg-pct ' + (change >= 0 ? 'change-up' : 'change-down');
+                            }
+                        }
+                    });
+                }).catch(function(e) {
+                    console.warn('[MAGNIFICENT 7] Failed to load:', e.message);
+                });
+            }
         }
 
         /* ── Worker 마켓 데이터 (모든 자산 클래스) ────────────── */

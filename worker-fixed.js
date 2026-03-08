@@ -178,13 +178,13 @@ export default {
             { id: "xlv_sec", label: "Health Care (XLV)", apiId: "xlv", type: "sector" }
           ],
           "magnificent_7": [
-            { id: "msft", label: "MSFT", type: "stock" },
-            { id: "aapl", label: "AAPL", type: "stock" },
-            { id: "nvda", label: "NVDA", type: "stock" },
-            { id: "googl", label: "GOOGL", type: "stock" },
-            { id: "amzn", label: "AMZN", type: "stock" },
-            { id: "tsla", label: "TSLA", type: "stock" },
-            { id: "meta", label: "META", type: "stock" }
+            { id: "msft", label: "MSFT", symbol: "MSFT", type: "stock" },
+            { id: "aapl", label: "AAPL", symbol: "AAPL", type: "stock" },
+            { id: "nvda", label: "NVDA", symbol: "NVDA", type: "stock" },
+            { id: "googl", label: "GOOGL", symbol: "GOOGL", type: "stock" },
+            { id: "amzn", label: "AMZN", symbol: "AMZN", type: "stock" },
+            { id: "tsla", label: "TSLA", symbol: "TSLA", type: "stock" },
+            { id: "meta", label: "META", symbol: "META", type: "stock" }
           ]
         }
       }
