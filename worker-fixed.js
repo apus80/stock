@@ -250,7 +250,7 @@ export default {
             CPI: cpiValue ? `${cpiValue.toFixed(2)}idx` : null,
             INFLATION_EXPECTATION: inflationValue ? `${inflationValue.toFixed(2)}%` : null,
             UNEMPLOYMENT: unemploymentValue ? `${unemploymentValue.toFixed(2)}%` : null,
-            M2: m2Value ? `${(m2Value / 1000000).toFixed(2)}T` : null,
+            M2: m2Value ? `${(m2Value / 1000).toFixed(2)}T` : null,
             REAL_RATES: us10yValue && inflationValue ? `${(us10yValue - inflationValue).toFixed(2)}%` : null
           },
 
