@@ -4754,8 +4754,7 @@ var ECON_DATA = {
         /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
         function fredLatestTwo(series) {
             // Worker 프록시를 통한 FRED API 호출 (API 키 불필요)
-            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
-                '&file_type=json&sort_order=desc&limit=5';
+            var url = WORKER_BASE + '/?action=fred&series_id=' + series + '&limit=5';
             function _parse(d) {
                 if (!d || !d.observations) return null;
                 var valid = d.observations.filter(function(o){
@@ -4820,8 +4819,7 @@ var ECON_DATA = {
 
         /* ── FRED 헬퍼 (Worker 프록시 사용) ─────────────────────── */
         function fredLatest(series) {
-            var url = WORKER_BASE + '/fred/series/observations?series_id=' + series +
-                '&file_type=json&sort_order=desc&limit=5';
+            var url = WORKER_BASE + '/?action=fred&series_id=' + series + '&limit=5';
             function _parse(d) {
                 if (!d) return null;
                 if (d.error_message) {
@@ -4841,8 +4839,8 @@ var ECON_DATA = {
          * 반환: 최신순 필터링된 observations 배열 (null=실패)
          * ──────────────────────────────────────────────────────── */
         function fredSeries(series, limit, extra) {
-            var url = API_BASE + '/fred/series/observations?series_id=' + series +
-                '&file_type=json&sort_order=desc&limit=' + limit +
+            var url = WORKER_BASE + '/?action=fred&series_id=' + series +
+                '&limit=' + limit +
                 (extra || '');
             return imdGet(url)
                 .then(function(d) {
