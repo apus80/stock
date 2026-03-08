@@ -5603,60 +5603,56 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // Worker /market 엔드포인트에서 모든 유동성 데이터 가져오기
-            workerFetchMarket().then(function(data) {
-                if (!data) {
-                    console.error('[IMD] Worker market data is null');
-                    return;
+            // FRED 데이터를 Worker의 ?series= 엔드포인트로 직접 요청
+            // Treasury Yields
+            imdGet('/worker?series=DGS10').then(function(r) {
+                if (r && r.value) {
+                    imdSetValue('us10y', parseFloat(r.value), 2);
                 }
+            }).catch(function(){});
 
-                console.log('[IMD] Worker market response keys:', Object.keys(data));
-                console.log('[IMD] Full market data:', JSON.stringify(data).substring(0, 500));
-
-                // Treasury Yields (RATES 또는 최상위 필드 확인)
-                var rates = data.RATES || {};
-                console.log('[IMD] RATES object keys:', Object.keys(rates));
-
-                // 10Y Treasury
-                var us10y = rates.US10Y || rates.DGS10 || data.US10Y || data.DGS10;
-                if (us10y !== null && us10y !== undefined) {
-                    imdSetValue('us10y', us10y, 2);
-                    console.log('[IMD] 10Y Yield:', us10y);
+            imdGet('/worker?series=DGS2').then(function(r) {
+                if (r && r.value) {
+                    imdSetValue('us2y', parseFloat(r.value), 2);
                 }
+            }).catch(function(){});
 
-                // 2Y Treasury
-                var us2y = rates.US2Y || rates.DGS2 || data.US2Y || data.DGS2;
-                if (us2y !== null && us2y !== undefined) {
-                    imdSetValue('us2y', us2y, 2);
-                    console.log('[IMD] 2Y Yield:', us2y);
+            // Yield Curve (10Y - 2Y)
+            Promise.all([
+                imdGet('/worker?series=DGS10'),
+                imdGet('/worker?series=DGS2')
+            ]).then(function(responses) {
+                if (responses[0] && responses[0].value && responses[1] && responses[1].value) {
+                    var curve = parseFloat(responses[0].value) - parseFloat(responses[1].value);
+                    imdSetValue('yieldcurve', curve, 2);
                 }
+            }).catch(function(){});
 
-                // Yield Curve
-                if (us10y && us2y) {
-                    imdSetValue('yieldcurve', us10y - us2y, 2);
-                    console.log('[IMD] Yield Curve:', us10y - us2y);
+            // Liquidity Indicators (FRED)
+            imdGet('/worker?series=WALCL').then(function(r) {
+                if (r && r.value) {
+                    imdSetValue('fedbal', Math.round(parseFloat(r.value) / 1000 / 1000), 0);
                 }
+            }).catch(function(){});
 
-                // Liquidity Indicators
-                var liq = data.LIQUIDITY || {};
-                console.log('[IMD] LIQUIDITY object keys:', Object.keys(liq));
+            imdGet('/worker?series=RRPONTSYD').then(function(r) {
+                if (r && r.value) {
+                    imdSetValue('repo', Math.round(parseFloat(r.value) / 1000), 0);
+                }
+            }).catch(function(){});
 
-                var fedbal = liq.FED_BALANCE || liq.WALCL || data.FED_BALANCE || data.WALCL;
-                if (fedbal) imdSetValue('fedbal', Math.round(fedbal / 1000 / 1000), 0);
+            imdGet('/worker?series=M2SL').then(function(r) {
+                if (r && r.value) {
+                    imdSetValue('m2', Math.round(parseFloat(r.value) / 1000 / 1000), 0);
+                }
+            }).catch(function(){});
 
-                var repo = liq.REVERSE_REPO || liq.RRPONTSYD || data.REVERSE_REPO || data.RRPONTSYD;
-                if (repo) imdSetValue('repo', Math.round(repo / 1000), 0);
-
-                var tga = liq.TGA || data.TGA;
-                if (tga) imdSetValue('tga', Math.round(tga / 1000), 0);
-
-                var m2 = data.M2SL || data.M2 || (data.MACRO_BASE && data.MACRO_BASE.M2);
-                if (m2) imdSetValue('m2', Math.round(m2 / 1000 / 1000), 0);
-
-                console.log('[IMD] Market Liquidity load complete');
-            }).catch(function(e) {
-                console.error('[IMD] Worker market fetch failed:', e);
-            });
+            // TGA (Treasury General Account) - 있으면 추가
+            imdGet('/worker?series=WIMFSL').then(function(r) {
+                if (r && r.value) {
+                    imdSetValue('tga', Math.round(parseFloat(r.value) / 1000), 0);
+                }
+            }).catch(function(){});
         }
 
         /* ══════════════════════════════════════════════════════
