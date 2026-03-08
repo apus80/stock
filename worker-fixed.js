@@ -161,7 +161,32 @@ export default {
               { id: "russell", label: "Russell 2000", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price" }
             ]
           }
-        ]
+        ],
+        sections: {
+          "major_indices": [
+            { id: "dow_idx", label: "DOW", apiId: "dow", type: "index" },
+            { id: "sp500_idx", label: "S&P 500", apiId: "sp500", type: "index" },
+            { id: "nasdaq_idx", label: "NASDAQ", apiId: "nasdaq", type: "index" },
+            { id: "russell2k_idx", label: "Russell 2K", apiId: "russell", type: "index" },
+            { id: "soxx_idx", label: "Phil. Semi", apiId: "sox", type: "index" },
+            { id: "vix_idx", label: "VIX Index", apiId: "vix", type: "index" }
+          ],
+          "sp500_sectors": [
+            { id: "xlf_sec", label: "Financials (XLF)", apiId: "xlf", type: "sector" },
+            { id: "xli_sec", label: "Industrials (XLI)", apiId: "xli", type: "sector" },
+            { id: "xlk_sec", label: "Technology (XLK)", apiId: "xlk", type: "sector" },
+            { id: "xlv_sec", label: "Health Care (XLV)", apiId: "xlv", type: "sector" }
+          ],
+          "magnificent_7": [
+            { id: "msft", label: "MSFT", type: "stock" },
+            { id: "aapl", label: "AAPL", type: "stock" },
+            { id: "nvda", label: "NVDA", type: "stock" },
+            { id: "googl", label: "GOOGL", type: "stock" },
+            { id: "amzn", label: "AMZN", type: "stock" },
+            { id: "tsla", label: "TSLA", type: "stock" },
+            { id: "meta", label: "META", type: "stock" }
+          ]
+        }
       }
 
       console.log(`📊 요청: action=${action}, symbol=${symbol}, series=${series}`)
