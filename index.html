@@ -5136,28 +5136,28 @@ var ECON_DATA = {
                 if (data && data.US_MARKET) {
                     var m = data.US_MARKET;
 
-                    // SPY → S&P500
-                    if (m.SPY && m.SPY.price) {
-                        imdSetValue('sp500', m.SPY.price, 2);
-                        if (m.SPY.change !== undefined) imdSetChange('sp500', m.SPY.change, 'pct');
+                    // SP500 → S&P500
+                    if (m.SP500 && m.SP500.price) {
+                        imdSetValue('sp500', m.SP500.price, 2);
+                        if (m.SP500.changePercent !== undefined) imdSetChange('sp500', m.SP500.changePercent, 'pct');
                     }
 
-                    // QQQ → NASDAQ
-                    if (m.QQQ && m.QQQ.price) {
-                        imdSetValue('nasdaq', m.QQQ.price, 2);
-                        if (m.QQQ.change !== undefined) imdSetChange('nasdaq', m.QQQ.change, 'pct');
+                    // NASDAQ → NASDAQ
+                    if (m.NASDAQ && m.NASDAQ.price) {
+                        imdSetValue('nasdaq', m.NASDAQ.price, 2);
+                        if (m.NASDAQ.changePercent !== undefined) imdSetChange('nasdaq', m.NASDAQ.changePercent, 'pct');
                     }
 
                     // VIX
                     if (m.VIX && m.VIX.price) {
                         imdSetValue('vix', m.VIX.price, 2);
-                        if (m.VIX.change !== undefined) imdSetChange('vix', m.VIX.change, 'pct');
+                        if (m.VIX.changePercent !== undefined) imdSetChange('vix', m.VIX.changePercent, 'pct');
                     }
 
                     // SOX
-                    if (m.SOXX && m.SOXX.price) {
-                        imdSetValue('sox', m.SOXX.price, 2);
-                        if (m.SOXX.change !== undefined) imdSetChange('sox', m.SOXX.change, 'pct');
+                    if (m.SOX && m.SOX.price) {
+                        imdSetValue('sox', m.SOX.price, 2);
+                        if (m.SOX.changePercent !== undefined) imdSetChange('sox', m.SOX.changePercent, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5418,23 +5418,31 @@ var ECON_DATA = {
 
                     if (cm.GOLD && cm.GOLD.price) {
                         imdSetValue('gold', cm.GOLD.price, 0);
-                        if (cm.GOLD.change !== undefined) imdSetChange('gold', cm.GOLD.change, 'pct');
+                        if (cm.GOLD.changePercent !== undefined) imdSetChange('gold', cm.GOLD.changePercent, 'pct');
                     }
 
                     if (cm.SILVER && cm.SILVER.price) {
                         imdSetValue('silver', cm.SILVER.price, 2);
-                        if (cm.SILVER.change !== undefined) imdSetChange('silver', cm.SILVER.change, 'pct');
+                        if (cm.SILVER.changePercent !== undefined) imdSetChange('silver', cm.SILVER.changePercent, 'pct');
                     }
 
-                    if (cm.OIL && cm.OIL.price) {
-                        imdSetValue('oil', cm.OIL.price, 2);
-                        if (cm.OIL.change !== undefined) imdSetChange('oil', cm.OIL.change, 'pct');
-                    }
-
+                    // OIL은 Worker에 없음 - 폴백에서 로드
                     if (cm.DXY && cm.DXY.price) {
                         imdSetValue('dxy', cm.DXY.price, 2);
-                        if (cm.DXY.change !== undefined) imdSetChange('dxy', cm.DXY.change, 'val', 2);
+                        if (cm.DXY.changePercent !== undefined) imdSetChange('dxy', cm.DXY.changePercent, 'val', 2);
                     }
+
+                    // OIL 데이터는 폴백에서 로드
+                    console.log('[WORKER] Commodities loaded (GOLD, SILVER, DXY) - OIL via fallback');
+                    // 폴백으로 OIL만 추가 로드
+                    fmpQ('CLUSD').then(function(m) {
+                        var oilChg = m.CLUSD ? m.CLUSD.changesPercentage : null;
+                        fetchMulti([
+                            function(){ return m.CLUSD ? m.CLUSD.price : null; },
+                            function(){ return twelvePrice('WTI/USD'); },
+                            function(){ return yahooPrice('CL=F'); }
+                        ]).then(function(v){ imdSetValue('oil', v, 2); if (oilChg !== null) imdSetChange('oil', oilChg, 'pct'); });
+                    });
 
                     return; // Success – no fallback needed
                 }
@@ -5517,11 +5525,7 @@ var ECON_DATA = {
                 if (data && data.FX) {
                     var fx = data.FX;
 
-                    if (fx.USDKRW && fx.USDKRW.price) {
-                        imdSetValue('uskrw', fx.USDKRW.price, 0);
-                        if (fx.USDKRW.change !== undefined) imdSetChange('uskrw', fx.USDKRW.change, 'val', 0);
-                    }
-
+                    // USDKRW는 Worker에 없음 - 폴백에서 로드
                     if (fx.USDJPY && fx.USDJPY.price) {
                         imdSetValue('usjpy', fx.USDJPY.price, 2);
                         if (fx.USDJPY.change !== undefined) imdSetChange('usjpy', fx.USDJPY.change, 'val', 2);
@@ -5531,6 +5535,17 @@ var ECON_DATA = {
                         imdSetValue('eurusd', fx.EURUSD.price, 4);
                         if (fx.EURUSD.change !== undefined) imdSetChange('eurusd', fx.EURUSD.change, 'val', 4);
                     }
+
+                    // USDKRW는 폴백에서 로드
+                    console.log('[WORKER] FX loaded (USDJPY, EURUSD) - USDKRW via fallback');
+                    fmpQ('USDKRW').then(function(m) {
+                        var krwChg = m.USDKRW ? m.USDKRW.change : null;
+                        fetchMulti([
+                            function(){ return m.USDKRW ? m.USDKRW.price : null; },
+                            function(){ return twelvePrice('USD/KRW'); },
+                            function(){ return yahooPrice('KRW=X'); }
+                        ]).then(function(v){ imdSetValue('uskrw', v, 0); if (krwChg !== null) imdSetChange('uskrw', krwChg, 'val', 0); });
+                    });
 
                     return; // Success – no fallback needed
                 }
