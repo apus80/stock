@@ -5602,56 +5602,50 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // 미국채 10년 – Yahoo/FMP (FRED 폴백 제거)
+            // 모든 Market Liquidity는 Yahoo/FMP만 사용 (간단하고 안정적)
+
+            // 미국채 10년
             fetchMulti([
                 function(){ return fmpPrice('%5ETNX'); },
                 function(){ return yahooPrice('^TNX'); }
             ]).then(function(v){ imdSetValue('us10y', v, 2); });
 
-            // 미국채 2년 – Yahoo/FMP
+            // 미국채 2년
             fetchMulti([
                 function(){ return fmpPrice('%5EFVX'); },
                 function(){ return yahooPrice('^IRX'); }
             ]).then(function(v){ imdSetValue('us2y', v, 2); });
 
-            // Yield Curve – Worker에서 직접 받기
-            workerFetchMarket().then(function(data) {
-                if (data && data.RATES && data.RATES.YIELD_CURVE !== undefined && data.RATES.YIELD_CURVE !== null) {
-                    imdSetValue('yieldcurve', data.RATES.YIELD_CURVE, 2);
+            // Yield Curve (10Y - 2Y)
+            Promise.all([
+                fetchMulti([function(){ return fmpPrice('%5ETNX'); }, function(){ return yahooPrice('^TNX'); }]),
+                fetchMulti([function(){ return fmpPrice('%5EFVX'); }, function(){ return yahooPrice('^IRX'); }])
+            ]).then(function(vals){
+                if (vals[0] && vals[1]) {
+                    imdSetValue('yieldcurve', vals[0] - vals[1], 2);
                 }
-            }).catch(function(){
-                console.log('[FALLBACK] Worker yield curve failed');
-            });
+            }).catch(function(){});
 
-            // Fed 잔고, Reverse Repo, TGA, M2 – Worker에서 받기
+            // Fed Balance, Reverse Repo, TGA, M2 – 스태틱 값 표시 안 함 (실시간 데이터 필요 시 Worker 대기)
             workerFetchMarket().then(function(data) {
                 if (!data) return;
 
                 var liq = data.LIQUIDITY || {};
                 var macro = data.MACRO_BASE || {};
 
-                // Fed Balance (백만 → 조 달러)
                 if (liq.FED_BALANCE !== null && liq.FED_BALANCE !== undefined) {
-                    imdSetValue('fedbal', liq.FED_BALANCE / 1000, 2);
+                    imdSetValue('fedbal', Math.round(liq.FED_BALANCE / 1000 / 1000), 2);
                 }
-
-                // Reverse Repo
                 if (liq.REVERSE_REPO !== null && liq.REVERSE_REPO !== undefined) {
                     imdSetValue('repo', liq.REVERSE_REPO, 0);
                 }
-
-                // TGA
                 if (liq.TGA !== null && liq.TGA !== undefined) {
                     imdSetValue('tga', liq.TGA, 0);
                 }
-
-                // M2
                 if (macro.M2 !== null && macro.M2 !== undefined) {
-                    imdSetValue('m2', macro.M2, 0);
+                    imdSetValue('m2', Math.round(macro.M2 / 1000 / 1000), 0);
                 }
-            }).catch(function(e){
-                console.log('[FALLBACK] Worker liquidity data failed:', e);
-            });
+            }).catch(function(){});
         }
 
         /* ══════════════════════════════════════════════════════
