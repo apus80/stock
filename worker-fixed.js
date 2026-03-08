@@ -24,7 +24,8 @@ export default {
 
       const FRED_SYMBOLS = {
         macro: ["CPIAUCSL", "T10YIE", "UNRATE", "M2SL", "WALCL", "RRPONTSYD", "WTREGEN", "DGS10", "DGS2"],
-        additional: ["UMCSENT", "GDPC1", "INDPRO", "PAYEMS", "PCEPI"]
+        additional: ["UMCSENT", "GDPC1", "INDPRO", "PAYEMS", "PCEPI"],
+        commodities: ["DCOILWTICO"]  // ✅ WTI Oil 추가
       }
 
       /* ================================
@@ -136,6 +137,10 @@ export default {
           FRED_SYMBOLS.additional.map(series => fredGet(series))
         )
 
+        const commoditiesFredData = await Promise.all(
+          FRED_SYMBOLS.commodities.map(series => fredGet(series))
+        )
+
         function getLatestValue(fredArray) {
           if (!fredArray || fredArray.length === 0) return null
           // "." 값을 건너뛰고 유효한 값 찾기
@@ -154,8 +159,11 @@ export default {
         const [sentimentValue, gdpValue, industrialValue, payrollValue, pceInflationValue] =
           additionalFredData.map(getLatestValue)
 
+        const [oilValue] = commoditiesFredData.map(getLatestValue)
+
         const gold = price("GCUSD")
         const silver = price("SIUSD")
+        const oil = oilValue || price("WTIUSD")  // FRED 또는 FMP fallback
 
         return {
           timestamp: new Date().toISOString(),
@@ -200,6 +208,7 @@ export default {
           COMMODITIES: {
             GOLD: { price: gold ? `$${gold}/oz` : null, change: change("GCUSD"), changePercent: `${changePercent("GCUSD")}%` },
             SILVER: { price: silver ? `$${silver}/oz` : null, change: change("SIUSD"), changePercent: `${changePercent("SIUSD")}%` },
+            OIL_WTI: { price: oil ? `$${oil.toFixed(2)}/bbl` : null, change: null, changePercent: null },
             GOLD_SILVER_RATIO: gold && silver ? `${(gold / silver).toFixed(2)}:1` : null
           },
 
