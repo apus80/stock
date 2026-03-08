@@ -4579,7 +4579,7 @@ var ECON_DATA = {
                 return Promise.resolve(workerMarketCache);
             }
 
-            var url = WORKER_BASE + '/market';
+            var url = WORKER_BASE + '/?action=market';
             console.log('[WORKER] Fetching market data from:', url);
 
             return fetch(url)
