@@ -4833,7 +4833,8 @@ var ECON_DATA = {
                 var valid = d.observations.filter(function(o){ return o.value !== '.' && o.value !== ''; });
                 return valid.length > 0 ? parseFloat(valid[0].value) : null;
             }
-            return imdGet(url).then(_parse)
+            // FRED API CORS 문제 → 프록시 사용
+            return imdGetProxy(url).then(_parse)
                 .catch(function(){ return null; });
         }
 
