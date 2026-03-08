@@ -5336,7 +5336,7 @@ var ECON_DATA = {
             // Worker API
             workerFetchMarket().then(function(data) {
                 if (data && data.US_MARKET) {
-                    console.log('[US] Worker data loaded, processing...');
+                    console.log('[US] Worker data loaded, processing...', data.US_MARKET);
 
                     // ✅ Major Indices 섹션 업데이트
                     updateIndexSections(data);
@@ -5346,37 +5346,50 @@ var ECON_DATA = {
                     // SP500
                     if (m.SP500 && m.SP500.price) {
                         imdSetValue('sp500', m.SP500.price, 2);
-                        if (m.SP500.changePercentage !== undefined) imdSetChange('sp500', m.SP500.changePercentage, 'pct');
+                        console.log('[US] SP500 changePercentage:', m.SP500.changePercentage);
+                        if (m.SP500.changePercentage !== undefined && m.SP500.changePercentage !== null) {
+                            imdSetChange('sp500', m.SP500.changePercentage, 'pct');
+                        }
                     }
 
                     // NASDAQ
                     if (m.NASDAQ && m.NASDAQ.price) {
                         imdSetValue('nasdaq', m.NASDAQ.price, 2);
-                        if (m.NASDAQ.changePercentage !== undefined) imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
+                        if (m.NASDAQ.changePercentage !== undefined && m.NASDAQ.changePercentage !== null) {
+                            imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
+                        }
                     }
 
                     // DOW
                     if (m.DOW && m.DOW.price) {
                         imdSetValue('dow', m.DOW.price, 2);
-                        if (m.DOW.changePercentage !== undefined) imdSetChange('dow', m.DOW.changePercentage, 'pct');
+                        if (m.DOW.changePercentage !== undefined && m.DOW.changePercentage !== null) {
+                            imdSetChange('dow', m.DOW.changePercentage, 'pct');
+                        }
                     }
 
                     // VIX
                     if (m.VIX && m.VIX.price) {
                         imdSetValue('vix', m.VIX.price, 2);
-                        if (m.VIX.changePercentage !== undefined) imdSetChange('vix', m.VIX.changePercentage, 'pct');
+                        if (m.VIX.changePercentage !== undefined && m.VIX.changePercentage !== null) {
+                            imdSetChange('vix', m.VIX.changePercentage, 'pct');
+                        }
                     }
 
                     // SOX
                     if (m.SOX && m.SOX.price) {
                         imdSetValue('sox', m.SOX.price, 2);
-                        if (m.SOX.changePercentage !== undefined) imdSetChange('sox', m.SOX.changePercentage, 'pct');
+                        if (m.SOX.changePercentage !== undefined && m.SOX.changePercentage !== null) {
+                            imdSetChange('sox', m.SOX.changePercentage, 'pct');
+                        }
                     }
 
                     // RUSSELL2000
                     if (m.RUSSELL2000 && m.RUSSELL2000.price) {
                         imdSetValue('rtyfuture', m.RUSSELL2000.price, 2);
-                        if (m.RUSSELL2000.changePercentage !== undefined) imdSetChange('rtyfuture', m.RUSSELL2000.changePercentage, 'pct');
+                        if (m.RUSSELL2000.changePercentage !== undefined && m.RUSSELL2000.changePercentage !== null) {
+                            imdSetChange('rtyfuture', m.RUSSELL2000.changePercentage, 'pct');
+                        }
                     }
 
                     return; // Success – no fallback needed
