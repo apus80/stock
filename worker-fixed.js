@@ -243,7 +243,7 @@ export default {
           FX: {
             USDJPY: { price: usdJpyPrice ? `¥${usdJpyPrice.toFixed(2)}/USD` : null, change: change("USDJPY"), changePercent: `${changePercent("USDJPY")}%` },
             EURUSD: { price: eurUsdPrice ? `€${eurUsdPrice.toFixed(4)}/USD` : null, change: change("EURUSD"), changePercent: `${changePercent("EURUSD")}%` },
-            DXY: { price: price("DX") ? `${(price("DX") * 10).toFixed(2)}pts` : null, change: change("DX"), changePercent: `${changePercent("DX")}%` }
+            DXY: { price: price("DX") ? `${price("DX").toFixed(2)}` : null, change: change("DX"), changePercent: `${changePercent("DX")}%` }
           },
 
           MACRO_BASE: {
@@ -256,9 +256,9 @@ export default {
 
           MACRO_INDICATORS: {
             CONSUMER_SENTIMENT: sentimentValue ? `${sentimentValue.toFixed(2)}idx` : null,
-            REAL_GDP: gdpValue ? `${(gdpValue / 1000).toFixed(2)}B` : null,
+            REAL_GDP: gdpValue ? `${gdpValue.toFixed(0)}B` : null,
             INDUSTRIAL_PRODUCTION: industrialValue ? `${industrialValue.toFixed(2)}idx` : null,
-            NONFARM_PAYROLLS: payrollValue ? `${(payrollValue / 1000).toFixed(0)}K` : null,
+            NONFARM_PAYROLLS: payrollValue ? `${(payrollValue / 1000).toFixed(0)}M` : null,
             PCE_INFLATION: pceInflationValue ? `${pceInflationValue.toFixed(2)}%` : null
           },
 
@@ -272,7 +272,7 @@ export default {
             FED_BALANCE: fedBalanceValue ? `${(fedBalanceValue / 1000000).toFixed(1)}T` : null,
             REVERSE_REPO: rrpValue ? `${(rrpValue / 1000).toFixed(0)}B` : null,
             TGA: tgaValue ? `${(tgaValue / 1000000).toFixed(1)}T` : null,
-            REAL_LIQUIDITY: fedBalanceValue && rrpValue && tgaValue ? `${((fedBalanceValue / 1000) - rrpValue - (tgaValue / 1000)).toFixed(0)}B` : null
+            REAL_LIQUIDITY: fedBalanceValue && rrpValue && tgaValue ? `${((fedBalanceValue / 1000000) - (rrpValue / 1000) - (tgaValue / 1000000)).toFixed(0)}B` : null
           }
         }
       }
