@@ -4625,6 +4625,61 @@ var ECON_DATA = {
          * Cloudflare Worker API 통합 (Primary Data Source)
          * ══════════════════════════════════════════════════════ */
 
+        /* ══════════════════════════════════════════════════════
+         * 메타데이터 시스템 (동적 라벨 및 단위)
+         * ══════════════════════════════════════════════════════ */
+        var dashboardMetadata = null;
+        var labelMap = {}; // id → { label, unit, dataKey }
+
+        function loadDashboardMetadata() {
+            return imdGet(API_BASE + '/metadata')
+                .then(function(data) {
+                    if (!data || !data.dashboard) {
+                        throw new Error('No metadata');
+                    }
+                    dashboardMetadata = data.dashboard;
+
+                    // 라벨 맵 생성 (빠른 조회용)
+                    dashboardMetadata.cards.forEach(function(card) {
+                        card.items.forEach(function(item) {
+                            labelMap[item.id] = {
+                                label: item.label,
+                                unit: item.unit,
+                                dataKey: item.dataKey,
+                                cardTitle: card.title
+                            };
+                        });
+                    });
+
+                    console.log('[METADATA] Loaded successfully, items:', Object.keys(labelMap).length);
+                    applyLabelsToDOM();
+                    return dashboardMetadata;
+                })
+                .catch(function(e) {
+                    console.error('[METADATA] Failed to load:', e.message);
+                    return null;
+                });
+        }
+
+        function applyLabelsToDOM() {
+            // 모든 value span에 대해 라벨 업데이트
+            for (var id in labelMap) {
+                var el = document.getElementById(id);
+                if (el && el.parentElement) {
+                    // 형제 요소인 span 찾기 (라벨 위치)
+                    var labelSpan = el.parentElement.previousElementSibling;
+                    if (labelSpan && labelSpan.tagName === 'SPAN') {
+                        if (labelMap[id].unit) {
+                            labelSpan.textContent = labelMap[id].label + ' (' + labelMap[id].unit + ')';
+                        } else {
+                            labelSpan.textContent = labelMap[id].label;
+                        }
+                    }
+                }
+            }
+            console.log('[METADATA] Applied labels to DOM');
+        }
+
         /* ── Worker 마켓 데이터 (모든 자산 클래스) ────────────── */
         var workerMarketCache = null;
         var workerMarketCacheTime = 0;
@@ -5966,20 +6021,23 @@ var ECON_DATA = {
          * 전체 로드 & 자동 갱신 (60초)
          * ══════════════════════════════════════════════════════ */
         function imdLoadAll() {
-            imdLoadKorea();
-            imdLoadUS();
-            imdLoadFutures();
-            imdLoadCrypto();
-            imdLoadCommodities();
-            imdLoadFX();
-            imdLoadLiquidity();
-            imdLoadSmartMoney();
-            imdLoadSentiment();
-            imdLoadSectors();
-            imdLoadCreditBreadth();
-            imdLoadMacroBase();
-            imdLoadMacroIndicators();
-            imdLoadUSExtended();
+            // 메타데이터 먼저 로드 (라벨 및 단위 초기화)
+            loadDashboardMetadata().then(function() {
+                imdLoadKorea();
+                imdLoadUS();
+                imdLoadFutures();
+                imdLoadCrypto();
+                imdLoadCommodities();
+                imdLoadFX();
+                imdLoadLiquidity();
+                imdLoadSmartMoney();
+                imdLoadSentiment();
+                imdLoadSectors();
+                imdLoadCreditBreadth();
+                imdLoadMacroBase();
+                imdLoadMacroIndicators();
+                imdLoadUSExtended();
+            });
         }
 
         /* ── 카드별 새로고침 ─────────────────────────────────── */

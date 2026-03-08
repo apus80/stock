@@ -13,8 +13,159 @@ export default {
       console.log(`📊 요청: action=${action}, symbol=${symbol}, series=${series}`)
 
       /* ================================
-         설정
+         메타데이터 정의 (1차 데이터 구조)
       ================================ */
+      const DASHBOARD_METADATA = {
+        cards: [
+          {
+            id: 1,
+            title: "1. 한국 시장",
+            items: [
+              { id: "kospi", label: "KOSPI", unit: "", dataKey: "KOREA_MARKET.KOSPI.price" },
+              { id: "kosdaq", label: "KOSDAQ", unit: "", dataKey: "KOREA_MARKET.KOSDAQ.price" },
+              { id: "kospifut", label: "야간선물", unit: "", dataKey: "KOREA_MARKET.KOSPI_FUT.price" },
+              { id: "foreignflow", label: "외국인 수급", unit: "", dataKey: null },
+              { id: "instflow", label: "기관 수급", unit: "", dataKey: null },
+              { id: "retailflow", label: "개인 수급", unit: "", dataKey: null }
+            ]
+          },
+          {
+            id: 2,
+            title: "2. 미국 시장",
+            items: [
+              { id: "sp500", label: "S&P500 (SPY)", unit: "$", dataKey: "US_MARKET.SP500.price" },
+              { id: "nasdaq", label: "NASDAQ (QQQ)", unit: "$", dataKey: "US_MARKET.NASDAQ.price" },
+              { id: "vix", label: "VIX", unit: "", dataKey: "US_MARKET.VIX.price" },
+              { id: "sox", label: "SOX (SOXX)", unit: "$", dataKey: "US_MARKET.SOX.price" }
+            ]
+          },
+          {
+            id: 3,
+            title: "3. 미국 선물",
+            items: [
+              { id: "spfuture", label: "S&P500 Fut", unit: "", dataKey: null },
+              { id: "nasfuture", label: "Nasdaq Fut", unit: "", dataKey: null },
+              { id: "rtyfuture", label: "Russell Fut", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price" }
+            ]
+          },
+          {
+            id: 4,
+            title: "4. Crypto",
+            items: [
+              { id: "btc", label: "Bitcoin", unit: "$", dataKey: "CRYPTO.BTC.price" },
+              { id: "eth", label: "Ethereum", unit: "$", dataKey: "CRYPTO.ETH.price" },
+              { id: "sol", label: "Solana", unit: "$", dataKey: "CRYPTO.SOL.price" }
+            ]
+          },
+          {
+            id: 5,
+            title: "5. Commodities",
+            items: [
+              { id: "gold", label: "Gold", unit: "$", dataKey: "COMMODITIES.GOLD.price" },
+              { id: "silver", label: "Silver", unit: "$", dataKey: "COMMODITIES.SILVER.price" },
+              { id: "oil", label: "Oil (WTI)", unit: "$", dataKey: "COMMODITIES.OIL_WTI.price" },
+              { id: "dxy", label: "DXY", unit: "", dataKey: "FX.DXY.price" }
+            ]
+          },
+          {
+            id: 6,
+            title: "6. FX",
+            items: [
+              { id: "uskrw", label: "USD/KRW", unit: "₩", dataKey: null },
+              { id: "usjpy", label: "USD/JPY", unit: "¥", dataKey: "FX.USDJPY.price" },
+              { id: "eurusd", label: "EUR/USD", unit: "€", dataKey: "FX.EURUSD.price" }
+            ]
+          },
+          {
+            id: 7,
+            title: "7. Market Liquidity",
+            items: [
+              { id: "fedbal", label: "Fed Balance", unit: "T", dataKey: "LIQUIDITY.FED_BALANCE" },
+              { id: "repo", label: "Reverse Repo", unit: "B", dataKey: "LIQUIDITY.REVERSE_REPO" },
+              { id: "tga", label: "TGA", unit: "T", dataKey: "LIQUIDITY.TGA" },
+              { id: "m2", label: "M2", unit: "T", dataKey: "LIQUIDITY.M2" },
+              { id: "us10y", label: "10Y Yield", unit: "%", dataKey: "RATES.US10Y" },
+              { id: "us2y", label: "2Y Yield", unit: "%", dataKey: "RATES.US2Y" },
+              { id: "yieldcurve", label: "Yield Curve", unit: "%", dataKey: "RATES.YIELD_CURVE" }
+            ]
+          },
+          {
+            id: 8,
+            title: "8. ETF Smart Money",
+            items: [
+              { id: "spyflow", label: "SPY Vol Flow", unit: "M", dataKey: null },
+              { id: "qqqflow", label: "QQQ Vol Flow", unit: "M", dataKey: null },
+              { id: "iwmflow", label: "IWM Vol Flow", unit: "M", dataKey: null }
+            ]
+          },
+          {
+            id: 9,
+            title: "9. Sentiment & Options",
+            items: [
+              { id: "fear", label: "Fear & Greed", unit: "", dataKey: null },
+              { id: "putcall", label: "Put/Call Ratio", unit: "", dataKey: null },
+              { id: "gamma", label: "SPY Gamma Wall", unit: "", dataKey: null }
+            ]
+          },
+          {
+            id: 10,
+            title: "10. Sectors",
+            items: [
+              { id: "xlk", label: "Technology (XLK)", unit: "$", dataKey: "SECTORS.TECHNOLOGY.price" },
+              { id: "xlf", label: "Financials (XLF)", unit: "$", dataKey: "SECTORS.FINANCIALS.price" },
+              { id: "xle", label: "Energy (XLE)", unit: "$", dataKey: "SECTORS.ENERGY.price" },
+              { id: "xlv", label: "Healthcare (XLV)", unit: "$", dataKey: "SECTORS.HEALTHCARE.price" },
+              { id: "xly", label: "Consumer Disc (XLY)", unit: "$", dataKey: "SECTORS.CONSUMER_DISCRETIONARY.price" },
+              { id: "xli", label: "Industrials (XLI)", unit: "$", dataKey: "SECTORS.INDUSTRIALS.price" },
+              { id: "xlu", label: "Utilities (XLU)", unit: "$", dataKey: "SECTORS.UTILITIES.price" },
+              { id: "xlre", label: "Real Estate (XLRE)", unit: "$", dataKey: "SECTORS.REAL_ESTATE.price" }
+            ]
+          },
+          {
+            id: 11,
+            title: "11. Credit & Breadth",
+            items: [
+              { id: "hyg", label: "High Yield (HYG)", unit: "$", dataKey: "CREDIT.HIGH_YIELD.price" },
+              { id: "lqd", label: "Investment Grade (LQD)", unit: "$", dataKey: "CREDIT.INVESTMENT_GRADE.price" },
+              { id: "vti", label: "Total Market (VTI)", unit: "$", dataKey: "BREADTH.TOTAL_MARKET.price" },
+              { id: "tlt", label: "Long Treasury (TLT)", unit: "$", dataKey: "BREADTH.LONG_TREASURY.price" }
+            ]
+          },
+          {
+            id: 12,
+            title: "12. Macro Base",
+            items: [
+              { id: "cpi", label: "CPI", unit: "idx", dataKey: "MACRO_BASE.CPI" },
+              { id: "inflation_exp", label: "Inflation Exp", unit: "%", dataKey: "MACRO_BASE.INFLATION_EXPECTATION" },
+              { id: "unemployment", label: "Unemployment", unit: "%", dataKey: "MACRO_BASE.UNEMPLOYMENT" },
+              { id: "m2_macro", label: "M2 Money Supply", unit: "T", dataKey: "MACRO_BASE.M2" },
+              { id: "real_rates", label: "Real Rates", unit: "%", dataKey: "MACRO_BASE.REAL_RATES" }
+            ]
+          },
+          {
+            id: 13,
+            title: "13. Macro Indicators",
+            items: [
+              { id: "sentiment", label: "Consumer Sentiment", unit: "idx", dataKey: "MACRO_INDICATORS.CONSUMER_SENTIMENT" },
+              { id: "gdp", label: "Real GDP", unit: "B", dataKey: "MACRO_INDICATORS.REAL_GDP" },
+              { id: "indpro", label: "Industrial Production", unit: "idx", dataKey: "MACRO_INDICATORS.INDUSTRIAL_PRODUCTION" },
+              { id: "payems", label: "Nonfarm Payrolls", unit: "K", dataKey: "MACRO_INDICATORS.NONFARM_PAYROLLS" },
+              { id: "pce_inf", label: "PCE Inflation", unit: "%", dataKey: "MACRO_INDICATORS.PCE_INFLATION" }
+            ]
+          },
+          {
+            id: 14,
+            title: "14. US Market Extended",
+            items: [
+              { id: "dow", label: "DOW", unit: "$", dataKey: "US_MARKET.DOW.price" },
+              { id: "russell", label: "Russell 2000", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price" }
+            ]
+          }
+        ]
+      }
+
+      console.log(`📊 요청: action=${action}, symbol=${symbol}, series=${series}`)
+
       const MARKET_SYMBOLS = {
         base: ["SPY", "QQQ", "DIA", "^VIX", "SOXX", "IWM", "BTCUSD", "ETHUSD", "SOLUSD", "GCUSD", "SIUSD", "USDJPY", "EURUSD", "DX"],
         sectors: ["XLK", "XLF", "XLE", "XLV", "XLY", "XLI", "XLU", "XLRE"],
@@ -380,7 +531,15 @@ export default {
       ================================ */
       let response
 
-      if (action === 'market') {
+      /* 🔹 메타데이터 요청 */
+      if (action === 'metadata') {
+        response = {
+          timestamp: new Date().toISOString(),
+          dataType: "metadata",
+          dashboard: DASHBOARD_METADATA
+        }
+
+      } else if (action === 'market') {
         response = await getMarketData()
 
       } else if (action === 'stock') {
@@ -397,6 +556,7 @@ export default {
         response = {
           error: "잘못된 요청",
           usage: {
+            metadata: "?action=metadata (대시보드 메타데이터)",
             fred_single: "?series=DGS10 (개별 FRED)",
             market: "?action=market (마켓 + FRED 전체)",
             stock: "?action=stock&symbol=AAPL (개별 주식)"
