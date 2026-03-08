@@ -4588,7 +4588,7 @@ var ECON_DATA = {
             return imdGet(url, 15000)
                 .then(function(data) {
                     workerMarketCache = data;
-                    workerMarketCacheTime = now;
+                    workerMarketCacheTime = Date.now();
                     console.log('[WORKER] Market data loaded successfully');
                     return data;
                 })
