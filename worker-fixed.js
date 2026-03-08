@@ -19,7 +19,8 @@ export default {
         base: ["SPY", "QQQ", "DIA", "^VIX", "SOXX", "IWM", "BTCUSD", "ETHUSD", "SOLUSD", "GCUSD", "SIUSD", "USDJPY", "EURUSD", "DX"],
         sectors: ["XLK", "XLF", "XLE", "XLV", "XLY", "XLI", "XLU", "XLRE"],
         credit: ["HYG", "LQD"],
-        breadth: ["VTI", "TLT"]
+        breadth: ["VTI", "TLT"],
+        korea: ["^KS11", "^KQ11", "MKN=F"]  // ✅ KOSPI, KOSDAQ, KOSPI200 Futures
       }
 
       const FRED_SYMBOLS = {
@@ -120,11 +121,16 @@ export default {
           MARKET_SYMBOLS.breadth.map(sym => getQuote(sym))
         )
 
+        const koreaQuotes = await Promise.all(
+          MARKET_SYMBOLS.korea.map(sym => getQuote(sym))
+        )
+
         const allMarketData = [
           ...baseMarketQuotes,
           ...sectorQuotes,
           ...creditQuotes,
-          ...breadthQuotes
+          ...breadthQuotes,
+          ...koreaQuotes
         ].filter(q => q !== null)
 
         function price(sym) {
@@ -197,82 +203,88 @@ export default {
           timestamp: new Date().toISOString(),
           dataType: "market",
 
+          KOREA_MARKET: {
+            KOSPI: { price: price("^KS11"), change: change("^KS11"), changePercentage: `${changePercent("^KS11")}%` },
+            KOSDAQ: { price: price("^KQ11"), change: change("^KQ11"), changePercentage: `${changePercent("^KQ11")}%` },
+            KOSPI_FUT: { price: price("MKN=F"), change: change("MKN=F"), changePercentage: `${changePercent("MKN=F")}%` }
+          },
+
           US_MARKET: {
-            SP500: { price: price("SPY") ? `$${price("SPY")}` : null, change: change("SPY"), changePercent: `${changePercent("SPY")}%` },
-            NASDAQ: { price: price("QQQ") ? `$${price("QQQ")}` : null, change: change("QQQ"), changePercent: `${changePercent("QQQ")}%` },
-            DOW: { price: price("DIA") ? `$${price("DIA")}` : null, change: change("DIA"), changePercent: `${changePercent("DIA")}%` },
-            VIX: { price: price("^VIX") ? `${price("^VIX")}pts` : null, change: change("^VIX"), changePercent: `${changePercent("^VIX")}%` },
-            SOX: { price: price("SOXX") ? `$${price("SOXX")}` : null, change: change("SOXX"), changePercent: `${changePercent("SOXX")}%` },
-            RUSSELL2000: { price: price("IWM") ? `$${price("IWM")}` : null, change: change("IWM"), changePercent: `${changePercent("IWM")}%` }
+            SP500: { price: price("SPY"), change: change("SPY"), changePercentage: changePercent("SPY") },
+            NASDAQ: { price: price("QQQ"), change: change("QQQ"), changePercentage: changePercent("QQQ") },
+            DOW: { price: price("DIA"), change: change("DIA"), changePercentage: changePercent("DIA") },
+            VIX: { price: price("^VIX"), change: change("^VIX"), changePercentage: changePercent("^VIX") },
+            SOX: { price: price("SOXX"), change: change("SOXX"), changePercentage: changePercent("SOXX") },
+            RUSSELL2000: { price: price("IWM"), change: change("IWM"), changePercentage: changePercent("IWM") }
           },
 
           SECTORS: {
-            TECHNOLOGY: { symbol: "XLK", price: price("XLK") ? `$${price("XLK")}` : null, change: change("XLK"), changePercent: `${changePercent("XLK")}%` },
-            FINANCIALS: { symbol: "XLF", price: price("XLF") ? `$${price("XLF")}` : null, change: change("XLF"), changePercent: `${changePercent("XLF")}%` },
-            ENERGY: { symbol: "XLE", price: price("XLE") ? `$${price("XLE")}` : null, change: change("XLE"), changePercent: `${changePercent("XLE")}%` },
-            HEALTHCARE: { symbol: "XLV", price: price("XLV") ? `$${price("XLV")}` : null, change: change("XLV"), changePercent: `${changePercent("XLV")}%` },
-            CONSUMER_DISCRETIONARY: { symbol: "XLY", price: price("XLY") ? `$${price("XLY")}` : null, change: change("XLY"), changePercent: `${changePercent("XLY")}%` },
-            INDUSTRIALS: { symbol: "XLI", price: price("XLI") ? `$${price("XLI")}` : null, change: change("XLI"), changePercent: `${changePercent("XLI")}%` },
-            UTILITIES: { symbol: "XLU", price: price("XLU") ? `$${price("XLU")}` : null, change: change("XLU"), changePercent: `${changePercent("XLU")}%` },
-            REAL_ESTATE: { symbol: "XLRE", price: price("XLRE") ? `$${price("XLRE")}` : null, change: change("XLRE"), changePercent: `${changePercent("XLRE")}%` }
+            TECHNOLOGY: { symbol: "XLK", price: price("XLK"), change: change("XLK"), changePercentage: changePercent("XLK") },
+            FINANCIALS: { symbol: "XLF", price: price("XLF"), change: change("XLF"), changePercentage: changePercent("XLF") },
+            ENERGY: { symbol: "XLE", price: price("XLE"), change: change("XLE"), changePercentage: changePercent("XLE") },
+            HEALTHCARE: { symbol: "XLV", price: price("XLV"), change: change("XLV"), changePercentage: changePercent("XLV") },
+            CONSUMER_DISCRETIONARY: { symbol: "XLY", price: price("XLY"), change: change("XLY"), changePercentage: changePercent("XLY") },
+            INDUSTRIALS: { symbol: "XLI", price: price("XLI"), change: change("XLI"), changePercentage: changePercent("XLI") },
+            UTILITIES: { symbol: "XLU", price: price("XLU"), change: change("XLU"), changePercentage: changePercent("XLU") },
+            REAL_ESTATE: { symbol: "XLRE", price: price("XLRE"), change: change("XLRE"), changePercentage: changePercent("XLRE") }
           },
 
           CREDIT: {
-            HIGH_YIELD: { symbol: "HYG", price: price("HYG") ? `$${price("HYG")}` : null, change: change("HYG"), changePercent: `${changePercent("HYG")}%` },
-            INVESTMENT_GRADE: { symbol: "LQD", price: price("LQD") ? `$${price("LQD")}` : null, change: change("LQD"), changePercent: `${changePercent("LQD")}%` }
+            HIGH_YIELD: { symbol: "HYG", price: price("HYG"), change: change("HYG"), changePercentage: changePercent("HYG") },
+            INVESTMENT_GRADE: { symbol: "LQD", price: price("LQD"), change: change("LQD"), changePercentage: changePercent("LQD") }
           },
 
           BREADTH: {
-            TOTAL_MARKET: { symbol: "VTI", price: price("VTI") ? `$${price("VTI")}` : null, change: change("VTI"), changePercent: `${changePercent("VTI")}%` },
-            LONG_TREASURY: { symbol: "TLT", price: price("TLT") ? `$${price("TLT")}` : null, change: change("TLT"), changePercent: `${changePercent("TLT")}%` }
+            TOTAL_MARKET: { symbol: "VTI", price: price("VTI"), change: change("VTI"), changePercentage: changePercent("VTI") },
+            LONG_TREASURY: { symbol: "TLT", price: price("TLT"), change: change("TLT"), changePercentage: changePercent("TLT") }
           },
 
           CRYPTO: {
-            BTC: { price: price("BTCUSD") ? `$${price("BTCUSD")}` : null, change: change("BTCUSD"), changePercent: `${changePercent("BTCUSD")}%` },
-            ETH: { price: price("ETHUSD") ? `$${price("ETHUSD")}` : null, change: change("ETHUSD"), changePercent: `${changePercent("ETHUSD")}%` },
-            SOL: { price: price("SOLUSD") ? `$${price("SOLUSD")}` : null, change: change("SOLUSD"), changePercent: `${changePercent("SOLUSD")}%` }
+            BTC: { price: price("BTCUSD"), change: change("BTCUSD"), changePercentage: changePercent("BTCUSD") },
+            ETH: { price: price("ETHUSD"), change: change("ETHUSD"), changePercentage: changePercent("ETHUSD") },
+            SOL: { price: price("SOLUSD"), change: change("SOLUSD"), changePercentage: changePercent("SOLUSD") }
           },
 
           COMMODITIES: {
-            GOLD: { price: gold ? `$${gold}/oz` : null, change: change("GCUSD"), changePercent: `${changePercent("GCUSD")}%` },
-            SILVER: { price: silver ? `$${silver}/oz` : null, change: change("SIUSD"), changePercent: `${changePercent("SIUSD")}%` },
-            OIL_WTI: { price: oil ? `$${oil.toFixed(2)}/bbl` : null, change: null, changePercent: null },
-            GOLD_SILVER_RATIO: gold && silver ? `${(gold / silver).toFixed(2)}:1` : null
+            GOLD: { price: gold, change: change("GCUSD"), changePercentage: changePercent("GCUSD") },
+            SILVER: { price: silver, change: change("SIUSD"), changePercentage: changePercent("SIUSD") },
+            OIL_WTI: { price: oil, change: null, changePercentage: null },
+            GOLD_SILVER_RATIO: gold && silver ? (gold / silver) : null
           },
 
           FX: {
-            USDJPY: { price: usdJpyPrice ? `¥${usdJpyPrice.toFixed(2)}/USD` : null, change: change("USDJPY"), changePercent: `${changePercent("USDJPY")}%` },
-            EURUSD: { price: eurUsdPrice ? `€${eurUsdPrice.toFixed(4)}/USD` : null, change: change("EURUSD"), changePercent: `${changePercent("EURUSD")}%` },
-            DXY: { price: price("DX") ? `${(price("DX") * 10).toFixed(2)}pts` : null, change: change("DX"), changePercent: `${changePercent("DX")}%` }
+            USDJPY: { price: usdJpyPrice, change: change("USDJPY"), changePercentage: changePercent("USDJPY") },
+            EURUSD: { price: eurUsdPrice, change: change("EURUSD"), changePercentage: changePercent("EURUSD") },
+            DXY: { price: price("DX") ? (price("DX") * 10) : null, change: change("DX"), changePercentage: changePercent("DX") }
           },
 
           MACRO_BASE: {
-            CPI: cpiValue ? `${cpiValue.toFixed(2)}idx` : null,
-            INFLATION_EXPECTATION: inflationValue ? `${inflationValue.toFixed(2)}%` : null,
-            UNEMPLOYMENT: unemploymentValue ? `${unemploymentValue.toFixed(2)}%` : null,
-            M2: m2Value ? `${(m2Value / 1000000).toFixed(2)}T` : null,
-            REAL_RATES: us10yValue && inflationValue ? `${(us10yValue - inflationValue).toFixed(2)}%` : null
+            CPI: cpiValue,
+            INFLATION_EXPECTATION: inflationValue,
+            UNEMPLOYMENT: unemploymentValue,
+            M2: m2Value,
+            REAL_RATES: us10yValue && inflationValue ? (us10yValue - inflationValue) : null
           },
 
           MACRO_INDICATORS: {
-            CONSUMER_SENTIMENT: sentimentValue ? `${sentimentValue.toFixed(2)}idx` : null,
-            REAL_GDP: gdpValue ? `${(gdpValue / 1000).toFixed(2)}B` : null,
-            INDUSTRIAL_PRODUCTION: industrialValue ? `${industrialValue.toFixed(2)}idx` : null,
-            NONFARM_PAYROLLS: payrollValue ? `${(payrollValue / 1000).toFixed(0)}K` : null,
-            PCE_INFLATION: pceInflationValue ? `${pceInflationValue.toFixed(2)}%` : null
+            CONSUMER_SENTIMENT: sentimentValue,
+            REAL_GDP: gdpValue,
+            INDUSTRIAL_PRODUCTION: industrialValue,
+            NONFARM_PAYROLLS: payrollValue,
+            PCE_INFLATION: pceInflationValue
           },
 
           RATES: {
-            US10Y: us10yValue ? `${us10yValue.toFixed(2)}%` : null,
-            US2Y: us2yValue ? `${us2yValue.toFixed(2)}%` : null,
-            YIELD_CURVE: us10yValue && us2yValue ? `${(us10yValue - us2yValue).toFixed(2)}%` : null
+            US10Y: us10yValue,
+            US2Y: us2yValue,
+            YIELD_CURVE: us10yValue && us2yValue ? (us10yValue - us2yValue) : null
           },
 
           LIQUIDITY: {
-            FED_BALANCE: fedBalanceValue ? `${(fedBalanceValue / 1000000).toFixed(1)}T` : null,
-            REVERSE_REPO: rrpValue ? `${(rrpValue / 1000).toFixed(0)}B` : null,
-            TGA: tgaValue ? `${(tgaValue / 1000000).toFixed(1)}T` : null,
-            REAL_LIQUIDITY: fedBalanceValue && rrpValue && tgaValue ? `${((fedBalanceValue / 1000) - rrpValue - (tgaValue / 1000)).toFixed(0)}B` : null
+            FED_BALANCE: fedBalanceValue,
+            REVERSE_REPO: rrpValue,
+            TGA: tgaValue,
+            REAL_LIQUIDITY: fedBalanceValue && rrpValue && tgaValue ? ((fedBalanceValue / 1000) - rrpValue - (tgaValue / 1000)) : null
           }
         }
       }
