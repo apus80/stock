@@ -321,7 +321,22 @@ export default {
 
         function changePercent(sym) {
           const item = allMarketData.find(i => i.symbol && i.symbol.toUpperCase() === sym.toUpperCase())
-          return item?.changePercentage || null
+          if (!item) return null
+
+          // ✅ changePercentage가 있으면 그대로 반환
+          if (item.changePercentage !== undefined && item.changePercentage !== null) {
+            return item.changePercentage
+          }
+
+          // ✅ changePercentage가 없으면 change와 price로부터 계산
+          if (item.change !== undefined && item.price !== undefined && item.change !== null && item.price !== null) {
+            const prevPrice = item.price - item.change
+            if (prevPrice !== 0) {
+              return (item.change / prevPrice) * 100
+            }
+          }
+
+          return null
         }
 
         // FRED 데이터 수집
