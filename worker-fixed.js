@@ -21,144 +21,144 @@ export default {
             id: 1,
             title: "1. 한국 시장",
             items: [
-              { id: "kospi", label: "KOSPI", unit: "pt", dataKey: "KOREA_MARKET.KOSPI.price", divisor: 100 },
-              { id: "kosdaq", label: "KOSDAQ", unit: "pt", dataKey: "KOREA_MARKET.KOSDAQ.price", divisor: 100 },
-              { id: "kospifut", label: "야간선물", unit: "pt", dataKey: "KOREA_MARKET.KOSPI_FUT.price", divisor: 100 },
-              { id: "foreignflow", label: "외국인 수급", unit: "억원", dataKey: null },
-              { id: "instflow", label: "기관 수급", unit: "억원", dataKey: null },
-              { id: "retailflow", label: "개인 수급", unit: "억원", dataKey: null }
+              { id: "kospi", label: "KOSPI", unit: "pt", dataKey: "KOREA_MARKET.KOSPI.price", divisor: 100, realtime: true },
+              { id: "kosdaq", label: "KOSDAQ", unit: "pt", dataKey: "KOREA_MARKET.KOSDAQ.price", divisor: 100, realtime: true },
+              { id: "kospifut", label: "야간선물", unit: "pt", dataKey: "KOREA_MARKET.KOSPI_FUT.price", divisor: 100, realtime: true },
+              { id: "foreignflow", label: "외국인 수급", unit: "억원", dataKey: null, realtime: false },
+              { id: "instflow", label: "기관 수급", unit: "억원", dataKey: null, realtime: false },
+              { id: "retailflow", label: "개인 수급", unit: "억원", dataKey: null, realtime: false }
             ]
           },
           {
             id: 2,
             title: "2. 미국 시장",
             items: [
-              { id: "sp500", label: "S&P500 (SPY)", unit: "$", dataKey: "US_MARKET.SP500.price" },
-              { id: "nasdaq", label: "NASDAQ (QQQ)", unit: "$", dataKey: "US_MARKET.NASDAQ.price" },
-              { id: "vix", label: "VIX", unit: "", dataKey: "US_MARKET.VIX.price" },
-              { id: "sox", label: "SOX (SOXX)", unit: "$", dataKey: "US_MARKET.SOX.price" }
+              { id: "sp500", label: "S&P500 (SPY)", unit: "$", dataKey: "US_MARKET.SP500.price", realtime: true },
+              { id: "nasdaq", label: "NASDAQ (QQQ)", unit: "$", dataKey: "US_MARKET.NASDAQ.price", realtime: true },
+              { id: "vix", label: "VIX", unit: "", dataKey: "US_MARKET.VIX.price", realtime: true },
+              { id: "sox", label: "SOX (SOXX)", unit: "$", dataKey: "US_MARKET.SOX.price", realtime: true }
             ]
           },
           {
             id: 3,
             title: "3. 미국 선물",
             items: [
-              { id: "spfuture", label: "S&P500 Fut", unit: "", dataKey: null },
-              { id: "nasfuture", label: "Nasdaq Fut", unit: "", dataKey: null },
-              { id: "rtyfuture", label: "Russell Fut", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price" }
+              { id: "spfuture", label: "S&P500 Fut", unit: "", dataKey: null, realtime: false },
+              { id: "nasfuture", label: "Nasdaq Fut", unit: "", dataKey: null, realtime: false },
+              { id: "rtyfuture", label: "Russell Fut", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price", realtime: true }
             ]
           },
           {
             id: 4,
             title: "4. Crypto",
             items: [
-              { id: "btc", label: "Bitcoin", unit: "$", dataKey: "CRYPTO.BTC.price" },
-              { id: "eth", label: "Ethereum", unit: "$", dataKey: "CRYPTO.ETH.price" },
-              { id: "sol", label: "Solana", unit: "$", dataKey: "CRYPTO.SOL.price" }
+              { id: "btc", label: "Bitcoin", unit: "$", dataKey: "CRYPTO.BTC.price", realtime: true },
+              { id: "eth", label: "Ethereum", unit: "$", dataKey: "CRYPTO.ETH.price", realtime: true },
+              { id: "sol", label: "Solana", unit: "$", dataKey: "CRYPTO.SOL.price", realtime: true }
             ]
           },
           {
             id: 5,
             title: "5. Commodities",
             items: [
-              { id: "gold", label: "Gold", unit: "$", dataKey: "COMMODITIES.GOLD.price" },
-              { id: "silver", label: "Silver", unit: "$", dataKey: "COMMODITIES.SILVER.price" },
-              { id: "oil", label: "Oil (WTI)", unit: "$", dataKey: "COMMODITIES.OIL_WTI.price" },
-              { id: "dxy", label: "DXY", unit: "", dataKey: "FX.DXY.price" }
+              { id: "gold", label: "Gold", unit: "$", dataKey: "COMMODITIES.GOLD.price", realtime: true },
+              { id: "silver", label: "Silver", unit: "$", dataKey: "COMMODITIES.SILVER.price", realtime: true },
+              { id: "oil", label: "Oil (WTI)", unit: "$", dataKey: "COMMODITIES.OIL_WTI.price", realtime: true },
+              { id: "dxy", label: "DXY", unit: "", dataKey: "FX.DXY.price", realtime: true }
             ]
           },
           {
             id: 6,
             title: "6. FX",
             items: [
-              { id: "uskrw", label: "USD/KRW", unit: "₩", dataKey: null },
-              { id: "usjpy", label: "USD/JPY", unit: "¥", dataKey: "FX.USDJPY.price" },
-              { id: "eurusd", label: "EUR/USD", unit: "€", dataKey: "FX.EURUSD.price" }
+              { id: "uskrw", label: "USD/KRW", unit: "₩", dataKey: null, realtime: false },
+              { id: "usjpy", label: "USD/JPY", unit: "¥", dataKey: "FX.USDJPY.price", realtime: true },
+              { id: "eurusd", label: "EUR/USD", unit: "€", dataKey: "FX.EURUSD.price", realtime: true }
             ]
           },
           {
             id: 7,
             title: "7. Market Liquidity",
             items: [
-              { id: "fedbal", label: "Fed Balance", unit: "T", dataKey: "LIQUIDITY.FED_BALANCE" },
-              { id: "repo", label: "Reverse Repo", unit: "B", dataKey: "LIQUIDITY.REVERSE_REPO" },
-              { id: "tga", label: "TGA", unit: "T", dataKey: "LIQUIDITY.TGA" },
-              { id: "m2", label: "M2", unit: "T", dataKey: "LIQUIDITY.M2" },
-              { id: "us10y", label: "10Y Yield", unit: "%", dataKey: "RATES.US10Y" },
-              { id: "us2y", label: "2Y Yield", unit: "%", dataKey: "RATES.US2Y" },
-              { id: "yieldcurve", label: "Yield Curve", unit: "%", dataKey: "RATES.YIELD_CURVE" }
+              { id: "fedbal", label: "Fed Balance", unit: "T", dataKey: "LIQUIDITY.FED_BALANCE", realtime: false },
+              { id: "repo", label: "Reverse Repo", unit: "B", dataKey: "LIQUIDITY.REVERSE_REPO", realtime: false },
+              { id: "tga", label: "TGA", unit: "T", dataKey: "LIQUIDITY.TGA", realtime: false },
+              { id: "m2", label: "M2", unit: "T", dataKey: "LIQUIDITY.M2", realtime: false },
+              { id: "us10y", label: "10Y Yield", unit: "%", dataKey: "RATES.US10Y", realtime: false },
+              { id: "us2y", label: "2Y Yield", unit: "%", dataKey: "RATES.US2Y", realtime: false },
+              { id: "yieldcurve", label: "Yield Curve", unit: "%", dataKey: "RATES.YIELD_CURVE", realtime: false }
             ]
           },
           {
             id: 8,
             title: "8. ETF Smart Money",
             items: [
-              { id: "spyflow", label: "SPY Vol Flow", unit: "M", dataKey: null },
-              { id: "qqqflow", label: "QQQ Vol Flow", unit: "M", dataKey: null },
-              { id: "iwmflow", label: "IWM Vol Flow", unit: "M", dataKey: null }
+              { id: "spyflow", label: "SPY Vol Flow", unit: "M", dataKey: null, realtime: false },
+              { id: "qqqflow", label: "QQQ Vol Flow", unit: "M", dataKey: null, realtime: false },
+              { id: "iwmflow", label: "IWM Vol Flow", unit: "M", dataKey: null, realtime: false }
             ]
           },
           {
             id: 9,
             title: "9. Sentiment & Options",
             items: [
-              { id: "fear", label: "Fear & Greed", unit: "", dataKey: null },
-              { id: "putcall", label: "Put/Call Ratio", unit: "", dataKey: null },
-              { id: "gamma", label: "SPY Gamma Wall", unit: "", dataKey: null }
+              { id: "fear", label: "Fear & Greed", unit: "", dataKey: null, realtime: false },
+              { id: "putcall", label: "Put/Call Ratio", unit: "", dataKey: null, realtime: false },
+              { id: "gamma", label: "SPY Gamma Wall", unit: "", dataKey: null, realtime: false }
             ]
           },
           {
             id: 10,
             title: "10. Sectors",
             items: [
-              { id: "xlk", label: "Technology (XLK)", unit: "$", dataKey: "SECTORS.TECHNOLOGY.price" },
-              { id: "xlf", label: "Financials (XLF)", unit: "$", dataKey: "SECTORS.FINANCIALS.price" },
-              { id: "xle", label: "Energy (XLE)", unit: "$", dataKey: "SECTORS.ENERGY.price" },
-              { id: "xlv", label: "Healthcare (XLV)", unit: "$", dataKey: "SECTORS.HEALTHCARE.price" },
-              { id: "xly", label: "Consumer Disc (XLY)", unit: "$", dataKey: "SECTORS.CONSUMER_DISCRETIONARY.price" },
-              { id: "xli", label: "Industrials (XLI)", unit: "$", dataKey: "SECTORS.INDUSTRIALS.price" },
-              { id: "xlu", label: "Utilities (XLU)", unit: "$", dataKey: "SECTORS.UTILITIES.price" },
-              { id: "xlre", label: "Real Estate (XLRE)", unit: "$", dataKey: "SECTORS.REAL_ESTATE.price" }
+              { id: "xlk", label: "Technology (XLK)", unit: "$", dataKey: "SECTORS.TECHNOLOGY.price", realtime: true },
+              { id: "xlf", label: "Financials (XLF)", unit: "$", dataKey: "SECTORS.FINANCIALS.price", realtime: true },
+              { id: "xle", label: "Energy (XLE)", unit: "$", dataKey: "SECTORS.ENERGY.price", realtime: true },
+              { id: "xlv", label: "Healthcare (XLV)", unit: "$", dataKey: "SECTORS.HEALTHCARE.price", realtime: true },
+              { id: "xly", label: "Consumer Disc (XLY)", unit: "$", dataKey: "SECTORS.CONSUMER_DISCRETIONARY.price", realtime: true },
+              { id: "xli", label: "Industrials (XLI)", unit: "$", dataKey: "SECTORS.INDUSTRIALS.price", realtime: true },
+              { id: "xlu", label: "Utilities (XLU)", unit: "$", dataKey: "SECTORS.UTILITIES.price", realtime: true },
+              { id: "xlre", label: "Real Estate (XLRE)", unit: "$", dataKey: "SECTORS.REAL_ESTATE.price", realtime: true }
             ]
           },
           {
             id: 11,
             title: "11. Credit & Breadth",
             items: [
-              { id: "hyg", label: "High Yield (HYG)", unit: "$", dataKey: "CREDIT.HIGH_YIELD.price" },
-              { id: "lqd", label: "Investment Grade (LQD)", unit: "$", dataKey: "CREDIT.INVESTMENT_GRADE.price" },
-              { id: "vti", label: "Total Market (VTI)", unit: "$", dataKey: "BREADTH.TOTAL_MARKET.price" },
-              { id: "tlt", label: "Long Treasury (TLT)", unit: "$", dataKey: "BREADTH.LONG_TREASURY.price" }
+              { id: "hyg", label: "High Yield (HYG)", unit: "$", dataKey: "CREDIT.HIGH_YIELD.price", realtime: true },
+              { id: "lqd", label: "Investment Grade (LQD)", unit: "$", dataKey: "CREDIT.INVESTMENT_GRADE.price", realtime: true },
+              { id: "vti", label: "Total Market (VTI)", unit: "$", dataKey: "BREADTH.TOTAL_MARKET.price", realtime: true },
+              { id: "tlt", label: "Long Treasury (TLT)", unit: "$", dataKey: "BREADTH.LONG_TREASURY.price", realtime: true }
             ]
           },
           {
             id: 12,
             title: "12. Macro Base",
             items: [
-              { id: "cpi", label: "CPI", unit: "idx", dataKey: "MACRO_BASE.CPI" },
-              { id: "inflation_exp", label: "Inflation Exp", unit: "%", dataKey: "MACRO_BASE.INFLATION_EXPECTATION" },
-              { id: "unemployment", label: "Unemployment", unit: "%", dataKey: "MACRO_BASE.UNEMPLOYMENT" },
-              { id: "m2_macro", label: "M2 Money Supply", unit: "T", dataKey: "MACRO_BASE.M2" },
-              { id: "real_rates", label: "Real Rates", unit: "%", dataKey: "MACRO_BASE.REAL_RATES" }
+              { id: "cpi", label: "CPI", unit: "idx", dataKey: "MACRO_BASE.CPI", realtime: false },
+              { id: "inflation_exp", label: "Inflation Exp", unit: "%", dataKey: "MACRO_BASE.INFLATION_EXPECTATION", realtime: false },
+              { id: "unemployment", label: "Unemployment", unit: "%", dataKey: "MACRO_BASE.UNEMPLOYMENT", realtime: false },
+              { id: "m2_macro", label: "M2 Money Supply", unit: "T", dataKey: "MACRO_BASE.M2", realtime: false },
+              { id: "real_rates", label: "Real Rates", unit: "%", dataKey: "MACRO_BASE.REAL_RATES", realtime: false }
             ]
           },
           {
             id: 13,
             title: "13. Macro Indicators",
             items: [
-              { id: "sentiment", label: "Consumer Sentiment", unit: "idx", dataKey: "MACRO_INDICATORS.CONSUMER_SENTIMENT" },
-              { id: "gdp", label: "Real GDP", unit: "B", dataKey: "MACRO_INDICATORS.REAL_GDP" },
-              { id: "indpro", label: "Industrial Production", unit: "idx", dataKey: "MACRO_INDICATORS.INDUSTRIAL_PRODUCTION" },
-              { id: "payems", label: "Nonfarm Payrolls", unit: "K", dataKey: "MACRO_INDICATORS.NONFARM_PAYROLLS" },
-              { id: "pce_inf", label: "PCE Inflation", unit: "%", dataKey: "MACRO_INDICATORS.PCE_INFLATION" }
+              { id: "sentiment", label: "Consumer Sentiment", unit: "idx", dataKey: "MACRO_INDICATORS.CONSUMER_SENTIMENT", realtime: false },
+              { id: "gdp", label: "Real GDP", unit: "B", dataKey: "MACRO_INDICATORS.REAL_GDP", realtime: false },
+              { id: "indpro", label: "Industrial Production", unit: "idx", dataKey: "MACRO_INDICATORS.INDUSTRIAL_PRODUCTION", realtime: false },
+              { id: "payems", label: "Nonfarm Payrolls", unit: "K", dataKey: "MACRO_INDICATORS.NONFARM_PAYROLLS", realtime: false },
+              { id: "pce_inf", label: "PCE Inflation", unit: "%", dataKey: "MACRO_INDICATORS.PCE_INFLATION", realtime: false }
             ]
           },
           {
             id: 14,
             title: "14. US Market Extended",
             items: [
-              { id: "dow", label: "DOW", unit: "$", dataKey: "US_MARKET.DOW.price" },
-              { id: "russell", label: "Russell 2000", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price" }
+              { id: "dow", label: "DOW", unit: "$", dataKey: "US_MARKET.DOW.price", realtime: true },
+              { id: "russell", label: "Russell 2000", unit: "$", dataKey: "US_MARKET.RUSSELL2000.price", realtime: true }
             ]
           }
         ],
