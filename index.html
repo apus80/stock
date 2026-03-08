@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1771922054 -->
+    <!-- Version: v1773013218 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1780,7 +1780,7 @@
         /* ── 모바일 상단 컴팩트 버튼 네비 ── */
         .ml-grid-compact {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 7px;
             margin-bottom: 14px;
         }
@@ -1792,12 +1792,12 @@
         .ml-grid-compact .ml-icon { font-size: 1.35em; }
         .ml-grid-compact .ml-label { font-size: 0.68em; }
         .ml-grid-compact .ml-btn.ml-wide {
-            grid-column: 1 / -1;
-            flex-direction: row;
-            padding: 11px 16px;
-            gap: 10px;
+            grid-column: auto;
+            flex-direction: column;
+            padding: 10px 8px;
+            gap: 5px;
         }
-        .ml-grid-compact .ml-btn.ml-wide .ml-label { font-size: 0.78em; }
+        .ml-grid-compact .ml-btn.ml-wide .ml-label { font-size: 0.68em; }
 
     </style>
 </head>
@@ -1877,9 +1877,13 @@
                         <span class="ml-icon">🔍</span>
                         <span class="ml-label">종목·뉴스<br>검색</span>
                     </button>
-                    <button class="ml-btn ml-wide" onclick="showMobileSection('report')">
+                    <button class="ml-btn" onclick="showMobileSection('report')">
                         <span class="ml-icon">📄</span>
-                        <span class="ml-label">분석 보고서</span>
+                        <span class="ml-label">분석<br>보고서</span>
+                    </button>
+                    <button class="ml-btn" onclick="window.location.href='ai-analysis.html'">
+                        <span class="ml-icon">🤖</span>
+                        <span class="ml-label">AI<br>분석</span>
                     </button>
                 </div>
 
@@ -5229,19 +5233,20 @@ var ECON_DATA = {
                 if (data && data.KOREA_MARKET) {
                     var kr = data.KOREA_MARKET;
 
+                    // ✅ FMP API는 센트 단위로 반환하므로 100으로 나눔
                     if (kr.KOSPI && kr.KOSPI.price) {
-                        imdSetValue('kospi', kr.KOSPI.price, 2);
-                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change, 'pct');
+                        imdSetValue('kospi', kr.KOSPI.price / 100, 0);
+                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change / 100, 'pct');
                     }
 
                     if (kr.KOSDAQ && kr.KOSDAQ.price) {
-                        imdSetValue('kosdaq', kr.KOSDAQ.price, 2);
-                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change, 'pct');
+                        imdSetValue('kosdaq', kr.KOSDAQ.price / 100, 0);
+                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change / 100, 'pct');
                     }
 
                     if (kr.KOSPI_FUT && kr.KOSPI_FUT.price) {
-                        imdSetValue('kospifut', kr.KOSPI_FUT.price, 2);
-                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change, 'pct');
+                        imdSetValue('kospifut', kr.KOSPI_FUT.price / 100, 0);
+                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change / 100, 'pct');
                     }
 
                     return; // Success – no fallback needed
@@ -5252,7 +5257,7 @@ var ECON_DATA = {
                 // KOSPI – Naver
                 naverIndexFull('KOSPI').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kospi', r.price, 2);
+                        imdSetValue('kospi', r.price, 0);
                         if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
                         return;
                     }
@@ -5261,7 +5266,7 @@ var ECON_DATA = {
                         function(){ return twelvePrice('KOSPI'); },
                         function(){ return fmpPrice('%5EKS11'); }
                     ]).then(function(v){
-                        imdSetValue('kospi', v, 2);
+                        imdSetValue('kospi', v ? (v / 100) : v, 0);
                         yahooQuote('^KS11').then(function(q){
                             if (q && q.price && q.prev)
                                 imdSetChange('kospi', (q.price - q.prev) / q.prev * 100, 'pct');
@@ -5272,7 +5277,7 @@ var ECON_DATA = {
                 // KOSDAQ
                 naverIndexFull('KOSDAQ').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kosdaq', r.price, 2);
+                        imdSetValue('kosdaq', r.price, 0);
                         if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
                         return;
                     }
@@ -5281,7 +5286,7 @@ var ECON_DATA = {
                         function(){ return twelvePrice('KOSDAQ'); },
                         function(){ return fmpPrice('%5EKQ11'); }
                     ]).then(function(v){
-                        imdSetValue('kosdaq', v, 2);
+                        imdSetValue('kosdaq', v ? (v / 100) : v, 0);
                         yahooQuote('^KQ11').then(function(q){
                             if (q && q.price && q.prev)
                                 imdSetChange('kosdaq', (q.price - q.prev) / q.prev * 100, 'pct');
@@ -5292,33 +5297,33 @@ var ECON_DATA = {
                 // KOSPI Future
                 yahooQuote('MKN=F').then(function(q) {
                     if (q && q.price !== null) {
-                        imdSetValue('kospifut', q.price, 2);
+                        imdSetValue('kospifut', q.price / 100, 0);
                         if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
                         return;
                     }
                     fetchMulti([
                         function(){ return yahooPrice('^NK'); },
                         function(){ return twelvePrice('KOSPI200'); }
-                    ]).then(function(v){ imdSetValue('kospifut', v, 2); });
+                    ]).then(function(v){ imdSetValue('kospifut', v ? (v / 100) : v, 0); });
                 });
             }).catch(function(){
                 // If Worker fails, use legacy Naver API
                 console.log('[FALLBACK] Worker Korea failed, using legacy APIs');
                 naverIndexFull('KOSPI').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kospi', r.price, 2);
+                        imdSetValue('kospi', r.price, 0);
                         if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
                     }
                 });
                 naverIndexFull('KOSDAQ').then(function(r) {
                     if (r && r.price !== null) {
-                        imdSetValue('kosdaq', r.price, 2);
+                        imdSetValue('kosdaq', r.price, 0);
                         if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
                     }
                 });
                 yahooQuote('MKN=F').then(function(q) {
                     if (q && q.price !== null) {
-                        imdSetValue('kospifut', q.price, 2);
+                        imdSetValue('kospifut', q.price / 100, 0);
                         if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
                     }
                 });
@@ -5333,7 +5338,7 @@ var ECON_DATA = {
             // Worker API
             workerFetchMarket().then(function(data) {
                 if (data && data.US_MARKET) {
-                    console.log('[US] Worker data loaded, processing...');
+                    console.log('[US] Worker data loaded, processing...', data.US_MARKET);
 
                     // ✅ Major Indices 섹션 업데이트
                     updateIndexSections(data);
@@ -5343,37 +5348,50 @@ var ECON_DATA = {
                     // SP500
                     if (m.SP500 && m.SP500.price) {
                         imdSetValue('sp500', m.SP500.price, 2);
-                        if (m.SP500.changePercentage !== undefined) imdSetChange('sp500', m.SP500.changePercentage, 'pct');
+                        console.log('[US] SP500 changePercentage:', m.SP500.changePercentage);
+                        if (m.SP500.changePercentage !== undefined && m.SP500.changePercentage !== null) {
+                            imdSetChange('sp500', m.SP500.changePercentage, 'pct');
+                        }
                     }
 
                     // NASDAQ
                     if (m.NASDAQ && m.NASDAQ.price) {
                         imdSetValue('nasdaq', m.NASDAQ.price, 2);
-                        if (m.NASDAQ.changePercentage !== undefined) imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
+                        if (m.NASDAQ.changePercentage !== undefined && m.NASDAQ.changePercentage !== null) {
+                            imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
+                        }
                     }
 
                     // DOW
                     if (m.DOW && m.DOW.price) {
                         imdSetValue('dow', m.DOW.price, 2);
-                        if (m.DOW.changePercentage !== undefined) imdSetChange('dow', m.DOW.changePercentage, 'pct');
+                        if (m.DOW.changePercentage !== undefined && m.DOW.changePercentage !== null) {
+                            imdSetChange('dow', m.DOW.changePercentage, 'pct');
+                        }
                     }
 
                     // VIX
                     if (m.VIX && m.VIX.price) {
                         imdSetValue('vix', m.VIX.price, 2);
-                        if (m.VIX.changePercentage !== undefined) imdSetChange('vix', m.VIX.changePercentage, 'pct');
+                        if (m.VIX.changePercentage !== undefined && m.VIX.changePercentage !== null) {
+                            imdSetChange('vix', m.VIX.changePercentage, 'pct');
+                        }
                     }
 
                     // SOX
                     if (m.SOX && m.SOX.price) {
                         imdSetValue('sox', m.SOX.price, 2);
-                        if (m.SOX.changePercentage !== undefined) imdSetChange('sox', m.SOX.changePercentage, 'pct');
+                        if (m.SOX.changePercentage !== undefined && m.SOX.changePercentage !== null) {
+                            imdSetChange('sox', m.SOX.changePercentage, 'pct');
+                        }
                     }
 
                     // RUSSELL2000
                     if (m.RUSSELL2000 && m.RUSSELL2000.price) {
                         imdSetValue('rtyfuture', m.RUSSELL2000.price, 2);
-                        if (m.RUSSELL2000.changePercentage !== undefined) imdSetChange('rtyfuture', m.RUSSELL2000.changePercentage, 'pct');
+                        if (m.RUSSELL2000.changePercentage !== undefined && m.RUSSELL2000.changePercentage !== null) {
+                            imdSetChange('rtyfuture', m.RUSSELL2000.changePercentage, 'pct');
+                        }
                     }
 
                     return; // Success – no fallback needed
