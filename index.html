@@ -4498,6 +4498,9 @@ var ECON_DATA = {
         var FRED_KEY = '8a2fc0e51f931c3f4506eba1e177c644';
         var FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 
+        // Worker 엔드포인트
+        var WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev/';
+
         var CORS_PX    = [
             'https://corsproxy.io/?',
             'https://api.allorigins.win/raw?url=',
@@ -4509,6 +4512,12 @@ var ECON_DATA = {
             ms = ms || 9000;
             var c = new AbortController();
             var t = setTimeout(function(){ c.abort(); }, ms);
+
+            // Worker 상대 경로를 절대 경로로 변환
+            if (url.startsWith('/worker')) {
+                url = WORKER_URL + url.substring(8); // '/worker?...' → '?...'
+            }
+
             var label = url.replace(/apikey=[^&]+/, 'apikey=***').split('?')[0]; // 키 마스킹
             return fetch(url, { signal: c.signal })
                 .then(function(r){
