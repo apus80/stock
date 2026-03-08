@@ -4495,6 +4495,8 @@ var ECON_DATA = {
         /* ── API 키 (Worker 미등록된 것만) ──────────────────────── */
         var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
         var TWELVE_BASE = 'https://api.twelvedata.com';
+        var FRED_KEY = 'c2f5fbf1e0c3d5b8f7a4c9e6b2d8f1a4';
+        var FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 
         var CORS_PX    = [
             'https://corsproxy.io/?',
@@ -4753,8 +4755,8 @@ var ECON_DATA = {
 
         /* ── FRED 최근 2개 값 반환 ───────────────────────────── */
         function fredLatestTwo(series) {
-            // Worker 프록시를 통한 FRED API 호출 (API 키 불필요)
-            var url = WORKER_BASE + '/fred?series=' + series;
+            var url = FRED_BASE + '?series_id=' + series +
+                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d || !d.observations) return null;
                 var valid = d.observations.filter(function(o){
@@ -4819,7 +4821,8 @@ var ECON_DATA = {
 
         /* ── FRED 헬퍼 (Worker 프록시 사용) ─────────────────────── */
         function fredLatest(series) {
-            var url = WORKER_BASE + '/fred?series=' + series;
+            var url = FRED_BASE + '?series_id=' + series +
+                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=5';
             function _parse(d) {
                 if (!d) return null;
                 if (d.error_message) {
@@ -4839,7 +4842,9 @@ var ECON_DATA = {
          * 반환: 최신순 필터링된 observations 배열 (null=실패)
          * ──────────────────────────────────────────────────────── */
         function fredSeries(series, limit, extra) {
-            var url = WORKER_BASE + '/fred?series=' + series;
+            var url = FRED_BASE + '?series_id=' + series +
+                '&api_key=' + FRED_KEY + '&file_type=json&sort_order=desc&limit=' + limit +
+                (extra || '');
             return imdGet(url)
                 .then(function(d) {
                     if (!d) return null;
