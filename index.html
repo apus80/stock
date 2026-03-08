@@ -4582,7 +4582,7 @@ var ECON_DATA = {
                 return Promise.resolve(workerMarketCache);
             }
 
-            var url = API_BASE + '/?action=market';
+            var url = API_BASE + '/market';
             console.log('[WORKER] Fetching market data from:', url);
 
             return fetch(url)
@@ -4610,7 +4610,7 @@ var ECON_DATA = {
 
         /* ── Worker 개별 주식 분석 ───────────────────────────── */
         function workerFetchStock(symbol) {
-            var url = WORKER_BASE + '/?action=stock&symbol=' + encodeURIComponent(symbol);
+            var url = WORKER_BASE + '/stock?symbol=' + encodeURIComponent(symbol);
             return imdGet(url, 15000)
                 .then(function(data) {
                     console.log('[WORKER] Stock data loaded:', symbol);
