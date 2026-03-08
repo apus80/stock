@@ -4490,6 +4490,7 @@ var ECON_DATA = {
 
         /* ── Cloudflare Worker API ─────────────────────────────── */
         var WORKER_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+        var API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
 
         /* ── API 키 (Worker 미등록된 것만) ──────────────────────── */
         var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
@@ -4579,7 +4580,7 @@ var ECON_DATA = {
                 return Promise.resolve(workerMarketCache);
             }
 
-            var url = WORKER_BASE + '/?action=market';
+            var url = API_BASE + '/?action=market';
             console.log('[WORKER] Fetching market data from:', url);
 
             return fetch(url)
