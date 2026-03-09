@@ -29,6 +29,43 @@ export default {
         }
       }
 
+      async function getKoreanQuote(symbol) {
+        // 출처: iTick 실시간 한국 주식 API
+        const ITICK_TOKEN = env.ITICK_TOKEN
+        if (!ITICK_TOKEN) {
+          console.warn(`⚠️ iTick 토큰 없음. ${symbol} 데이터 불가능. env.ITICK_TOKEN 설정 필요`)
+          return null
+        }
+        try {
+          const r = await fetch(
+            `https://api.itick.org/v1/symbols/${symbol}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${ITICK_TOKEN}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+          if (!r.ok) {
+            console.error(`❌ iTick ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+          const j = await r.json()
+          if (!j.data) return null
+
+          const d = j.data
+          return {
+            price: d.price || d.last_price,
+            changePercentage: d.change_percent || d.change_percentage,
+            volume: d.volume,
+            change: d.change
+          }
+        } catch (e) {
+          console.error(`❌ ${symbol} (iTick):`, e.message)
+          return null
+        }
+      }
+
       async function fredGet(series) {
         try {
           const r = await fetch(
@@ -57,7 +94,7 @@ export default {
         "UNRATE": { divisor: 1, unit: "%" },
         "M2SL": { divisor: 1000, unit: "T" },
         "WALCL": { divisor: 1000000, unit: "T" },
-        "RRPONTSYD": { divisor: 1000, unit: "T" },
+        "RRPONTSYD": { divisor: 1000000, unit: "T" },
         "WTREGEN": { divisor: 1000000, unit: "T" },
         "DGS10": { divisor: 1, unit: "%" },
         "DGS2": { divisor: 1, unit: "%" },
@@ -86,8 +123,8 @@ export default {
           fredGet("DGS10"),
           fredGet("DGS2"),
           fredGet("CPIAUCSL"),
-          getQuote("^KS11"),
-          getQuote("^KQ11")
+          getKoreanQuote("KS11"),
+          getKoreanQuote("KQ11")
         ])
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
