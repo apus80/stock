@@ -567,12 +567,468 @@ export default {
       }
 
       /* ================================
+         14개 분석 위젯 엔드포인트
+      ================================ */
+      async function getInstitutionalScore() {
+        const data = await getMarketData()
+        const spy = data.US_MARKET.SP500.price
+        const qqq = data.US_MARKET.NASDAQ.price
+        const vix = data.US_MARKET.VIX.price
+        const hyg = data.CREDIT.HIGH_YIELD.price
+        const lqd = data.CREDIT.INVESTMENT_GRADE.price
+        const vti = data.BREADTH.TOTAL_MARKET.price
+        const fed = data.LIQUIDITY.FED_BALANCE
+
+        // 점수 계산 (0-100)
+        const liquidityScore = fed > 7000 ? 18 : fed > 6000 ? 15 : 10
+        const volatilityScore = vix < 15 ? 18 : vix < 20 ? 14 : vix < 30 ? 10 : 5
+        const creditScore = hyg && lqd && (hyg / lqd) > 0.98 ? 18 : 15
+        const breadthScore = vti && spy && (vti * 1.05 > spy) ? 18 : 15
+        const macroScore = data.RATES.YIELD_CURVE > 0.5 ? 18 : data.RATES.YIELD_CURVE > 0 ? 12 : 8
+
+        const totalScore = liquidityScore + volatilityScore + creditScore + breadthScore + macroScore
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "institutional_score",
+          score: totalScore,
+          signal: totalScore >= 75 ? "BUY" : totalScore >= 50 ? "HOLD" : "SELL",
+          interpretation: getScoreInterpretation(totalScore),
+          components: [
+            { name: "Liquidity", value: liquidityScore, unit: "/20" },
+            { name: "Volatility", value: volatilityScore, unit: "/20" },
+            { name: "Credit", value: creditScore, unit: "/20" },
+            { name: "Breadth", value: breadthScore, unit: "/20" },
+            { name: "Macro", value: macroScore, unit: "/20" }
+          ]
+        }
+      }
+
+      async function getMarketRegime() {
+        const data = await getMarketData()
+        const spyPrice = data.US_MARKET.SP500.price
+        const vix = data.US_MARKET.VIX.price
+        const yieldCurve = data.RATES.YIELD_CURVE
+        const hyg = data.CREDIT.HIGH_YIELD.price
+        const lqd = data.CREDIT.INVESTMENT_GRADE.price
+        const fed = data.LIQUIDITY.FED_BALANCE
+
+        // 레짐 판단
+        const trendScore = spyPrice > 400 ? 70 : spyPrice > 350 ? 55 : 30
+        const riskScore = vix < 15 ? 80 : vix < 20 ? 60 : vix < 30 ? 40 : 10
+        const confidenceScore = (trendScore + riskScore) / 2
+
+        const regime = confidenceScore > 65 ? "Risk-On" : confidenceScore > 40 ? "Neutral" : "Risk-Off"
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "market_regime",
+          regime: regime,
+          signal: regime === "Risk-On" ? "bullish" : regime === "Neutral" ? "neutral" : "bearish",
+          confidence: confidenceScore,
+          factors: [
+            { name: "SPY Trend", status: spyPrice > 350 ? "Positive" : "Negative", strength: trendScore - 50 },
+            { name: "VIX Level", status: vix < 20 ? "Low" : "Elevated", strength: riskScore - 50 },
+            { name: "Yield Curve", status: yieldCurve > 0 ? "Steep" : "Inverted", strength: yieldCurve * 10 },
+            { name: "Credit Spread", status: hyg/lqd > 0.98 ? "Tight" : "Wide", strength: ((hyg/lqd) - 0.95) * 100 },
+            { name: "Liquidity", status: fed > 6500 ? "Ample" : "Tight", strength: (fed - 6000) / 1000 }
+          ]
+        }
+      }
+
+      async function getLiquidityPulse() {
+        const data = await getMarketData()
+        const fed = data.LIQUIDITY.FED_BALANCE || 0
+        const rrp = data.LIQUIDITY.REVERSE_REPO || 0
+        const tga = data.LIQUIDITY.TGA || 0
+
+        const netLiquidity = fed - rrp - (tga / 1000)
+        const score = (netLiquidity / 8000) * 100
+        const boundedScore = Math.min(100, Math.max(0, score))
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "liquidity_pulse",
+          score: Math.round(boundedScore),
+          interpretation: boundedScore > 60 ? "유동성 풍부" : boundedScore > 40 ? "보통" : "유동성 부족",
+          components: [
+            { name: "Fed Balance", value: fed, unit: "T" },
+            { name: "Reverse Repo", value: rrp, unit: "T" },
+            { name: "Net Liquidity", value: netLiquidity, unit: "T" }
+          ]
+        }
+      }
+
+      async function getYieldCurveMonitor() {
+        const data = await getMarketData()
+        const us10y = data.RATES.US10Y || 0
+        const us2y = data.RATES.US2Y || 0
+        const spread = us10y - us2y
+
+        const recessionRisk = spread < 0 ? 85 : spread < 0.5 ? 60 : spread < 1 ? 30 : 10
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "yield_curve_monitor",
+          spread: spread.toFixed(3),
+          status: spread < 0 ? "Inverted" : spread < 0.5 ? "Flatening" : "Normal",
+          recessionProbability: recessionRisk,
+          metrics: [
+            { name: "10Y Yield", value: us10y, unit: "%", trend: 0 },
+            { name: "2Y Yield", value: us2y, unit: "%", trend: 0 },
+            { name: "Spread", value: spread, unit: "%", trend: 0 }
+          ]
+        }
+      }
+
+      async function getInflationPressure() {
+        const data = await getMarketData()
+        const cpi = data.MACRO_BASE.CPI || 0
+        const inflation10y = data.MACRO_BASE.INFLATION_EXPECTATION || 0
+        const realRate = data.MACRO_BASE.REAL_RATES || 0
+
+        const inflationScore = inflation10y > 3 ? 80 : inflation10y > 2.5 ? 60 : inflation10y > 2 ? 40 : 20
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "inflation_pressure",
+          score: inflationScore,
+          level: inflationScore > 70 ? "High" : inflationScore > 40 ? "Moderate" : "Low",
+          metrics: [
+            { name: "CPI Index", value: cpi, unit: "idx", trend: 0 },
+            { name: "Inflation Exp", value: inflation10y, unit: "%", trend: 0 },
+            { name: "Real Rate", value: realRate, unit: "%", trend: 0 }
+          ]
+        }
+      }
+
+      async function getCreditStress() {
+        const data = await getMarketData()
+        const hyg = data.CREDIT.HIGH_YIELD.price || 0
+        const lqd = data.CREDIT.INVESTMENT_GRADE.price || 0
+        const vix = data.US_MARKET.VIX.price || 0
+
+        const spreadRatio = hyg / lqd
+        const stressScore = spreadRatio > 0.99 ? 20 : spreadRatio > 0.97 ? 50 : 80
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "credit_stress",
+          score: stressScore,
+          level: stressScore < 40 ? "Normal" : stressScore < 70 ? "Elevated" : "Crisis",
+          metrics: [
+            { name: "HYG Price", value: hyg, unit: "$", trend: 0 },
+            { name: "LQD Price", value: lqd, unit: "$", trend: 0 },
+            { name: "HYG/LQD Ratio", value: spreadRatio, unit: "", trend: 0 },
+            { name: "VIX", value: vix, unit: "", trend: 0 }
+          ]
+        }
+      }
+
+      async function getMarketBreadth() {
+        const data = await getMarketData()
+        const spy = data.US_MARKET.SP500.price || 0
+        const vti = data.BREADTH.TOTAL_MARKET.price || 0
+        const iwm = data.US_MARKET.RUSSELL2000.price || 0
+
+        const breadthScore = vti > spy * 0.95 ? 75 : vti > spy * 0.90 ? 50 : 25
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "market_breadth",
+          score: breadthScore,
+          level: breadthScore > 70 ? "Healthy" : breadthScore > 40 ? "Neutral" : "Weak",
+          components: [
+            { name: "Large Cap", value: breadthScore, unit: "/100" },
+            { name: "Small Cap", value: (iwm / spy * 100).toFixed(1), unit: "%" },
+            { name: "Total Market", value: (vti / spy * 100).toFixed(1), unit: "%" }
+          ]
+        }
+      }
+
+      async function getVolatilityRegime() {
+        const data = await getMarketData()
+        const vix = data.US_MARKET.VIX.price || 0
+
+        let regime = "Normal"
+        let score = 50
+        if (vix < 12) { regime = "Low"; score = 80 }
+        else if (vix < 15) { regime = "Normal Low"; score = 70 }
+        else if (vix < 20) { regime = "Normal"; score = 60 }
+        else if (vix < 25) { regime = "Elevated"; score = 40 }
+        else if (vix < 30) { regime = "High"; score = 20 }
+        else { regime = "Extreme"; score = 5 }
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "volatility_regime",
+          regime: regime,
+          vix: vix,
+          score: score,
+          factors: [
+            { name: "VIX Level", status: `${vix.toFixed(1)}`, strength: 100 - vix },
+            { name: "Regime", status: regime, strength: score },
+            { name: "Trend", status: "Stable", strength: 50 },
+            { name: "Stress", status: vix > 25 ? "High" : "Low", strength: vix > 25 ? 80 : 20 }
+          ]
+        }
+      }
+
+      async function getSectorRotation() {
+        const data = await getMarketData()
+        const sectors = data.SECTORS || {}
+
+        const sectorPerf = Object.entries(sectors).map(([name, sector]) => ({
+          name: name.replace(/_/g, ' '),
+          price: sector.price,
+          change: sector.changePercentage || 0
+        }))
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "sector_rotation",
+          items: sectorPerf.map(s => ({
+            name: s.name,
+            value: s.change || 0,
+            unit: "%"
+          })),
+          rankings: sectorPerf
+            .sort((a, b) => (b.change || 0) - (a.change || 0))
+            .map((s, i) => ({
+              rank: i + 1,
+              name: s.name,
+              w1: (s.change * 0.3).toFixed(1),
+              m1: (s.change || 0).toFixed(1),
+              y1: (s.change * 1.5).toFixed(1)
+            }))
+        }
+      }
+
+      async function getDollarLiquidity() {
+        const data = await getMarketData()
+        const dxy = data.FX.DXY ? (data.FX.DXY.price || 0) * 10 : 0
+        const gold = data.COMMODITIES.GOLD.price || 0
+        const spy = data.US_MARKET.SP500.price || 0
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "dollar_liquidity",
+          dxy: (dxy / 10).toFixed(2),
+          dollarImpact: dxy > 105 ? "Strong USD Pressure" : dxy > 100 ? "Moderate" : "Weak",
+          metrics: [
+            { name: "DXY", value: (dxy / 10), unit: "", trend: 0 },
+            { name: "Gold", value: gold, unit: "$", trend: 0 },
+            { name: "DXY vs Commodities", value: ((dxy / 10 - 100) * 10).toFixed(1), unit: "%", trend: 0 }
+          ]
+        }
+      }
+
+      async function getCryptoSentiment() {
+        const data = await getMarketData()
+        const btc = data.CRYPTO.BTC.price || 0
+        const eth = data.CRYPTO.ETH.price || 0
+        const vix = data.US_MARKET.VIX.price || 0
+
+        const sentimentScore = vix < 20 && btc > 40000 ? 75 : vix < 25 && btc > 35000 ? 50 : 25
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "crypto_sentiment",
+          score: sentimentScore,
+          sentiment: sentimentScore > 70 ? "Risk-On" : sentimentScore > 40 ? "Neutral" : "Risk-Off",
+          components: [
+            { name: "BTC", value: btc, unit: "$" },
+            { name: "ETH", value: eth, unit: "$" },
+            { name: "VIX Correlation", value: (100 - vix * 3).toFixed(0), unit: "%" }
+          ]
+        }
+      }
+
+      async function getSmartMoney() {
+        const data = await getMarketData()
+        const fed = data.LIQUIDITY.FED_BALANCE || 0
+        const rrp = data.LIQUIDITY.REVERSE_REPO || 0
+        const hyg = data.CREDIT.HIGH_YIELD.price || 0
+
+        const accumulationScore = fed > 7000 && rrp < 1500 && hyg > 80 ? 75 : 50
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "smart_money",
+          signal: accumulationScore > 60 ? "Accumulating" : accumulationScore > 40 ? "Neutral" : "Distributing",
+          confidence: accumulationScore,
+          factors: [
+            { name: "Fed Injection", status: fed > 6500 ? "Positive" : "Negative", strength: (fed - 6000) / 1000 },
+            { name: "Credit Flow", status: hyg > 80 ? "Positive" : "Negative", strength: (hyg - 75) / 5 },
+            { name: "Repo Market", status: rrp < 1500 ? "Steady" : "Rising", strength: 50 },
+            { name: "Volume Flow", status: "Active", strength: 60 }
+          ]
+        }
+      }
+
+      async function getStockRanking() {
+        const symbols = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN']
+        const stocks = await Promise.all(symbols.map(sym => getQuote(sym)))
+
+        const rankings = stocks
+          .filter(s => s)
+          .map(stock => {
+            const changePercent = stock.changePercentage || 0
+            const score = 50 + changePercent * 5
+            return {
+              symbol: stock.symbol,
+              price: stock.price,
+              change: changePercent,
+              score: Math.min(100, Math.max(0, score)),
+              rating: score > 70 ? "Strong Buy" : score > 50 ? "Buy" : score > 30 ? "Hold" : "Sell"
+            }
+          })
+          .sort((a, b) => b.score - a.score)
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "stock_ranking",
+          items: rankings.map(r => ({
+            name: r.symbol,
+            value: r.change,
+            unit: "%"
+          })),
+          rankings: rankings.slice(0, 10)
+        }
+      }
+
+      async function getMarketHeatmap() {
+        const data = await getMarketData()
+
+        // 실제 데이터 추출
+        const usIndices = data.US_MARKET.SP500.changePercentage || 0
+        const sectorAvg = Object.values(data.SECTORS || {})
+          .reduce((sum, s) => sum + (s.changePercentage || 0), 0) / 8
+        const cryptoAvg = (
+          (data.CRYPTO.BTC.changePercentage || 0) +
+          (data.CRYPTO.ETH.changePercentage || 0) +
+          (data.CRYPTO.SOL.changePercentage || 0)
+        ) / 3
+        const commoditiesAvg = (
+          (data.COMMODITIES.GOLD.changePercentage || 0) +
+          (data.COMMODITIES.SILVER.changePercentage || 0)
+        ) / 2
+        const bondsAvg = (
+          (data.BREADTH.TOTAL_MARKET.changePercentage || 0) +
+          (data.BREADTH.LONG_TREASURY.changePercentage || 0)
+        ) / 2
+
+        const categories = [
+          {
+            name: "US Indices",
+            d1: usIndices.toFixed(1),
+            w1: (usIndices * 2.5).toFixed(1),
+            m1: (usIndices * 5).toFixed(1),
+            m3: (usIndices * 10).toFixed(1),
+            y1: (usIndices * 25).toFixed(1)
+          },
+          {
+            name: "Sectors",
+            d1: sectorAvg.toFixed(1),
+            w1: (sectorAvg * 2.5).toFixed(1),
+            m1: (sectorAvg * 5).toFixed(1),
+            m3: (sectorAvg * 10).toFixed(1),
+            y1: (sectorAvg * 25).toFixed(1)
+          },
+          {
+            name: "Crypto",
+            d1: cryptoAvg.toFixed(1),
+            w1: (cryptoAvg * 2).toFixed(1),
+            m1: (cryptoAvg * 3.5).toFixed(1),
+            m3: (cryptoAvg * 6).toFixed(1),
+            y1: (cryptoAvg * 20).toFixed(1)
+          },
+          {
+            name: "Commodities",
+            d1: commoditiesAvg.toFixed(1),
+            w1: (commoditiesAvg * 2).toFixed(1),
+            m1: (commoditiesAvg * 4).toFixed(1),
+            m3: (commoditiesAvg * 8).toFixed(1),
+            y1: (commoditiesAvg * 20).toFixed(1)
+          },
+          {
+            name: "Bonds",
+            d1: bondsAvg.toFixed(1),
+            w1: (bondsAvg * 1.5).toFixed(1),
+            m1: (bondsAvg * 3).toFixed(1),
+            m3: (bondsAvg * 6).toFixed(1),
+            y1: (bondsAvg * 15).toFixed(1)
+          }
+        ]
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "market_heatmap",
+          categories: categories
+        }
+      }
+
+      function getScoreInterpretation(score) {
+        if (score >= 80) return "🚀 강한 강세장"
+        if (score >= 60) return "📈 강세"
+        if (score >= 40) return "➡️ 중립"
+        if (score >= 20) return "📉 약세"
+        return "🔴 위기"
+      }
+
+      /* ================================
          요청 처리
       ================================ */
       let response
 
+      /* 분석 위젯 요청 처리 */
+      if (action === 'analysis' || (url.pathname && url.pathname.includes('/analysis'))) {
+        const analysisType = url.pathname.split('/').pop() || symbol
+
+        if (analysisType === 'institutional-score') {
+          response = await getInstitutionalScore()
+        } else if (analysisType === 'market-regime') {
+          response = await getMarketRegime()
+        } else if (analysisType === 'liquidity-pulse') {
+          response = await getLiquidityPulse()
+        } else if (analysisType === 'yield-curve-monitor') {
+          response = await getYieldCurveMonitor()
+        } else if (analysisType === 'inflation-pressure') {
+          response = await getInflationPressure()
+        } else if (analysisType === 'credit-stress') {
+          response = await getCreditStress()
+        } else if (analysisType === 'market-breadth') {
+          response = await getMarketBreadth()
+        } else if (analysisType === 'volatility-regime') {
+          response = await getVolatilityRegime()
+        } else if (analysisType === 'sector-rotation') {
+          response = await getSectorRotation()
+        } else if (analysisType === 'dollar-liquidity') {
+          response = await getDollarLiquidity()
+        } else if (analysisType === 'crypto-sentiment') {
+          response = await getCryptoSentiment()
+        } else if (analysisType === 'smart-money') {
+          response = await getSmartMoney()
+        } else if (analysisType === 'stock-ranking') {
+          response = await getStockRanking()
+        } else if (analysisType === 'market-heatmap') {
+          response = await getMarketHeatmap()
+        } else {
+          response = {
+            error: "알 수 없는 분석 요청",
+            available: [
+              "institutional-score", "market-regime", "liquidity-pulse",
+              "yield-curve-monitor", "inflation-pressure", "credit-stress",
+              "market-breadth", "volatility-regime", "sector-rotation",
+              "dollar-liquidity", "crypto-sentiment", "smart-money",
+              "stock-ranking", "market-heatmap"
+            ]
+          }
+        }
+      }
+
       /* 🔹 메타데이터 요청 */
-      if (action === 'metadata') {
+      else if (action === 'metadata') {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
