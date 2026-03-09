@@ -3,6 +3,13 @@ export default {
     try {
       const FMP = env.FMP_API_KEY
       const FRED = env.FRED_KEY
+      const ITICK = env.ITICK_TOKEN
+
+      // 환경 변수 검증
+      console.log(`🔑 환경변수 확인:`)
+      console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
+      console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
+      console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
 
       // URL 파싱
       const url = new URL(request.url)
@@ -18,48 +25,118 @@ export default {
       ================================ */
       async function getQuote(sym) {
         try {
-          const r = await fetch(
-            `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
-          )
+          // 📍 출처: FMP API (financialmodelingprep.com)
+          // v3 API 최신 버전 사용
+          const url = `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
+          console.log(`📍 FMP API 호출: ${sym}`)
+          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}?apikey=[HIDDEN]`)
+          console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
+
+          const r = await fetch(url)
+          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
+          console.log(`   Headers: Content-Type=${r.headers.get('content-type')}`)
+
+          if (!r.ok) {
+            console.error(`❌ FMP ${sym}: HTTP ${r.status} ${r.statusText}`)
+            const errText = await r.text()
+            console.error(`   📝 Response Body (first 500 chars):`)
+            console.error(`   ${errText.substring(0, 500)}`)
+            if (errText.length > 500) console.error(`   ... (${errText.length - 500} more chars)`)
+            return null
+          }
+
           const j = await r.json()
-          return Array.isArray(j) && j.length > 0 ? j[0] : null
+          console.log(`📦 FMP ${sym} 응답:`)
+          console.log(`   Type: ${Array.isArray(j) ? 'Array' : typeof j}`)
+          console.log(`   Length: ${Array.isArray(j) ? j.length : 'N/A'}`)
+          if (typeof j === 'object') {
+            const keys = Object.keys(j || {})
+            console.log(`   Keys: ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`)
+          }
+          console.log(`   Full Response: ${JSON.stringify(j).substring(0, 200)}`)
+
+          // FMP v3/quote는 Array 반환
+          if (!j || (Array.isArray(j) && j.length === 0)) {
+            console.warn(`⚠️ ${sym}: 응답값 없음 (null 또는 empty array)`)
+            return null
+          }
+
+          // 응답을 정규화 (Array 또는 Object 모두 처리)
+          const quote = Array.isArray(j) ? j[0] : j
+          console.log(`   Quote object keys: ${Object.keys(quote || {}).join(', ')}`)
+          console.log(`   Price value: ${quote?.price}`)
+
+          if (!quote || !quote.price) {
+            console.warn(`⚠️ ${sym}: price 필드 없음 또는 null`)
+            console.warn(`   Quote: ${JSON.stringify(quote).substring(0, 200)}`)
+            return null
+          }
+
+          // FMP API 필드명 정규화
+          // - price: price 또는 price
+          // - changePercentage: changesPercentage (FMP 실제 필드명)
+          const normalized = {
+            symbol: quote.symbol || sym,
+            price: quote.price,
+            changePercentage: quote.changesPercentage || quote.changePercentage, // FMP는 's'가 붙음
+            change: quote.change,
+            volume: quote.volume,
+            timestamp: quote.timestamp
+          }
+
+          console.log(`✅ ${sym}: price=${normalized.price}, change=${normalized.changePercentage}%`)
+          return normalized
+
         } catch (e) {
-          console.error(`❌ ${sym}:`, e.message)
+          console.error(`❌ ${sym} ERROR:`)
+          console.error(`   Message: ${e.message}`)
+          console.error(`   Type: ${e.name}`)
+          console.error(`   Stack: ${e.stack?.substring(0, 300)}`)
           return null
         }
       }
 
       async function getKoreanQuote(symbol) {
-        // 출처: iTick 실시간 한국 주식 API
+        // 📍 출처: iTick 실시간 한국 주식 API (itick.org)
         const ITICK_TOKEN = env.ITICK_TOKEN
         if (!ITICK_TOKEN) {
           console.warn(`⚠️ iTick 토큰 없음. ${symbol} 데이터 불가능. env.ITICK_TOKEN 설정 필요`)
           return null
         }
         try {
-          const r = await fetch(
-            `https://api.itick.org/v1/symbols/${symbol}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${ITICK_TOKEN}`,
-                'Content-Type': 'application/json'
-              }
+          // iTick Symbol Format: KS11, KQ11 등 (대문자)
+          const url = `https://api.itick.org/v1/symbols/${symbol.toUpperCase()}`
+          console.log(`📍 iTick API 호출: ${url}`)
+
+          const r = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${ITICK_TOKEN}`,
+              'Content-Type': 'application/json'
             }
-          )
+          })
+
           if (!r.ok) {
-            console.error(`❌ iTick ${symbol}: HTTP ${r.status}`)
+            console.error(`❌ iTick ${symbol}: HTTP ${r.status} ${r.statusText}`)
+            const errText = await r.text()
+            console.error(`   응답: ${errText}`)
             return null
           }
+
           const j = await r.json()
-          if (!j.data) return null
+          if (!j.data) {
+            console.warn(`⚠️ iTick ${symbol}: 응답에 data 필드 없음:`, j)
+            return null
+          }
 
           const d = j.data
-          return {
+          const result = {
             price: d.price || d.last_price,
             changePercentage: d.change_percent || d.change_percentage,
             volume: d.volume,
             change: d.change
           }
+          console.log(`✅ iTick ${symbol}: price=${result.price}, change=${result.changePercentage}%`)
+          return result
         } catch (e) {
           console.error(`❌ ${symbol} (iTick):`, e.message)
           return null
@@ -68,11 +145,23 @@ export default {
 
       async function fredGet(series) {
         try {
-          const r = await fetch(
-            `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json`
-          )
+          // 📍 출처: FRED API (Federal Reserve)
+          const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json`
+          const r = await fetch(url)
+          if (!r.ok) {
+            console.error(`❌ FRED ${series}: HTTP ${r.status}`)
+            return []
+          }
           const j = await r.json()
-          return j.observations || []
+          if (j.error_code) {
+            console.error(`❌ FRED ${series}: API Error:`, j.error_message)
+            return []
+          }
+          const obs = j.observations || []
+          if (obs.length > 0) {
+            console.log(`✅ FRED ${series}: ${obs.length} obs, latest=${obs[obs.length-1].value}`)
+          }
+          return obs
         } catch (e) {
           console.error(`❌ FRED ${series}:`, e.message)
           return []
@@ -127,7 +216,8 @@ export default {
       }
 
       async function getMarketData() {
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = await Promise.all([
+        console.log("🔄 모든 시장 데이터 API 호출 시작...")
+        const results = await Promise.all([
           getQuote("SPY"),
           getQuote("QQQ"),
           getQuote("DIA"),
@@ -144,6 +234,25 @@ export default {
           getKoreanQuote("KS11"),
           getKoreanQuote("KQ11")
         ])
+
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = results
+
+        // 데이터 로깅
+        console.log(`\n📊 ===== API 호출 결과 요약 =====`)
+        console.log(`📈 미국 주식:`)
+        console.log(`   SPY: ${spy?.price || '❌ NULL'} (change: ${spy?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   QQQ: ${qqq?.price || '❌ NULL'} (change: ${qqq?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   DIA: ${dia?.price || '❌ NULL'} (change: ${dia?.changePercentage || '❌ NULL'}%)`)
+        console.log(`🇰🇷 한국 주식:`)
+        console.log(`   KOSPI: ${kospi?.price || '❌ NULL'} (change: ${kospi?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   KOSDAQ: ${kosdaq?.price || '❌ NULL'} (change: ${kosdaq?.changePercentage || '❌ NULL'}%)`)
+        console.log(`💰 채권:`)
+        console.log(`   HYG: ${hyg?.price || '❌ NULL'} (change: ${hyg?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   LQD: ${lqd?.price || '❌ NULL'} (change: ${lqd?.changePercentage || '❌ NULL'}%)`)
+        console.log(`📊 FRED 데이터:`)
+        console.log(`   WALCL: ${fed?.length || 0} observations, latest=${getLatestValue(fed) || '❌ NULL'}`)
+        console.log(`   DGS10: ${dgs10?.length || 0} observations, latest=${getLatestValue(dgs10) || '❌ NULL'}`)
+        console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
