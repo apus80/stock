@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773013218 -->
+    <!-- Version: v1773055166 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1912,12 +1912,7 @@
 
                         <div class="card">
                             <div class="title-area"><span class="title">1. 한국 시장</span><button class="card-rfbtn" id="rfbtn-1" onclick="imdRefreshCard(1)" title="새로고침">↻</button></div>
-                            <div class="item"><span>KOSPI</span><span class="item-right"><span id="kospi" class="value">-</span><span id="chg-kospi" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-kospi"></span></span></div>
-                            <div class="item"><span>KOSDAQ</span><span class="item-right"><span id="kosdaq" class="value">-</span><span id="chg-kosdaq" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-kosdaq"></span></span></div>
-                            <div class="item"><span>야간선물</span><span class="item-right"><span id="kospifut" class="value">-</span><span id="chg-kospifut" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-kospifut"></span></span></div>
-                            <div class="item"><span>외국인 수급</span><span class="item-right"><span id="foreignflow" class="value">-</span><span id="chg-foreignflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-foreignflow"></span></span></div>
-                            <div class="item"><span>기관 수급</span><span class="item-right"><span id="instflow" class="value">-</span><span id="chg-instflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-instflow"></span></span></div>
-                            <div class="item"><span>개인 수급</span><span class="item-right"><span id="retailflow" class="value">-</span><span id="chg-retailflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-retailflow"></span></span></div>
+                            <div class="item"><span>EWY (한국 ETF)</span><span class="item-right"><span id="ewy" class="value">-</span><span id="chg-ewy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-ewy"></span></span></div>
                         </div>
 
                         <div class="card">
@@ -4559,7 +4554,7 @@ var ECON_DATA = {
         /* ── API 키 (Worker 미등록된 것만) ──────────────────────── */
         var TWELVE_KEY = 'd137ebbec6c9463d8ce5a7decaf99d36';
         var TWELVE_BASE = 'https://api.twelvedata.com';
-        var FRED_KEY = '8a2fc0e51f931c3f4506eba1e177c644';
+        var FRED_KEY = '0381bc7ea5a9ce01a06b3b008e40a65c';
         var FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 
         // Worker 엔드포인트
@@ -5299,110 +5294,32 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 1 – 한국 시장
-         * Worker API → Naver(장중 근실시간) → Yahoo → Twelvedata → FMP (Fallback)
-         * 야간선물: Yahoo(NK=F 니케이근사) → CME MKN=F
-         * 외국인/기관/개인 수급: 공개 API 없음 → '-'
+         * 출처: FMP API (Worker 경유)
+         * EWY = iShares MSCI South Korea ETF
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
             console.log('[imdLoadKorea] 🔄 START - Worker API 호출 시작');
-            // Primary: Worker API
             workerFetchMarket().then(function(data) {
                 console.log('[imdLoadKorea] ✅ Worker 응답 받음, data:', data ? Object.keys(data) : 'NULL');
                 if (data && data.KOREA_MARKET) {
                     var kr = data.KOREA_MARKET;
 
-                    // ✅ Worker API는 이미 센트 단위로 반환 (FMP API 데이터를 *100 변환함)
-                    if (kr.KOSPI && kr.KOSPI.price) {
-                        imdSetValue('kospi', kr.KOSPI.price, 0);
-                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change, 'pct');
+                    // EWY: iShares MSCI South Korea ETF (FMP API)
+                    if (kr.EWY && kr.EWY.price) {
+                        imdSetValue('ewy', kr.EWY.price, 2);
+                        if (kr.EWY.changePercentage !== undefined) imdSetChange('ewy', kr.EWY.changePercentage, 'pct');
+                    } else {
+                        imdSetValue('ewy', '-', 2);
                     }
 
-                    if (kr.KOSDAQ && kr.KOSDAQ.price) {
-                        imdSetValue('kosdaq', kr.KOSDAQ.price, 0);
-                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change, 'pct');
-                    }
-
-                    if (kr.KOSPI_FUT && kr.KOSPI_FUT.price) {
-                        imdSetValue('kospifut', kr.KOSPI_FUT.price, 0);
-                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change, 'pct');
-                    }
-
-                    return; // Success – no fallback needed
+                    return;
                 }
-
-                // Fallback: Legacy Naver → Yahoo → Twelvedata → FMP
-                console.log('[FALLBACK] Using legacy APIs for Korea market');
-                // KOSPI – Naver
-                naverIndexFull('KOSPI').then(function(r) {
-                    if (r && r.price !== null) {
-                        imdSetValue('kospi', r.price, 0);
-                        if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
-                        return;
-                    }
-                    fetchMulti([
-                        function(){ return yahooPrice('^KS11'); },
-                        function(){ return twelvePrice('KOSPI'); }
-                    ]).then(function(v){
-                        imdSetValue('kospi', v ? (v / 100) : v, 0);
-                        yahooQuote('^KS11').then(function(q){
-                            if (q && q.price && q.prev)
-                                imdSetChange('kospi', (q.price - q.prev) / q.prev * 100, 'pct');
-                        });
-                    });
-                });
-
-                // KOSDAQ
-                naverIndexFull('KOSDAQ').then(function(r) {
-                    if (r && r.price !== null) {
-                        imdSetValue('kosdaq', r.price, 0);
-                        if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
-                        return;
-                    }
-                    fetchMulti([
-                        function(){ return yahooPrice('^KQ11'); },
-                        function(){ return twelvePrice('KOSDAQ'); }
-                    ]).then(function(v){
-                        imdSetValue('kosdaq', v ? (v / 100) : v, 0);
-                        yahooQuote('^KQ11').then(function(q){
-                            if (q && q.price && q.prev)
-                                imdSetChange('kosdaq', (q.price - q.prev) / q.prev * 100, 'pct');
-                        });
-                    });
-                });
-
-                // KOSPI Future
-                yahooQuote('MKN=F').then(function(q) {
-                    if (q && q.price !== null) {
-                        imdSetValue('kospifut', q.price / 100, 0);
-                        if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
-                        return;
-                    }
-                    fetchMulti([
-                        function(){ return yahooPrice('^NK'); },
-                        function(){ return twelvePrice('KOSPI200'); }
-                    ]).then(function(v){ imdSetValue('kospifut', v ? (v / 100) : v, 0); });
-                });
-            }).catch(function(){
-                // If Worker fails, use legacy Naver API
-                console.log('[FALLBACK] Worker Korea failed, using legacy APIs');
-                naverIndexFull('KOSPI').then(function(r) {
-                    if (r && r.price !== null) {
-                        imdSetValue('kospi', r.price, 0);
-                        if (r.cr !== null) imdSetChange('kospi', r.cr, 'pct');
-                    }
-                });
-                naverIndexFull('KOSDAQ').then(function(r) {
-                    if (r && r.price !== null) {
-                        imdSetValue('kosdaq', r.price, 0);
-                        if (r.cr !== null) imdSetChange('kosdaq', r.cr, 'pct');
-                    }
-                });
-                yahooQuote('MKN=F').then(function(q) {
-                    if (q && q.price !== null) {
-                        imdSetValue('kospifut', q.price / 100, 0);
-                        if (q.prev) imdSetChange('kospifut', (q.price - q.prev) / q.prev * 100, 'pct');
-                    }
-                });
+                // FMP API 실패 시 '-' 표시
+                console.log('[ERROR] Worker API 응답 없음');
+                imdSetValue('ewy', '-', 2);
+            }).catch(function(err) {
+                console.error('[ERROR] Worker API 실패:', err);
+                imdSetValue('ewy', '-', 2);
             });
         }
 

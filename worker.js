@@ -97,36 +97,44 @@ export default {
       }
 
       async function getKoreanQuote(symbol) {
-        // 📍 출처: Yahoo Finance API (query1.finance.yahoo.com) - 한국 지수만 직접 호출
+        // 📍 출처: FMP API (financialmodelingprep.com) - Yahoo 프록시 다운으로 FMP로 통합
         try {
-          const yahooSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
-          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d&includePrePost=false`
-          console.log(`📍 Yahoo Finance API 호출: ${yahooSymbol}`)
+          const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
+          const url = `https://financialmodelingprep.com/api/v3/quote/${fmpSymbol}?apikey=${FMP}`
+          console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
+          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}?apikey=[HIDDEN]`)
 
           const r = await fetch(url)
+          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
 
           if (!r.ok) {
-            console.error(`❌ Yahoo ${yahooSymbol}: HTTP ${r.status} ${r.statusText}`)
+            console.error(`❌ FMP 한국 ${fmpSymbol}: HTTP ${r.status} ${r.statusText}`)
             return null
           }
 
           const j = await r.json()
-          if (!j.chart || !j.chart.result || !j.chart.result[0]) {
-            console.warn(`⚠️ Yahoo ${yahooSymbol}: 응답 구조 오류`)
+
+          if (!j || (Array.isArray(j) && j.length === 0)) {
+            console.warn(`⚠️ ${fmpSymbol}: 응답값 없음`)
             return null
           }
 
-          const meta = j.chart.result[0].meta
-          const result = {
-            price: meta.regularMarketPrice || null,
-            changePercentage: meta.regularMarketChangePercent || null,
-            change: meta.regularMarketChange || null,
-            volume: meta.regularMarketVolume || null
+          const quote = Array.isArray(j) ? j[0] : j
+          if (!quote || !quote.price) {
+            console.warn(`⚠️ ${fmpSymbol}: price 필드 없음`)
+            return null
           }
-          console.log(`✅ Yahoo ${yahooSymbol}: price=${result.price}, change=${result.changePercentage}%`)
+
+          const result = {
+            price: quote.price,
+            changePercentage: quote.changesPercentage || quote.changePercentage,
+            change: quote.change,
+            volume: quote.volume
+          }
+          console.log(`✅ FMP 한국 ${fmpSymbol}: price=${result.price}, change=${result.changePercentage}%`)
           return result
         } catch (e) {
-          console.error(`❌ Yahoo ${symbol}:`, e.message)
+          console.error(`❌ FMP 한국 ${symbol}:`, e.message)
           return null
         }
       }
@@ -231,9 +239,8 @@ export default {
           getQuote("XLI"),  // INDUSTRIALS
           getQuote("XLU"),  // UTILITIES
           getQuote("XLRE"), // REAL_ESTATE
-          // 한국 주식
-          getKoreanQuote("KS11"),
-          getKoreanQuote("KQ11"),
+          // 한국 시장 (FMP API)
+          getQuote("EWY"),  // iShares MSCI South Korea ETF
           // FRED 경제지표
           fredGet("WALCL"),
           fredGet("RRPONTSYD"),
@@ -250,7 +257,7 @@ export default {
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, kospi, kosdaq, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -263,9 +270,8 @@ export default {
         console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
         console.log(`💰 채권 & 광범위:`)
         console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
-        console.log(`🇰🇷 한국 주식: ← Yahoo Finance 프록시 상태`)
-        console.log(`   KOSPI: ${kospi?.price || '⚠️ 프록시 실패'} (change: ${kospi?.changePercentage || '⚠️'}%)`)
-        console.log(`   KOSDAQ: ${kosdaq?.price || '⚠️ 프록시 실패'} (change: ${kosdaq?.changePercentage || '⚠️'}%)`)
+        console.log(`🇰🇷 한국 시장 (FMP):`)
+        console.log(`   EWY: ${ewy?.price || '⚠️ 실패'} (change: ${ewy?.changePercentage || '⚠️'}%)`)
         console.log(`📊 FRED 경제지표:`)
         console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
         console.log(`================================\n`)
@@ -282,6 +288,10 @@ export default {
         const payelmsVal = convertFredValue("PAYEMS", getLatestValue(payems))
         const pcepilfeVal = convertFredValue("PCEPILFE", getLatestValue(pcepilfe))
 
+        // EWY 가격 처리
+        const ewyPrice = ewy?.price
+        const ewyChange = ewy?.changePercentage
+
         return {
           spy: spy?.price,
           qqq: qqq?.price,
@@ -295,10 +305,8 @@ export default {
           soxxChange: soxx?.changePercentage,
           iwmChange: iwm?.changePercentage,
           vixChange: vix?.changePercentage,
-          kospi: kospi?.price,
-          kospiChange: kospi?.changePercentage,
-          kosdaq: kosdaq?.price,
-          kosdaqChange: kosdaq?.changePercentage,
+          ewy: ewyPrice,
+          ewyChange: ewyChange,
           hyg: hyg?.price,
           lqd: lqd?.price,
           hygChange: hyg?.changePercentage,
@@ -700,17 +708,9 @@ export default {
           timestamp: new Date().toISOString(),
           dataType: "market",
           KOREA_MARKET: {
-            KOSPI: {
-              price: marketData.kospi ? Math.round(marketData.kospi * 100) : null,
-              change: marketData.kospiChange ? (marketData.kospiChange * 100) : null
-            },
-            KOSDAQ: {
-              price: marketData.kosdaq ? Math.round(marketData.kosdaq * 100) : null,
-              change: marketData.kosdaqChange ? (marketData.kosdaqChange * 100) : null
-            },
-            KOSPI_FUT: {
-              price: marketData.kospi ? Math.round(marketData.kospi * 100) : null,
-              change: marketData.kospiChange ? (marketData.kospiChange * 100) : null
+            EWY: {
+              price: marketData.ewy ? parseFloat(marketData.ewy.toFixed(2)) : null,
+              changePercentage: marketData.ewyChange ? parseFloat(marketData.ewyChange.toFixed(2)) : null
             }
           },
           US_MARKET: {
