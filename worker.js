@@ -217,6 +217,7 @@ export default {
 
       async function getMarketData() {
         console.log("🔄 모든 시장 데이터 API 호출 시작...")
+        console.log(`📍 환경: ITICK_TOKEN=${ITICK ? '✅' : '❌'}, FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
         const results = await Promise.all([
           getQuote("SPY"),
           getQuote("QQQ"),
@@ -243,9 +244,11 @@ export default {
         console.log(`   SPY: ${spy?.price || '❌ NULL'} (change: ${spy?.changePercentage || '❌ NULL'}%)`)
         console.log(`   QQQ: ${qqq?.price || '❌ NULL'} (change: ${qqq?.changePercentage || '❌ NULL'}%)`)
         console.log(`   DIA: ${dia?.price || '❌ NULL'} (change: ${dia?.changePercentage || '❌ NULL'}%)`)
-        console.log(`🇰🇷 한국 주식:`)
+        console.log(`🇰🇷 한국 주식: ← 핵심!`)
         console.log(`   KOSPI: ${kospi?.price || '❌ NULL'} (change: ${kospi?.changePercentage || '❌ NULL'}%)`)
         console.log(`   KOSDAQ: ${kosdaq?.price || '❌ NULL'} (change: ${kosdaq?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   ⚠️ KOSPI 전체: ${JSON.stringify(kospi)}`)
+        console.log(`   ⚠️ KOSDAQ 전체: ${JSON.stringify(kosdaq)}`)
         console.log(`💰 채권:`)
         console.log(`   HYG: ${hyg?.price || '❌ NULL'} (change: ${hyg?.changePercentage || '❌ NULL'}%)`)
         console.log(`   LQD: ${lqd?.price || '❌ NULL'} (change: ${lqd?.changePercentage || '❌ NULL'}%)`)
