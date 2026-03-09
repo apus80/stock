@@ -20,7 +20,8 @@ export default {
             `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
           )
           const j = await r.json()
-          return Array.isArray(j) && j.length > 0 ? j[0] : null
+          // 배열 또는 객체 형식 모두 처리
+          return Array.isArray(j) ? (j.length > 0 ? j[0] : null) : (j?.price ? j : null)
         } catch (e) {
           console.error(`❌ 주식 ${sym} 실패:`, e.message)
           return null
@@ -35,7 +36,7 @@ export default {
             `https://financialmodelingprep.com/stable/quote?symbol=${fmpSymbol}&apikey=${FMP}`
           )
           const j = await r.json()
-          const quote = Array.isArray(j) && j.length > 0 ? j[0] : j
+          const quote = Array.isArray(j) ? (j.length > 0 ? j[0] : null) : j
           return quote?.price ? {
             price: quote.price,
             changePercentage: quote.changesPercentage || quote.changePercentage,
