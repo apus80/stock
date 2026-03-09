@@ -572,6 +572,62 @@
             text-decoration: underline;
         }
 
+        /* 정보 아이콘 & Tooltip */
+        .widget-info {
+            cursor: help;
+            color: var(--info);
+            font-size: 0.9em;
+            margin-left: 8px;
+            position: relative;
+            display: inline-block;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .widget-info:hover {
+            color: var(--primary);
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .widget-info:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 130%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 0.75em;
+            white-space: pre-wrap;
+            word-break: break-word;
+            width: 320px;
+            z-index: 1000;
+            line-height: 1.7;
+            font-weight: 400;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+            pointer-events: none;
+        }
+
+        .widget-info:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 124%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
         /* 반응형 */
         @media (max-width: 1200px) {
             .dashboard-grid {
@@ -701,7 +757,10 @@
                 endpoint: "/analysis/institutional-score",
                 pattern: "gauge",
                 featured: true,
-                description: "제도권 기관 시장 건강 지표 (0-100)"
+                description: "제도권 기관 시장 건강 지표 (0-100)",
+                logic: "S&P500 가격, VIX 변동성, 신용스프레드, Fed Balance Sheet, 수익률곡선을 종합 계산",
+                meaning: "기관 투자자들이 평가하는 시장의 건강도와 위험도",
+                usage: "75점↑ 강한 강세 | 50~75점 약세 | 25점↓ 위기 신호 → 포트폴리오 방향 결정"
             },
             {
                 id: 2,
@@ -709,7 +768,10 @@
                 icon: "🎯",
                 endpoint: "/analysis/market-regime",
                 pattern: "state",
-                description: "현재 시장 레짐 및 위험도 판단"
+                description: "현재 시장 레짐 및 위험도 판단",
+                logic: "가격 추세(상승/하락), 변동성(VIX), 거시지표를 조합하여 시장 환경 분류",
+                meaning: "Risk-On(강세), Neutral(중립), Risk-Off(약세) 3가지 시장 상태 구분",
+                usage: "Risk-On → 공격적 포트폴리오 | Neutral → 균형형 | Risk-Off → 방어적 전환"
             },
             {
                 id: 3,
@@ -717,7 +779,10 @@
                 icon: "💧",
                 endpoint: "/analysis/liquidity-pulse",
                 pattern: "gauge",
-                description: "글로벌 금융 유동성 지표"
+                description: "글로벌 금융 유동성 지표",
+                logic: "Fed Balance Sheet, M2 통화량, Reverse Repo 규모로 시장 유동성 평가",
+                meaning: "금융 시스템에 공급되는 유동성 수준 (풍부함 ↔ 부족함)",
+                usage: "유동성 풍부 → 위험자산(주식, 크립토) 선호 | 부족 → 현금/채권 선호"
             },
             {
                 id: 4,
@@ -725,7 +790,10 @@
                 icon: "📉",
                 endpoint: "/analysis/yield-curve-monitor",
                 pattern: "chart",
-                description: "수익률곡선 역전 및 경기침체 확률"
+                description: "수익률곡선 역전 및 경기침체 확률",
+                logic: "2년물-10년물 금리 스프레드 역전 여부와 역사적 경기침체 기간 비교",
+                meaning: "금리 역전 = 경기침체 신호 (70~80% 정확도의 역사적 지표)",
+                usage: "스프레드 양수(+) → 정상 | 음수(-) → 경기침체 신호 → 포트폴리오 방어전환"
             },
             {
                 id: 5,
@@ -733,7 +801,10 @@
                 icon: "🌡️",
                 endpoint: "/analysis/inflation-pressure",
                 pattern: "chart",
-                description: "인플레이션 압력 및 실질 수익률"
+                description: "인플레이션 압력 및 실질 수익률",
+                logic: "CPI, PCE, 브레이크이븐 인플레 기대치를 조합하여 인플레 압력 평가",
+                meaning: "현재 인플레이션 수준과 시장의 미래 인플레 기대치",
+                usage: "고인플레 → 인플레 헤지(금, 에너지, TIPs) | 저인플레 → 성장주 선호"
             },
             {
                 id: 6,
@@ -741,7 +812,10 @@
                 icon: "⚠️",
                 endpoint: "/analysis/credit-stress",
                 pattern: "chart",
-                description: "신용시장 스트레스 지수"
+                description: "신용시장 스트레스 지수",
+                logic: "HYG/LQD 스프레드(하이일드/투자등급 채권), CCC 스프레드 분석",
+                meaning: "신용 구간의 위험도 평가 (스프레드 확대 = 위험 증가)",
+                usage: "스프레드 확대 → 투자등급 채권 증대 | 축소 → 하이일드 공격"
             },
             {
                 id: 7,
@@ -749,7 +823,10 @@
                 icon: "📊",
                 endpoint: "/analysis/market-breadth",
                 pattern: "gauge",
-                description: "상승장의 광범위성 평가"
+                description: "상승장의 광범위성 평가",
+                logic: "상승 종목 수 / 전체 종목 수 비율, 신규고가/신규저가 분석",
+                meaning: "지수는 상승하지만 소수 종목만 오르는 상황 감지",
+                usage: "80%↑ 광범위 상승 → 상승장 강함 | 50%↓ 소수만 → 하락장 신호"
             },
             {
                 id: 8,
@@ -757,7 +834,10 @@
                 icon: "⚡",
                 endpoint: "/analysis/volatility-regime",
                 pattern: "state",
-                description: "변동성 환경 분류 및 추세"
+                description: "변동성 환경 분류 및 추세",
+                logic: "VIX, ATR(평균 참 범위), 호가스프레드를 조합한 변동성 평가",
+                meaning: "현재 시장의 공포/탐욕 수준과 변동성 환경",
+                usage: "VIX <15 낮음 → 공격 모드 | 15~20 중간 → 균형 | >20 높음 → 방어"
             },
             {
                 id: 9,
@@ -765,7 +845,10 @@
                 icon: "🔄",
                 endpoint: "/analysis/sector-rotation",
                 pattern: "matrix",
-                description: "섹터별 자금 흐름 및 로테이션"
+                description: "섹터별 자금 흐름 및 로테이션",
+                logic: "11개 섹터의 상대강도지수(RSI), 기술지표, 자금흐름 분석",
+                meaning: "경기 사이클에 따른 섹터 간 자금 이동",
+                usage: "경기초반 → Cyclical(금융,산업) | 중기 → Tech | 후기 → Defensive(생필)"
             },
             {
                 id: 10,
@@ -773,7 +856,10 @@
                 icon: "💵",
                 endpoint: "/analysis/dollar-liquidity",
                 pattern: "chart",
-                description: "달러 강도가 글로벌 시장에 미치는 영향"
+                description: "달러 강도가 글로벌 시장에 미치는 영향",
+                logic: "달러지수(DXY)와 신흥국, 원자재, 크립토의 상관관계 분석",
+                meaning: "달러 강세 = 신흥국·원자재·크립토 약세, 약세 = 강세",
+                usage: "달러 강함 → 미국주식만 | 달러 약함 → 신흥국·원자재 진입"
             },
             {
                 id: 11,
@@ -781,7 +867,10 @@
                 icon: "🪙",
                 endpoint: "/analysis/crypto-sentiment",
                 pattern: "gauge",
-                description: "암호화폐 시장의 위험 심리 지표"
+                description: "암호화폐 시장의 위험 심리 지표",
+                logic: "비트코인/이더 가격, Fear&Greed 지표, 거래량 기반 심리 평가",
+                meaning: "암호화폐 시장의 공포(저)와 탐욕(고) 수준",
+                usage: "Greed(75+) 과열 → 수익실현 | Fear(<25) → 매수 기회"
             },
             {
                 id: 12,
@@ -789,7 +878,10 @@
                 icon: "🤖",
                 endpoint: "/analysis/smart-money",
                 pattern: "state",
-                description: "기관 자금의 축적/분산 신호"
+                description: "기관 자금의 축적/분산 신호",
+                logic: "ETF 대량 거래, 기관 포지셔닝, 옵션 포지션 분석",
+                meaning: "기관이 현재 매수(축적) 중인지 매도(분산) 중인지 판단",
+                usage: "축적 신호 → 강세장 신호 | 분산 신호 → 약세장 신호"
             },
             {
                 id: 13,
@@ -797,7 +889,10 @@
                 icon: "🏆",
                 endpoint: "/analysis/stock-ranking",
                 pattern: "matrix",
-                description: "AI 기반 주식 멀티팩터 순위"
+                description: "AI 기반 주식 멀티팩터 순위",
+                logic: "모멘텀, 밸류, 퀄리티, 성장성 4가지 팩터로 500개 미국주식 순위",
+                meaning: "AI가 추천하는 가장 매력적인 주식 Top 10",
+                usage: "Top 10만 추적하기 | 분기마다 리밸런싱 | 상위 3개 집중투자"
             },
             {
                 id: 14,
@@ -806,7 +901,10 @@
                 endpoint: "/analysis/market-heatmap",
                 pattern: "heatmap",
                 featured: true,
-                description: "시장 전체 성과 시각화"
+                description: "시장 전체 성과 시각화",
+                logic: "주식, 채권, 원자재, 크립토, FX 등 모든 자산의 수익률 색상 코딩",
+                meaning: "한눈에 보는 글로벌 시장의 강한 자산과 약한 자산",
+                usage: "매일 아침 확인 → 강한 섹터 추적 | 약한 자산은 피하기"
             }
         ];
 
@@ -834,10 +932,17 @@
             const div = document.createElement('div');
             div.className = `widget widget-${widget.id}${widget.featured ? ' featured' : ''}`;
             div.id = `widget-${widget.id}`;
+
+            // 정보 아이콘에 표시할 tooltip 내용 (줄바꿈 포함)
+            const tooltipText = `📘 로직:\n${widget.logic}\n\n📊 의미:\n${widget.meaning}\n\n💰 활용:\n${widget.usage}`;
+
             div.innerHTML = `
                 <div class="widget-header">
                     <span class="widget-icon">${widget.icon}</span>
-                    <span class="widget-title">${widget.title}</span>
+                    <span class="widget-title">
+                        ${widget.title}
+                        <span class="widget-info" data-tooltip="${tooltipText.replace(/\n/g, '&#10;')}" title="${widget.description}">ℹ️</span>
+                    </span>
                     <button class="widget-refresh" onclick="loadWidget(${widget.id})">⟳</button>
                 </div>
                 <div class="widget-content">
