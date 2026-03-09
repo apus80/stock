@@ -72,9 +72,12 @@ export default {
       }
 
       async function getMarketData() {
-        const [spy, qqq, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi] = await Promise.all([
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = await Promise.all([
           getQuote("SPY"),
           getQuote("QQQ"),
+          getQuote("DIA"),
+          getQuote("SOXX"),
+          getQuote("IWM"),
           getQuote("^VIX"),
           getQuote("HYG"),
           getQuote("LQD"),
@@ -82,7 +85,9 @@ export default {
           fredGet("RRPONTSYD"),
           fredGet("DGS10"),
           fredGet("DGS2"),
-          fredGet("CPIAUCSL")
+          fredGet("CPIAUCSL"),
+          getQuote("^KS11"),
+          getQuote("^KQ11")
         ])
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
@@ -93,11 +98,24 @@ export default {
         return {
           spy: spy?.price,
           qqq: qqq?.price,
+          dia: dia?.price,
+          soxx: soxx?.price,
+          iwm: iwm?.price,
           vix: vix?.price,
           spyChange: spy?.changePercentage,
           qqqChange: qqq?.changePercentage,
+          diaChange: dia?.changePercentage,
+          soxxChange: soxx?.changePercentage,
+          iwmChange: iwm?.changePercentage,
+          vixChange: vix?.changePercentage,
+          kospi: kospi?.price,
+          kospiChange: kospi?.changePercentage,
+          kosdaq: kosdaq?.price,
+          kosdaqChange: kosdaq?.changePercentage,
           hyg: hyg?.price,
           lqd: lqd?.price,
+          hygChange: hyg?.changePercentage,
+          lqdChange: lqd?.changePercentage,
           fed: fedVal,
           rp: rpVal,
           us10y: us10y,
@@ -454,7 +472,75 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "market",
-          data: marketData
+          KOREA_MARKET: {
+            KOSPI: {
+              price: marketData.kospi ? Math.round(marketData.kospi * 100) : null,
+              change: marketData.kospiChange ? (marketData.kospiChange * 100) : null
+            },
+            KOSDAQ: {
+              price: marketData.kosdaq ? Math.round(marketData.kosdaq * 100) : null,
+              change: marketData.kosdaqChange ? (marketData.kosdaqChange * 100) : null
+            },
+            KOSPI_FUT: {
+              price: marketData.kospi ? Math.round(marketData.kospi * 100) : null,
+              change: marketData.kospiChange ? (marketData.kospiChange * 100) : null
+            }
+          },
+          US_MARKET: {
+            SP500: {
+              price: marketData.spy ? parseFloat(marketData.spy.toFixed(2)) : null,
+              changePercentage: marketData.spyChange ? parseFloat(marketData.spyChange.toFixed(2)) : null
+            },
+            NASDAQ: {
+              price: marketData.qqq ? parseFloat(marketData.qqq.toFixed(2)) : null,
+              changePercentage: marketData.qqqChange ? parseFloat(marketData.qqqChange.toFixed(2)) : null
+            },
+            DOW: {
+              price: marketData.dia ? parseFloat(marketData.dia.toFixed(2)) : null,
+              changePercentage: marketData.diaChange ? parseFloat(marketData.diaChange.toFixed(2)) : null
+            },
+            SOX: {
+              price: marketData.soxx ? parseFloat(marketData.soxx.toFixed(2)) : null,
+              changePercentage: marketData.soxxChange ? parseFloat(marketData.soxxChange.toFixed(2)) : null
+            },
+            RUSSELL2000: {
+              price: marketData.iwm ? parseFloat(marketData.iwm.toFixed(2)) : null,
+              changePercentage: marketData.iwmChange ? parseFloat(marketData.iwmChange.toFixed(2)) : null
+            },
+            VIX: {
+              price: marketData.vix ? parseFloat(marketData.vix.toFixed(2)) : null,
+              changePercentage: marketData.vixChange ? parseFloat(marketData.vixChange.toFixed(2)) : null
+            }
+          },
+          BONDS: {
+            HYG: {
+              price: marketData.hyg ? parseFloat(marketData.hyg.toFixed(2)) : null,
+              change: marketData.hygChange ? parseFloat(marketData.hygChange.toFixed(2)) : null
+            },
+            LQD: {
+              price: marketData.lqd ? parseFloat(marketData.lqd.toFixed(2)) : null,
+              change: marketData.lqdChange ? parseFloat(marketData.lqdChange.toFixed(2)) : null
+            }
+          },
+          LIQUIDITY: {
+            FED_BALANCE: {
+              value: marketData.fed ? parseFloat(marketData.fed.toFixed(0)) : null,
+              unit: "B"
+            },
+            REVERSE_REPO: {
+              value: marketData.rp ? parseFloat(marketData.rp.toFixed(0)) : null,
+              unit: "B"
+            }
+          },
+          RATES: {
+            US10Y: {
+              value: marketData.us10y ? parseFloat(marketData.us10y.toFixed(2)) : null
+            },
+            US2Y: {
+              value: marketData.us2y ? parseFloat(marketData.us2y.toFixed(2)) : null
+            },
+            YIELD_CURVE: marketData.yieldCurve ? parseFloat(marketData.yieldCurve.toFixed(3)) : null
+          }
         }
       }
       // /stock endpoint - 개별 주식 데이터
