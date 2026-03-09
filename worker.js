@@ -27,7 +27,7 @@ export default {
         try {
           // 📍 출처: FMP API (financialmodelingprep.com)
           // Stock Batch Quote API stable (안정적 엔드포인트, 아침에 확인된 작동 버전)
-          const url = `https://financialmodelingprep.com/stable/batch-quote?symbols=${sym}&apikey=${FMP}`
+          const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
           console.log(`📍 FMP API 호출: ${sym}`)
           console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
           console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
