@@ -1,6 +1,6 @@
 name = "fmp-proxy"
 type = "javascript"
-main = "worker-fixed.js"
+main = "worker.js"
 site = { dir = "." }
 
 # Cloudflare API 토큰 필요
