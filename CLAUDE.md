@@ -123,6 +123,111 @@ if (data?.price) {
 
 ---
 
+## 💾 캐싱 패턴 (UX 개선)
+
+### 문제
+```
+현재: 페이지 로드 → 빈 화면 → API 호출 → 값 표시
+UX:  깜빡임, 불편한 대기 시간
+```
+
+### 해결책
+```
+개선: 페이지 로드 → 캐시된 값 표시 → API 호출 (백그라운드) → 새 값으로 업데이트
+UX:  즉시 이전 데이터 표시, 부드러운 업데이트
+```
+
+### 구현 패턴
+
+```javascript
+// 1️⃣ 초기화: 캐시에서 값 로드
+function imdLoadKorea() {
+    // Step 1: 캐시된 값 먼저 로드
+    const cachedData = localStorage.getItem('marketData_KOREA');
+    if (cachedData) {
+        const data = JSON.parse(cachedData);
+        imdLoadKoreaDisplay(data); // 기존 값 표시
+        imdSetStatus('kospi', 'updating'); // "업데이트 중" 표시
+    }
+
+    // Step 2: API 호출 (백그라운드)
+    workerFetchMarket().then(function(data) {
+        if (data && data.KOREA_MARKET) {
+            imdLoadKoreaDisplay(data); // 새 값으로 업데이트
+            localStorage.setItem('marketData_KOREA', JSON.stringify(data)); // 캐시 갱신
+            imdSetStatus('kospi', 'ok'); // 업데이트 완료
+        }
+    }).catch(function(err) {
+        console.warn('API 실패, 캐시 값 유지:', err);
+        imdSetStatus('kospi', 'error'); // 에러 표시
+    });
+}
+
+// 2️⃣ 데이터 표시 함수 (분리)
+function imdLoadKoreaDisplay(data) {
+    var kr = data.KOREA_MARKET;
+    if (kr.KOSPI && kr.KOSPI.price) {
+        imdSetValue('kospi', kr.KOSPI.price, 0);
+        if (kr.KOSPI.change) imdSetChange('kospi', kr.KOSPI.change, 'pct');
+    }
+    // ... 기타 항목
+}
+```
+
+### 상태 표시 (imdSetStatus)
+```javascript
+// 로딩 상태 정의
+const STATUS = {
+    'ok': '✅',         // 정상, 최신
+    'updating': '⏳',   // 업데이트 중
+    'error': '❌',      // 에러 발생
+    'stale': '⚠️'      // 오래된 값 (캐시)
+};
+
+function imdSetStatus(id, state) {
+    const elem = document.getElementById(id + '_status');
+    if (elem) {
+        elem.textContent = STATUS[state];
+        elem.className = 'status-' + state;
+    }
+}
+```
+
+### LocalStorage 구조
+```javascript
+{
+  "marketData_KOREA": {
+    "KOREA_MARKET": {...},
+    "timestamp": "2026-03-09T10:30:00Z"
+  },
+  "marketData_US": {
+    "US_MARKET": {...},
+    "timestamp": "2026-03-09T10:30:00Z"
+  }
+}
+```
+
+### 캐시 만료 정책
+```javascript
+const CACHE_EXPIRY = 30 * 60 * 1000; // 30분
+
+function getCachedData(key) {
+    const cached = localStorage.getItem(key);
+    if (!cached) return null;
+
+    const data = JSON.parse(cached);
+    const age = Date.now() - new Date(data.timestamp).getTime();
+
+    if (age > CACHE_EXPIRY) {
+        localStorage.removeItem(key); // 만료된 캐시 삭제
+        return null;
+    }
+    return data;
+}
+```
+
+---
+
 ## 📝 체크리스트 (코드 리뷰 전)
 
 - [ ] 모든 시장 데이터는 API/DB에서 호출되는가?

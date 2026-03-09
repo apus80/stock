@@ -4773,12 +4773,16 @@ var ECON_DATA = {
         /* ── Worker 마켓 데이터 (모든 자산 클래스) ────────────── */
         var workerMarketCache = null;
         var workerMarketCacheTime = 0;
+        var MARKET_CACHE_KEY = 'marketData_worker';
+        var MEMORY_CACHE_TTL = 30000; // 메모리 캐시: 30초
+        var STORAGE_CACHE_TTL = 5 * 60000; // LocalStorage: 5분
 
         function workerFetchMarket(skipCache) {
             var now = Date.now();
-            // 캐시: 30초 유지
-            if (!skipCache && workerMarketCache && (now - workerMarketCacheTime) < 30000) {
-                console.log('[WORKER] Using cached market data');
+
+            // 1️⃣ 메모리 캐시 확인 (30초)
+            if (!skipCache && workerMarketCache && (now - workerMarketCacheTime) < MEMORY_CACHE_TTL) {
+                console.log('[WORKER] Using memory cached market data');
                 return Promise.resolve(workerMarketCache);
             }
 
@@ -4795,8 +4799,20 @@ var ECON_DATA = {
                 })
                 .then(function(data) {
                     if (data) {
+                        // 메모리 캐시 갱신
                         workerMarketCache = data;
                         workerMarketCacheTime = Date.now();
+
+                        // 2️⃣ LocalStorage 캐시 갱신 (페이지 새로고침 후에도 유지)
+                        try {
+                            localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify({
+                                data: data,
+                                timestamp: now
+                            }));
+                        } catch (e) {
+                            console.warn('[WORKER] LocalStorage save failed:', e.message);
+                        }
+
                         console.log('[WORKER] Market data loaded successfully, keys:', Object.keys(data));
                         return data;
                     }
@@ -4804,8 +4820,46 @@ var ECON_DATA = {
                 })
                 .catch(function(e) {
                     console.error('[WORKER] Market data fetch failed:', e.message, e);
+
+                    // 3️⃣ API 실패 시 LocalStorage 캐시에서 로드
+                    try {
+                        var cached = localStorage.getItem(MARKET_CACHE_KEY);
+                        if (cached) {
+                            var cachedObj = JSON.parse(cached);
+                            var age = Date.now() - cachedObj.timestamp;
+                            if (age < STORAGE_CACHE_TTL) {
+                                console.log('[WORKER] Using localStorage fallback (age: ' + (age/1000).toFixed(0) + 's)');
+                                workerMarketCache = cachedObj.data;
+                                workerMarketCacheTime = Date.now();
+                                return cachedObj.data;
+                            }
+                        }
+                    } catch (storageErr) {
+                        console.warn('[WORKER] LocalStorage read failed:', storageErr.message);
+                    }
+
                     return null;
                 });
+        }
+
+        // 4️⃣ 페이지 로드 시 localStorage에서 캐시 복원 (화면 깜빡임 방지)
+        function initMarketCacheFromStorage() {
+            try {
+                var cached = localStorage.getItem(MARKET_CACHE_KEY);
+                if (cached) {
+                    var cachedObj = JSON.parse(cached);
+                    var age = Date.now() - cachedObj.timestamp;
+                    if (age < STORAGE_CACHE_TTL) {
+                        workerMarketCache = cachedObj.data;
+                        workerMarketCacheTime = Date.now() - age;
+                        console.log('[WORKER] Restored from localStorage (age: ' + (age/1000).toFixed(0) + 's)');
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('[WORKER] Cache restore failed:', e.message);
+            }
+            return false;
         }
 
         /* ── Worker 개별 주식 분석 ───────────────────────────── */
@@ -6186,6 +6240,9 @@ var ECON_DATA = {
                 c.ids.forEach(function(id){ imdSetStatus(id, 'sync'); });
             });
         }
+
+        // 🔄 페이지 로드 시 캐시된 값 먼저 복원 (화면 깜빡임 방지)
+        initMarketCacheFromStorage();
 
         imdSetAllSync();
         imdLoadAll();
