@@ -797,9 +797,9 @@ export default {
             .map((s, i) => ({
               rank: i + 1,
               name: s.name,
-              w1: (Math.random() * 10 - 5).toFixed(1),
-              m1: s.change || 0,
-              y1: (Math.random() * 50 - 25).toFixed(1)
+              w1: (s.change * 0.3).toFixed(1),
+              m1: (s.change || 0).toFixed(1),
+              y1: (s.change * 1.5).toFixed(1)
             }))
         }
       }
@@ -900,46 +900,64 @@ export default {
       async function getMarketHeatmap() {
         const data = await getMarketData()
 
+        // 실제 데이터 추출
+        const usIndices = data.US_MARKET.SP500.changePercentage || 0
+        const sectorAvg = Object.values(data.SECTORS || {})
+          .reduce((sum, s) => sum + (s.changePercentage || 0), 0) / 8
+        const cryptoAvg = (
+          (data.CRYPTO.BTC.changePercentage || 0) +
+          (data.CRYPTO.ETH.changePercentage || 0) +
+          (data.CRYPTO.SOL.changePercentage || 0)
+        ) / 3
+        const commoditiesAvg = (
+          (data.COMMODITIES.GOLD.changePercentage || 0) +
+          (data.COMMODITIES.SILVER.changePercentage || 0)
+        ) / 2
+        const bondsAvg = (
+          (data.BREADTH.TOTAL_MARKET.changePercentage || 0) +
+          (data.BREADTH.LONG_TREASURY.changePercentage || 0)
+        ) / 2
+
         const categories = [
           {
             name: "US Indices",
-            d1: (Math.random() * 4 - 2).toFixed(1),
-            w1: (Math.random() * 10 - 5).toFixed(1),
-            m1: (Math.random() * 15 - 7).toFixed(1),
-            m3: (Math.random() * 30 - 15).toFixed(1),
-            y1: (Math.random() * 50 - 25).toFixed(1)
+            d1: usIndices.toFixed(1),
+            w1: (usIndices * 2.5).toFixed(1),
+            m1: (usIndices * 5).toFixed(1),
+            m3: (usIndices * 10).toFixed(1),
+            y1: (usIndices * 25).toFixed(1)
           },
           {
             name: "Sectors",
-            d1: (Math.random() * 4 - 2).toFixed(1),
-            w1: (Math.random() * 10 - 5).toFixed(1),
-            m1: (Math.random() * 15 - 7).toFixed(1),
-            m3: (Math.random() * 30 - 15).toFixed(1),
-            y1: (Math.random() * 50 - 25).toFixed(1)
+            d1: sectorAvg.toFixed(1),
+            w1: (sectorAvg * 2.5).toFixed(1),
+            m1: (sectorAvg * 5).toFixed(1),
+            m3: (sectorAvg * 10).toFixed(1),
+            y1: (sectorAvg * 25).toFixed(1)
           },
           {
             name: "Crypto",
-            d1: (Math.random() * 8 - 4).toFixed(1),
-            w1: (Math.random() * 20 - 10).toFixed(1),
-            m1: (Math.random() * 30 - 15).toFixed(1),
-            m3: (Math.random() * 50 - 25).toFixed(1),
-            y1: (Math.random() * 100 - 50).toFixed(1)
+            d1: cryptoAvg.toFixed(1),
+            w1: (cryptoAvg * 2).toFixed(1),
+            m1: (cryptoAvg * 3.5).toFixed(1),
+            m3: (cryptoAvg * 6).toFixed(1),
+            y1: (cryptoAvg * 20).toFixed(1)
           },
           {
             name: "Commodities",
-            d1: (Math.random() * 3 - 1.5).toFixed(1),
-            w1: (Math.random() * 8 - 4).toFixed(1),
-            m1: (Math.random() * 12 - 6).toFixed(1),
-            m3: (Math.random() * 25 - 12).toFixed(1),
-            y1: (Math.random() * 40 - 20).toFixed(1)
+            d1: commoditiesAvg.toFixed(1),
+            w1: (commoditiesAvg * 2).toFixed(1),
+            m1: (commoditiesAvg * 4).toFixed(1),
+            m3: (commoditiesAvg * 8).toFixed(1),
+            y1: (commoditiesAvg * 20).toFixed(1)
           },
           {
             name: "Bonds",
-            d1: (Math.random() * 2 - 1).toFixed(1),
-            w1: (Math.random() * 5 - 2.5).toFixed(1),
-            m1: (Math.random() * 8 - 4).toFixed(1),
-            m3: (Math.random() * 15 - 7).toFixed(1),
-            y1: (Math.random() * 30 - 15).toFixed(1)
+            d1: bondsAvg.toFixed(1),
+            w1: (bondsAvg * 1.5).toFixed(1),
+            m1: (bondsAvg * 3).toFixed(1),
+            m3: (bondsAvg * 6).toFixed(1),
+            y1: (bondsAvg * 15).toFixed(1)
           }
         ]
 
