@@ -27,18 +27,51 @@ export default {
         try {
           // 📍 출처: FMP API (financialmodelingprep.com)
           // v3 API 최신 버전 사용
-          const r = await fetch(
-            `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
-          )
-          const j = await r.json()
-          if (!j || j.length === 0) {
-            console.warn(`⚠️ ${sym}: 응답값 없음`, j)
+          const url = `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
+          console.log(`📍 FMP API 호출: ${url}`)
+
+          const r = await fetch(url)
+
+          if (!r.ok) {
+            console.error(`❌ FMP ${sym}: HTTP ${r.status}`)
+            const errText = await r.text()
+            console.error(`   에러: ${errText}`)
             return null
           }
-          console.log(`✅ ${sym}: price=${j[0]?.price}`)
-          return j[0] || null
+
+          const j = await r.json()
+          console.log(`📦 FMP ${sym} 응답 타입:`, Array.isArray(j) ? 'Array' : 'Object', 'Keys:', Object.keys(j || {}).slice(0, 5))
+
+          // FMP v3/quote는 Array 반환
+          if (!j || (Array.isArray(j) && j.length === 0)) {
+            console.warn(`⚠️ ${sym}: 응답값 없음`)
+            return null
+          }
+
+          // 응답을 정규화 (Array 또는 Object 모두 처리)
+          const quote = Array.isArray(j) ? j[0] : j
+          if (!quote || !quote.price) {
+            console.warn(`⚠️ ${sym}: price 필드 없음`)
+            return null
+          }
+
+          // FMP API 필드명 정규화
+          // - price: price 또는 price
+          // - changePercentage: changesPercentage (FMP 실제 필드명)
+          const normalized = {
+            symbol: quote.symbol || sym,
+            price: quote.price,
+            changePercentage: quote.changesPercentage || quote.changePercentage, // FMP는 's'가 붙음
+            change: quote.change,
+            volume: quote.volume,
+            timestamp: quote.timestamp
+          }
+
+          console.log(`✅ ${sym}: price=${normalized.price}, change=${normalized.changePercentage}%`)
+          return normalized
+
         } catch (e) {
-          console.error(`❌ ${sym}:`, e.message)
+          console.error(`❌ ${sym}:`, e.message, e.stack)
           return null
         }
       }
@@ -163,7 +196,8 @@ export default {
       }
 
       async function getMarketData() {
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = await Promise.all([
+        console.log("🔄 모든 시장 데이터 API 호출 시작...")
+        const results = await Promise.all([
           getQuote("SPY"),
           getQuote("QQQ"),
           getQuote("DIA"),
@@ -180,6 +214,15 @@ export default {
           getKoreanQuote("KS11"),
           getKoreanQuote("KQ11")
         ])
+
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = results
+
+        // 데이터 로깅
+        console.log(`📊 API 호출 결과 요약:`)
+        console.log(`   미국 주식: SPY=${spy?.price}, QQQ=${qqq?.price}, DIA=${dia?.price}`)
+        console.log(`   한국 주식: KOSPI=${kospi?.price}, KOSDAQ=${kosdaq?.price}`)
+        console.log(`   채권: HYG=${hyg?.price}, LQD=${lqd?.price}`)
+        console.log(`   FRED: WALCL=${fed?.length} obs, DGS10=${dgs10?.length} obs`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
