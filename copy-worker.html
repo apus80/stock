@@ -3,136 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Worker 코드 복사</title>
+    <title>Worker 코드 - 복사하기</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0f1419;
             color: #fff;
+            font-family: 'Courier New', monospace;
             padding: 20px;
+            line-height: 1.6;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
+            background: #1a1a2e;
+            border-radius: 10px;
+            padding: 30px;
+            border: 2px solid #00d4ff;
+        }
+        h1 {
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-size: 24px;
         }
         .warning {
-            background: #ff6b6b;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .instruction {
-            background: #1e90ff;
+            background: #ff4444;
             padding: 15px;
-            border-radius: 8px;
             margin-bottom: 20px;
-            font-size: 14px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
         }
-        .code-box {
-            background: #1a1a2e;
-            border: 2px solid #16f4d0;
-            border-radius: 8px;
+        .code-display {
+            background: #0f0f1f;
+            border: 1px solid #333;
             padding: 20px;
-            margin-bottom: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.6;
+            margin: 20px 0;
+            border-radius: 5px;
+            overflow-x: auto;
             max-height: 600px;
             overflow-y: auto;
-            color: #d4d4d4;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            color: #00ff00;
+            font-size: 12px;
+            line-height: 1.4;
         }
-        .button-group {
+        .button-box {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin: 20px 0;
             flex-wrap: wrap;
         }
         button {
-            padding: 12px 24px;
+            padding: 15px 30px;
+            font-size: 16px;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
+            border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
             transition: all 0.3s;
         }
-        .btn-copy {
-            background: #16f4d0;
+        .copy-btn {
+            background: #00d4ff;
             color: #000;
         }
-        .btn-copy:hover {
-            background: #00e6b8;
+        .copy-btn:hover {
+            background: #00b3d9;
             transform: scale(1.05);
         }
-        .btn-select {
-            background: #4a5568;
+        .select-btn {
+            background: #444;
             color: #fff;
         }
-        .btn-select:hover {
-            background: #5a6578;
+        .select-btn:hover {
+            background: #555;
         }
-        .status {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
             font-weight: bold;
             display: none;
         }
-        .status.show {
+        .message.show {
             display: block;
         }
-        .status.success {
-            background: #00c853;
+        .success {
+            background: #00aa00;
             color: #fff;
         }
-        .status.error {
-            background: #d32f2f;
-            color: #fff;
-        }
-        .footer {
-            background: #252836;
-            padding: 15px;
-            border-radius: 6px;
-            font-size: 12px;
-            line-height: 1.8;
-            color: #aaa;
-        }
-        .divider {
-            border: 0;
-            height: 1px;
+        .guide {
             background: #333;
-            margin: 30px 0;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border-left: 4px solid #00d4ff;
         }
-        h1 { margin-bottom: 20px; font-size: 28px; }
-        h2 { margin-top: 20px; margin-bottom: 10px; font-size: 18px; color: #16f4d0; }
+        .guide h2 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+        }
+        .guide ol {
+            margin-left: 20px;
+        }
+        .guide li {
+            margin: 8px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>⚡ Cloudflare Worker 코드</h1>
+        <div class="warning">⚠️ 아래 "복사" 버튼을 누르세요!</div>
 
-        <div class="warning">
-            ⚠️ 주의: 아래 코드만 복사하세요. HTML 부분은 복사하면 안 됩니다!
+        <div class="button-box">
+            <button class="copy-btn" onclick="copyCode()">📋 복사 클릭!</button>
+            <button class="select-btn" onclick="selectAll()">📝 전체 선택</button>
         </div>
 
-        <div class="instruction">
-            📋 사용 방법: 1) "복사" 버튼 클릭 → 2) Cloudflare Workers 대시보드 열기 → 3) 에디터에 붙여넣기 → 4) 저장 및 배포
-        </div>
+        <div id="message" class="message success"></div>
 
-        <div class="button-group">
-            <button class="btn-copy" onclick="copyToClipboard()">📋 복사 (이 버튼만 사용!)</button>
-            <button class="btn-select" onclick="selectCode()">📝 전체 선택</button>
-        </div>
-
-        <div class="status" id="status"></div>
-
-        <h2>✅ 복사할 코드 (아래것만 복사하세요):</h2>
-        <div class="code-box" id="codeBox">export default {
+        <div class="code-display" id="code">export default {
   async fetch(request, env) {
     try {
       const FMP = env.FMP_API_KEY
@@ -263,43 +253,20 @@
         const confidenceScore = (trendScore + riskScore) / 2
         let regime = "Neutral"
         if (confidenceScore > 65) regime = data.spyChange > 0 ? "Risk-On" : "Risk-Off"
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "market_regime",
-          regime: regime,
-          confidence: Math.round(confidenceScore),
-          signal: regime === "Risk-On" ? "🎯 공격 모드" : regime === "Risk-Off" ? "⚠️ 방어 모드" : "➡️ 중립",
-          components: { trend_score: trendScore, risk_score: riskScore },
-          details: { spy: data.spy, vix: data.vix, spy_change: data.spyChange }
-        }
+        return { timestamp: new Date().toISOString(), dataType: "market_regime", regime: regime, confidence: Math.round(confidenceScore), signal: regime === "Risk-On" ? "🎯 공격 모드" : regime === "Risk-Off" ? "⚠️ 방어 모드" : "➡️ 중립", components: { trend_score: trendScore, risk_score: riskScore }, details: { spy: data.spy, vix: data.vix, spy_change: data.spyChange } }
       }
 
       async function getLiquidityPulse() {
         const data = await getMarketData()
         const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "liquidity_pulse",
-          score: liquidityScore,
-          signal: liquidityScore > 75 ? "💧 풍부함" : liquidityScore > 50 ? "⚡ 적정" : "⚠️ 부족",
-          details: { fed_balance: data.fed, reverse_repo: data.rp, liquidity_status: data.fed > 7000 ? "유동성 풍부 → 위험자산 선호" : "유동성 부족 → 안전자산 선호" }
-        }
+        return { timestamp: new Date().toISOString(), dataType: "liquidity_pulse", score: liquidityScore, signal: liquidityScore > 75 ? "💧 풍부함" : liquidityScore > 50 ? "⚡ 적정" : "⚠️ 부족", details: { fed_balance: data.fed, reverse_repo: data.rp, liquidity_status: data.fed > 7000 ? "유동성 풍부 → 위험자산 선호" : "유동성 부족 → 안전자산 선호" } }
       }
 
       async function getYieldCurveMonitor() {
         const data = await getMarketData()
         const spread = data.yieldCurve
         const isInverted = spread < 0
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "yield_curve",
-          spread: spread ? spread.toFixed(2) : null,
-          inverted: isInverted,
-          signal: isInverted ? "⚠️ 역전 신호" : "✅ 정상",
-          recession_probability: isInverted ? 75 : 20,
-          recommendation: isInverted ? "포트폴리오 방어 전환" : "공격적 포지셔닝",
-          details: { us10y: data.us10y, us2y: data.us2y }
-        }
+        return { timestamp: new Date().toISOString(), dataType: "yield_curve", spread: spread ? spread.toFixed(2) : null, inverted: isInverted, signal: isInverted ? "⚠️ 역전 신호" : "✅ 정상", recession_probability: isInverted ? 75 : 20, recommendation: isInverted ? "포트폴리오 방어 전환" : "공격적 포지셔닝", details: { us10y: data.us10y, us2y: data.us2y } }
       }
 
       async function getInflationPressure() {
@@ -307,113 +274,51 @@
         const cpiVal = getLatestValue(cpi)
         const inflationExpectation = convertFredValue("T10YIE", getLatestValue(t10y))
         const pressure = cpiVal && cpiVal > 240 ? "고" : "저"
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "inflation_pressure",
-          pressure: pressure,
-          signal: pressure === "고" ? "🌡️ 높음" : "❄️ 낮음",
-          components: { cpi: cpiVal, inflation_expectation: inflationExpectation },
-          recommendation: pressure === "고" ? "금, 에너지, TIPs 선호" : "성장주 선호"
-        }
+        return { timestamp: new Date().toISOString(), dataType: "inflation_pressure", pressure: pressure, signal: pressure === "고" ? "🌡️ 높음" : "❄️ 낮음", components: { cpi: cpiVal, inflation_expectation: inflationExpectation }, recommendation: pressure === "고" ? "금, 에너지, TIPs 선호" : "성장주 선호" }
       }
 
       async function getCreditStress() {
         const data = await getMarketData()
         const spread = data.hyg && data.lqd ? ((data.hyg / data.lqd - 0.98) * 100) : 0
         const stress = spread > 2 ? "높음" : spread > 0 ? "중간" : "낮음"
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "credit_stress",
-          stress_level: stress,
-          signal: stress === "높음" ? "⚠️ 스트레스" : stress === "중간" ? "⚡ 주의" : "✅ 안정",
-          spread: spread.toFixed(2),
-          details: { hyg: data.hyg, lqd: data.lqd, hyg_lqd_ratio: data.hyg && data.lqd ? (data.hyg / data.lqd).toFixed(3) : null },
-          recommendation: stress === "높음" ? "투자등급 채권 증대" : "하이일드 공격"
-        }
+        return { timestamp: new Date().toISOString(), dataType: "credit_stress", stress_level: stress, signal: stress === "높음" ? "⚠️ 스트레스" : stress === "중간" ? "⚡ 주의" : "✅ 안정", spread: spread.toFixed(2), details: { hyg: data.hyg, lqd: data.lqd, hyg_lqd_ratio: data.hyg && data.lqd ? (data.hyg / data.lqd).toFixed(3) : null }, recommendation: stress === "높음" ? "투자등급 채권 증대" : "하이일드 공격" }
       }
 
       async function getMarketBreadth() {
         const [spy, qqq] = await Promise.all([getQuote("SPY"), getQuote("QQQ")])
         const breadthScore = (spy && spy.changePercentage > 0.5) ? 80 : 50
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "market_breadth",
-          score: breadthScore,
-          signal: breadthScore >= 75 ? "📊 광범위 상승" : "⚠️ 소수만 상승",
-          details: { spy_change: spy?.changePercentage, qqq_change: qqq?.changePercentage }
-        }
+        return { timestamp: new Date().toISOString(), dataType: "market_breadth", score: breadthScore, signal: breadthScore >= 75 ? "📊 광범위 상승" : "⚠️ 소수만 상승", details: { spy_change: spy?.changePercentage, qqq_change: qqq?.changePercentage } }
       }
 
       async function getVolatilityRegime() {
         const data = await getMarketData()
         const regime = (data.vix < 15) ? "Low" : (data.vix < 20) ? "Medium" : "High"
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "volatility_regime",
-          vix: data.vix,
-          regime: regime,
-          signal: regime === "Low" ? "⚡ 공격 모드" : regime === "Medium" ? "⚠️ 균형" : "🔴 방어 모드",
-          recommendation: regime === "Low" ? "적극 투자" : regime === "Medium" ? "균형형" : "현금 보유"
-        }
+        return { timestamp: new Date().toISOString(), dataType: "volatility_regime", vix: data.vix, regime: regime, signal: regime === "Low" ? "⚡ 공격 모드" : regime === "Medium" ? "⚠️ 균형" : "🔴 방어 모드", recommendation: regime === "Low" ? "적극 투자" : regime === "Medium" ? "균형형" : "현금 보유" }
       }
 
       async function getSectorRotation() {
         const sectors = await Promise.all([getQuote("XLK"), getQuote("XLF"), getQuote("XLE"), getQuote("XLV"), getQuote("XLY"), getQuote("XLI")])
-        const sectorData = [
-          { name: "Technology (XLK)", change: sectors[0]?.changePercentage },
-          { name: "Financials (XLF)", change: sectors[1]?.changePercentage },
-          { name: "Energy (XLE)", change: sectors[2]?.changePercentage },
-          { name: "Healthcare (XLV)", change: sectors[3]?.changePercentage },
-          { name: "Consumer (XLY)", change: sectors[4]?.changePercentage },
-          { name: "Industrials (XLI)", change: sectors[5]?.changePercentage }
-        ].sort((a, b) => (b.change || 0) - (a.change || 0))
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "sector_rotation",
-          top_performers: sectorData.slice(0, 3),
-          weakest: sectorData.slice(-3),
-          all_sectors: sectorData
-        }
+        const sectorData = [{ name: "Technology (XLK)", change: sectors[0]?.changePercentage }, { name: "Financials (XLF)", change: sectors[1]?.changePercentage }, { name: "Energy (XLE)", change: sectors[2]?.changePercentage }, { name: "Healthcare (XLV)", change: sectors[3]?.changePercentage }, { name: "Consumer (XLY)", change: sectors[4]?.changePercentage }, { name: "Industrials (XLI)", change: sectors[5]?.changePercentage }].sort((a, b) => (b.change || 0) - (a.change || 0))
+        return { timestamp: new Date().toISOString(), dataType: "sector_rotation", top_performers: sectorData.slice(0, 3), weakest: sectorData.slice(-3), all_sectors: sectorData }
       }
 
       async function getDollarLiquidity() {
         const [dxy, bitcoin] = await Promise.all([getQuote("DX"), getQuote("BTCUSD")])
         const dxyPrice = dxy?.price
         const impact = dxyPrice > 105 ? "약세 자산 약함" : "약세 자산 강함"
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "dollar_liquidity",
-          dxy: dxyPrice,
-          signal: dxyPrice > 105 ? "💵 달러 강함" : "📉 달러 약함",
-          impact: impact,
-          recommendation: dxyPrice > 105 ? "미국주식만" : "신흥국, 원자재 진입"
-        }
+        return { timestamp: new Date().toISOString(), dataType: "dollar_liquidity", dxy: dxyPrice, signal: dxyPrice > 105 ? "💵 달러 강함" : "📉 달러 약함", impact: impact, recommendation: dxyPrice > 105 ? "미국주식만" : "신흥국, 원자재 진입" }
       }
 
       async function getCryptoSentiment() {
         const [btc, eth] = await Promise.all([getQuote("BTCUSD"), getQuote("ETHUSD")])
         const sentiment = (btc && btc.changePercentage > 5) ? 75 : (btc && btc.changePercentage > 0) ? 55 : 35
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "crypto_sentiment",
-          sentiment_score: sentiment,
-          signal: sentiment > 70 ? "🎉 Greed" : sentiment > 50 ? "➡️ Neutral" : "😨 Fear",
-          details: { btc: btc?.price, eth: eth?.price, btc_change: btc?.changePercentage, eth_change: eth?.changePercentage },
-          recommendation: sentiment > 70 ? "수익실현" : sentiment < 30 ? "매수기회" : "관망"
-        }
+        return { timestamp: new Date().toISOString(), dataType: "crypto_sentiment", sentiment_score: sentiment, signal: sentiment > 70 ? "🎉 Greed" : sentiment > 50 ? "➡️ Neutral" : "😨 Fear", details: { btc: btc?.price, eth: eth?.price, btc_change: btc?.changePercentage, eth_change: eth?.changePercentage }, recommendation: sentiment > 70 ? "수익실현" : sentiment < 30 ? "매수기회" : "관망" }
       }
 
       async function getSmartMoney() {
         const [spy, qqq] = await Promise.all([getQuote("SPY"), getQuote("QQQ")])
         const signal = (spy && spy.volume > 80000000) ? "축적" : "분산"
-        return {
-          timestamp: new Date().toISOString(),
-          dataType: "smart_money",
-          signal: signal,
-          status: signal === "축적" ? "🤖 기관 매수" : "⚠️ 기관 매도",
-          details: { spy_volume: spy?.volume, qqq_volume: qqq?.volume },
-          recommendation: signal === "축적" ? "강세장 신호" : "약세장 신호"
-        }
+        return { timestamp: new Date().toISOString(), dataType: "smart_money", signal: signal, status: signal === "축적" ? "🤖 기관 매수" : "⚠️ 기관 매도", details: { spy_volume: spy?.volume, qqq_volume: qqq?.volume }, recommendation: signal === "축적" ? "강세장 신호" : "약세장 신호" }
       }
 
       async function getStockRanking() {
@@ -424,18 +329,7 @@
 
       async function getMarketHeatmap() {
         const [spy, qqq, dia, vix, hyg, lqd, gold, btc, xlk, xlf] = await Promise.all([getQuote("SPY"), getQuote("QQQ"), getQuote("DIA"), getQuote("^VIX"), getQuote("HYG"), getQuote("LQD"), getQuote("GCUSD"), getQuote("BTCUSD"), getQuote("XLK"), getQuote("XLF")])
-        const assets = [
-          { name: "S&P500", change: spy?.changePercentage, color: spy && spy.changePercentage > 0 ? "green" : "red" },
-          { name: "NASDAQ", change: qqq?.changePercentage, color: qqq && qqq.changePercentage > 0 ? "green" : "red" },
-          { name: "DOW", change: dia?.changePercentage, color: dia && dia.changePercentage > 0 ? "green" : "red" },
-          { name: "VIX", change: vix?.changePercentage, color: vix && vix.changePercentage < 0 ? "green" : "red" },
-          { name: "HYBond", change: hyg?.changePercentage, color: hyg && hyg.changePercentage > 0 ? "green" : "red" },
-          { name: "IGBond", change: lqd?.changePercentage, color: lqd && lqd.changePercentage > 0 ? "green" : "red" },
-          { name: "Gold", change: gold?.changePercentage, color: gold && gold.changePercentage > 0 ? "green" : "red" },
-          { name: "Bitcoin", change: btc?.changePercentage, color: btc && btc.changePercentage > 0 ? "green" : "red" },
-          { name: "Tech(XLK)", change: xlk?.changePercentage, color: xlk && xlk.changePercentage > 0 ? "green" : "red" },
-          { name: "Finance(XLF)", change: xlf?.changePercentage, color: xlf && xlf.changePercentage > 0 ? "green" : "red" }
-        ]
+        const assets = [{ name: "S&P500", change: spy?.changePercentage, color: spy && spy.changePercentage > 0 ? "green" : "red" }, { name: "NASDAQ", change: qqq?.changePercentage, color: qqq && qqq.changePercentage > 0 ? "green" : "red" }, { name: "DOW", change: dia?.changePercentage, color: dia && dia.changePercentage > 0 ? "green" : "red" }, { name: "VIX", change: vix?.changePercentage, color: vix && vix.changePercentage < 0 ? "green" : "red" }, { name: "HYBond", change: hyg?.changePercentage, color: hyg && hyg.changePercentage > 0 ? "green" : "red" }, { name: "IGBond", change: lqd?.changePercentage, color: lqd && lqd.changePercentage > 0 ? "green" : "red" }, { name: "Gold", change: gold?.changePercentage, color: gold && gold.changePercentage > 0 ? "green" : "red" }, { name: "Bitcoin", change: btc?.changePercentage, color: btc && btc.changePercentage > 0 ? "green" : "red" }, { name: "Tech(XLK)", change: xlk?.changePercentage, color: xlk && xlk.changePercentage > 0 ? "green" : "red" }, { name: "Finance(XLF)", change: xlf?.changePercentage, color: xlf && xlf.changePercentage > 0 ? "green" : "red" }]
         return { timestamp: new Date().toISOString(), dataType: "market_heatmap", assets: assets }
       }
 
@@ -470,14 +364,14 @@
       } else if (pathname === "/analysis/market-heatmap") {
         response = await getMarketHeatmap()
       } else if (action === 'metadata') {
-        response = { timestamp: new Date().toISOString(), dataType: "metadata", message: "14개 AI 분석 위젯 엔드포인트 사용 가능", endpoints: ["/analysis/institutional-score", "/analysis/market-regime", "/analysis/liquidity-pulse", "/analysis/yield-curve-monitor", "/analysis/inflation-pressure", "/analysis/credit-stress", "/analysis/market-breadth", "/analysis/volatility-regime", "/analysis/sector-rotation", "/analysis/dollar-liquidity", "/analysis/crypto-sentiment", "/analysis/smart-money", "/analysis/stock-ranking", "/analysis/market-heatmap"] }
+        response = { timestamp: new Date().toISOString(), dataType: "metadata", message: "14개 AI 분석 위젯", endpoints: ["/analysis/institutional-score", "/analysis/market-regime", "/analysis/liquidity-pulse", "/analysis/yield-curve-monitor", "/analysis/inflation-pressure", "/analysis/credit-stress", "/analysis/market-breadth", "/analysis/volatility-regime", "/analysis/sector-rotation", "/analysis/dollar-liquidity", "/analysis/crypto-sentiment", "/analysis/smart-money", "/analysis/stock-ranking", "/analysis/market-heatmap"] }
       } else if (series) {
         const fredData = await fredGet(series)
         const raw = getLatestValue(fredData)
         const value = convertFredValue(series, raw)
         response = { timestamp: new Date().toISOString(), dataType: "fred_single", series: series, value: value }
       } else {
-        response = { error: "잘못된 요청", usage: "GET /analysis/[widget-name] 또는 /analysis?action=metadata" }
+        response = { error: "잘못된 요청", usage: "GET /analysis/[widget-name]" }
       }
 
       return new Response(JSON.stringify(response, null, 2), {
@@ -493,47 +387,46 @@
   }
 }</div>
 
-        <hr class="divider">
-
-        <div class="footer">
-            <h2>⚙️ 배포 가이드</h2>
-            <strong>Step 1:</strong> 위 "📋 복사" 버튼을 클릭하세요<br>
-            <strong>Step 2:</strong> Cloudflare 대시보드 열기: dash.cloudflare.com → Workers<br>
-            <strong>Step 3:</strong> worker.js 에디터에서 모든 코드 삭제 후 붙여넣기 (Ctrl+V)<br>
-            <strong>Step 4:</strong> 환경 변수 설정: Settings → Environment Variables<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ FMP_API_KEY = (API 키)<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▸ FRED_KEY = (API 키)<br>
-            <strong>Step 5:</strong> "Save and Deploy" 클릭<br>
-            <strong>✅ 완료!</strong> 14개 위젯 모두 작동합니다
+        <div class="guide">
+            <h2>📱 모바일에서 사용법</h2>
+            <ol>
+                <li><strong>1단계:</strong> 위의 "📋 복사 클릭!" 버튼을 누르세요</li>
+                <li><strong>2단계:</strong> ✅ 복사됨 메시지가 나타나면 성공입니다</li>
+                <li><strong>3단계:</strong> Cloudflare 대시보드 열기 (dash.cloudflare.com)</li>
+                <li><strong>4단계:</strong> Workers → worker.js 에디터</li>
+                <li><strong>5단계:</strong> 기존 코드 모두 삭제 후 붙여넣기 (길게 누르면 붙여넣기 나옴)</li>
+                <li><strong>6단계:</strong> "Save and Deploy" 클릭</li>
+                <li><strong>✅ 완료!</strong></li>
+            </ol>
         </div>
     </div>
 
     <script>
-        function copyToClipboard() {
-            const code = document.getElementById('codeBox').textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                const status = document.getElementById('status');
-                status.textContent = '✅ 복사 완료! Cloudflare 대시보드에 붙여넣으세요.';
-                status.classList.add('show', 'success');
-                setTimeout(() => status.classList.remove('show'), 3000);
+        function copyCode() {
+            const codeText = document.getElementById('code').textContent;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const msg = document.getElementById('message');
+                msg.textContent = '✅ 복사됨! Cloudflare에 붙여넣으세요.';
+                msg.classList.add('show');
+                setTimeout(() => msg.classList.remove('show'), 3000);
             }).catch(() => {
-                const status = document.getElementById('status');
-                status.textContent = '❌ 복사 실패. 아래 코드를 수동으로 선택하세요.';
-                status.classList.add('show', 'error');
+                const msg = document.getElementById('message');
+                msg.textContent = '❌ 복사 실패. 아래 "전체 선택" 후 수동 복사하세요.';
+                msg.classList.add('show');
             });
         }
 
-        function selectCode() {
-            const codeBox = document.getElementById('codeBox');
+        function selectAll() {
+            const codeDiv = document.getElementById('code');
             const range = document.createRange();
-            range.selectNodeContents(codeBox);
+            range.selectNodeContents(codeDiv);
             window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
 
-            const status = document.getElementById('status');
-            status.textContent = '✏️ 코드가 선택되었습니다. Ctrl+C로 복사하세요.';
-            status.classList.add('show', 'success');
-            setTimeout(() => status.classList.remove('show'), 3000);
+            const msg = document.getElementById('message');
+            msg.textContent = '✏️ 선택됨. 길게 누르고 복사하세요.';
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 3000);
         }
     </script>
 </body>
