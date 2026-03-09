@@ -448,8 +448,35 @@ export default {
       ================================ */
       let response
 
+      // /market endpoint - 시장 데이터
+      if (pathname === "/market") {
+        const marketData = await getMarketData()
+        response = {
+          timestamp: new Date().toISOString(),
+          dataType: "market",
+          data: marketData
+        }
+      }
+      // /stock endpoint - 개별 주식 데이터
+      else if (pathname === "/stock") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const quote = await getQuote(stockSymbol)
+          response = {
+            timestamp: new Date().toISOString(),
+            dataType: "stock",
+            symbol: stockSymbol,
+            data: quote
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
       // 루트 경로 처리
-      if (pathname === "/" || pathname === "/analysis") {
+      else if (pathname === "/" || pathname === "/analysis") {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
