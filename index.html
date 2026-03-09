@@ -5306,8 +5306,10 @@ var ECON_DATA = {
          * 외국인/기관/개인 수급: 공개 API 없음 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
+            console.log('[imdLoadKorea] 🔄 START - Worker API 호출 시작');
             // Primary: Worker API
             workerFetchMarket().then(function(data) {
+                console.log('[imdLoadKorea] ✅ Worker 응답 받음, data:', data ? Object.keys(data) : 'NULL');
                 if (data && data.KOREA_MARKET) {
                     var kr = data.KOREA_MARKET;
 
@@ -6203,8 +6205,10 @@ var ECON_DATA = {
          * 전체 로드 & 자동 갱신 (60초)
          * ══════════════════════════════════════════════════════ */
         function imdLoadAll() {
+            console.log('🚀 [imdLoadAll] DASHBOARD 로드 시작');
             // 메타데이터 먼저 로드 (라벨 및 단위 초기화)
             loadDashboardMetadata().then(function() {
+                console.log('📊 [imdLoadAll] 메타데이터 로드 완료, 데이터 로드 시작');
                 imdLoadKorea();
                 imdLoadUS();
                 imdLoadFutures();
