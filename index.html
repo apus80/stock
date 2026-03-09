@@ -5341,8 +5341,7 @@ var ECON_DATA = {
                     }
                     fetchMulti([
                         function(){ return yahooPrice('^KS11'); },
-                        function(){ return twelvePrice('KOSPI'); },
-                        function(){ return fmpPrice('%5EKS11'); }
+                        function(){ return twelvePrice('KOSPI'); }
                     ]).then(function(v){
                         imdSetValue('kospi', v ? (v / 100) : v, 0);
                         yahooQuote('^KS11').then(function(q){
@@ -5361,8 +5360,7 @@ var ECON_DATA = {
                     }
                     fetchMulti([
                         function(){ return yahooPrice('^KQ11'); },
-                        function(){ return twelvePrice('KOSDAQ'); },
-                        function(){ return fmpPrice('%5EKQ11'); }
+                        function(){ return twelvePrice('KOSDAQ'); }
                     ]).then(function(v){
                         imdSetValue('kosdaq', v ? (v / 100) : v, 0);
                         yahooQuote('^KQ11').then(function(q){
