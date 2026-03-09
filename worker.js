@@ -3,6 +3,13 @@ export default {
     try {
       const FMP = env.FMP_API_KEY
       const FRED = env.FRED_KEY
+      const ITICK = env.ITICK_TOKEN
+
+      // 환경 변수 검증
+      console.log(`🔑 환경변수 확인:`)
+      console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
+      console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
+      console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
 
       // URL 파싱
       const url = new URL(request.url)
@@ -18,11 +25,18 @@ export default {
       ================================ */
       async function getQuote(sym) {
         try {
+          // 📍 출처: FMP API (financialmodelingprep.com)
+          // v3 API 최신 버전 사용
           const r = await fetch(
-            `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
+            `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
           )
           const j = await r.json()
-          return Array.isArray(j) && j.length > 0 ? j[0] : null
+          if (!j || j.length === 0) {
+            console.warn(`⚠️ ${sym}: 응답값 없음`, j)
+            return null
+          }
+          console.log(`✅ ${sym}: price=${j[0]?.price}`)
+          return j[0] || null
         } catch (e) {
           console.error(`❌ ${sym}:`, e.message)
           return null
@@ -30,36 +44,46 @@ export default {
       }
 
       async function getKoreanQuote(symbol) {
-        // 출처: iTick 실시간 한국 주식 API
+        // 📍 출처: iTick 실시간 한국 주식 API (itick.org)
         const ITICK_TOKEN = env.ITICK_TOKEN
         if (!ITICK_TOKEN) {
           console.warn(`⚠️ iTick 토큰 없음. ${symbol} 데이터 불가능. env.ITICK_TOKEN 설정 필요`)
           return null
         }
         try {
-          const r = await fetch(
-            `https://api.itick.org/v1/symbols/${symbol}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${ITICK_TOKEN}`,
-                'Content-Type': 'application/json'
-              }
+          // iTick Symbol Format: KS11, KQ11 등 (대문자)
+          const url = `https://api.itick.org/v1/symbols/${symbol.toUpperCase()}`
+          console.log(`📍 iTick API 호출: ${url}`)
+
+          const r = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${ITICK_TOKEN}`,
+              'Content-Type': 'application/json'
             }
-          )
+          })
+
           if (!r.ok) {
-            console.error(`❌ iTick ${symbol}: HTTP ${r.status}`)
+            console.error(`❌ iTick ${symbol}: HTTP ${r.status} ${r.statusText}`)
+            const errText = await r.text()
+            console.error(`   응답: ${errText}`)
             return null
           }
+
           const j = await r.json()
-          if (!j.data) return null
+          if (!j.data) {
+            console.warn(`⚠️ iTick ${symbol}: 응답에 data 필드 없음:`, j)
+            return null
+          }
 
           const d = j.data
-          return {
+          const result = {
             price: d.price || d.last_price,
             changePercentage: d.change_percent || d.change_percentage,
             volume: d.volume,
             change: d.change
           }
+          console.log(`✅ iTick ${symbol}: price=${result.price}, change=${result.changePercentage}%`)
+          return result
         } catch (e) {
           console.error(`❌ ${symbol} (iTick):`, e.message)
           return null
@@ -68,11 +92,23 @@ export default {
 
       async function fredGet(series) {
         try {
-          const r = await fetch(
-            `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json`
-          )
+          // 📍 출처: FRED API (Federal Reserve)
+          const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json`
+          const r = await fetch(url)
+          if (!r.ok) {
+            console.error(`❌ FRED ${series}: HTTP ${r.status}`)
+            return []
+          }
           const j = await r.json()
-          return j.observations || []
+          if (j.error_code) {
+            console.error(`❌ FRED ${series}: API Error:`, j.error_message)
+            return []
+          }
+          const obs = j.observations || []
+          if (obs.length > 0) {
+            console.log(`✅ FRED ${series}: ${obs.length} obs, latest=${obs[obs.length-1].value}`)
+          }
+          return obs
         } catch (e) {
           console.error(`❌ FRED ${series}:`, e.message)
           return []
