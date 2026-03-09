@@ -5235,20 +5235,20 @@ var ECON_DATA = {
                 if (data && data.KOREA_MARKET) {
                     var kr = data.KOREA_MARKET;
 
-                    // ✅ FMP API는 센트 단위로 반환하므로 100으로 나눔
+                    // ✅ Worker API는 이미 센트 단위로 반환 (FMP API 데이터를 *100 변환함)
                     if (kr.KOSPI && kr.KOSPI.price) {
-                        imdSetValue('kospi', kr.KOSPI.price / 100, 0);
-                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change / 100, 'pct');
+                        imdSetValue('kospi', kr.KOSPI.price, 0);
+                        if (kr.KOSPI.change !== undefined) imdSetChange('kospi', kr.KOSPI.change, 'pct');
                     }
 
                     if (kr.KOSDAQ && kr.KOSDAQ.price) {
-                        imdSetValue('kosdaq', kr.KOSDAQ.price / 100, 0);
-                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change / 100, 'pct');
+                        imdSetValue('kosdaq', kr.KOSDAQ.price, 0);
+                        if (kr.KOSDAQ.change !== undefined) imdSetChange('kosdaq', kr.KOSDAQ.change, 'pct');
                     }
 
                     if (kr.KOSPI_FUT && kr.KOSPI_FUT.price) {
-                        imdSetValue('kospifut', kr.KOSPI_FUT.price / 100, 0);
-                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change / 100, 'pct');
+                        imdSetValue('kospifut', kr.KOSPI_FUT.price, 0);
+                        if (kr.KOSPI_FUT.change !== undefined) imdSetChange('kospifut', kr.KOSPI_FUT.change, 'pct');
                     }
 
                     return; // Success – no fallback needed
