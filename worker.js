@@ -3,138 +3,47 @@ export default {
     try {
       const FMP = env.FMP_API_KEY
       const FRED = env.FRED_KEY
-      const ITICK = env.ITICK_TOKEN
 
-      // 환경 변수 검증
-      console.log(`🔑 환경변수 확인:`)
-      console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
-      console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
-      console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
-
-      // URL 파싱
       const url = new URL(request.url)
       const pathname = url.pathname
       const action = url.searchParams.get('action')
       const symbol = url.searchParams.get('symbol')
       const series = url.searchParams.get('series')
 
-      console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
-
       /* ================================
          API 함수들
       ================================ */
       async function getQuote(sym) {
         try {
-          // 📍 출처: FMP API (financialmodelingprep.com)
-          // /stable/quote endpoint (Free Tier - confirmed working)
-          const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
-          console.log(`📍 FMP API 호출: ${sym}`)
-          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
-          console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
-
-          const r = await fetch(url)
-          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
-          console.log(`   Headers: Content-Type=${r.headers.get('content-type')}`)
-
-          if (!r.ok) {
-            console.error(`❌ FMP ${sym}: HTTP ${r.status} ${r.statusText}`)
-            const errText = await r.text()
-            console.error(`   📝 Response Body (first 500 chars):`)
-            console.error(`   ${errText.substring(0, 500)}`)
-            if (errText.length > 500) console.error(`   ... (${errText.length - 500} more chars)`)
-            return null
-          }
-
+          // 📍 출처: FMP API (financialmodelingprep.com) - /stable/quote
+          const r = await fetch(
+            `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
+          )
           const j = await r.json()
-          console.log(`📦 FMP ${sym} 응답:`)
-          console.log(`   Type: ${Array.isArray(j) ? 'Array' : typeof j}`)
-          console.log(`   Length: ${Array.isArray(j) ? j.length : 'N/A'}`)
-          if (typeof j === 'object') {
-            const keys = Object.keys(j || {})
-            console.log(`   Keys: ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`)
-          }
-          console.log(`   Full Response: ${JSON.stringify(j).substring(0, 200)}`)
-
-          // FMP v3/quote는 Array 반환
-          if (!j || (Array.isArray(j) && j.length === 0)) {
-            console.warn(`⚠️ ${sym}: 응답값 없음 (null 또는 empty array)`)
-            return null
-          }
-
-          // 응답을 정규화 (Array 또는 Object 모두 처리)
-          const quote = Array.isArray(j) ? j[0] : j
-          console.log(`   Quote object keys: ${Object.keys(quote || {}).join(', ')}`)
-          console.log(`   Price value: ${quote?.price}`)
-
-          if (!quote || !quote.price) {
-            console.warn(`⚠️ ${sym}: price 필드 없음 또는 null`)
-            console.warn(`   Quote: ${JSON.stringify(quote).substring(0, 200)}`)
-            return null
-          }
-
-          // FMP API 필드명 정규화
-          // - price: price 또는 price
-          // - changePercentage: changesPercentage (FMP 실제 필드명)
-          const normalized = {
-            symbol: quote.symbol || sym,
-            price: quote.price,
-            changePercentage: quote.changesPercentage || quote.changePercentage, // FMP는 's'가 붙음
-            change: quote.change,
-            volume: quote.volume,
-            timestamp: quote.timestamp
-          }
-
-          console.log(`✅ ${sym}: price=${normalized.price}, change=${normalized.changePercentage}%`)
-          return normalized
-
+          return Array.isArray(j) && j.length > 0 ? j[0] : null
         } catch (e) {
-          console.error(`❌ ${sym} ERROR:`)
-          console.error(`   Message: ${e.message}`)
-          console.error(`   Type: ${e.name}`)
-          console.error(`   Stack: ${e.stack?.substring(0, 300)}`)
+          console.error(`❌ 주식 ${sym} 실패:`, e.message)
           return null
         }
       }
 
       async function getKoreanQuote(symbol) {
-        // 📍 출처: FMP API (financialmodelingprep.com) - /stable/quote (Free Tier)
+        // 📍 출처: FMP API (financialmodelingprep.com) - /stable/quote
         try {
           const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
-          const url = `https://financialmodelingprep.com/stable/quote?symbol=${fmpSymbol}&apikey=${FMP}`
-          console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
-          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
-
-          const r = await fetch(url)
-          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
-
-          if (!r.ok) {
-            console.error(`❌ FMP 한국 ${fmpSymbol}: HTTP ${r.status} ${r.statusText}`)
-            return null
-          }
-
+          const r = await fetch(
+            `https://financialmodelingprep.com/stable/quote?symbol=${fmpSymbol}&apikey=${FMP}`
+          )
           const j = await r.json()
-
-          if (!j || (Array.isArray(j) && j.length === 0)) {
-            console.warn(`⚠️ ${fmpSymbol}: 응답값 없음`)
-            return null
-          }
-
-          const quote = Array.isArray(j) ? j[0] : j
-          if (!quote || !quote.price) {
-            console.warn(`⚠️ ${fmpSymbol}: price 필드 없음`)
-            return null
-          }
-
-          const result = {
+          const quote = Array.isArray(j) && j.length > 0 ? j[0] : j
+          return quote?.price ? {
             price: quote.price,
             changePercentage: quote.changesPercentage || quote.changePercentage,
             change: quote.change,
             volume: quote.volume
-          }
-          console.log(`✅ FMP 한국 ${fmpSymbol}: price=${result.price}, change=${result.changePercentage}%`)
-          return result
+          } : null
         } catch (e) {
-          console.error(`❌ FMP 한국 ${symbol}:`, e.message)
+          console.error(`❌ FMP 한국 ${symbol} 실패:`, e.message)
           return null
         }
       }
@@ -212,9 +121,6 @@ export default {
       }
 
       async function getMarketData() {
-        console.log("🔄 모든 시장 데이터 API 호출 시작...")
-        console.log(`📍 환경: FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
-
         // Promise.allSettled()를 사용해서 한 개 실패해도 다른 데이터는 정상 반환
         const results = await Promise.allSettled([
           // US 주식
@@ -258,23 +164,6 @@ export default {
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
         const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results.map(extract)
-
-        // 데이터 로깅
-        console.log(`\n📊 ===== API 호출 결과 요약 =====`)
-        console.log(`📈 미국 주식:`)
-        console.log(`   SPY: ${spy?.price || '⚠️ 실패'} (change: ${spy?.changePercentage || '⚠️'}%)`)
-        console.log(`   QQQ: ${qqq?.price || '⚠️ 실패'} (change: ${qqq?.changePercentage || '⚠️'}%)`)
-        console.log(`   DIA: ${dia?.price || '⚠️ 실패'} (change: ${dia?.changePercentage || '⚠️'}%)`)
-        console.log(`📊 섹터:`)
-        console.log(`   XLK: ${xlk?.price || '⚠️ 실패'}, XLF: ${xlf?.price || '⚠️'}, XLE: ${xle?.price || '⚠️'}, XLV: ${xlv?.price || '⚠️'}`)
-        console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
-        console.log(`💰 채권 & 광범위:`)
-        console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
-        console.log(`🇰🇷 한국 시장 (FMP):`)
-        console.log(`   EWY: ${ewy?.price || '⚠️ 실패'} (change: ${ewy?.changePercentage || '⚠️'}%)`)
-        console.log(`📊 FRED 경제지표:`)
-        console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
-        console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
