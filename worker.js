@@ -108,6 +108,24 @@ export default {
         return rawValue / conversion.divisor
       }
 
+      // 📦 캐싱: 60초 내 중복 호출 방지
+      let cachedMarketData = null
+      let cacheTimestamp = 0
+      const CACHE_TTL = 60000 // 60초
+
+      async function getMarketDataCached() {
+        const now = Date.now()
+        if (cachedMarketData && (now - cacheTimestamp) < CACHE_TTL) {
+          console.log("📦 캐시 사용 (경과: " + (now - cacheTimestamp) + "ms)")
+          return cachedMarketData
+        }
+
+        console.log("🔄 신규 API 호출")
+        cachedMarketData = await getMarketData()
+        cacheTimestamp = now
+        return cachedMarketData
+      }
+
       async function getMarketData() {
         const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = await Promise.all([
           getQuote("SPY"),
@@ -163,7 +181,7 @@ export default {
 
       // 1. Institutional Market Score
       async function getInstitutionalScore() {
-        const data = await getMarketData()
+        const data = await getMarketDataCached()
         const liquidityScore = (data.fed && data.fed > 7000) ? 18 : 15
         const volatilityScore = (data.vix && data.vix < 15) ? 18 : (data.vix < 20 ? 14 : 10)
         const creditScore = (data.hyg && data.lqd && (data.hyg / data.lqd) > 0.98) ? 18 : 15
@@ -195,7 +213,7 @@ export default {
 
       // 2. Market Regime Engine
       async function getMarketRegime() {
-        const data = await getMarketData()
+        const data = await getMarketDataCached()
         const trendScore = (data.spy > 400) ? 70 : 55
         const riskScore = (data.vix < 15) ? 80 : 60
         const confidenceScore = (trendScore + riskScore) / 2
@@ -223,7 +241,7 @@ export default {
 
       // 3. Liquidity Pulse
       async function getLiquidityPulse() {
-        const data = await getMarketData()
+        const data = await getMarketDataCached()
         const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
 
         return {
@@ -241,7 +259,7 @@ export default {
 
       // 4. Yield Curve Monitor
       async function getYieldCurveMonitor() {
-        const data = await getMarketData()
+        const data = await getMarketDataCached()
         const spread = data.yieldCurve
         const isInverted = spread < 0
 
@@ -286,7 +304,7 @@ export default {
 
       // 6. Credit Stress Monitor
       async function getCreditStress() {
-        const data = await getMarketData()
+        const data = await getMarketDataCached()
         const spread = data.hyg && data.lqd ? ((data.hyg / data.lqd - 0.98) * 100) : 0
         const stress = spread > 2 ? "높음" : spread > 0 ? "중간" : "낮음"
 
@@ -328,7 +346,7 @@ export default {
 
       // 8. Volatility Regime
       async function getVolatilityRegime() {
-        const data = await getMarketData()
+        const data = await getMarketDataCached()
         const regime = (data.vix < 15) ? "Low" : (data.vix < 20) ? "Medium" : "High"
 
         return {
@@ -421,7 +439,7 @@ export default {
           getQuote("QQQ")
         ])
 
-        const signal = (spy && spy.volume > 80000000) ? "축적" : "분산"
+        const signal = (spy && spy.volume > 60000000) ? "축적" : "분산"
 
         return {
           timestamp: new Date().toISOString(),
