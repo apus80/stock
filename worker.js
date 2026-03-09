@@ -11,7 +11,7 @@ export default {
       const symbol = url.searchParams.get('symbol')
       const series = url.searchParams.get('series')
 
-      console.log(`📊 요청: pathname=${pathname}, action=${action}`)
+      console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
 
       /* ================================
          API 함수들
@@ -533,9 +533,32 @@ export default {
           value: value
         }
       } else {
+        // 기본값: 메타데이터 반환
         response = {
-          error: "잘못된 요청",
-          usage: "GET /analysis/[widget-name] 또는 /analysis?action=metadata"
+          timestamp: new Date().toISOString(),
+          dataType: "metadata",
+          message: "14개 AI 분석 위젯 엔드포인트 사용 가능",
+          endpoints: [
+            "/analysis/institutional-score",
+            "/analysis/market-regime",
+            "/analysis/liquidity-pulse",
+            "/analysis/yield-curve-monitor",
+            "/analysis/inflation-pressure",
+            "/analysis/credit-stress",
+            "/analysis/market-breadth",
+            "/analysis/volatility-regime",
+            "/analysis/sector-rotation",
+            "/analysis/dollar-liquidity",
+            "/analysis/crypto-sentiment",
+            "/analysis/smart-money",
+            "/analysis/stock-ranking",
+            "/analysis/market-heatmap"
+          ],
+          debug: {
+            pathname: pathname,
+            action: action,
+            series: series
+          }
         }
       }
 
