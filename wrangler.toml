@@ -1,21 +1,8 @@
 name = "fmp-proxy"
-type = "javascript"
 main = "worker.js"
-site = { dir = "." }
-
-# Cloudflare API 토큰 필요
-# export CLOUDFLARE_API_TOKEN="your_token_here"
-
-[env.production]
-name = "fmp-proxy"
-route = "fmp-proxy.aiinvestflow.workers.dev/*"
-zone_id = "" # Cloudflare Zone ID 필요
-
-[build]
-command = ""
-cwd = ""
-watch_paths = []
+workers_dev = true
 
 [vars]
-FMP_API_KEY = ""  # 환경변수로 설정
-FRED_KEY = ""     # 환경변수로 설정
+FMP_API_KEY = ""
+FRED_KEY = ""
+ITICK_TOKEN = ""
