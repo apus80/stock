@@ -4798,17 +4798,20 @@ var ECON_DATA = {
 
             // 1️⃣ 메모리 캐시 확인 (30초)
             if (!skipCache && workerMarketCache && (now - workerMarketCacheTime) < MEMORY_CACHE_TTL) {
-                console.log('[WORKER] Using memory cached market data');
+                console.log('[WORKER] ✅ Using memory cached market data');
                 return Promise.resolve(workerMarketCache);
             }
 
             var url = API_BASE + '/market';
-            console.log('[WORKER] Fetching market data from:', url);
+            console.log('[WORKER] 🔄 Fetching from:', url);
+            console.log('[WORKER] API_BASE:', API_BASE);
 
-            return fetch(url)
+            return fetch(url, { credentials: 'omit' })
                 .then(function(r) {
-                    console.log('[WORKER] Response status:', r.status);
+                    console.log('[WORKER] 📊 Response status:', r.status, r.statusText);
+                    console.log('[WORKER] Content-Type:', r.headers.get('content-type'));
                     if (!r.ok) {
+                        console.error('[WORKER] ❌ HTTP Error:', r.status);
                         throw new Error('HTTP ' + r.status);
                     }
                     return r.json();
@@ -4835,12 +4838,15 @@ var ECON_DATA = {
                     throw new Error('Empty response');
                 })
                 .catch(function(e) {
-                    console.error('[WORKER] Market data fetch failed:', e.message, e);
+                    console.error('[WORKER] ❌ Fetch FAILED:', e.message);
+                    console.error('[WORKER] Error type:', e.name);
+                    console.error('[WORKER] Stack:', e.stack ? e.stack.substring(0, 200) : 'N/A');
 
                     // 3️⃣ API 실패 시 LocalStorage 캐시에서 로드
                     try {
                         var cached = localStorage.getItem(MARKET_CACHE_KEY);
                         if (cached) {
+                            console.log('[WORKER] 💾 Loading from LocalStorage cache');
                             var cachedObj = JSON.parse(cached);
                             var age = Date.now() - cachedObj.timestamp;
                             if (age < STORAGE_CACHE_TTL) {
