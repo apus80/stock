@@ -28,30 +28,47 @@ export default {
           // 📍 출처: FMP API (financialmodelingprep.com)
           // v3 API 최신 버전 사용
           const url = `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
-          console.log(`📍 FMP API 호출: ${url}`)
+          console.log(`📍 FMP API 호출: ${sym}`)
+          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}?apikey=[HIDDEN]`)
+          console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
 
           const r = await fetch(url)
+          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
+          console.log(`   Headers: Content-Type=${r.headers.get('content-type')}`)
 
           if (!r.ok) {
-            console.error(`❌ FMP ${sym}: HTTP ${r.status}`)
+            console.error(`❌ FMP ${sym}: HTTP ${r.status} ${r.statusText}`)
             const errText = await r.text()
-            console.error(`   에러: ${errText}`)
+            console.error(`   📝 Response Body (first 500 chars):`)
+            console.error(`   ${errText.substring(0, 500)}`)
+            if (errText.length > 500) console.error(`   ... (${errText.length - 500} more chars)`)
             return null
           }
 
           const j = await r.json()
-          console.log(`📦 FMP ${sym} 응답 타입:`, Array.isArray(j) ? 'Array' : 'Object', 'Keys:', Object.keys(j || {}).slice(0, 5))
+          console.log(`📦 FMP ${sym} 응답:`)
+          console.log(`   Type: ${Array.isArray(j) ? 'Array' : typeof j}`)
+          console.log(`   Length: ${Array.isArray(j) ? j.length : 'N/A'}`)
+          if (typeof j === 'object') {
+            const keys = Object.keys(j || {})
+            console.log(`   Keys: ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`)
+          }
+          console.log(`   Full Response: ${JSON.stringify(j).substring(0, 200)}`)
 
           // FMP v3/quote는 Array 반환
           if (!j || (Array.isArray(j) && j.length === 0)) {
-            console.warn(`⚠️ ${sym}: 응답값 없음`)
+            console.warn(`⚠️ ${sym}: 응답값 없음 (null 또는 empty array)`)
             return null
           }
 
           // 응답을 정규화 (Array 또는 Object 모두 처리)
           const quote = Array.isArray(j) ? j[0] : j
+          console.log(`   Quote object keys: ${Object.keys(quote || {}).join(', ')}`)
+          console.log(`   Price value: ${quote?.price}`)
+
           if (!quote || !quote.price) {
-            console.warn(`⚠️ ${sym}: price 필드 없음`)
+            console.warn(`⚠️ ${sym}: price 필드 없음 또는 null`)
+            console.warn(`   Quote: ${JSON.stringify(quote).substring(0, 200)}`)
             return null
           }
 
@@ -71,7 +88,10 @@ export default {
           return normalized
 
         } catch (e) {
-          console.error(`❌ ${sym}:`, e.message, e.stack)
+          console.error(`❌ ${sym} ERROR:`)
+          console.error(`   Message: ${e.message}`)
+          console.error(`   Type: ${e.name}`)
+          console.error(`   Stack: ${e.stack?.substring(0, 300)}`)
           return null
         }
       }
@@ -218,11 +238,21 @@ export default {
         const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = results
 
         // 데이터 로깅
-        console.log(`📊 API 호출 결과 요약:`)
-        console.log(`   미국 주식: SPY=${spy?.price}, QQQ=${qqq?.price}, DIA=${dia?.price}`)
-        console.log(`   한국 주식: KOSPI=${kospi?.price}, KOSDAQ=${kosdaq?.price}`)
-        console.log(`   채권: HYG=${hyg?.price}, LQD=${lqd?.price}`)
-        console.log(`   FRED: WALCL=${fed?.length} obs, DGS10=${dgs10?.length} obs`)
+        console.log(`\n📊 ===== API 호출 결과 요약 =====`)
+        console.log(`📈 미국 주식:`)
+        console.log(`   SPY: ${spy?.price || '❌ NULL'} (change: ${spy?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   QQQ: ${qqq?.price || '❌ NULL'} (change: ${qqq?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   DIA: ${dia?.price || '❌ NULL'} (change: ${dia?.changePercentage || '❌ NULL'}%)`)
+        console.log(`🇰🇷 한국 주식:`)
+        console.log(`   KOSPI: ${kospi?.price || '❌ NULL'} (change: ${kospi?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   KOSDAQ: ${kosdaq?.price || '❌ NULL'} (change: ${kosdaq?.changePercentage || '❌ NULL'}%)`)
+        console.log(`💰 채권:`)
+        console.log(`   HYG: ${hyg?.price || '❌ NULL'} (change: ${hyg?.changePercentage || '❌ NULL'}%)`)
+        console.log(`   LQD: ${lqd?.price || '❌ NULL'} (change: ${lqd?.changePercentage || '❌ NULL'}%)`)
+        console.log(`📊 FRED 데이터:`)
+        console.log(`   WALCL: ${fed?.length || 0} observations, latest=${getLatestValue(fed) || '❌ NULL'}`)
+        console.log(`   DGS10: ${dgs10?.length || 0} observations, latest=${getLatestValue(dgs10) || '❌ NULL'}`)
+        console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
