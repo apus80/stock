@@ -97,48 +97,36 @@ export default {
       }
 
       async function getKoreanQuote(symbol) {
-        // 📍 출처: iTick 실시간 한국 주식 API (itick.org)
-        const ITICK_TOKEN = env.ITICK_TOKEN
-        if (!ITICK_TOKEN) {
-          console.warn(`⚠️ iTick 토큰 없음. ${symbol} 데이터 불가능. env.ITICK_TOKEN 설정 필요`)
-          return null
-        }
+        // 📍 출처: Yahoo Finance API (query1.finance.yahoo.com) - 한국 지수만 직접 호출
         try {
-          // iTick Symbol Format: KS11, KQ11 등 (대문자)
-          const url = `https://api.itick.org/v1/symbols/${symbol.toUpperCase()}`
-          console.log(`📍 iTick API 호출: ${url}`)
+          const yahooSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d&includePrePost=false`
+          console.log(`📍 Yahoo Finance API 호출: ${yahooSymbol}`)
 
-          const r = await fetch(url, {
-            headers: {
-              'Authorization': `Bearer ${ITICK_TOKEN}`,
-              'Content-Type': 'application/json'
-            }
-          })
+          const r = await fetch(url)
 
           if (!r.ok) {
-            console.error(`❌ iTick ${symbol}: HTTP ${r.status} ${r.statusText}`)
-            const errText = await r.text()
-            console.error(`   응답: ${errText}`)
+            console.error(`❌ Yahoo ${yahooSymbol}: HTTP ${r.status} ${r.statusText}`)
             return null
           }
 
           const j = await r.json()
-          if (!j.data) {
-            console.warn(`⚠️ iTick ${symbol}: 응답에 data 필드 없음:`, j)
+          if (!j.chart || !j.chart.result || !j.chart.result[0]) {
+            console.warn(`⚠️ Yahoo ${yahooSymbol}: 응답 구조 오류`)
             return null
           }
 
-          const d = j.data
+          const meta = j.chart.result[0].meta
           const result = {
-            price: d.price || d.last_price,
-            changePercentage: d.change_percent || d.change_percentage,
-            volume: d.volume,
-            change: d.change
+            price: meta.regularMarketPrice || null,
+            changePercentage: meta.regularMarketChangePercent || null,
+            change: meta.regularMarketChange || null,
+            volume: meta.regularMarketVolume || null
           }
-          console.log(`✅ iTick ${symbol}: price=${result.price}, change=${result.changePercentage}%`)
+          console.log(`✅ Yahoo ${yahooSymbol}: price=${result.price}, change=${result.changePercentage}%`)
           return result
         } catch (e) {
-          console.error(`❌ ${symbol} (iTick):`, e.message)
+          console.error(`❌ Yahoo ${symbol}:`, e.message)
           return null
         }
       }
@@ -707,7 +695,13 @@ export default {
               value: marketData.us2y ? parseFloat(marketData.us2y.toFixed(2)) : null
             },
             YIELD_CURVE: marketData.yieldCurve ? parseFloat(marketData.yieldCurve.toFixed(3)) : null
-          }
+          },
+          // 카드 10-14: Sectors, Credit, Breadth, Macro (향후 확장)
+          SECTORS: {},
+          CREDIT: {},
+          BREADTH: {},
+          MACRO_BASE: {},
+          MACRO_INDICATORS: {}
         }
       }
       // /stock endpoint - 개별 주식 데이터
