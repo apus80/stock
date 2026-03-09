@@ -205,26 +205,48 @@ export default {
 
       async function getMarketData() {
         console.log("🔄 모든 시장 데이터 API 호출 시작...")
-        console.log(`📍 환경: ITICK_TOKEN=${ITICK ? '✅' : '❌'}, FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
+        console.log(`📍 환경: FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
         const results = await Promise.all([
+          // US 주식
           getQuote("SPY"),
           getQuote("QQQ"),
           getQuote("DIA"),
           getQuote("SOXX"),
           getQuote("IWM"),
           getQuote("^VIX"),
+          // 채권
           getQuote("HYG"),
           getQuote("LQD"),
+          // 광범위 지표
+          getQuote("VTI"),
+          getQuote("TLT"),
+          // 섹터 ETF (카드 10)
+          getQuote("XLK"),  // TECHNOLOGY
+          getQuote("XLF"),  // FINANCIALS
+          getQuote("XLE"),  // ENERGY
+          getQuote("XLV"),  // HEALTHCARE
+          getQuote("XLY"),  // CONSUMER_DISCRETIONARY
+          getQuote("XLI"),  // INDUSTRIALS
+          getQuote("XLU"),  // UTILITIES
+          getQuote("XLRE"), // REAL_ESTATE
+          // 한국 주식
+          getKoreanQuote("KS11"),
+          getKoreanQuote("KQ11"),
+          // FRED 경제지표
           fredGet("WALCL"),
           fredGet("RRPONTSYD"),
           fredGet("DGS10"),
           fredGet("DGS2"),
           fredGet("CPIAUCSL"),
-          getKoreanQuote("KS11"),
-          getKoreanQuote("KQ11")
+          fredGet("UNRATE"),
+          fredGet("UMCSENT"),
+          fredGet("GDPC1"),
+          fredGet("INDPRO"),
+          fredGet("PAYEMS"),
+          fredGet("PCEPILFE")
         ])
 
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = results
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, kospi, kosdaq, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -249,6 +271,13 @@ export default {
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
         const us10y = convertFredValue("DGS10", getLatestValue(dgs10))
         const us2y = convertFredValue("DGS2", getLatestValue(dgs2))
+        const cpiVal = convertFredValue("CPIAUCSL", getLatestValue(cpi))
+        const unrateVal = convertFredValue("UNRATE", getLatestValue(unrate))
+        const umsentVal = convertFredValue("UMCSENT", getLatestValue(umcsent))
+        const gdpVal = convertFredValue("GDPC1", getLatestValue(gdpc1))
+        const indproVal = convertFredValue("INDPRO", getLatestValue(indpro))
+        const payelmsVal = convertFredValue("PAYEMS", getLatestValue(payems))
+        const pcepilfeVal = convertFredValue("PCEPILFE", getLatestValue(pcepilfe))
 
         return {
           spy: spy?.price,
@@ -271,11 +300,51 @@ export default {
           lqd: lqd?.price,
           hygChange: hyg?.changePercentage,
           lqdChange: lqd?.changePercentage,
+          vti: vti?.price,
+          tlt: tlt?.price,
+          vtiChange: vti?.changePercentage,
+          tltChange: tlt?.changePercentage,
           fed: fedVal,
           rp: rpVal,
           us10y: us10y,
           us2y: us2y,
-          yieldCurve: us10y && us2y ? (us10y - us2y) : null
+          yieldCurve: us10y && us2y ? (us10y - us2y) : null,
+          // 카드 10: Sectors
+          SECTORS: {
+            TECHNOLOGY: xlk ? {price: xlk.price, changePercentage: xlk.changePercentage} : null,
+            FINANCIALS: xlf ? {price: xlf.price, changePercentage: xlf.changePercentage} : null,
+            ENERGY: xle ? {price: xle.price, changePercentage: xle.changePercentage} : null,
+            HEALTHCARE: xlv ? {price: xlv.price, changePercentage: xlv.changePercentage} : null,
+            CONSUMER_DISCRETIONARY: xly ? {price: xly.price, changePercentage: xly.changePercentage} : null,
+            INDUSTRIALS: xli ? {price: xli.price, changePercentage: xli.changePercentage} : null,
+            UTILITIES: xlu ? {price: xlu.price, changePercentage: xlu.changePercentage} : null,
+            REAL_ESTATE: xlre ? {price: xlre.price, changePercentage: xlre.changePercentage} : null
+          },
+          // 카드 11: Credit & Breadth
+          CREDIT: {
+            HIGH_YIELD: hyg ? {price: hyg.price, changePercentage: hyg.changePercentage} : null,
+            INVESTMENT_GRADE: lqd ? {price: lqd.price, changePercentage: lqd.changePercentage} : null
+          },
+          BREADTH: {
+            TOTAL_MARKET: vti ? {price: vti.price, changePercentage: vti.changePercentage} : null,
+            LONG_TREASURY: tlt ? {price: tlt.price, changePercentage: tlt.changePercentage} : null
+          },
+          // 카드 12: Macro Base
+          MACRO_BASE: {
+            CPI: cpiVal,
+            INFLATION_EXPECTATION: null, // 별도 API 필요 (MMNRNJ)
+            UNEMPLOYMENT: unrateVal,
+            M2: null, // 별도 API 필요 (M2SL)
+            REAL_RATES: null  // 별도 계산 필요 (us10y - inflation)
+          },
+          // 카드 13: Macro Indicators
+          MACRO_INDICATORS: {
+            CONSUMER_SENTIMENT: umsentVal,
+            REAL_GDP: gdpVal,
+            INDUSTRIAL_PRODUCTION: indproVal,
+            NONFARM_PAYROLLS: payelmsVal,
+            PCE_INFLATION: pcepilfeVal
+          }
         }
       }
 
@@ -696,12 +765,12 @@ export default {
             },
             YIELD_CURVE: marketData.yieldCurve ? parseFloat(marketData.yieldCurve.toFixed(3)) : null
           },
-          // 카드 10-14: Sectors, Credit, Breadth, Macro (향후 확장)
-          SECTORS: {},
-          CREDIT: {},
-          BREADTH: {},
-          MACRO_BASE: {},
-          MACRO_INDICATORS: {}
+          // 카드 10-14: Sectors, Credit, Breadth, Macro
+          SECTORS: marketData.SECTORS || {},
+          CREDIT: marketData.CREDIT || {},
+          BREADTH: marketData.BREADTH || {},
+          MACRO_BASE: marketData.MACRO_BASE || {},
+          MACRO_INDICATORS: marketData.MACRO_INDICATORS || {}
         }
       }
       // /stock endpoint - 개별 주식 데이터
