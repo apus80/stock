@@ -448,7 +448,30 @@ export default {
       ================================ */
       let response
 
-      if (pathname === "/analysis/institutional-score") {
+      // 루트 경로 처리
+      if (pathname === "/" || pathname === "/analysis") {
+        response = {
+          timestamp: new Date().toISOString(),
+          dataType: "metadata",
+          message: "14개 AI 분석 위젯 엔드포인트 사용 가능",
+          endpoints: [
+            "/analysis/institutional-score",
+            "/analysis/market-regime",
+            "/analysis/liquidity-pulse",
+            "/analysis/yield-curve-monitor",
+            "/analysis/inflation-pressure",
+            "/analysis/credit-stress",
+            "/analysis/market-breadth",
+            "/analysis/volatility-regime",
+            "/analysis/sector-rotation",
+            "/analysis/dollar-liquidity",
+            "/analysis/crypto-sentiment",
+            "/analysis/smart-money",
+            "/analysis/stock-ranking",
+            "/analysis/market-heatmap"
+          ]
+        }
+      } else if (pathname === "/analysis/institutional-score") {
         response = await getInstitutionalScore()
       } else if (pathname === "/analysis/market-regime") {
         response = await getMarketRegime()
