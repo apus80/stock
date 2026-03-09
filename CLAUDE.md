@@ -57,13 +57,14 @@
 
 ## 🔗 FMP API 엔드포인트 (중요!)
 
-### ⚠️ MUST USE: `/api/stock/{symbol}/quote` (STABLE)
+### ⚠️ MUST USE: `/stable/batch-quote` (STABLE)
 
 **FMP API 엔드포인트 종류:**
 ```
-❌ /api/v3/quote/{symbol}      ← 사용 금지! (Invalid API KEY 에러)
-❌ /api/v4/quote/{symbol}      ← 사용 금지!
-✅ /api/stock/{symbol}/quote   ← 안정적, 권장 (필수 사용!)
+❌ /api/v3/quote/{symbol}           ← 사용 금지! (작동 안함)
+❌ /api/v4/quote/{symbol}           ← 사용 금지!
+❌ /api/stock/{symbol}/quote        ← 사용 금지! (null 반환)
+✅ /stable/batch-quote?symbols=X    ← 필수 사용! (확인된 작동 버전)
 ```
 
 **예시:**
@@ -72,12 +73,12 @@
 const url = `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
 
 // ✅ 필수
-const url = `https://financialmodelingprep.com/api/stock/${sym}/quote?apikey=${FMP}`
+const url = `https://financialmodelingprep.com/stable/batch-quote?symbols=${sym}&apikey=${FMP}`
 ```
 
 **이유:**
-- v3 엔드포인트: API KEY 검증 실패, 일관된 에러 반환
-- stable 엔드포인트: 안정적, 모든 필드 정상 반환
+- v3, v4, /api/stock/{sym}/quote: 응답이 null 또는 작동 안함
+- `/stable/batch-quote`: 가장 안정적, 응답 데이터 정상 (검증됨)
 
 ---
 
@@ -85,8 +86,8 @@ const url = `https://financialmodelingprep.com/api/stock/${sym}/quote?apikey=${F
 
 | 데이터 | 소스 | 주기 | 필드 | API 엔드포인트 |
 |--------|------|------|------|---------|
-| SPY, QQQ, DIA 등 미국 주식 | FMP API | 실시간 | `price`, `changePercentage` | `/api/stock/{symbol}/quote` |
-| 코스피, 코스닥 | FMP API | 실시간 | `price`, `changePercentage` | `/api/stock/{symbol}/quote` |
+| SPY, QQQ, DIA 등 미국 주식 | FMP API | 실시간 | `price`, `changePercentage` | `/stable/batch-quote?symbols=X` |
+| 코스피, 코스닥 | FMP API | 실시간 | `price`, `changePercentage` | `/stable/batch-quote?symbols=X` |
 | 연방기금 잔액, 역레포 | FRED API | 일일 | `value` | `/fred/series/observations` |
 | 10년물, 2년물 수익률 | FRED API | 일일 | `value` | `/fred/series/observations` |
 
