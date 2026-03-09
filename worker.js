@@ -97,36 +97,44 @@ export default {
       }
 
       async function getKoreanQuote(symbol) {
-        // 📍 출처: Yahoo Finance API (query1.finance.yahoo.com) - 한국 지수만 직접 호출
+        // 📍 출처: FMP API (financialmodelingprep.com) - Yahoo 프록시 다운으로 FMP로 통합
         try {
-          const yahooSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
-          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d&includePrePost=false`
-          console.log(`📍 Yahoo Finance API 호출: ${yahooSymbol}`)
+          const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
+          const url = `https://financialmodelingprep.com/api/v3/quote/${fmpSymbol}?apikey=${FMP}`
+          console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
+          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}?apikey=[HIDDEN]`)
 
           const r = await fetch(url)
+          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
 
           if (!r.ok) {
-            console.error(`❌ Yahoo ${yahooSymbol}: HTTP ${r.status} ${r.statusText}`)
+            console.error(`❌ FMP 한국 ${fmpSymbol}: HTTP ${r.status} ${r.statusText}`)
             return null
           }
 
           const j = await r.json()
-          if (!j.chart || !j.chart.result || !j.chart.result[0]) {
-            console.warn(`⚠️ Yahoo ${yahooSymbol}: 응답 구조 오류`)
+
+          if (!j || (Array.isArray(j) && j.length === 0)) {
+            console.warn(`⚠️ ${fmpSymbol}: 응답값 없음`)
             return null
           }
 
-          const meta = j.chart.result[0].meta
-          const result = {
-            price: meta.regularMarketPrice || null,
-            changePercentage: meta.regularMarketChangePercent || null,
-            change: meta.regularMarketChange || null,
-            volume: meta.regularMarketVolume || null
+          const quote = Array.isArray(j) ? j[0] : j
+          if (!quote || !quote.price) {
+            console.warn(`⚠️ ${fmpSymbol}: price 필드 없음`)
+            return null
           }
-          console.log(`✅ Yahoo ${yahooSymbol}: price=${result.price}, change=${result.changePercentage}%`)
+
+          const result = {
+            price: quote.price,
+            changePercentage: quote.changesPercentage || quote.changePercentage,
+            change: quote.change,
+            volume: quote.volume
+          }
+          console.log(`✅ FMP 한국 ${fmpSymbol}: price=${result.price}, change=${result.changePercentage}%`)
           return result
         } catch (e) {
-          console.error(`❌ Yahoo ${symbol}:`, e.message)
+          console.error(`❌ FMP 한국 ${symbol}:`, e.message)
           return null
         }
       }
