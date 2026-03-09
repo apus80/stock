@@ -206,7 +206,9 @@ export default {
       async function getMarketData() {
         console.log("🔄 모든 시장 데이터 API 호출 시작...")
         console.log(`📍 환경: FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
-        const results = await Promise.all([
+
+        // Promise.allSettled()를 사용해서 한 개 실패해도 다른 데이터는 정상 반환
+        const results = await Promise.allSettled([
           // US 주식
           getQuote("SPY"),
           getQuote("QQQ"),
@@ -246,25 +248,26 @@ export default {
           fredGet("PCEPILFE")
         ])
 
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, kospi, kosdaq, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results
+        // allSettled 결과에서 fulfilled된 것만 추출
+        const extract = (result) => result.status === 'fulfilled' ? result.value : null
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, kospi, kosdaq, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
         console.log(`📈 미국 주식:`)
-        console.log(`   SPY: ${spy?.price || '❌ NULL'} (change: ${spy?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   QQQ: ${qqq?.price || '❌ NULL'} (change: ${qqq?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   DIA: ${dia?.price || '❌ NULL'} (change: ${dia?.changePercentage || '❌ NULL'}%)`)
-        console.log(`🇰🇷 한국 주식: ← 핵심!`)
-        console.log(`   KOSPI: ${kospi?.price || '❌ NULL'} (change: ${kospi?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   KOSDAQ: ${kosdaq?.price || '❌ NULL'} (change: ${kosdaq?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   ⚠️ KOSPI 전체: ${JSON.stringify(kospi)}`)
-        console.log(`   ⚠️ KOSDAQ 전체: ${JSON.stringify(kosdaq)}`)
-        console.log(`💰 채권:`)
-        console.log(`   HYG: ${hyg?.price || '❌ NULL'} (change: ${hyg?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   LQD: ${lqd?.price || '❌ NULL'} (change: ${lqd?.changePercentage || '❌ NULL'}%)`)
-        console.log(`📊 FRED 데이터:`)
-        console.log(`   WALCL: ${fed?.length || 0} observations, latest=${getLatestValue(fed) || '❌ NULL'}`)
-        console.log(`   DGS10: ${dgs10?.length || 0} observations, latest=${getLatestValue(dgs10) || '❌ NULL'}`)
+        console.log(`   SPY: ${spy?.price || '⚠️ 실패'} (change: ${spy?.changePercentage || '⚠️'}%)`)
+        console.log(`   QQQ: ${qqq?.price || '⚠️ 실패'} (change: ${qqq?.changePercentage || '⚠️'}%)`)
+        console.log(`   DIA: ${dia?.price || '⚠️ 실패'} (change: ${dia?.changePercentage || '⚠️'}%)`)
+        console.log(`📊 섹터:`)
+        console.log(`   XLK: ${xlk?.price || '⚠️ 실패'}, XLF: ${xlf?.price || '⚠️'}, XLE: ${xle?.price || '⚠️'}, XLV: ${xlv?.price || '⚠️'}`)
+        console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
+        console.log(`💰 채권 & 광범위:`)
+        console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
+        console.log(`🇰🇷 한국 주식: ← Yahoo Finance 프록시 상태`)
+        console.log(`   KOSPI: ${kospi?.price || '⚠️ 프록시 실패'} (change: ${kospi?.changePercentage || '⚠️'}%)`)
+        console.log(`   KOSDAQ: ${kosdaq?.price || '⚠️ 프록시 실패'} (change: ${kosdaq?.changePercentage || '⚠️'}%)`)
+        console.log(`📊 FRED 경제지표:`)
+        console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
         console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
