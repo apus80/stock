@@ -20,8 +20,11 @@ export default {
             `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
           )
           const j = await r.json()
+          console.log(`[DEBUG] ${sym} 응답:`, JSON.stringify(j).substring(0, 200))
           // 배열 또는 객체 형식 모두 처리
-          return Array.isArray(j) ? (j.length > 0 ? j[0] : null) : (j?.price ? j : null)
+          const result = Array.isArray(j) ? (j.length > 0 ? j[0] : null) : (j?.price ? j : null)
+          console.log(`[DEBUG] ${sym} 결과:`, result)
+          return result
         } catch (e) {
           console.error(`❌ 주식 ${sym} 실패:`, e.message)
           return null
