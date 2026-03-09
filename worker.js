@@ -562,11 +562,11 @@ export default {
           LIQUIDITY: {
             FED_BALANCE: {
               value: marketData.fed ? parseFloat(marketData.fed.toFixed(0)) : null,
-              unit: "B"
+              unit: "T"
             },
             REVERSE_REPO: {
               value: marketData.rp ? parseFloat(marketData.rp.toFixed(0)) : null,
-              unit: "B"
+              unit: "T"
             }
           },
           RATES: {
