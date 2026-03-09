@@ -97,48 +97,36 @@ export default {
       }
 
       async function getKoreanQuote(symbol) {
-        // 📍 출처: iTick 실시간 한국 주식 API (itick.org)
-        const ITICK_TOKEN = env.ITICK_TOKEN
-        if (!ITICK_TOKEN) {
-          console.warn(`⚠️ iTick 토큰 없음. ${symbol} 데이터 불가능. env.ITICK_TOKEN 설정 필요`)
-          return null
-        }
+        // 📍 출처: Yahoo Finance API (query1.finance.yahoo.com) - 한국 지수만 직접 호출
         try {
-          // iTick Symbol Format: KS11, KQ11 등 (대문자)
-          const url = `https://api.itick.org/v1/symbols/${symbol.toUpperCase()}`
-          console.log(`📍 iTick API 호출: ${url}`)
+          const yahooSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d&includePrePost=false`
+          console.log(`📍 Yahoo Finance API 호출: ${yahooSymbol}`)
 
-          const r = await fetch(url, {
-            headers: {
-              'Authorization': `Bearer ${ITICK_TOKEN}`,
-              'Content-Type': 'application/json'
-            }
-          })
+          const r = await fetch(url)
 
           if (!r.ok) {
-            console.error(`❌ iTick ${symbol}: HTTP ${r.status} ${r.statusText}`)
-            const errText = await r.text()
-            console.error(`   응답: ${errText}`)
+            console.error(`❌ Yahoo ${yahooSymbol}: HTTP ${r.status} ${r.statusText}`)
             return null
           }
 
           const j = await r.json()
-          if (!j.data) {
-            console.warn(`⚠️ iTick ${symbol}: 응답에 data 필드 없음:`, j)
+          if (!j.chart || !j.chart.result || !j.chart.result[0]) {
+            console.warn(`⚠️ Yahoo ${yahooSymbol}: 응답 구조 오류`)
             return null
           }
 
-          const d = j.data
+          const meta = j.chart.result[0].meta
           const result = {
-            price: d.price || d.last_price,
-            changePercentage: d.change_percent || d.change_percentage,
-            volume: d.volume,
-            change: d.change
+            price: meta.regularMarketPrice || null,
+            changePercentage: meta.regularMarketChangePercent || null,
+            change: meta.regularMarketChange || null,
+            volume: meta.regularMarketVolume || null
           }
-          console.log(`✅ iTick ${symbol}: price=${result.price}, change=${result.changePercentage}%`)
+          console.log(`✅ Yahoo ${yahooSymbol}: price=${result.price}, change=${result.changePercentage}%`)
           return result
         } catch (e) {
-          console.error(`❌ ${symbol} (iTick):`, e.message)
+          console.error(`❌ Yahoo ${symbol}:`, e.message)
           return null
         }
       }
@@ -217,47 +205,82 @@ export default {
 
       async function getMarketData() {
         console.log("🔄 모든 시장 데이터 API 호출 시작...")
-        const results = await Promise.all([
+        console.log(`📍 환경: FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
+
+        // Promise.allSettled()를 사용해서 한 개 실패해도 다른 데이터는 정상 반환
+        const results = await Promise.allSettled([
+          // US 주식
           getQuote("SPY"),
           getQuote("QQQ"),
           getQuote("DIA"),
           getQuote("SOXX"),
           getQuote("IWM"),
           getQuote("^VIX"),
+          // 채권
           getQuote("HYG"),
           getQuote("LQD"),
+          // 광범위 지표
+          getQuote("VTI"),
+          getQuote("TLT"),
+          // 섹터 ETF (카드 10)
+          getQuote("XLK"),  // TECHNOLOGY
+          getQuote("XLF"),  // FINANCIALS
+          getQuote("XLE"),  // ENERGY
+          getQuote("XLV"),  // HEALTHCARE
+          getQuote("XLY"),  // CONSUMER_DISCRETIONARY
+          getQuote("XLI"),  // INDUSTRIALS
+          getQuote("XLU"),  // UTILITIES
+          getQuote("XLRE"), // REAL_ESTATE
+          // 한국 주식
+          getKoreanQuote("KS11"),
+          getKoreanQuote("KQ11"),
+          // FRED 경제지표
           fredGet("WALCL"),
           fredGet("RRPONTSYD"),
           fredGet("DGS10"),
           fredGet("DGS2"),
           fredGet("CPIAUCSL"),
-          getKoreanQuote("KS11"),
-          getKoreanQuote("KQ11")
+          fredGet("UNRATE"),
+          fredGet("UMCSENT"),
+          fredGet("GDPC1"),
+          fredGet("INDPRO"),
+          fredGet("PAYEMS"),
+          fredGet("PCEPILFE")
         ])
 
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, fed, rp, dgs10, dgs2, cpi, kospi, kosdaq] = results
+        // allSettled 결과에서 fulfilled된 것만 추출
+        const extract = (result) => result.status === 'fulfilled' ? result.value : null
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, kospi, kosdaq, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
         console.log(`📈 미국 주식:`)
-        console.log(`   SPY: ${spy?.price || '❌ NULL'} (change: ${spy?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   QQQ: ${qqq?.price || '❌ NULL'} (change: ${qqq?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   DIA: ${dia?.price || '❌ NULL'} (change: ${dia?.changePercentage || '❌ NULL'}%)`)
-        console.log(`🇰🇷 한국 주식:`)
-        console.log(`   KOSPI: ${kospi?.price || '❌ NULL'} (change: ${kospi?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   KOSDAQ: ${kosdaq?.price || '❌ NULL'} (change: ${kosdaq?.changePercentage || '❌ NULL'}%)`)
-        console.log(`💰 채권:`)
-        console.log(`   HYG: ${hyg?.price || '❌ NULL'} (change: ${hyg?.changePercentage || '❌ NULL'}%)`)
-        console.log(`   LQD: ${lqd?.price || '❌ NULL'} (change: ${lqd?.changePercentage || '❌ NULL'}%)`)
-        console.log(`📊 FRED 데이터:`)
-        console.log(`   WALCL: ${fed?.length || 0} observations, latest=${getLatestValue(fed) || '❌ NULL'}`)
-        console.log(`   DGS10: ${dgs10?.length || 0} observations, latest=${getLatestValue(dgs10) || '❌ NULL'}`)
+        console.log(`   SPY: ${spy?.price || '⚠️ 실패'} (change: ${spy?.changePercentage || '⚠️'}%)`)
+        console.log(`   QQQ: ${qqq?.price || '⚠️ 실패'} (change: ${qqq?.changePercentage || '⚠️'}%)`)
+        console.log(`   DIA: ${dia?.price || '⚠️ 실패'} (change: ${dia?.changePercentage || '⚠️'}%)`)
+        console.log(`📊 섹터:`)
+        console.log(`   XLK: ${xlk?.price || '⚠️ 실패'}, XLF: ${xlf?.price || '⚠️'}, XLE: ${xle?.price || '⚠️'}, XLV: ${xlv?.price || '⚠️'}`)
+        console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
+        console.log(`💰 채권 & 광범위:`)
+        console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
+        console.log(`🇰🇷 한국 주식: ← Yahoo Finance 프록시 상태`)
+        console.log(`   KOSPI: ${kospi?.price || '⚠️ 프록시 실패'} (change: ${kospi?.changePercentage || '⚠️'}%)`)
+        console.log(`   KOSDAQ: ${kosdaq?.price || '⚠️ 프록시 실패'} (change: ${kosdaq?.changePercentage || '⚠️'}%)`)
+        console.log(`📊 FRED 경제지표:`)
+        console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
         console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
         const us10y = convertFredValue("DGS10", getLatestValue(dgs10))
         const us2y = convertFredValue("DGS2", getLatestValue(dgs2))
+        const cpiVal = convertFredValue("CPIAUCSL", getLatestValue(cpi))
+        const unrateVal = convertFredValue("UNRATE", getLatestValue(unrate))
+        const umsentVal = convertFredValue("UMCSENT", getLatestValue(umcsent))
+        const gdpVal = convertFredValue("GDPC1", getLatestValue(gdpc1))
+        const indproVal = convertFredValue("INDPRO", getLatestValue(indpro))
+        const payelmsVal = convertFredValue("PAYEMS", getLatestValue(payems))
+        const pcepilfeVal = convertFredValue("PCEPILFE", getLatestValue(pcepilfe))
 
         return {
           spy: spy?.price,
@@ -280,11 +303,51 @@ export default {
           lqd: lqd?.price,
           hygChange: hyg?.changePercentage,
           lqdChange: lqd?.changePercentage,
+          vti: vti?.price,
+          tlt: tlt?.price,
+          vtiChange: vti?.changePercentage,
+          tltChange: tlt?.changePercentage,
           fed: fedVal,
           rp: rpVal,
           us10y: us10y,
           us2y: us2y,
-          yieldCurve: us10y && us2y ? (us10y - us2y) : null
+          yieldCurve: us10y && us2y ? (us10y - us2y) : null,
+          // 카드 10: Sectors
+          SECTORS: {
+            TECHNOLOGY: xlk ? {price: xlk.price, changePercentage: xlk.changePercentage} : null,
+            FINANCIALS: xlf ? {price: xlf.price, changePercentage: xlf.changePercentage} : null,
+            ENERGY: xle ? {price: xle.price, changePercentage: xle.changePercentage} : null,
+            HEALTHCARE: xlv ? {price: xlv.price, changePercentage: xlv.changePercentage} : null,
+            CONSUMER_DISCRETIONARY: xly ? {price: xly.price, changePercentage: xly.changePercentage} : null,
+            INDUSTRIALS: xli ? {price: xli.price, changePercentage: xli.changePercentage} : null,
+            UTILITIES: xlu ? {price: xlu.price, changePercentage: xlu.changePercentage} : null,
+            REAL_ESTATE: xlre ? {price: xlre.price, changePercentage: xlre.changePercentage} : null
+          },
+          // 카드 11: Credit & Breadth
+          CREDIT: {
+            HIGH_YIELD: hyg ? {price: hyg.price, changePercentage: hyg.changePercentage} : null,
+            INVESTMENT_GRADE: lqd ? {price: lqd.price, changePercentage: lqd.changePercentage} : null
+          },
+          BREADTH: {
+            TOTAL_MARKET: vti ? {price: vti.price, changePercentage: vti.changePercentage} : null,
+            LONG_TREASURY: tlt ? {price: tlt.price, changePercentage: tlt.changePercentage} : null
+          },
+          // 카드 12: Macro Base
+          MACRO_BASE: {
+            CPI: cpiVal,
+            INFLATION_EXPECTATION: null, // 별도 API 필요 (MMNRNJ)
+            UNEMPLOYMENT: unrateVal,
+            M2: null, // 별도 API 필요 (M2SL)
+            REAL_RATES: null  // 별도 계산 필요 (us10y - inflation)
+          },
+          // 카드 13: Macro Indicators
+          MACRO_INDICATORS: {
+            CONSUMER_SENTIMENT: umsentVal,
+            REAL_GDP: gdpVal,
+            INDUSTRIAL_PRODUCTION: indproVal,
+            NONFARM_PAYROLLS: payelmsVal,
+            PCE_INFLATION: pcepilfeVal
+          }
         }
       }
 
@@ -704,7 +767,13 @@ export default {
               value: marketData.us2y ? parseFloat(marketData.us2y.toFixed(2)) : null
             },
             YIELD_CURVE: marketData.yieldCurve ? parseFloat(marketData.yieldCurve.toFixed(3)) : null
-          }
+          },
+          // 카드 10-14: Sectors, Credit, Breadth, Macro
+          SECTORS: marketData.SECTORS || {},
+          CREDIT: marketData.CREDIT || {},
+          BREADTH: marketData.BREADTH || {},
+          MACRO_BASE: marketData.MACRO_BASE || {},
+          MACRO_INDICATORS: marketData.MACRO_INDICATORS || {}
         }
       }
       // /stock endpoint - 개별 주식 데이터

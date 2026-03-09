@@ -4796,17 +4796,20 @@ var ECON_DATA = {
 
             // 1️⃣ 메모리 캐시 확인 (30초)
             if (!skipCache && workerMarketCache && (now - workerMarketCacheTime) < MEMORY_CACHE_TTL) {
-                console.log('[WORKER] Using memory cached market data');
+                console.log('[WORKER] ✅ Using memory cached market data');
                 return Promise.resolve(workerMarketCache);
             }
 
             var url = API_BASE + '/market';
-            console.log('[WORKER] Fetching market data from:', url);
+            console.log('[WORKER] 🔄 Fetching from:', url);
+            console.log('[WORKER] API_BASE:', API_BASE);
 
-            return fetch(url)
+            return fetch(url, { credentials: 'omit' })
                 .then(function(r) {
-                    console.log('[WORKER] Response status:', r.status);
+                    console.log('[WORKER] 📊 Response status:', r.status, r.statusText);
+                    console.log('[WORKER] Content-Type:', r.headers.get('content-type'));
                     if (!r.ok) {
+                        console.error('[WORKER] ❌ HTTP Error:', r.status);
                         throw new Error('HTTP ' + r.status);
                     }
                     return r.json();
@@ -4833,12 +4836,15 @@ var ECON_DATA = {
                     throw new Error('Empty response');
                 })
                 .catch(function(e) {
-                    console.error('[WORKER] Market data fetch failed:', e.message, e);
+                    console.error('[WORKER] ❌ Fetch FAILED:', e.message);
+                    console.error('[WORKER] Error type:', e.name);
+                    console.error('[WORKER] Stack:', e.stack ? e.stack.substring(0, 200) : 'N/A');
 
                     // 3️⃣ API 실패 시 LocalStorage 캐시에서 로드
                     try {
                         var cached = localStorage.getItem(MARKET_CACHE_KEY);
                         if (cached) {
+                            console.log('[WORKER] 💾 Loading from LocalStorage cache');
                             var cachedObj = JSON.parse(cached);
                             var age = Date.now() - cachedObj.timestamp;
                             if (age < STORAGE_CACHE_TTL) {
@@ -5298,8 +5304,10 @@ var ECON_DATA = {
          * 외국인/기관/개인 수급: 공개 API 없음 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
+            console.log('[imdLoadKorea] 🔄 START - Worker API 호출 시작');
             // Primary: Worker API
             workerFetchMarket().then(function(data) {
+                console.log('[imdLoadKorea] ✅ Worker 응답 받음, data:', data ? Object.keys(data) : 'NULL');
                 if (data && data.KOREA_MARKET) {
                     var kr = data.KOREA_MARKET;
 
@@ -5333,8 +5341,7 @@ var ECON_DATA = {
                     }
                     fetchMulti([
                         function(){ return yahooPrice('^KS11'); },
-                        function(){ return twelvePrice('KOSPI'); },
-                        function(){ return fmpPrice('%5EKS11'); }
+                        function(){ return twelvePrice('KOSPI'); }
                     ]).then(function(v){
                         imdSetValue('kospi', v ? (v / 100) : v, 0);
                         yahooQuote('^KS11').then(function(q){
@@ -5353,8 +5360,7 @@ var ECON_DATA = {
                     }
                     fetchMulti([
                         function(){ return yahooPrice('^KQ11'); },
-                        function(){ return twelvePrice('KOSDAQ'); },
-                        function(){ return fmpPrice('%5EKQ11'); }
+                        function(){ return twelvePrice('KOSDAQ'); }
                     ]).then(function(v){
                         imdSetValue('kosdaq', v ? (v / 100) : v, 0);
                         yahooQuote('^KQ11').then(function(q){
@@ -6197,8 +6203,13 @@ var ECON_DATA = {
          * 전체 로드 & 자동 갱신 (60초)
          * ══════════════════════════════════════════════════════ */
         function imdLoadAll() {
-            // 메타데이터 먼저 로드 (라벨 및 단위 초기화)
-            loadDashboardMetadata().then(function() {
+            console.log('🚀 [imdLoadAll] DASHBOARD 로드 시작');
+            // 메타데이터 먼저 로드 (라벨 및 단위 초기화) - 실패해도 계속 진행
+            loadDashboardMetadata().catch(function(e) {
+                console.warn('📝 [imdLoadAll] 메타데이터 로드 실패 (무시하고 계속):', e.message);
+                return null;
+            }).then(function() {
+                console.log('📊 [imdLoadAll] 메타데이터 처리 완료, 데이터 로드 시작');
                 imdLoadKorea();
                 imdLoadUS();
                 imdLoadFutures();
