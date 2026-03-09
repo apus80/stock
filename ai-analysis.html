@@ -572,60 +572,38 @@
             text-decoration: underline;
         }
 
-        /* 정보 아이콘 & Tooltip */
-        .widget-info {
-            cursor: help;
-            color: var(--info);
-            font-size: 0.9em;
-            margin-left: 8px;
-            position: relative;
-            display: inline-block;
-            font-weight: bold;
-            transition: color 0.3s;
+        /* 위젯 설명 섹션 */
+        .widget-description {
+            margin-top: 12px;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
         }
 
-        .widget-info:hover {
+        .desc-item {
+            font-size: 0.8em;
+            line-height: 1.5;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            padding: 6px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .desc-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .desc-label {
+            font-weight: 600;
             color: var(--primary);
-            animation: pulse 0.5s ease-in-out;
+            margin-right: 6px;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-
-        .widget-info:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 130%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.95);
-            color: white;
-            padding: 14px 16px;
-            border-radius: 8px;
-            font-size: 0.75em;
-            white-space: pre-wrap;
+        .desc-content {
+            color: var(--text-muted);
             word-break: break-word;
-            width: 320px;
-            z-index: 1000;
-            line-height: 1.7;
-            font-weight: 400;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(102, 126, 234, 0.5);
-            pointer-events: none;
-        }
-
-        .widget-info:hover::before {
-            content: '';
-            position: absolute;
-            bottom: 124%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 8px solid transparent;
-            border-top-color: rgba(0, 0, 0, 0.95);
-            z-index: 1000;
-            pointer-events: none;
         }
 
         /* 반응형 */
@@ -933,21 +911,29 @@
             div.className = `widget widget-${widget.id}${widget.featured ? ' featured' : ''}`;
             div.id = `widget-${widget.id}`;
 
-            // 정보 아이콘에 표시할 tooltip 내용 (줄바꿈 포함)
-            const tooltipText = `📘 로직:\n${widget.logic}\n\n📊 의미:\n${widget.meaning}\n\n💰 활용:\n${widget.usage}`;
-
             div.innerHTML = `
                 <div class="widget-header">
                     <span class="widget-icon">${widget.icon}</span>
-                    <span class="widget-title">
-                        ${widget.title}
-                        <span class="widget-info" data-tooltip="${tooltipText.replace(/\n/g, '&#10;')}" title="${widget.description}">ℹ️</span>
-                    </span>
+                    <span class="widget-title">${widget.title}</span>
                     <button class="widget-refresh" onclick="loadWidget(${widget.id})">⟳</button>
                 </div>
                 <div class="widget-content">
                     <div class="loading-skeleton"></div>
                     <div class="loading-skeleton" style="margin-top: 10px;"></div>
+                </div>
+                <div class="widget-description">
+                    <div class="desc-item">
+                        <span class="desc-label">📘 로직:</span>
+                        <span class="desc-content">${widget.logic}</span>
+                    </div>
+                    <div class="desc-item">
+                        <span class="desc-label">📊 의미:</span>
+                        <span class="desc-content">${widget.meaning}</span>
+                    </div>
+                    <div class="desc-item">
+                        <span class="desc-label">💰 활용:</span>
+                        <span class="desc-content">${widget.usage}</span>
+                    </div>
                 </div>
                 <div class="widget-footer">
                     <span class="data-timestamp">데이터 로드 중...</span>
