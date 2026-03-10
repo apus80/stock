@@ -4559,6 +4559,9 @@ var ECON_DATA = {
         var FINNHUB_KEY = 'd6o3ajhr01qsfaqqs6p0d6o3ajhr01qsfaqqs6pg'; // ✅ 설정됨
         var FINNHUB_BASE = 'https://finnhub.io/api/v1';
 
+        // 전역 스코프에 노출 (콘솔 접근 가능)
+        window.FINNHUB_KEY = FINNHUB_KEY;
+
         // Worker 엔드포인트
         var WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev/';
 
@@ -4572,6 +4575,12 @@ var ECON_DATA = {
         var finnhubWS = null;
         var finnhubSubscriptions = {}; // { 'SPY': {displayId: 'sp500', decimals: 2, ...}, ... }
         var finnhubPrice = {}; // { 'SPY': {price: 560.12, change: 1.23, changePercent: 0.22}, ... }
+
+        // 전역 스코프에 노출 (콘솔 접근 가능)
+        Object.defineProperty(window, 'finnhubWS', {
+            get: function() { return finnhubWS; },
+            set: function(v) { finnhubWS = v; }
+        });
 
         function initFinnhubWebSocket() {
             if (!FINNHUB_KEY || FINNHUB_KEY === 'YOUR_FINNHUB_KEY_HERE') {
@@ -4639,6 +4648,9 @@ var ECON_DATA = {
             };
         }
 
+        // 전역 스코프에 노출 (콘솔 접근 가능)
+        window.initFinnhubWebSocket = initFinnhubWebSocket;
+
         function subscribeFinnhubSymbol(symbol, displayId, decimals, fmpDataGetter) {
             // WebSocket 초기화 (아직 안 되었으면)
             if (!finnhubWS || finnhubWS.readyState !== WebSocket.OPEN) {
@@ -4677,6 +4689,9 @@ var ECON_DATA = {
                 }
             });
         }
+
+        // 전역 스코프에 노출 (콘솔 접근 가능)
+        window.subscribeFinnhubSymbol = subscribeFinnhubSymbol;
 
         /* ── Finnhub REST API (초기 로드용) ───────────────── */
         function fetchFromFinnhubQuote(symbol) {
