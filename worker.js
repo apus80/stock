@@ -480,7 +480,7 @@ export default {
       async function getYieldCurveMonitor() {
         const data = await getMarketDataCached()
         const spread = data.yieldCurve
-        const isInverted = spread < 0
+        const isInverted = spread !== null && spread < 0
 
         return {
           timestamp: new Date().toISOString(),
