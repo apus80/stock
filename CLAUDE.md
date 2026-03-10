@@ -95,7 +95,7 @@ const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey
 | VIX, SOX (SOXX), Russell2000 (IWM) | ^VIX, SOXX, IWM | FMP API | 실시간 | `US_MARKET.VIX` 등 | `/stable/batch-quote?symbols=X` |
 | 한국 ETF (EWY) | EWY | FMP API | 실시간 | `KOREA_MARKET.EWY` | `/stable/batch-quote?symbols=X` |
 | 금, 은, 원유 (WTI) | GCUSD, SIUSD, CLUSD | FMP API | 실시간 | `COMMODITIES.GOLD` 등 | `/stable/batch-quote?symbols=X` |
-| USD/JPY, EUR/USD, 달러인덱스 | USDJPY, EURUSD, DX | FMP API | 실시간 | `FX.USDJPY` 등 | `/stable/batch-quote?symbols=X` |
+| USD/KRW, USD/JPY, EUR/USD, 달러인덱스 | USDKRW, USDJPY, EURUSD, DX | FMP API | 실시간 | `FX.USDKRW`, `FX.USDJPY` 등 | `/stable/quote?symbol=X` |
 | 섹터 ETF (XLK/XLF/XLE/XLV/XLY/XLI/XLU/XLRE) | XLK~XLRE | FMP API | 실시간 | `SECTORS.TECHNOLOGY` 등 | `/stable/batch-quote?symbols=X` |
 | HYG (하이일드), LQD (투자등급), VTI, TLT | HYG, LQD, VTI, TLT | FMP API | 실시간 | `CREDIT`, `BREADTH` | `/stable/batch-quote?symbols=X` |
 | 연방준비 잔액 (Fed Balance) | WALCL | FRED API | 일일 | `LIQUIDITY.FED_BALANCE` (raw millions) | `/fred/series/observations` |

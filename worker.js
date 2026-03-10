@@ -179,7 +179,7 @@ export default {
         "UNRATE": { divisor: 1, unit: "%" },
         "M2SL": { divisor: 1000, unit: "T" },
         "WALCL": { divisor: 1000000, unit: "T" },
-        "RRPONTSYD": { divisor: 1000000, unit: "T" },
+        "RRPONTSYD": { divisor: 1, unit: "B" },  // FRED 원값이 Billions 단위
         "WTREGEN": { divisor: 1000000, unit: "T" },
         "DGS10": { divisor: 1, unit: "%" },
         "DGS2": { divisor: 1, unit: "%" },
@@ -258,6 +258,7 @@ export default {
           getQuote("SIUSD"),   // 은 (Silver)
           getQuote("BZUSD"),   // 브렌트유 (Brent Crude) - CLUSD/USOIL null 반환, BZUSD 사용
           // 외환 (FX) - FMP stable batch-quote
+          getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
           getQuote("DX"),      // 달러 인덱스 (DXY)
@@ -269,7 +270,7 @@ export default {
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -304,7 +305,7 @@ export default {
         const inflExpVal = convertFredValue("T10YIE", getLatestValue(t10yie))
         const m2RawVal = getLatestValue(m2sl)     // M2SL raw (billions) - index.html이 /1,000,000으로 T 변환하므로 *1000해서 millions로 저장
         const fedRawVal = getLatestValue(fed)     // WALCL raw (millions) - index.html이 /1,000,000으로 T 변환
-        const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (millions) - index.html이 /1,000으로 B 변환
+        const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (Billions) - FRED 원값이 이미 Billions 단위
         const tgaRawVal = getLatestValue(tga)     // WTREGEN raw (millions) - index.html이 /1,000,000으로 T 변환
 
         // EWY 가격 처리
@@ -351,6 +352,8 @@ export default {
           oil: oilQ?.price,
           oilChange: oilQ?.changePercentage,
           // 외환 (FX)
+          usdkrw: usdKrwQ?.price,
+          usdkrwChange: usdKrwQ?.changePercentage,
           usdjpy: usdJpyQ?.price,
           usdjpyChange: usdJpyQ?.changePercentage,
           eurusd: eurUsdQ?.price,
@@ -803,6 +806,10 @@ export default {
           },
           // 카드 6: 외환 - index.html FX.USDJPY.price 등에서 사용
           FX: {
+            USDKRW: marketData.usdkrw ? {
+              price: parseFloat(marketData.usdkrw.toFixed(0)),
+              changePercentage: marketData.usdkrwChange != null ? parseFloat(marketData.usdkrwChange.toFixed(2)) : null
+            } : null,
             USDJPY: marketData.usdjpy ? {
               price: parseFloat(marketData.usdjpy.toFixed(2)),
               changePercentage: marketData.usdjpyChange != null ? parseFloat(marketData.usdjpyChange.toFixed(2)) : null
@@ -818,7 +825,7 @@ export default {
           },
           // 카드 7: 유동성 - index.html이 raw FRED 값을 직접 단위 변환함
           // FED_BALANCE: raw millions → index.html이 /1,000,000 → T
-          // REVERSE_REPO: raw millions → index.html이 /1,000 → B
+          // REVERSE_REPO: FRED 원값 Billions → index.html 변환 없이 직접 표시
           // TGA: raw millions → index.html이 /1,000,000 → T
           LIQUIDITY: {
             FED_BALANCE: marketData.fedRaw || null,
