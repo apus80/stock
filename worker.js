@@ -252,12 +252,24 @@ export default {
           fredGet("GDPC1"),
           fredGet("INDPRO"),
           fredGet("PAYEMS"),
-          fredGet("PCEPILFE")
+          fredGet("PCEPILFE"),
+          // 상품 (Commodities) - FMP stable batch-quote
+          getQuote("GCUSD"),   // 금 (Gold)
+          getQuote("SIUSD"),   // 은 (Silver)
+          getQuote("CLUSD"),   // 원유 WTI (Oil)
+          // 외환 (FX) - FMP stable batch-quote
+          getQuote("USDJPY"),  // USD/JPY
+          getQuote("EURUSD"),  // EUR/USD
+          getQuote("DX"),      // 달러 인덱스 (DXY)
+          // 추가 FRED 경제지표
+          fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
+          fredGet("M2SL"),     // M2 통화량 (billions)
+          fredGet("T10YIE")    // 10년 기대인플레이션 (%)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -287,6 +299,13 @@ export default {
         const indproVal = convertFredValue("INDPRO", getLatestValue(indpro))
         const payelmsVal = convertFredValue("PAYEMS", getLatestValue(payems))
         const pcepilfeVal = convertFredValue("PCEPILFE", getLatestValue(pcepilfe))
+
+        // 신규: 추가 경제지표
+        const inflExpVal = convertFredValue("T10YIE", getLatestValue(t10yie))
+        const m2RawVal = getLatestValue(m2sl)     // M2SL raw (billions) - index.html이 /1,000,000으로 T 변환하므로 *1000해서 millions로 저장
+        const fedRawVal = getLatestValue(fed)     // WALCL raw (millions) - index.html이 /1,000,000으로 T 변환
+        const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (millions) - index.html이 /1,000으로 B 변환
+        const tgaRawVal = getLatestValue(tga)     // WTREGEN raw (millions) - index.html이 /1,000,000으로 T 변환
 
         // EWY 가격 처리
         const ewyPrice = ewy?.price
@@ -320,6 +339,24 @@ export default {
           us10y: us10y,
           us2y: us2y,
           yieldCurve: us10y && us2y ? (us10y - us2y) : null,
+          // Raw FRED 값 (index.html에서 직접 단위 변환용)
+          fedRaw: fedRawVal,
+          rpRaw: rpRawVal,
+          tgaRaw: tgaRawVal,
+          // 원자재 (Commodities)
+          gold: goldQ?.price,
+          goldChange: goldQ?.changePercentage,
+          silver: silverQ?.price,
+          silverChange: silverQ?.changePercentage,
+          oil: oilQ?.price,
+          oilChange: oilQ?.changePercentage,
+          // 외환 (FX)
+          usdjpy: usdJpyQ?.price,
+          usdjpyChange: usdJpyQ?.changePercentage,
+          eurusd: eurUsdQ?.price,
+          eurusdChange: eurUsdQ?.changePercentage,
+          dxyPrice: dxyQ?.price,
+          dxyChange: dxyQ?.changePercentage,
           // 카드 10: Sectors
           SECTORS: {
             TECHNOLOGY: xlk ? {price: xlk.price, changePercentage: xlk.changePercentage} : null,
@@ -343,10 +380,10 @@ export default {
           // 카드 12: Macro Base
           MACRO_BASE: {
             CPI: cpiVal,
-            INFLATION_EXPECTATION: null, // 별도 API 필요 (MMNRNJ)
+            INFLATION_EXPECTATION: inflExpVal, // 출처: FRED T10YIE (10년 기대인플레이션)
             UNEMPLOYMENT: unrateVal,
-            M2: null, // 별도 API 필요 (M2SL)
-            REAL_RATES: null  // 별도 계산 필요 (us10y - inflation)
+            M2: m2RawVal ? m2RawVal * 1000 : null, // M2SL billions → millions (index.html이 /1,000,000으로 T 변환)
+            REAL_RATES: us10y && inflExpVal ? parseFloat((us10y - inflExpVal).toFixed(2)) : null // 실질금리 = 10Y - 기대인플레이션
           },
           // 카드 13: Macro Indicators
           MACRO_INDICATORS: {
@@ -749,23 +786,48 @@ export default {
               change: marketData.lqdChange ? parseFloat(marketData.lqdChange.toFixed(2)) : null
             }
           },
+          // 카드 5: 원자재 - index.html COMMODITIES.GOLD.price 등에서 사용
+          COMMODITIES: {
+            GOLD: marketData.gold ? {
+              price: parseFloat(marketData.gold.toFixed(0)),
+              changePercentage: marketData.goldChange != null ? parseFloat(marketData.goldChange.toFixed(2)) : null
+            } : null,
+            SILVER: marketData.silver ? {
+              price: parseFloat(marketData.silver.toFixed(2)),
+              changePercentage: marketData.silverChange != null ? parseFloat(marketData.silverChange.toFixed(2)) : null
+            } : null,
+            OIL: marketData.oil ? {
+              price: parseFloat(marketData.oil.toFixed(2)),
+              changePercentage: marketData.oilChange != null ? parseFloat(marketData.oilChange.toFixed(2)) : null
+            } : null
+          },
+          // 카드 6: 외환 - index.html FX.USDJPY.price 등에서 사용
+          FX: {
+            USDJPY: marketData.usdjpy ? {
+              price: parseFloat(marketData.usdjpy.toFixed(2)),
+              changePercentage: marketData.usdjpyChange != null ? parseFloat(marketData.usdjpyChange.toFixed(2)) : null
+            } : null,
+            EURUSD: marketData.eurusd ? {
+              price: parseFloat(marketData.eurusd.toFixed(4)),
+              changePercentage: marketData.eurusdChange != null ? parseFloat(marketData.eurusdChange.toFixed(2)) : null
+            } : null,
+            DXY: marketData.dxyPrice ? {
+              price: parseFloat(marketData.dxyPrice.toFixed(2)),
+              changePercentage: marketData.dxyChange != null ? parseFloat(marketData.dxyChange.toFixed(2)) : null
+            } : null
+          },
+          // 카드 7: 유동성 - index.html이 raw FRED 값을 직접 단위 변환함
+          // FED_BALANCE: raw millions → index.html이 /1,000,000 → T
+          // REVERSE_REPO: raw millions → index.html이 /1,000 → B
+          // TGA: raw millions → index.html이 /1,000,000 → T
           LIQUIDITY: {
-            FED_BALANCE: {
-              value: marketData.fed ? parseFloat(marketData.fed.toFixed(0)) : null,
-              unit: "T"
-            },
-            REVERSE_REPO: {
-              value: marketData.rp ? parseFloat(marketData.rp.toFixed(0)) : null,
-              unit: "T"
-            }
+            FED_BALANCE: marketData.fedRaw || null,
+            REVERSE_REPO: marketData.rpRaw || null,
+            TGA: marketData.tgaRaw || null
           },
           RATES: {
-            US10Y: {
-              value: marketData.us10y ? parseFloat(marketData.us10y.toFixed(2)) : null
-            },
-            US2Y: {
-              value: marketData.us2y ? parseFloat(marketData.us2y.toFixed(2)) : null
-            },
+            US10Y: marketData.us10y ? parseFloat(marketData.us10y.toFixed(2)) : null,
+            US2Y: marketData.us2y ? parseFloat(marketData.us2y.toFixed(2)) : null,
             YIELD_CURVE: marketData.yieldCurve ? parseFloat(marketData.yieldCurve.toFixed(3)) : null
           },
           // 카드 10-14: Sectors, Credit, Breadth, Macro
