@@ -2001,10 +2001,11 @@
 
                         <div class="card">
                             <div class="title-area"><span class="title">12. Macro Base</span><button class="card-rfbtn" id="rfbtn-12" onclick="imdRefreshCard(12)" title="새로고침">↻</button></div>
-                            <div class="item"><span>CPI</span><span class="item-right"><span id="cpi" class="value">-</span><span id="chg-cpi" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-cpi"></span></span></div>
+                            <div class="item"><span>Fed 금리</span><span class="item-right"><span id="fed_rate" class="value">-</span><span id="chg-fed_rate" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-fed_rate"></span></span></div>
+                            <div class="item"><span>CPI YoY</span><span class="item-right"><span id="cpi" class="value">-</span><span id="chg-cpi" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-cpi"></span></span></div>
+                            <div class="item"><span>Core CPI YoY</span><span class="item-right"><span id="core_cpi_yoy" class="value">-</span><span id="chg-core_cpi_yoy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-core_cpi_yoy"></span></span></div>
+                            <div class="item"><span>실업률</span><span class="item-right"><span id="unemployment" class="value">-</span><span id="chg-unemployment" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-unemployment"></span></span></div>
                             <div class="item"><span>Inflation Exp</span><span class="item-right"><span id="inflation_exp" class="value">-</span><span id="chg-inflation_exp" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-inflation_exp"></span></span></div>
-                            <div class="item"><span>Unemployment</span><span class="item-right"><span id="unemployment" class="value">-</span><span id="chg-unemployment" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-unemployment"></span></span></div>
-                            <div class="item"><span>M2</span><span class="item-right"><span id="m2_macro" class="value">-</span><span id="chg-m2_macro" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-m2_macro"></span></span></div>
                             <div class="item"><span>Real Rates</span><span class="item-right"><span id="real_rates" class="value">-</span><span id="chg-real_rates" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-real_rates"></span></span></div>
                         </div>
 
@@ -2102,7 +2103,7 @@
                         </div>
                         <div class="vol-metric-row" style="margin-top:4px;">
                             <span class="vol-metric-label">달러 DXY</span>
-                            <span class="vol-metric-value">98.8</span>
+                            <span class="vol-metric-value" id="vol-dxy">-</span>
                         </div>
                         <div class="vol-metric-row">
                             <span class="vol-metric-label">금 ($/oz)</span>
@@ -5764,6 +5765,9 @@ var ECON_DATA = {
                     if (fx.DXY && fx.DXY.price) {
                         imdSetValue('dxy', fx.DXY.price, 2);
                         if (fx.DXY.changePercentage !== undefined) imdSetChange('dxy', fx.DXY.changePercentage, 'pct');
+                        // 시장 심리&매크로 현황 패널 DXY 동기화
+                        var volDxy = document.getElementById('vol-dxy');
+                        if (volDxy) volDxy.textContent = parseFloat(fx.DXY.price).toFixed(1);
                     }
 
                     return; // Success – no fallback needed (USDKRW handles own fallback above)
@@ -5918,9 +5922,9 @@ var ECON_DATA = {
          * Gamma Wall: 복잡한 옵션 계산 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadSentiment() {
-            // Fear & Greed – Worker 경유 CNN API (서버사이드, CORS 없음, 24h 캐시)
+            // Fear & Greed – Worker 경유 CNN API 전용 (서버사이드, CORS 없음, 6h 캐시)
             var FEAR_CACHE_KEY = 'feargreed_cache';
-            var FEAR_CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
+            var FEAR_CACHE_TTL = 6 * 60 * 60 * 1000; // 6시간
 
             // 1. localStorage 캐시 확인 → 유효하면 즉시 표시 후 종료
             try {
@@ -5940,17 +5944,9 @@ var ECON_DATA = {
                         localStorage.setItem(FEAR_CACHE_KEY, JSON.stringify({ score: d.score, ts: Date.now() }));
                         return;
                     }
-                    throw new Error('worker feargreed null');
+                    imdSetStatus('fear', 'error');
                 })
-                .catch(function() {
-                    // 폴백: Alternative.me (암호화폐 F&G, CORS 직접 허용)
-                    return imdGet('https://api.alternative.me/fng/?limit=1')
-                        .then(function(d) {
-                            var v = (d && d.data && d.data[0]) ? parseInt(d.data[0].value) : null;
-                            if (v !== null) imdSetValue('fear', v, 0);
-                            else imdSetStatus('fear', 'error');
-                        }).catch(function(){ imdSetStatus('fear', 'error'); });
-                });
+                .catch(function() { imdSetStatus('fear', 'error'); });
 
             // Put/Call Ratio – CBOE total options EOD CSV
             // ※ CSV는 JSON이 아니므로 imdGetProxyText(r.text()) 사용
@@ -6050,15 +6046,16 @@ var ECON_DATA = {
                 if (data && data.MACRO_BASE) {
                     var macro = data.MACRO_BASE;
                     var items = [
-                        {id: 'cpi', value: macro.CPI, unit: 'idx'},
-                        {id: 'inflation_exp', value: macro.INFLATION_EXPECTATION, unit: '%'},
-                        {id: 'unemployment', value: macro.UNEMPLOYMENT, unit: '%'},
-                        {id: 'm2_macro', value: macro.M2 ? (macro.M2 / 1000000) : null, unit: 'T'},
-                        {id: 'real_rates', value: macro.REAL_RATES, unit: '%'}
+                        {id: 'fed_rate',     value: macro.FED_RATE,      unit: '%'},
+                        {id: 'cpi',          value: macro.CPI_YOY,       unit: '%'},
+                        {id: 'core_cpi_yoy', value: macro.CORE_CPI_YOY,  unit: '%'},
+                        {id: 'unemployment', value: macro.UNEMPLOYMENT,   unit: '%'},
+                        {id: 'inflation_exp',value: macro.INFLATION_EXPECTATION, unit: '%'},
+                        {id: 'real_rates',   value: macro.REAL_RATES,    unit: '%'}
                     ];
 
                     items.forEach(function(item) {
-                        if (item.value) {
+                        if (item.value !== null && item.value !== undefined) {
                             imdSetValue(item.id, item.value, 2, item.unit);
                             imdSetStatus(item.id, 'sync');
                         } else {
@@ -6070,7 +6067,7 @@ var ECON_DATA = {
                 throw new Error('No MACRO_BASE data');
             }).catch(function(err) {
                 console.error('[ERROR] imdLoadMacroBase:', err);
-                ['cpi','inflation_exp','unemployment','m2_macro','real_rates'].forEach(function(id) {
+                ['fed_rate','cpi','core_cpi_yoy','unemployment','inflation_exp','real_rates'].forEach(function(id) {
                     imdSetStatus(id, 'error');
                 });
             });

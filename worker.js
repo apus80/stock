@@ -265,12 +265,14 @@ export default {
           // 추가 FRED 경제지표
           fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
           fredGet("M2SL"),     // M2 통화량 (billions)
-          fredGet("T10YIE")    // 10년 기대인플레이션 (%)
+          fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
+          fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
+          fredGet("CPILFESL")  // Core CPI (식료품·에너지 제외, index level)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpi] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -303,6 +305,21 @@ export default {
 
         // 신규: 추가 경제지표
         const inflExpVal = convertFredValue("T10YIE", getLatestValue(t10yie))
+
+        // CPI YoY 계산: 최신값 vs 12개월 전 값
+        function calcYoY(fredArray) {
+          if (!fredArray || fredArray.length === 0) return null
+          const valid = fredArray.filter(o => o.value && o.value !== '.' && o.value !== '')
+          if (valid.length < 13) return null
+          const latest = parseFloat(valid[valid.length - 1].value)
+          const yearAgo = parseFloat(valid[valid.length - 13].value)
+          if (!yearAgo) return null
+          return parseFloat(((latest - yearAgo) / yearAgo * 100).toFixed(2))
+        }
+
+        const cpiYoY = calcYoY(cpi)           // CPIAUCSL YoY %
+        const coreCpiYoY = calcYoY(coreCpi)   // CPILFESL YoY %
+        const fedRateVal = getLatestValue(fedfunds) // Fed 기준금리 %
         const m2RawVal = getLatestValue(m2sl)     // M2SL raw (billions) - index.html이 /1,000,000으로 T 변환하므로 *1000해서 millions로 저장
         const fedRawVal = getLatestValue(fed)     // WALCL raw (millions) - index.html이 /1,000,000으로 T 변환
         const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (Billions) - FRED 원값이 이미 Billions 단위
@@ -382,7 +399,10 @@ export default {
           },
           // 카드 12: Macro Base
           MACRO_BASE: {
-            CPI: cpiVal,
+            CPI: cpiVal,                       // CPIAUCSL 지수 레벨 (하위호환 유지)
+            CPI_YOY: cpiYoY,                  // 출처: FRED CPIAUCSL 전년동기대비 YoY %
+            CORE_CPI_YOY: coreCpiYoY,         // 출처: FRED CPILFESL (식료품·에너지 제외) YoY %
+            FED_RATE: fedRateVal,              // 출처: FRED FEDFUNDS (효과적 연방기금금리 %)
             INFLATION_EXPECTATION: inflExpVal, // 출처: FRED T10YIE (10년 기대인플레이션)
             UNEMPLOYMENT: unrateVal,
             M2: m2RawVal ? m2RawVal * 1000 : null, // M2SL billions → millions (index.html이 /1,000,000으로 T 변환)
