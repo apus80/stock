@@ -279,7 +279,7 @@
       <div class="sec-label">🏅 Commodities · GCUSD / SIUSD / CLUSD (FMP)</div>
       <div class="data-grid" id="g-comm"></div>
 
-      <div class="sec-label">💱 FX · USDJPY / EURUSD / DX (FMP)</div>
+      <div class="sec-label">💱 FX · USDKRW / USDJPY / EURUSD / DX (FMP)</div>
       <div class="data-grid" id="g-fx"></div>
 
       <div class="sec-label">💧 Liquidity · WALCL / RRPONTSYD / WTREGEN (FRED)</div>
@@ -507,11 +507,12 @@ function renderMarketData(data) {
   // ── FX
   var fx = data.FX || {};
   setGrid('g-fx',
+    diObj('USDKRW', fx.USDKRW) +
     diObj('USDJPY', fx.USDJPY) +
     diObj('EURUSD', fx.EURUSD) +
     diObj('DX (DXY)', fx.DXY)
   );
-  ['USDJPY','EURUSD','DXY'].forEach(function(k) { countObj(k, fx[k]); });
+  ['USDKRW','USDJPY','EURUSD','DXY'].forEach(function(k) { countObj(k, fx[k]); });
 
   // ── Liquidity (raw FRED → 변환 표시)
   var liq = data.LIQUIDITY || {};
