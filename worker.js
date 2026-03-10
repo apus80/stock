@@ -232,7 +232,7 @@ export default {
           fredGet("GDPC1"),
           fredGet("INDPRO"),
           fredGet("PAYEMS"),
-          fredGet("PCEPILFE"),
+          fredGet("PCEPILFE", "pc1"),  // PCE 근원 인플레이션 YoY% (units=pc1 → 지수 레벨이 아닌 % 반환)
           // 상품 (Commodities) - FMP stable batch-quote
           getQuote("GCUSD"),   // 금 (Gold)
           getQuote("SIUSD"),   // 은 (Silver)
@@ -248,12 +248,15 @@ export default {
           fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
           fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
           fredGet("CPILFESL", "pc1"), // Core CPI YoY% (출처: FRED CPILFESL, units=pc1 직접 공시값)
-          fredGet("CPIAUCSL", "pc1")  // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
+          fredGet("CPIAUCSL", "pc1"), // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
+          // 암호화폐 (분석 함수 중복 호출 방지용)
+          getQuote("BTCUSD"),  // 비트코인
+          getQuote("ETHUSD")   // 이더리움
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, btcQ, ethQ] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -313,6 +316,11 @@ export default {
           soxxChange: soxx?.changePercentage,
           iwmChange: iwm?.changePercentage,
           vixChange: vix?.changePercentage,
+          // 거래량 (Smart Money 분석용)
+          spyVolume: spy?.volume ?? null,
+          spyAvgVolume: spy?.avgVolume ?? null,
+          qqqVolume: qqq?.volume ?? null,
+          qqqAvgVolume: qqq?.avgVolume ?? null,
           ewy: ewyPrice,
           ewyChange: ewyChange,
           hyg: hyg?.price,
@@ -348,6 +356,11 @@ export default {
           eurusdChange: eurUsdQ?.changePercentage,
           dxyPrice: dxyQ?.price,
           dxyChange: dxyQ?.changePercentage,
+          // 암호화폐 (분석 함수 중복 호출 방지)
+          btc: btcQ?.price,
+          btcChange: btcQ?.changePercentage,
+          eth: ethQ?.price,
+          ethChange: ethQ?.changePercentage,
           // 카드 10: Sectors
           SECTORS: {
             TECHNOLOGY: xlk ? {price: xlk.price, changePercentage: xlk.changePercentage} : null,
@@ -396,7 +409,8 @@ export default {
         const liquidityScore = (data.fed && data.fed > 7) ? 18 : 15  // data.fed는 Trillions 단위 (~7.2T)
         const volatilityScore = (data.vix && data.vix < 15) ? 18 : (data.vix < 20 ? 14 : 10)
         const creditScore = (data.hyg && data.lqd && (data.hyg / data.lqd) > 0.98) ? 18 : 15
-        const breadthScore = 18
+        // breadthScore: SPY/QQQ 모두 상승 18pt, 하나만 상승 15pt, 둘 다 하락 12pt (하드코딩 18 제거)
+        const breadthScore = (data.spyChange > 0 && data.qqqChange > 0) ? 18 : (data.spyChange > 0 || data.qqqChange > 0) ? 15 : 12
         const macroScore = (data.yieldCurve > 0.5) ? 18 : 12
 
         const totalScore = liquidityScore + volatilityScore + creditScore + breadthScore + macroScore
@@ -552,12 +566,12 @@ export default {
 
       // 7. Market Breadth Analyzer
       async function getMarketBreadth() {
-        const [spy, qqq] = await Promise.all([
-          getQuote("SPY"),
-          getQuote("QQQ")
-        ])
+        // 중복 API 호출 제거 → getMarketDataCached() 재활용 (SPY/QQQ 이미 캐시에 있음)
+        const data = await getMarketDataCached()
+        const spyChange = data.spyChange
+        const qqqChange = data.qqqChange
 
-        const breadthScore = (spy && spy.changePercentage > 0.5) ? 80 : 50
+        const breadthScore = (spyChange !== null && spyChange > 0.5) ? 80 : 50
 
         return {
           timestamp: new Date().toISOString(),
@@ -565,13 +579,13 @@ export default {
           score: breadthScore,
           signal: breadthScore >= 75 ? "📊 광범위 상승" : "⚠️ 소수만 상승",
           components: [
-            { name: 'SPY 변화', value: spy?.changePercentage !== null && spy?.changePercentage !== undefined ? parseFloat(spy.changePercentage.toFixed(2)) : '-', unit: '%' },
-            { name: 'QQQ 변화', value: qqq?.changePercentage !== null && qqq?.changePercentage !== undefined ? parseFloat(qqq.changePercentage.toFixed(2)) : '-', unit: '%' }
+            { name: 'SPY 변화', value: spyChange !== null && spyChange !== undefined ? parseFloat(spyChange.toFixed(2)) : '-', unit: '%' },
+            { name: 'QQQ 변화', value: qqqChange !== null && qqqChange !== undefined ? parseFloat(qqqChange.toFixed(2)) : '-', unit: '%' }
           ],
           interpretation: breadthScore >= 75 ? "시장 전반 상승 중 → 강세 신호" : "일부 종목만 상승 → 주의 필요",
           details: {
-            spy_change: spy?.changePercentage,
-            qqq_change: qqq?.changePercentage
+            spy_change: spyChange,
+            qqq_change: qqqChange
           }
         }
       }
@@ -602,22 +616,17 @@ export default {
 
       // 9. Sector Rotation Tracker
       async function getSectorRotation() {
-        const sectors = await Promise.all([
-          getQuote("XLK"),
-          getQuote("XLF"),
-          getQuote("XLE"),
-          getQuote("XLV"),
-          getQuote("XLY"),
-          getQuote("XLI")
-        ])
+        // 중복 API 호출 제거 → getMarketDataCached() 재활용 (섹터 ETF 이미 캐시에 있음)
+        const data = await getMarketDataCached()
+        const s = data.SECTORS
 
         const sectorData = [
-          { name: "Technology (XLK)", change: sectors[0]?.changePercentage },
-          { name: "Financials (XLF)", change: sectors[1]?.changePercentage },
-          { name: "Energy (XLE)", change: sectors[2]?.changePercentage },
-          { name: "Healthcare (XLV)", change: sectors[3]?.changePercentage },
-          { name: "Consumer (XLY)", change: sectors[4]?.changePercentage },
-          { name: "Industrials (XLI)", change: sectors[5]?.changePercentage }
+          { name: "Technology (XLK)", change: s.TECHNOLOGY?.changePercentage ?? null },
+          { name: "Financials (XLF)", change: s.FINANCIALS?.changePercentage ?? null },
+          { name: "Energy (XLE)", change: s.ENERGY?.changePercentage ?? null },
+          { name: "Healthcare (XLV)", change: s.HEALTHCARE?.changePercentage ?? null },
+          { name: "Consumer (XLY)", change: s.CONSUMER_DISCRETIONARY?.changePercentage ?? null },
+          { name: "Industrials (XLI)", change: s.INDUSTRIALS?.changePercentage ?? null }
         ].sort((a, b) => (b.change || 0) - (a.change || 0))
 
         const sectorItems = sectorData.map(s => ({
@@ -645,17 +654,15 @@ export default {
 
       // 10. Dollar Liquidity Impact
       async function getDollarLiquidity() {
-        const [dxy, bitcoin] = await Promise.all([
-          yahooFinanceDXY(),  // FMP DX 심볼은 null 반환 → Yahoo Finance DX-Y.NYB 사용
-          getQuote("BTCUSD")
-        ])
+        // 중복 API 호출 제거 → getMarketDataCached() 재활용 (DXY, BTC 이미 캐시에 있음)
+        const data = await getMarketDataCached()
 
-        const dxyPrice = dxy?.price
-        // DXY 절대값(105) 하드코딩 제거 → 당일 변화율 기반 달러 강/약세 판단
-        const dxyChange = dxy?.changePercentage
+        const dxyPrice = data.dxyPrice
+        // DXY 당일 변화율 기반 달러 강/약세 판단
+        const dxyChange = data.dxyChange
         const dxyStrong = dxyChange !== null && dxyChange !== undefined && dxyChange > 0
 
-        const btcChange = bitcoin?.changePercentage
+        const btcChange = data.btcChange
         return {
           timestamp: new Date().toISOString(),
           dataType: "dollar_liquidity",
@@ -672,12 +679,12 @@ export default {
 
       // 11. Crypto Sentiment
       async function getCryptoSentiment() {
-        const [btc, eth] = await Promise.all([
-          getQuote("BTCUSD"),
-          getQuote("ETHUSD")
-        ])
+        // 중복 API 호출 제거 → getMarketDataCached() 재활용 (BTCUSD/ETHUSD 이미 캐시에 있음)
+        const data = await getMarketDataCached()
+        const btcChange = data.btcChange
+        const ethChange = data.ethChange
 
-        const sentiment = (btc && btc.changePercentage > 5) ? 75 : (btc && btc.changePercentage > 0) ? 55 : 35
+        const sentiment = (btcChange !== null && btcChange > 5) ? 75 : (btcChange !== null && btcChange > 0) ? 55 : 35
 
         return {
           timestamp: new Date().toISOString(),
@@ -686,15 +693,15 @@ export default {
           sentiment_score: sentiment,
           signal: sentiment > 70 ? "🎉 Greed" : sentiment > 50 ? "➡️ Neutral" : "😨 Fear",
           components: [
-            { name: 'BTC 변화', value: btc?.changePercentage !== null && btc?.changePercentage !== undefined ? parseFloat(btc.changePercentage.toFixed(2)) : '-', unit: '%' },
-            { name: 'ETH 변화', value: eth?.changePercentage !== null && eth?.changePercentage !== undefined ? parseFloat(eth.changePercentage.toFixed(2)) : '-', unit: '%' }
+            { name: 'BTC 변화', value: btcChange !== null && btcChange !== undefined ? parseFloat(btcChange.toFixed(2)) : '-', unit: '%' },
+            { name: 'ETH 변화', value: ethChange !== null && ethChange !== undefined ? parseFloat(ethChange.toFixed(2)) : '-', unit: '%' }
           ],
           interpretation: sentiment > 70 ? "과열 구간 → 수익실현 고려" : sentiment < 30 ? "공포 구간 → 매수 기회" : "중립 구간 → 관망",
           details: {
-            btc: btc?.price,
-            eth: eth?.price,
-            btc_change: btc?.changePercentage,
-            eth_change: eth?.changePercentage
+            btc: data.btc,
+            eth: data.eth,
+            btc_change: btcChange,
+            eth_change: ethChange
           },
           recommendation: sentiment > 70 ? "수익실현" : sentiment < 30 ? "매수기회" : "관망"
         }
@@ -702,38 +709,38 @@ export default {
 
       // 12. Smart Money Signal
       async function getSmartMoney() {
-        const [spy, qqq] = await Promise.all([
-          getQuote("SPY"),
-          getQuote("QQQ")
-        ])
+        // 중복 API 호출 제거 → getMarketDataCached() 재활용 (SPY/QQQ volume/avgVolume 캐시에 있음)
+        const data = await getMarketDataCached()
+        const spyVol = data.spyVolume || 0
+        const qqqVol = data.qqqVolume || 0
+        const spyAvgVol = data.spyAvgVolume   // null이면 비교 불가
+        const qqqAvgVol = data.qqqAvgVolume
 
-        // 하드코딩된 거래량 임계값 제거 → FMP avgVolume(평균 거래량) 기반 비교
-        const spyVol = spy?.volume || 0
-        const qqqVol = qqq?.volume || 0
-        const spyAvgVol = spy?.avgVolume || spyVol  // avgVolume 없으면 현재 거래량 사용
-        const qqqAvgVol = qqq?.avgVolume || qqqVol
-
-        const signal = spyVol > spyAvgVol ? "축적" : "분산"
-        const smConfidence = spyVol > spyAvgVol * 1.3 ? 85 : spyVol > spyAvgVol ? 70 : 50
+        // avgVolume null 시 중립(데이터 부족) 처리 (null fallback으로 항상 "분산" 되던 버그 수정)
+        const hasAvgVol = spyAvgVol !== null && spyAvgVol > 0
+        const signal = hasAvgVol ? (spyVol > spyAvgVol ? "축적" : "분산") : "중립"
+        const smConfidence = hasAvgVol
+          ? (spyVol > spyAvgVol * 1.3 ? 85 : spyVol > spyAvgVol ? 70 : 50)
+          : 50  // avgVolume 없으면 신뢰도 50% (중립)
         return {
           timestamp: new Date().toISOString(),
           dataType: "smart_money",
           signal: signal,
-          regime: signal === "축적" ? "Accumulation" : "Distribution",
+          regime: signal === "축적" ? "Accumulation" : signal === "분산" ? "Distribution" : "Neutral",
           state: signal,
           confidence: smConfidence,
-          status: signal === "축적" ? "🤖 기관 매수" : "⚠️ 기관 매도",
-          badgeClass: signal === "축적" ? "bullish" : "bearish",
+          status: signal === "축적" ? "🤖 기관 매수" : signal === "분산" ? "⚠️ 기관 매도" : "➡️ 데이터 부족",
+          badgeClass: signal === "축적" ? "bullish" : signal === "분산" ? "bearish" : "neutral",
           factors: [
-            { name: 'SPY 거래량', status: spyVol > spyAvgVol ? '고량' : '저량', strength: Math.min(100, Math.round(spyVol / 1000000)) },
-            { name: 'QQQ 거래량', status: qqqVol > qqqAvgVol ? '고량' : '저량', strength: Math.min(100, Math.round(qqqVol / 1000000)) },
-            { name: '기관 포지션', status: signal === "축적" ? "매수 우세" : "매도 우세", strength: smConfidence }
+            { name: 'SPY 거래량', status: hasAvgVol ? (spyVol > spyAvgVol ? '고량' : '저량') : '데이터없음', strength: Math.min(100, Math.round(spyVol / 1000000)) },
+            { name: 'QQQ 거래량', status: (qqqAvgVol && qqqVol > qqqAvgVol) ? '고량' : '저량', strength: Math.min(100, Math.round(qqqVol / 1000000)) },
+            { name: '기관 포지션', status: signal === "축적" ? "매수 우세" : signal === "분산" ? "매도 우세" : "중립", strength: smConfidence }
           ],
           details: {
             spy_volume: spyVol,
             qqq_volume: qqqVol
           },
-          recommendation: signal === "축적" ? "강세장 신호" : "약세장 신호"
+          recommendation: signal === "축적" ? "강세장 신호" : signal === "분산" ? "약세장 신호" : "관망"
         }
       }
 
@@ -781,30 +788,20 @@ export default {
 
       // 14. Market Heatmap
       async function getMarketHeatmap() {
-        const [spy, qqq, dia, vix, hyg, lqd, gold, btc, xlk, xlf] = await Promise.all([
-          getQuote("SPY"),
-          getQuote("QQQ"),
-          getQuote("DIA"),
-          getQuote("^VIX"),
-          getQuote("HYG"),
-          getQuote("LQD"),
-          getQuote("GCUSD"),
-          getQuote("BTCUSD"),
-          getQuote("XLK"),
-          getQuote("XLF")
-        ])
+        // 중복 API 호출 제거 → getMarketDataCached() 재활용 (10개 심볼 모두 캐시에 있음)
+        const data = await getMarketDataCached()
 
         const assets = [
-          { name: "S&P500", change: spy?.changePercentage, color: spy && spy.changePercentage > 0 ? "green" : "red" },
-          { name: "NASDAQ", change: qqq?.changePercentage, color: qqq && qqq.changePercentage > 0 ? "green" : "red" },
-          { name: "DOW", change: dia?.changePercentage, color: dia && dia.changePercentage > 0 ? "green" : "red" },
-          { name: "VIX", change: vix?.changePercentage, color: vix && vix.changePercentage < 0 ? "green" : "red" },
-          { name: "HYBond", change: hyg?.changePercentage, color: hyg && hyg.changePercentage > 0 ? "green" : "red" },
-          { name: "IGBond", change: lqd?.changePercentage, color: lqd && lqd.changePercentage > 0 ? "green" : "red" },
-          { name: "Gold", change: gold?.changePercentage, color: gold && gold.changePercentage > 0 ? "green" : "red" },
-          { name: "Bitcoin", change: btc?.changePercentage, color: btc && btc.changePercentage > 0 ? "green" : "red" },
-          { name: "Tech(XLK)", change: xlk?.changePercentage, color: xlk && xlk.changePercentage > 0 ? "green" : "red" },
-          { name: "Finance(XLF)", change: xlf?.changePercentage, color: xlf && xlf.changePercentage > 0 ? "green" : "red" }
+          { name: "S&P500",      change: data.spyChange,                               color: (data.spyChange ?? 0) > 0 ? "green" : "red" },
+          { name: "NASDAQ",      change: data.qqqChange,                               color: (data.qqqChange ?? 0) > 0 ? "green" : "red" },
+          { name: "DOW",         change: data.diaChange,                               color: (data.diaChange ?? 0) > 0 ? "green" : "red" },
+          { name: "VIX",         change: data.vixChange,                               color: (data.vixChange ?? 0) < 0 ? "green" : "red" },
+          { name: "HYBond",      change: data.hygChange,                               color: (data.hygChange ?? 0) > 0 ? "green" : "red" },
+          { name: "IGBond",      change: data.lqdChange,                               color: (data.lqdChange ?? 0) > 0 ? "green" : "red" },
+          { name: "Gold",        change: data.goldChange,                              color: (data.goldChange ?? 0) > 0 ? "green" : "red" },
+          { name: "Bitcoin",     change: data.btcChange,                               color: (data.btcChange ?? 0) > 0 ? "green" : "red" },
+          { name: "Tech(XLK)",   change: data.SECTORS.TECHNOLOGY?.changePercentage,    color: (data.SECTORS.TECHNOLOGY?.changePercentage ?? 0) > 0 ? "green" : "red" },
+          { name: "Finance(XLF)",change: data.SECTORS.FINANCIALS?.changePercentage,    color: (data.SECTORS.FINANCIALS?.changePercentage ?? 0) > 0 ? "green" : "red" }
         ]
 
         return {
