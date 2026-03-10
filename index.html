@@ -5653,6 +5653,11 @@ var ECON_DATA = {
                         if (cm.SILVER.changePercentage !== undefined) imdSetChange('silver', cm.SILVER.changePercentage, 'pct');
                     }
 
+                    if (cm.OIL && cm.OIL.price) {
+                        imdSetValue('oil', cm.OIL.price, 2);
+                        if (cm.OIL.changePercentage !== undefined) imdSetChange('oil', cm.OIL.changePercentage, 'pct');
+                    }
+
                     return; // Success – no fallback needed
                 }
 
@@ -5733,6 +5738,12 @@ var ECON_DATA = {
             workerFetchMarket().then(function(data) {
                 if (data && data.FX) {
                     var fx = data.FX;
+
+                    // USDKRW (원/달러)
+                    if (fx.USDKRW && fx.USDKRW.price) {
+                        imdSetValue('uskrw', fx.USDKRW.price, 0);
+                        if (fx.USDKRW.changePercentage !== undefined) imdSetChange('uskrw', fx.USDKRW.changePercentage, 'pct');
+                    }
 
                     // USDJPY
                     if (fx.USDJPY && fx.USDJPY.price) {
@@ -5841,9 +5852,9 @@ var ECON_DATA = {
                         // FED_BALANCE는 원래 raw 값, T(Trillions) 단위로 변환: /1,000,000
                         imdSetValue('fedbal', (data.LIQUIDITY.FED_BALANCE / 1000000), 1, 'T');
                     }
-                    if (data.LIQUIDITY.REVERSE_REPO) {
-                        // REVERSE_REPO는 B(Billions) 단위: /1,000
-                        imdSetValue('repo', (data.LIQUIDITY.REVERSE_REPO / 1000), 0, 'B');
+                    if (data.LIQUIDITY.REVERSE_REPO != null) {
+                        // RRPONTSYD: FRED 원값이 이미 Billions 단위 → 변환 없이 직접 사용
+                        imdSetValue('repo', data.LIQUIDITY.REVERSE_REPO, 1, 'B');
                     }
                     if (data.LIQUIDITY.TGA) {
                         // TGA는 T(Trillions) 단위: /1,000,000
