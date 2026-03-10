@@ -4555,6 +4555,10 @@ var ECON_DATA = {
         var FRED_KEY = '0381bc7ea5a9ce01a06b3b008e40a65c';
         var FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 
+        /* ── Finnhub API (TradingView 실시간 데이터) ──────────── */
+        var FINNHUB_KEY = 'YOUR_FINNHUB_KEY_HERE'; // ⚠️ 나중에 .env에서 로드하도록 변경 필요
+        var FINNHUB_BASE = 'https://finnhub.io/api/v1';
+
         // Worker 엔드포인트
         var WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev/';
 
@@ -4563,6 +4567,42 @@ var ECON_DATA = {
             'https://api.allorigins.win/raw?url=',
             'https://api.codetabs.com/v1/proxy?quest='
         ];
+
+        /* ── Finnhub API (TradingView 실시간 데이터) ──────────── */
+        function fetchFromFinnhub(symbol) {
+            // 출처: Finnhub (TradingView 기반 실시간 시세)
+            if (!FINNHUB_KEY || FINNHUB_KEY === 'YOUR_FINNHUB_KEY_HERE') {
+                console.warn('[Finnhub] API KEY not set, using FMP fallback');
+                return Promise.resolve(null);
+            }
+
+            var url = FINNHUB_BASE + '/quote?symbol=' + encodeURIComponent(symbol) + '&token=' + FINNHUB_KEY;
+            console.log('[Finnhub] 🔄 Fetching:', symbol);
+
+            return fetch(url, { credentials: 'omit' })
+                .then(function(r) {
+                    console.log('[Finnhub] Response:', symbol, r.status);
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(data) {
+                    if (data && data.c) {
+                        // Finnhub 응답: { c: price, d: change, dp: changePercent }
+                        var result = {
+                            price: data.c,
+                            change: data.d || 0,
+                            changePercentage: data.dp || 0
+                        };
+                        console.log('[Finnhub] ✅ Data loaded:', symbol, result.price);
+                        return result;
+                    }
+                    throw new Error('Invalid response');
+                })
+                .catch(function(e) {
+                    console.warn('[Finnhub] ❌ Failed for', symbol, ':', e.message);
+                    return null;
+                });
+        }
 
         /* ── 기본 fetch ──────────────────────────────────────── */
         function imdGet(url, ms) {
@@ -5290,103 +5330,124 @@ var ECON_DATA = {
             return chain;
         }
 
+        /* ── TradingView (Finnhub) → FMP Fallback Helper ───── */
+        function loadWithTradingViewFallback(symbol, displayId, decimals, fmpDataGetter) {
+            /**
+             * Finnhub (TradingView) 시도 → 실패하면 FMP fallback
+             * @param symbol: "SPY", "BTC-USD" 등
+             * @param displayId: "sp500" 등 표시할 element ID
+             * @param decimals: 소숫점 자리수
+             * @param fmpDataGetter: FMP 데이터에서 값을 추출하는 함수
+             *   예: function(mdata) { return mdata.US_MARKET?.SP500; }
+             */
+
+            // 1️⃣ 1차: TradingView (Finnhub)
+            fetchFromFinnhub(symbol).then(function(data) {
+                if (data && data.price !== null && !isNaN(data.price)) {
+                    console.log('[LoadHelper] ✅ Finnhub 성공:', symbol);
+                    imdSetValue(displayId, data.price, decimals);
+                    if (data.changePercentage !== undefined) imdSetChange(displayId, data.changePercentage, 'pct');
+                    imdSetStatus(displayId, 'online');
+                    return;
+                }
+                // Finnhub 실패 → 2차: FMP
+                throw new Error('Finnhub no data');
+            }).catch(function(e) {
+                console.log('[LoadHelper] Finnhub 실패, FMP fallback:', symbol);
+
+                // 2️⃣ 2차: FMP (Worker API)
+                workerFetchMarket().then(function(mdata) {
+                    if (!mdata) throw new Error('FMP no data');
+
+                    var fmpData = fmpDataGetter(mdata);
+                    if (fmpData && fmpData.price !== null && !isNaN(fmpData.price)) {
+                        console.log('[LoadHelper] ✅ FMP 성공 (fallback):', symbol);
+                        imdSetValue(displayId, fmpData.price, decimals);
+                        if (fmpData.changePercentage !== undefined) imdSetChange(displayId, fmpData.changePercentage, 'pct');
+                        imdSetStatus(displayId, 'online');
+                    } else {
+                        throw new Error('FMP no price');
+                    }
+                }).catch(function(fmpErr) {
+                    console.warn('[LoadHelper] ❌ 모두 실패:', symbol, fmpErr.message);
+                    imdSetValue(displayId, '-', decimals);
+                    imdSetStatus(displayId, 'offline');
+                });
+            });
+        }
+
         /* ══════════════════════════════════════════════════════
          * 카드 1 – 한국 시장
-         * 출처: FMP API (Worker 경유)
+         * 출처: TradingView (Finnhub) → FMP Fallback
          * EWY = iShares MSCI South Korea ETF
          * ══════════════════════════════════════════════════════ */
         function imdLoadKorea() {
-            console.log('[imdLoadKorea] 🔄 START - Worker API 호출 시작');
-            workerFetchMarket().then(function(data) {
-                console.log('[imdLoadKorea] ✅ Worker 응답 받음, data:', data ? Object.keys(data) : 'NULL');
-                if (data && data.KOREA_MARKET) {
-                    var kr = data.KOREA_MARKET;
-
-                    // EWY: iShares MSCI South Korea ETF (FMP API)
-                    if (kr.EWY && kr.EWY.price) {
-                        imdSetValue('ewy', kr.EWY.price, 2);
-                        if (kr.EWY.changePercentage !== undefined) imdSetChange('ewy', kr.EWY.changePercentage, 'pct');
-                    } else {
-                        imdSetValue('ewy', '-', 2);
-                    }
-
-                    return;
-                }
-                // FMP API 실패 시 '-' 표시
-                console.log('[ERROR] Worker API 응답 없음');
-                imdSetValue('ewy', '-', 2);
-            }).catch(function(err) {
-                console.error('[ERROR] Worker API 실패:', err);
-                imdSetValue('ewy', '-', 2);
+            console.log('[imdLoadKorea] 🔄 START - TradingView(Finnhub) 시도');
+            // 1차: TradingView (Finnhub) → 2차: FMP Fallback
+            loadWithTradingViewFallback('EWY', 'ewy', 2, function(mdata) {
+                return mdata.KOREA_MARKET ? mdata.KOREA_MARKET.EWY : null;
             });
         }
 
         /* ══════════════════════════════════════════════════════
          * 카드 2 – 미국 시장
-         * Worker API → FMP 배치 → Twelvedata → Yahoo (Fallback)
+         * 출처: TradingView (Finnhub) → FMP Fallback
          * ══════════════════════════════════════════════════════ */
         function imdLoadUS() {
-            // Worker API
-            workerFetchMarket().then(function(data) {
-                if (data && data.US_MARKET) {
-                    console.log('[US] Worker data loaded, processing...', data.US_MARKET);
+            console.log('[imdLoadUS] 🔄 START - TradingView 시도');
 
-                    // ✅ Major Indices 섹션 업데이트
-                    updateIndexSections(data);
+            // 🔄 병렬로 Finnhub 데이터 로드
+            var symbols = { 'SPY': 'sp500', 'QQQ': 'nasdaq', 'DIA': 'dow', '^VIX': 'vix', 'SOXX': 'sox', 'IWM': 'rtyfuture' };
+            var finnhubPromises = {};
 
-                    var m = data.US_MARKET;
+            Object.keys(symbols).forEach(function(sym) {
+                finnhubPromises[sym] = fetchFromFinnhub(sym)
+                    .then(function(data) { return data; })
+                    .catch(function() { return null; });
+            });
 
-                    // SP500
-                    if (m.SP500 && m.SP500.price) {
-                        imdSetValue('sp500', m.SP500.price, 2);
-                        console.log('[US] SP500 changePercentage:', m.SP500.changePercentage);
-                        if (m.SP500.changePercentage !== undefined && m.SP500.changePercentage !== null) {
-                            imdSetChange('sp500', m.SP500.changePercentage, 'pct');
+            // 1️⃣ Finnhub 결과 처리
+            Promise.all(Object.values(finnhubPromises)).then(function(results) {
+                var finnhubData = {};
+                var keys = Object.keys(symbols);
+                keys.forEach(function(key, idx) {
+                    if (results[idx]) finnhubData[key] = results[idx];
+                });
+
+                // 2️⃣ FMP 호출 (Fallback용)
+                workerFetchMarket().then(function(data) {
+                    if (data && data.US_MARKET) {
+                        console.log('[US] Worker data loaded, processing...', data.US_MARKET);
+
+                        // ✅ Major Indices 섹션 업데이트
+                        updateIndexSections(data);
+
+                        var m = data.US_MARKET;
+
+                        // Helper: TradingView 우선, FMP fallback
+                        function displayUSItem(symbol, displayId, decimals, fmpKey) {
+                            if (finnhubData[symbol]) {
+                                imdSetValue(displayId, finnhubData[symbol].price, decimals);
+                                if (finnhubData[symbol].changePercentage !== undefined)
+                                    imdSetChange(displayId, finnhubData[symbol].changePercentage, 'pct');
+                            } else if (m[fmpKey] && m[fmpKey].price) {
+                                imdSetValue(displayId, m[fmpKey].price, decimals);
+                                if (m[fmpKey].changePercentage !== undefined)
+                                    imdSetChange(displayId, m[fmpKey].changePercentage, 'pct');
+                            } else {
+                                imdSetValue(displayId, '-', decimals);
+                            }
                         }
-                    }
 
-                    // NASDAQ
-                    if (m.NASDAQ && m.NASDAQ.price) {
-                        imdSetValue('nasdaq', m.NASDAQ.price, 2);
-                        if (m.NASDAQ.changePercentage !== undefined && m.NASDAQ.changePercentage !== null) {
-                            imdSetChange('nasdaq', m.NASDAQ.changePercentage, 'pct');
-                        }
-                    }
+                        displayUSItem('SPY', 'sp500', 2, 'SP500');
+                        displayUSItem('QQQ', 'nasdaq', 2, 'NASDAQ');
+                        displayUSItem('DIA', 'dow', 2, 'DOW');
+                        displayUSItem('^VIX', 'vix', 2, 'VIX');
+                        displayUSItem('SOXX', 'sox', 2, 'SOX');
+                        displayUSItem('IWM', 'rtyfuture', 2, 'RUSSELL2000');
 
-                    // DOW
-                    if (m.DOW && m.DOW.price) {
-                        imdSetValue('dow', m.DOW.price, 2);
-                        if (m.DOW.changePercentage !== undefined && m.DOW.changePercentage !== null) {
-                            imdSetChange('dow', m.DOW.changePercentage, 'pct');
-                        }
+                        return; // Success – no fallback needed
                     }
-
-                    // VIX
-                    if (m.VIX && m.VIX.price) {
-                        imdSetValue('vix', m.VIX.price, 2);
-                        if (m.VIX.changePercentage !== undefined && m.VIX.changePercentage !== null) {
-                            imdSetChange('vix', m.VIX.changePercentage, 'pct');
-                        }
-                    }
-
-                    // SOX
-                    if (m.SOX && m.SOX.price) {
-                        imdSetValue('sox', m.SOX.price, 2);
-                        if (m.SOX.changePercentage !== undefined && m.SOX.changePercentage !== null) {
-                            imdSetChange('sox', m.SOX.changePercentage, 'pct');
-                        }
-                    }
-
-                    // RUSSELL2000
-                    if (m.RUSSELL2000 && m.RUSSELL2000.price) {
-                        imdSetValue('rtyfuture', m.RUSSELL2000.price, 2);
-                        if (m.RUSSELL2000.changePercentage !== undefined && m.RUSSELL2000.changePercentage !== null) {
-                            imdSetChange('rtyfuture', m.RUSSELL2000.changePercentage, 'pct');
-                        }
-                    }
-
-                    return; // Success – no fallback needed
-                }
 
                 // Fallback: Legacy FMP API
                 console.log('[FALLBACK] Worker US market data missing or failed, using legacy FMP API');
@@ -5498,41 +5559,11 @@ var ECON_DATA = {
          * Yahoo(=F) → Twelvedata(1!) → FMP
          * ══════════════════════════════════════════════════════ */
         function imdLoadFutures() {
-            yahooQuote('ES=F').then(function(q) {
-                if (q && q.price) {
-                    imdSetValue('spfuture', q.price, 2);
-                    if (q.prev) imdSetChange('spfuture', (q.price - q.prev) / q.prev * 100, 'pct');
-                    return;
-                }
-                fetchMulti([
-                    function(){ return twelvePrice('ES1!'); },
-                    function(){ return fmpPrice('ES'); }
-                ]).then(function(v){ imdSetValue('spfuture', v, 2); });
-            });
-
-            yahooQuote('NQ=F').then(function(q) {
-                if (q && q.price) {
-                    imdSetValue('nasfuture', q.price, 2);
-                    if (q.prev) imdSetChange('nasfuture', (q.price - q.prev) / q.prev * 100, 'pct');
-                    return;
-                }
-                fetchMulti([
-                    function(){ return twelvePrice('NQ1!'); },
-                    function(){ return fmpPrice('NQ'); }
-                ]).then(function(v){ imdSetValue('nasfuture', v, 2); });
-            });
-
-            yahooQuote('RTY=F').then(function(q) {
-                if (q && q.price) {
-                    imdSetValue('rtyfuture', q.price, 2);
-                    if (q.prev) imdSetChange('rtyfuture', (q.price - q.prev) / q.prev * 100, 'pct');
-                    return;
-                }
-                fetchMulti([
-                    function(){ return twelvePrice('RTY1!'); },
-                    function(){ return fmpPrice('RTY'); }
-                ]).then(function(v){ imdSetValue('rtyfuture', v, 2); });
-            });
+            console.log('[imdLoadFutures] 🔄 START - TradingView 시도');
+            // TradingView (Finnhub) → FMP Fallback
+            loadWithTradingViewFallback('ES=F', 'spfuture', 2, function(mdata) { return null; });
+            loadWithTradingViewFallback('NQ=F', 'nasfuture', 2, function(mdata) { return null; });
+            loadWithTradingViewFallback('RTY=F', 'rtyfuture', 2, function(mdata) { return null; });
         }
 
         /* ══════════════════════════════════════════════════════
@@ -5540,26 +5571,29 @@ var ECON_DATA = {
          * CoinGecko → Binance → FMP
          * ══════════════════════════════════════════════════════ */
         function imdLoadCrypto() {
-            // Primary: Worker API
+            console.log('[imdLoadCrypto] 🔄 START - TradingView 시도');
+            // TradingView (Finnhub) → CoinGecko/Binance → FMP Fallback
+            loadWithTradingViewFallback('BTC-USD', 'btc', 0, function(mdata) { return mdata.CRYPTO ? mdata.CRYPTO.BTC : null; });
+            loadWithTradingViewFallback('ETH-USD', 'eth', 0, function(mdata) { return mdata.CRYPTO ? mdata.CRYPTO.ETH : null; });
+            loadWithTradingViewFallback('SOL-USD', 'sol', 2, function(mdata) { return mdata.CRYPTO ? mdata.CRYPTO.SOL : null; });
+
+            // Legacy: Worker API (backup)
             workerFetchMarket().then(function(data) {
                 if (data && data.CRYPTO) {
                     var c = data.CRYPTO;
-
-                    if (c.BTC && c.BTC.price) {
+                    // Solo set fallback values if Finnhub didn't get them
+                    if (c.BTC && c.BTC.price && (!document.getElementById('btc') || document.getElementById('btc').textContent === '-')) {
                         imdSetValue('btc', c.BTC.price, 0);
                         if (c.BTC.changePercentage !== undefined) imdSetChange('btc', c.BTC.changePercentage, 'pct');
                     }
-
-                    if (c.ETH && c.ETH.price) {
+                    if (c.ETH && c.ETH.price && (!document.getElementById('eth') || document.getElementById('eth').textContent === '-')) {
                         imdSetValue('eth', c.ETH.price, 0);
                         if (c.ETH.changePercentage !== undefined) imdSetChange('eth', c.ETH.changePercentage, 'pct');
                     }
-
-                    if (c.SOL && c.SOL.price) {
+                    if (c.SOL && c.SOL.price && (!document.getElementById('sol') || document.getElementById('sol').textContent === '-')) {
                         imdSetValue('sol', c.SOL.price, 2);
                         if (c.SOL.changePercentage !== undefined) imdSetChange('sol', c.SOL.changePercentage, 'pct');
                     }
-
                     return; // Success – no fallback needed
                 }
 
@@ -5633,10 +5667,17 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 5 – 상품 (Commodities)
-         * Worker API → FMP(GCUSD/SIUSD/BZUSD/DX) → Twelvedata → Yahoo
+         * 출처: TradingView (Finnhub) → FMP Fallback
          * ══════════════════════════════════════════════════════ */
         function imdLoadCommodities() {
-            // Primary: Worker API
+            console.log('[imdLoadCommodities] 🔄 START - TradingView 시도');
+            // TradingView (Finnhub) → FMP Fallback
+            loadWithTradingViewFallback('XAUUSD', 'gold', 0, function(mdata) { return mdata.COMMODITIES ? mdata.COMMODITIES.GOLD : null; });
+            loadWithTradingViewFallback('XAGUSD', 'silver', 2, function(mdata) { return mdata.COMMODITIES ? mdata.COMMODITIES.SILVER : null; });
+            loadWithTradingViewFallback('CLUSD', 'oil', 2, function(mdata) { return mdata.COMMODITIES ? mdata.COMMODITIES.OIL : null; });
+            loadWithTradingViewFallback('DXY', 'dxy', 2, function(mdata) { return mdata.FX ? mdata.FX.DXY : null; });
+
+            // Legacy: Worker API (backup)
             workerFetchMarket().then(function(data) {
                 if (data && data.COMMODITIES) {
                     var cm = data.COMMODITIES;
@@ -5729,10 +5770,16 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 6 – 외환 (FX)
-         * Worker API → FMP(USDKRW/USDJPY/EURUSD) → Twelvedata → Yahoo
+         * 출처: TradingView (Finnhub) → FMP Fallback
          * ══════════════════════════════════════════════════════ */
         function imdLoadFX() {
-            // Primary: Worker API
+            console.log('[imdLoadFX] 🔄 START - TradingView 시도');
+            // TradingView (Finnhub) → FMP Fallback
+            loadWithTradingViewFallback('EURUSD', 'eurusd', 4, function(mdata) { return mdata.FX ? mdata.FX.EURUSD : null; });
+            loadWithTradingViewFallback('USDJPY', 'usjpy', 2, function(mdata) { return mdata.FX ? mdata.FX.USDJPY : null; });
+            loadWithTradingViewFallback('USDKRW', 'uskrw', 0, function(mdata) { return mdata.FX ? mdata.FX.USDKRW : null; });
+
+            // Legacy: Worker API (backup)
             workerFetchMarket().then(function(data) {
                 if (data && data.FX) {
                     var fx = data.FX;
@@ -5968,9 +6015,34 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 10 – 섹터 (Sectors)
-         * Worker API → FMP
+         * 출처: TradingView (Finnhub) → FMP Fallback
          * ══════════════════════════════════════════════════════ */
         function imdLoadSectors() {
+            console.log('[imdLoadSectors] 🔄 START - TradingView 시도');
+            // TradingView (Finnhub) → FMP Fallback
+            var sectorSymbols = {
+                'XLK': 'xlk',    // Technology
+                'XLF': 'xlf',    // Financials
+                'XLE': 'xle',    // Energy
+                'XLV': 'xlv',    // Healthcare
+                'XLY': 'xly',    // Consumer Discretionary
+                'XLI': 'xli',    // Industrials
+                'XLU': 'xlu',    // Utilities
+                'XLRE': 'xlre'   // Real Estate
+            };
+
+            Object.keys(sectorSymbols).forEach(function(sym) {
+                var id = sectorSymbols[sym];
+                loadWithTradingViewFallback(sym, id, 2, function(mdata) {
+                    // FMP fallback mapping
+                    var keyMap = {'XLK': 'TECHNOLOGY', 'XLF': 'FINANCIALS', 'XLE': 'ENERGY',
+                                  'XLV': 'HEALTHCARE', 'XLY': 'CONSUMER_DISCRETIONARY', 'XLI': 'INDUSTRIALS',
+                                  'XLU': 'UTILITIES', 'XLRE': 'REAL_ESTATE'};
+                    return mdata.SECTORS ? mdata.SECTORS[keyMap[sym]] : null;
+                });
+            });
+
+            // Legacy: Worker API (backup)
             workerFetchMarket().then(function(data) {
                 if (data && data.SECTORS) {
                     var sectors = data.SECTORS;
@@ -5986,23 +6058,19 @@ var ECON_DATA = {
                     ];
 
                     sectorMap.forEach(function(item) {
-                        if (sectors[item.key] && sectors[item.key].price) {
+                        // Only set if Finnhub didn't already set it
+                        if (sectors[item.key] && sectors[item.key].price &&
+                            (!document.getElementById(item.id) || document.getElementById(item.id).textContent === '-')) {
                             imdSetValue(item.id, sectors[item.key].price, 2);
                             if (sectors[item.key].changePercentage !== undefined)
                                 imdSetChange(item.id, sectors[item.key].changePercentage, 'pct');
                             imdSetStatus(item.id, 'sync');
-                        } else {
-                            imdSetStatus(item.id, 'error');
                         }
                     });
                     return;
                 }
-                throw new Error('No SECTORS data');
             }).catch(function(err) {
                 console.error('[ERROR] imdLoadSectors:', err);
-                ['xlk','xlf','xle','xlv','xly','xli','xlu','xlre'].forEach(function(id) {
-                    imdSetStatus(id, 'error');
-                });
             });
         }
 
@@ -6213,8 +6281,8 @@ var ECON_DATA = {
 
         imdSetAllSync();
         imdLoadAll();
-        // Auto-refresh market data every 5 minutes (Worker API)
-        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 300000);
+        // Auto-refresh market data every 30 seconds (Worker API)
+        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 30000);
 
         // 경제지표 대시보드 – FRED 실시간 갱신 (별도 주기: 4시간)
         // DOMContentLoaded 이후 비동기 실행 보장
