@@ -83,6 +83,7 @@ export default {
             changePercentage: quote.changesPercentage || quote.changePercentage, // FMP는 's'가 붙음
             change: quote.change,
             volume: quote.volume,
+            avgVolume: quote.avgVolume,  // 평균 거래량 (하드코딩 임계값 대신 사용)
             timestamp: quote.timestamp
           }
 
@@ -425,7 +426,9 @@ export default {
       // 2. Market Regime Engine
       async function getMarketRegime() {
         const data = await getMarketDataCached()
-        const trendScore = (data.spy > 400) ? 70 : 55
+        // SPY 절대 가격 대신 당일 변화율로 추세 판단 (하드코딩된 가격 기준 제거)
+        const spyChange = data.spyChange || 0
+        const trendScore = spyChange > 1 ? 75 : spyChange > 0 ? 65 : spyChange > -1 ? 55 : 45
         const riskScore = (data.vix < 15) ? 80 : 60
         const confidenceScore = (trendScore + riskScore) / 2
 
@@ -505,14 +508,13 @@ export default {
 
       // 5. Inflation Pressure Monitor
       async function getInflationPressure() {
-        const [cpi, t10y] = await Promise.all([
-          fredGet("CPIAUCSL"),
-          fredGet("T10YIE")
-        ])
+        // CPI 절대 지수값(240) 하드코딩 제거 → getMarketDataCached() 재활용 + YoY% 기반 판단
+        const data = await getMarketDataCached()
+        const cpiYoy = data.MACRO_BASE.CPI_YOY            // FRED CPIAUCSL units=pc1 YoY%
+        const inflationExpectation = data.MACRO_BASE.INFLATION_EXPECTATION  // FRED T10YIE
 
-        const cpiVal = getLatestValue(cpi)
-        const inflationExpectation = convertFredValue("T10YIE", getLatestValue(t10y))
-        const pressure = cpiVal && cpiVal > 240 ? "고" : "저"
+        // Fed 목표 2%, 3% 초과 시 고물가 압력으로 판단
+        const pressure = cpiYoy !== null && cpiYoy > 3 ? "고" : "저"
 
         return {
           timestamp: new Date().toISOString(),
@@ -520,7 +522,7 @@ export default {
           pressure: pressure,
           signal: pressure === "고" ? "🌡️ 높음" : "❄️ 낮음",
           metrics: [
-            { name: 'CPI 지수', value: cpiVal !== null ? parseFloat(cpiVal.toFixed(2)) : null, trend: null, unit: '' },
+            { name: 'CPI YoY%', value: cpiYoy !== null ? parseFloat(cpiYoy.toFixed(2)) : null, trend: null, unit: '%' },
             { name: '10Y 기대인플레', value: inflationExpectation !== null ? parseFloat(inflationExpectation.toFixed(2)) : null, trend: null, unit: '%' }
           ],
           recommendation: pressure === "고" ? "금, 에너지, TIPs 선호" : "성장주 선호"
@@ -649,20 +651,22 @@ export default {
         ])
 
         const dxyPrice = dxy?.price
-        const impact = dxyPrice > 105 ? "약세 자산 약함" : "약세 자산 강함"
+        // DXY 절대값(105) 하드코딩 제거 → 당일 변화율 기반 달러 강/약세 판단
+        const dxyChange = dxy?.changePercentage
+        const dxyStrong = dxyChange !== null && dxyChange !== undefined && dxyChange > 0
 
         const btcChange = bitcoin?.changePercentage
         return {
           timestamp: new Date().toISOString(),
           dataType: "dollar_liquidity",
           dxy: dxyPrice,
-          signal: dxyPrice > 105 ? "💵 달러 강함" : "📉 달러 약함",
-          impact: impact,
+          signal: dxyStrong ? "💵 달러 강함" : "📉 달러 약함",
+          impact: dxyStrong ? "약세 자산 약함" : "약세 자산 강함",
           metrics: [
             { name: 'DXY (달러인덱스)', value: dxyPrice ? parseFloat(dxyPrice.toFixed(2)) : null, trend: null, unit: '' },
             { name: 'BTC 변화', value: btcChange !== null && btcChange !== undefined ? parseFloat(btcChange.toFixed(2)) : null, trend: null, unit: '%' }
           ],
-          recommendation: dxyPrice > 105 ? "미국주식만" : "신흥국, 원자재 진입"
+          recommendation: dxyStrong ? "미국주식만" : "신흥국, 원자재 진입"
         }
       }
 
@@ -703,11 +707,14 @@ export default {
           getQuote("QQQ")
         ])
 
-        const signal = (spy && spy.volume > 60000000) ? "축적" : "분산"
-
+        // 하드코딩된 거래량 임계값 제거 → FMP avgVolume(평균 거래량) 기반 비교
         const spyVol = spy?.volume || 0
         const qqqVol = qqq?.volume || 0
-        const smConfidence = spyVol > 80000000 ? 85 : spyVol > 60000000 ? 70 : 50
+        const spyAvgVol = spy?.avgVolume || spyVol  // avgVolume 없으면 현재 거래량 사용
+        const qqqAvgVol = qqq?.avgVolume || qqqVol
+
+        const signal = spyVol > spyAvgVol ? "축적" : "분산"
+        const smConfidence = spyVol > spyAvgVol * 1.3 ? 85 : spyVol > spyAvgVol ? 70 : 50
         return {
           timestamp: new Date().toISOString(),
           dataType: "smart_money",
@@ -718,8 +725,8 @@ export default {
           status: signal === "축적" ? "🤖 기관 매수" : "⚠️ 기관 매도",
           badgeClass: signal === "축적" ? "bullish" : "bearish",
           factors: [
-            { name: 'SPY 거래량', status: spyVol > 60000000 ? '고량' : '저량', strength: Math.min(100, Math.round(spyVol / 1000000)) },
-            { name: 'QQQ 거래량', status: qqqVol > 40000000 ? '고량' : '저량', strength: Math.min(100, Math.round(qqqVol / 1000000)) },
+            { name: 'SPY 거래량', status: spyVol > spyAvgVol ? '고량' : '저량', strength: Math.min(100, Math.round(spyVol / 1000000)) },
+            { name: 'QQQ 거래량', status: qqqVol > qqqAvgVol ? '고량' : '저량', strength: Math.min(100, Math.round(qqqVol / 1000000)) },
             { name: '기관 포지션', status: signal === "축적" ? "매수 우세" : "매도 우세", strength: smConfidence }
           ],
           details: {
@@ -861,11 +868,11 @@ export default {
           BONDS: {
             HYG: {
               price: marketData.hyg ? parseFloat(marketData.hyg.toFixed(2)) : null,
-              change: marketData.hygChange ? parseFloat(marketData.hygChange.toFixed(2)) : null
+              changePercentage: marketData.hygChange != null ? parseFloat(marketData.hygChange.toFixed(2)) : null
             },
             LQD: {
               price: marketData.lqd ? parseFloat(marketData.lqd.toFixed(2)) : null,
-              change: marketData.lqdChange ? parseFloat(marketData.lqdChange.toFixed(2)) : null
+              changePercentage: marketData.lqdChange != null ? parseFloat(marketData.lqdChange.toFixed(2)) : null
             }
           },
           // 카드 5: 원자재 - index.html COMMODITIES.GOLD.price 등에서 사용
