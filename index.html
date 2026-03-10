@@ -4568,41 +4568,154 @@ var ECON_DATA = {
             'https://api.codetabs.com/v1/proxy?quest='
         ];
 
-        /* ── Finnhub API (TradingView 실시간 데이터) ──────────── */
-        function fetchFromFinnhub(symbol) {
-            // 출처: Finnhub (TradingView 기반 실시간 시세)
+        /* ── Finnhub WebSocket (실시간 스트리밍) ───────────── */
+        var finnhubWS = null;
+        var finnhubSubscriptions = {}; // { 'SPY': {displayId: 'sp500', decimals: 2, ...}, ... }
+        var finnhubPrice = {}; // { 'SPY': {price: 560.12, change: 1.23, changePercent: 0.22}, ... }
+
+        function initFinnhubWebSocket() {
             if (!FINNHUB_KEY || FINNHUB_KEY === 'YOUR_FINNHUB_KEY_HERE') {
-                console.warn('[Finnhub] API KEY not set, using FMP fallback');
-                return Promise.resolve(null);
+                console.warn('[Finnhub WebSocket] API KEY not set');
+                return;
+            }
+
+            if (finnhubWS && finnhubWS.readyState === WebSocket.OPEN) {
+                console.log('[Finnhub WebSocket] ✅ Already connected');
+                return;
+            }
+
+            console.log('[Finnhub WebSocket] 🔄 Connecting...');
+            finnhubWS = new WebSocket('wss://ws.finnhub.io?token=' + FINNHUB_KEY);
+
+            finnhubWS.onopen = function() {
+                console.log('[Finnhub WebSocket] ✅ Connected');
+                // 저장된 심볼들 모두 구독
+                Object.keys(finnhubSubscriptions).forEach(function(symbol) {
+                    finnhubWS.send(JSON.stringify({type: 'subscribe', symbol: symbol}));
+                    console.log('[Finnhub WebSocket] 📡 Subscribed:', symbol);
+                });
+            };
+
+            finnhubWS.onmessage = function(event) {
+                try {
+                    var msg = JSON.parse(event.data);
+
+                    // 실시간 거래 데이터
+                    if (msg.type === 'trade' && msg.data) {
+                        msg.data.forEach(function(trade) {
+                            var symbol = trade.s;
+                            var price = trade.p;
+                            var timestamp = trade.t;
+
+                            // 가격 저장
+                            finnhubPrice[symbol] = {
+                                price: price,
+                                timestamp: timestamp
+                            };
+
+                            // 구독된 항목이면 화면 업데이트
+                            if (finnhubSubscriptions[symbol]) {
+                                var sub = finnhubSubscriptions[symbol];
+                                imdSetValue(sub.displayId, price, sub.decimals);
+                                imdSetStatus(sub.displayId, 'online');
+                                console.log('[Finnhub WebSocket] 💹', symbol, price);
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('[Finnhub WebSocket] Parse error:', e.message);
+                }
+            };
+
+            finnhubWS.onerror = function(err) {
+                console.error('[Finnhub WebSocket] ❌ Error:', err.message);
+            };
+
+            finnhubWS.onclose = function() {
+                console.warn('[Finnhub WebSocket] 🔌 Disconnected, attempting reconnect...');
+                finnhubWS = null;
+                // 3초 후 재연결
+                setTimeout(initFinnhubWebSocket, 3000);
+            };
+        }
+
+        function subscribeFinnhubSymbol(symbol, displayId, decimals, fmpDataGetter) {
+            // WebSocket 초기화 (아직 안 되었으면)
+            if (!finnhubWS || finnhubWS.readyState !== WebSocket.OPEN) {
+                initFinnhubWebSocket();
+            }
+
+            // 구독 정보 저장
+            finnhubSubscriptions[symbol] = {
+                displayId: displayId,
+                decimals: decimals,
+                fmpDataGetter: fmpDataGetter
+            };
+
+            // 연결되어 있으면 즉시 구독
+            if (finnhubWS && finnhubWS.readyState === WebSocket.OPEN) {
+                finnhubWS.send(JSON.stringify({type: 'subscribe', symbol: symbol}));
+                console.log('[Finnhub WebSocket] 📡 Subscribed:', symbol);
+            }
+
+            // 초기값 로드 (WebSocket 연결 전)
+            fetchFromFinnhubQuote(symbol).then(function(data) {
+                if (data && data.price) {
+                    imdSetValue(displayId, data.price, decimals);
+                    imdSetStatus(displayId, 'online');
+                }
+            }).catch(function() {
+                // Fallback: FMP 사용
+                if (fmpDataGetter) {
+                    workerFetchMarket().then(function(mdata) {
+                        var fmpData = fmpDataGetter(mdata);
+                        if (fmpData && fmpData.price) {
+                            imdSetValue(displayId, fmpData.price, decimals);
+                            imdSetStatus(displayId, 'online');
+                        }
+                    });
+                }
+            });
+        }
+
+        /* ── Finnhub REST API (초기 로드용) ───────────────── */
+        function fetchFromFinnhubQuote(symbol) {
+            // 출처: Finnhub (TradingView 기반)
+            if (!FINNHUB_KEY || FINNHUB_KEY === 'YOUR_FINNHUB_KEY_HERE') {
+                return Promise.reject(new Error('API KEY not set'));
             }
 
             var url = FINNHUB_BASE + '/quote?symbol=' + encodeURIComponent(symbol) + '&token=' + FINNHUB_KEY;
-            console.log('[Finnhub] 🔄 Fetching:', symbol);
+            console.log('[Finnhub Quote] 🔄 Initial load:', symbol);
 
             return fetch(url, { credentials: 'omit' })
                 .then(function(r) {
-                    console.log('[Finnhub] Response:', symbol, r.status);
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     return r.json();
                 })
                 .then(function(data) {
                     if (data && data.c) {
-                        // Finnhub 응답: { c: price, d: change, dp: changePercent }
                         var result = {
                             price: data.c,
                             change: data.d || 0,
                             changePercentage: data.dp || 0
                         };
-                        console.log('[Finnhub] ✅ Data loaded:', symbol, result.price);
+                        console.log('[Finnhub Quote] ✅', symbol, result.price);
                         return result;
                     }
                     throw new Error('Invalid response');
                 })
                 .catch(function(e) {
-                    console.warn('[Finnhub] ❌ Failed for', symbol, ':', e.message);
-                    return null;
+                    console.warn('[Finnhub Quote] ❌ Failed:', symbol, e.message);
+                    throw e;
                 });
         }
+
+        // 페이지 로드 시 WebSocket 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // WebSocket은 DOMContentLoaded 이후에 시작
+            setTimeout(initFinnhubWebSocket, 100);
+        });
 
         /* ── 기본 fetch ──────────────────────────────────────── */
         function imdGet(url, ms) {
@@ -5333,47 +5446,14 @@ var ECON_DATA = {
         /* ── TradingView (Finnhub) → FMP Fallback Helper ───── */
         function loadWithTradingViewFallback(symbol, displayId, decimals, fmpDataGetter) {
             /**
-             * Finnhub (TradingView) 시도 → 실패하면 FMP fallback
+             * WebSocket 실시간 스트리밍 + Fallback
              * @param symbol: "SPY", "BTC-USD" 등
              * @param displayId: "sp500" 등 표시할 element ID
              * @param decimals: 소숫점 자리수
              * @param fmpDataGetter: FMP 데이터에서 값을 추출하는 함수
-             *   예: function(mdata) { return mdata.US_MARKET?.SP500; }
              */
-
-            // 1️⃣ 1차: TradingView (Finnhub)
-            fetchFromFinnhub(symbol).then(function(data) {
-                if (data && data.price !== null && !isNaN(data.price)) {
-                    console.log('[LoadHelper] ✅ Finnhub 성공:', symbol);
-                    imdSetValue(displayId, data.price, decimals);
-                    if (data.changePercentage !== undefined) imdSetChange(displayId, data.changePercentage, 'pct');
-                    imdSetStatus(displayId, 'online');
-                    return;
-                }
-                // Finnhub 실패 → 2차: FMP
-                throw new Error('Finnhub no data');
-            }).catch(function(e) {
-                console.log('[LoadHelper] Finnhub 실패, FMP fallback:', symbol);
-
-                // 2️⃣ 2차: FMP (Worker API)
-                workerFetchMarket().then(function(mdata) {
-                    if (!mdata) throw new Error('FMP no data');
-
-                    var fmpData = fmpDataGetter(mdata);
-                    if (fmpData && fmpData.price !== null && !isNaN(fmpData.price)) {
-                        console.log('[LoadHelper] ✅ FMP 성공 (fallback):', symbol);
-                        imdSetValue(displayId, fmpData.price, decimals);
-                        if (fmpData.changePercentage !== undefined) imdSetChange(displayId, fmpData.changePercentage, 'pct');
-                        imdSetStatus(displayId, 'online');
-                    } else {
-                        throw new Error('FMP no price');
-                    }
-                }).catch(function(fmpErr) {
-                    console.warn('[LoadHelper] ❌ 모두 실패:', symbol, fmpErr.message);
-                    imdSetValue(displayId, '-', decimals);
-                    imdSetStatus(displayId, 'offline');
-                });
-            });
+            // WebSocket 구독 (초기값 로드 + 실시간 스트리밍)
+            subscribeFinnhubSymbol(symbol, displayId, decimals, fmpDataGetter);
         }
 
         /* ══════════════════════════════════════════════════════
