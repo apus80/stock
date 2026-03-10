@@ -5739,10 +5739,16 @@ var ECON_DATA = {
                 if (data && data.FX) {
                     var fx = data.FX;
 
-                    // USDKRW (원/달러)
+                    // USDKRW (원/달러) - Worker에서 못 가져오면 Twelvedata/Yahoo fallback
                     if (fx.USDKRW && fx.USDKRW.price) {
                         imdSetValue('uskrw', fx.USDKRW.price, 0);
                         if (fx.USDKRW.changePercentage !== undefined) imdSetChange('uskrw', fx.USDKRW.changePercentage, 'pct');
+                    } else {
+                        console.log('[FX] USDKRW worker 데이터 없음, Twelvedata/Yahoo fallback');
+                        fetchMulti([
+                            function(){ return twelvePrice('USD/KRW'); },
+                            function(){ return yahooPrice('KRW=X'); }
+                        ]).then(function(v){ imdSetValue('uskrw', v, 0); });
                     }
 
                     // USDJPY
@@ -5763,7 +5769,7 @@ var ECON_DATA = {
                         if (fx.DXY.changePercentage !== undefined) imdSetChange('dxy', fx.DXY.changePercentage, 'pct');
                     }
 
-                    return; // Success – no fallback needed
+                    return; // Success – no fallback needed (USDKRW handles own fallback above)
                 }
 
                 // Fallback: Legacy FMP API
