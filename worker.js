@@ -15,15 +15,15 @@ export default {
       ================================ */
       async function getQuote(sym) {
         try {
-          // 📍 출처: FMP API (financialmodelingprep.com) - /stable/batch-quote (필수!)
-          // CLAUDE.md: /stable/batch-quote가 유일하게 안정적으로 작동하는 엔드포인트
+          // 📍 출처: FMP API (financialmodelingprep.com) - /api/v3/quote (안정적 버전)
+          // /api/v3/quote/{symbols}가 배치 호출에서 가장 안정적으로 작동
           const r = await fetch(
-            `https://financialmodelingprep.com/stable/batch-quote?symbols=${sym}&apikey=${FMP}`
+            `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
           )
           const j = await r.json()
           console.log(`[DEBUG] ${sym} 응답:`, JSON.stringify(j).substring(0, 200))
 
-          // /stable/batch-quote는 항상 배열을 반환합니다
+          // /api/v3/quote는 배열을 반환합니다
           const result = Array.isArray(j) && j.length > 0 ? j[0] : null
           console.log(`[DEBUG] ${sym} 결과:`, result)
           return result
@@ -34,14 +34,14 @@ export default {
       }
 
       async function getKoreanQuote(symbol) {
-        // 📍 출처: FMP API (financialmodelingprep.com) - /stable/batch-quote (필수!)
+        // 📍 출처: FMP API (financialmodelingprep.com) - /api/v3/quote (안정적 버전)
         try {
           const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
           const r = await fetch(
-            `https://financialmodelingprep.com/stable/batch-quote?symbols=${fmpSymbol}&apikey=${FMP}`
+            `https://financialmodelingprep.com/api/v3/quote/${fmpSymbol}?apikey=${FMP}`
           )
           const j = await r.json()
-          // /stable/batch-quote는 항상 배열을 반환합니다
+          // /api/v3/quote는 배열을 반환합니다
           const quote = Array.isArray(j) && j.length > 0 ? j[0] : null
           return quote?.price ? {
             price: quote.price,
@@ -82,9 +82,14 @@ export default {
 
       function getLatestValue(fredArray) {
         if (!fredArray || fredArray.length === 0) return null
+        // 최신 데이터부터 역순으로 탐색 (데이터 누락 시 이전 값 사용)
         for (let i = fredArray.length - 1; i >= 0; i--) {
           const val = fredArray[i].value
-          if (val && val !== '.' && val !== '') return parseFloat(val)
+          // "." (데이터 없음) 또는 빈 값 제외
+          if (val && val !== '.' && val !== '') {
+            const parsed = parseFloat(val)
+            if (!isNaN(parsed)) return parsed
+          }
         }
         return null
       }
