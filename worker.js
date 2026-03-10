@@ -139,10 +139,12 @@ export default {
         }
       }
 
-      async function fredGet(series) {
+      async function fredGet(series, units = null) {
         try {
           // 📍 출처: FRED API (Federal Reserve)
-          const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json`
+          // units='pc1' → 전년동기대비 YoY% 직접 반환 (계산 불필요)
+          const unitsParam = units ? `&units=${units}` : ''
+          const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json${unitsParam}`
           const r = await fetch(url)
           if (!r.ok) {
             console.error(`❌ FRED ${series}: HTTP ${r.status}`)
@@ -161,6 +163,28 @@ export default {
         } catch (e) {
           console.error(`❌ FRED ${series}:`, e.message)
           return []
+        }
+      }
+
+      // 📍 출처: Yahoo Finance (DX-Y.NYB = ICE Dollar Index)
+      async function yahooFinanceDXY() {
+        try {
+          const url = 'https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d'
+          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+          if (!r.ok) throw new Error(`Yahoo HTTP ${r.status}`)
+          const j = await r.json()
+          const meta = j?.chart?.result?.[0]?.meta
+          if (!meta || meta.regularMarketPrice === undefined) throw new Error('no price in response')
+          console.log(`✅ Yahoo DXY: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
+          return {
+            price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+            changePercentage: meta.regularMarketChangePercent !== undefined
+              ? parseFloat(meta.regularMarketChangePercent.toFixed(2))
+              : null
+          }
+        } catch (e) {
+          console.error('❌ Yahoo DXY:', e.message)
+          return null
         }
       }
 
@@ -261,18 +285,19 @@ export default {
           getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
-          getQuote("DX"),      // 달러 인덱스 (DXY)
+          yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // 추가 FRED 경제지표
           fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
           fredGet("M2SL"),     // M2 통화량 (billions)
           fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
           fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
-          fredGet("CPILFESL")  // Core CPI (식료품·에너지 제외, index level)
+          fredGet("CPILFESL", "pc1"), // Core CPI YoY% (출처: FRED CPILFESL, units=pc1 직접 공시값)
+          fredGet("CPIAUCSL", "pc1")  // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpi] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -306,20 +331,10 @@ export default {
         // 신규: 추가 경제지표
         const inflExpVal = convertFredValue("T10YIE", getLatestValue(t10yie))
 
-        // CPI YoY 계산: 최신값 vs 12개월 전 값
-        function calcYoY(fredArray) {
-          if (!fredArray || fredArray.length === 0) return null
-          const valid = fredArray.filter(o => o.value && o.value !== '.' && o.value !== '')
-          if (valid.length < 13) return null
-          const latest = parseFloat(valid[valid.length - 1].value)
-          const yearAgo = parseFloat(valid[valid.length - 13].value)
-          if (!yearAgo) return null
-          return parseFloat(((latest - yearAgo) / yearAgo * 100).toFixed(2))
-        }
-
-        const cpiYoY = calcYoY(cpi)           // CPIAUCSL YoY %
-        const coreCpiYoY = calcYoY(coreCpi)   // CPILFESL YoY %
-        const fedRateVal = getLatestValue(fedfunds) // Fed 기준금리 %
+        // CPI YoY: FRED units=pc1로 직접 공시값 사용 (계산 없음)
+        const cpiYoY = getLatestValue(cpiYoyData)         // 출처: FRED CPIAUCSL units=pc1 (%)
+        const coreCpiYoY = getLatestValue(coreCpiYoyData) // 출처: FRED CPILFESL units=pc1 (%)
+        const fedRateVal = getLatestValue(fedfunds)        // 출처: FRED FEDFUNDS (%)
         const m2RawVal = getLatestValue(m2sl)     // M2SL raw (billions) - index.html이 /1,000,000으로 T 변환하므로 *1000해서 millions로 저장
         const fedRawVal = getLatestValue(fed)     // WALCL raw (millions) - index.html이 /1,000,000으로 T 변환
         const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (Billions) - FRED 원값이 이미 Billions 단위
