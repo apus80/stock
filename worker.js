@@ -256,7 +256,7 @@ export default {
           // 상품 (Commodities) - FMP stable batch-quote
           getQuote("GCUSD"),   // 금 (Gold)
           getQuote("SIUSD"),   // 은 (Silver)
-          getQuote("USOIL"),   // 원유 WTI (Oil) - CLUSD는 null 반환, USOIL 사용
+          getQuote("BZUSD"),   // 브렌트유 (Brent Crude) - CLUSD/USOIL null 반환, BZUSD 사용
           // 외환 (FX) - FMP stable batch-quote
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
