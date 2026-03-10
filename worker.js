@@ -1,21 +1,23 @@
+// 📦 캐싱: 모듈 스코프 - 요청 간 유지 (Cloudflare Workers 전역 변수)
+let cachedMarketData = null
+let cacheTimestamp = 0
+const CACHE_TTL = 60000 // 60초
+
 export default {
   async fetch(request, env) {
     try {
       const FMP = env.FMP_API_KEY
       const FRED = env.FRED_KEY
-      const ITICK = env.ITICK_TOKEN
 
       // 환경 변수 검증
       console.log(`🔑 환경변수 확인:`)
       console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
       console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
-      console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
 
       // URL 파싱
       const url = new URL(request.url)
       const pathname = url.pathname
       const action = url.searchParams.get('action')
-      const symbol = url.searchParams.get('symbol')
       const series = url.searchParams.get('series')
 
       console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
@@ -92,49 +94,6 @@ export default {
           console.error(`   Message: ${e.message}`)
           console.error(`   Type: ${e.name}`)
           console.error(`   Stack: ${e.stack?.substring(0, 300)}`)
-          return null
-        }
-      }
-
-      async function getKoreanQuote(symbol) {
-        // 📍 출처: FMP API (financialmodelingprep.com) - /stable/quote (무료 플랜 동작)
-        try {
-          const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
-          const url = `https://financialmodelingprep.com/stable/quote?symbol=${fmpSymbol}&apikey=${FMP}`
-          console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
-          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
-
-          const r = await fetch(url)
-          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
-
-          if (!r.ok) {
-            console.error(`❌ FMP 한국 ${fmpSymbol}: HTTP ${r.status} ${r.statusText}`)
-            return null
-          }
-
-          const j = await r.json()
-
-          if (!j || (Array.isArray(j) && j.length === 0)) {
-            console.warn(`⚠️ ${fmpSymbol}: 응답값 없음`)
-            return null
-          }
-
-          const quote = Array.isArray(j) ? j[0] : j
-          if (!quote || !quote.price) {
-            console.warn(`⚠️ ${fmpSymbol}: price 필드 없음`)
-            return null
-          }
-
-          const result = {
-            price: quote.price,
-            changePercentage: quote.changesPercentage || quote.changePercentage,
-            change: quote.change,
-            volume: quote.volume
-          }
-          console.log(`✅ FMP 한국 ${fmpSymbol}: price=${result.price}, change=${result.changePercentage}%`)
-          return result
-        } catch (e) {
-          console.error(`❌ FMP 한국 ${symbol}:`, e.message)
           return null
         }
       }
@@ -217,11 +176,7 @@ export default {
         return rawValue / conversion.divisor
       }
 
-      // 📦 캐싱: 60초 내 중복 호출 방지
-      let cachedMarketData = null
-      let cacheTimestamp = 0
-      const CACHE_TTL = 60000 // 60초
-
+      // 📦 캐싱: 모듈 스코프 변수 사용 (요청 간 유지)
       async function getMarketDataCached() {
         const now = Date.now()
         if (cachedMarketData && (now - cacheTimestamp) < CACHE_TTL) {
@@ -437,7 +392,7 @@ export default {
       // 1. Institutional Market Score
       async function getInstitutionalScore() {
         const data = await getMarketDataCached()
-        const liquidityScore = (data.fed && data.fed > 7000) ? 18 : 15
+        const liquidityScore = (data.fed && data.fed > 7) ? 18 : 15  // data.fed는 Trillions 단위 (~7.2T)
         const volatilityScore = (data.vix && data.vix < 15) ? 18 : (data.vix < 20 ? 14 : 10)
         const creditScore = (data.hyg && data.lqd && (data.hyg / data.lqd) > 0.98) ? 18 : 15
         const breadthScore = 18
@@ -500,10 +455,10 @@ export default {
       // 3. Liquidity Pulse
       async function getLiquidityPulse() {
         const data = await getMarketDataCached()
-        const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
+        const liquidityScore = (data.fed > 7) ? 85 : (data.fed > 6) ? 70 : 50  // data.fed는 Trillions 단위 (~7.2T)
 
-        const fedT = data.fed ? parseFloat((data.fed / 1000000).toFixed(2)) : null
-        const rpB = data.rp ? parseFloat((data.rp / 1000).toFixed(1)) : null
+        const fedT = data.fed ? parseFloat(data.fed.toFixed(2)) : null           // 이미 Trillions 단위
+        const rpB = data.rp ? parseFloat(data.rp.toFixed(1)) : null              // RRPONTSYD: 이미 Billions 단위
         return {
           timestamp: new Date().toISOString(),
           dataType: "liquidity_pulse",
