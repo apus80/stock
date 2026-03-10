@@ -1919,6 +1919,8 @@
                             <div class="title-area"><span class="title">2. 미국 시장</span><button class="card-rfbtn" id="rfbtn-2" onclick="imdRefreshCard(2)" title="새로고침">↻</button></div>
                             <div class="item"><span>S&amp;P500 (SPY)</span><span class="item-right"><span id="sp500" class="value">-</span><span id="chg-sp500" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sp500"></span></span></div>
                             <div class="item"><span>NASDAQ (QQQ)</span><span class="item-right"><span id="nasdaq" class="value">-</span><span id="chg-nasdaq" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-nasdaq"></span></span></div>
+                            <div class="item"><span>DOW (DIA)</span><span class="item-right"><span id="dow" class="value">-</span><span id="chg-dow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-dow"></span></span></div>
+                            <div class="item"><span>Russell 2000 (IWM)</span><span class="item-right"><span id="russell" class="value">-</span><span id="chg-russell" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-russell"></span></span></div>
                             <div class="item"><span>VIX</span><span class="item-right"><span id="vix" class="value">-</span><span id="chg-vix" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-vix"></span></span></div>
                             <div class="item"><span>SOX (SOXX)</span><span class="item-right"><span id="sox" class="value">-</span><span id="chg-sox" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sox"></span></span></div>
                         </div>
@@ -2015,11 +2017,6 @@
                             <div class="item"><span>PCE Inflation</span><span class="item-right"><span id="pce_inf" class="value">-</span><span id="chg-pce_inf" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-pce_inf"></span></span></div>
                         </div>
 
-                        <div class="card">
-                            <div class="title-area"><span class="title">14. US Market Extended</span><button class="card-rfbtn" id="rfbtn-14" onclick="imdRefreshCard(14)" title="새로고침">↻</button></div>
-                            <div class="item"><span>DOW (DIA)</span><span class="item-right"><span id="dow" class="value">-</span><span id="chg-dow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-dow"></span></span></div>
-                            <div class="item"><span>Russell 2000 (IWM)</span><span class="item-right"><span id="russell" class="value">-</span><span id="chg-russell" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-russell"></span></span></div>
-                        </div>
 
                     </div><!-- /.grid -->
                 </div><!-- /.imd-wrap -->
@@ -6164,7 +6161,7 @@ var ECON_DATA = {
         /* ── 카드별 새로고침 ─────────────────────────────────── */
         var CARD_LOADERS = {
             1: { fn: imdLoadKorea,            ids: ['ewy'] },
-            2: { fn: imdLoadUS,               ids: ['sp500','nasdaq','vix','sox'] },
+            2: { fn: function(){ imdLoadUS(); imdLoadUSExtended(); }, ids: ['sp500','nasdaq','dow','russell','vix','sox'] },
             3: { fn: imdLoadFutures,          ids: ['spfuture','nasfuture','rtyfuture'] },
             4: { fn: imdLoadCrypto,           ids: ['btc','eth','sol'] },
             5: { fn: imdLoadCommodities,      ids: ['gold','silver','oil','dxy'] },
@@ -6175,8 +6172,7 @@ var ECON_DATA = {
             10: { fn: imdLoadSectors,         ids: ['xlk','xlf','xle','xlv','xly','xli','xlu','xlre'] },
             11: { fn: imdLoadCreditBreadth,   ids: ['hyg','lqd','vti','tlt'] },
             12: { fn: imdLoadMacroBase,       ids: ['cpi','inflation_exp','unemployment','m2_macro','real_rates'] },
-            13: { fn: imdLoadMacroIndicators, ids: ['sentiment','gdp','indpro','payems','pce_inf'] },
-            14: { fn: imdLoadUSExtended,      ids: ['dow','russell'] }
+            13: { fn: imdLoadMacroIndicators, ids: ['sentiment','gdp','indpro','payems','pce_inf'] }
         };
 
         window.imdRefreshCard = function(n) {
