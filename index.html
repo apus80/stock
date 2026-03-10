@@ -5918,24 +5918,39 @@ var ECON_DATA = {
          * Gamma Wall: 복잡한 옵션 계산 → '-'
          * ══════════════════════════════════════════════════════ */
         function imdLoadSentiment() {
-            // Fear & Greed – CNN 공식 데이터 (프록시 3종 시도)
-            imdGetProxy('https://production.dataviz.cnn.io/index/fearandgreed/graphdata')
+            // Fear & Greed – Worker 경유 CNN API (서버사이드, CORS 없음, 24h 캐시)
+            var FEAR_CACHE_KEY = 'feargreed_cache';
+            var FEAR_CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
+
+            // 1. localStorage 캐시 확인 → 유효하면 즉시 표시 후 종료
+            try {
+                var cached = JSON.parse(localStorage.getItem(FEAR_CACHE_KEY) || 'null');
+                if (cached && cached.score !== null && Date.now() - cached.ts < FEAR_CACHE_TTL) {
+                    imdSetValue('fear', cached.score, 0);
+                    imdSetStatus('fear', 'sync');
+                    return;
+                }
+            } catch(e) {}
+
+            // 2. Worker /feargreed 호출 (CNN 서버사이드, CORS 없음)
+            imdGet(WORKER_URL + 'feargreed')
                 .then(function(d) {
-                    // CNN 응답 구조: {fear_and_greed: {score: 45.2}} 또는 {score: 45.2}
-                    var score = (d && d.fear_and_greed && d.fear_and_greed.score !== undefined)
-                        ? d.fear_and_greed.score
-                        : (d && d.score !== undefined ? d.score : undefined);
-                    if (score !== undefined && !isNaN(Number(score))) return Math.round(Number(score));
-                    throw new Error('cnn structure mismatch');
+                    if (d && d.score !== null && !isNaN(d.score)) {
+                        imdSetValue('fear', d.score, 0);
+                        localStorage.setItem(FEAR_CACHE_KEY, JSON.stringify({ score: d.score, ts: Date.now() }));
+                        return;
+                    }
+                    throw new Error('worker feargreed null');
                 })
                 .catch(function() {
-                    // Alternative.me 폴백 (CORS 직접 허용)
+                    // 폴백: Alternative.me (암호화폐 F&G, CORS 직접 허용)
                     return imdGet('https://api.alternative.me/fng/?limit=1')
                         .then(function(d) {
-                            return (d && d.data && d.data[0]) ? parseInt(d.data[0].value) : null;
-                        }).catch(function(){ return null; });
-                })
-                .then(function(v){ imdSetValue('fear', v, 0); });
+                            var v = (d && d.data && d.data[0]) ? parseInt(d.data[0].value) : null;
+                            if (v !== null) imdSetValue('fear', v, 0);
+                            else imdSetStatus('fear', 'error');
+                        }).catch(function(){ imdSetStatus('fear', 'error'); });
+                });
 
             // Put/Call Ratio – CBOE total options EOD CSV
             // ※ CSV는 JSON이 아니므로 imdGetProxyText(r.text()) 사용

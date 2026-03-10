@@ -863,6 +863,38 @@ export default {
           }
         }
       }
+      // /feargreed endpoint - CNN Fear & Greed Index (서버사이드 호출, CORS 없음)
+      else if (pathname === "/feargreed") {
+        try {
+          // 출처: CNN Fear & Greed Index 공식 API
+          const r = await fetch('https://production.dataviz.cnn.io/index/fearandgreed/graphdata', {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          })
+          if (!r.ok) throw new Error(`CNN HTTP ${r.status}`)
+          const d = await r.json()
+          const fg = d?.fear_and_greed
+          if (!fg || fg.score === undefined) throw new Error('CNN structure mismatch')
+          response = {
+            score: Math.round(fg.score),
+            rating: fg.rating || null,
+            previousClose: fg.previous_close ? Math.round(fg.previous_close) : null,
+            timestamp: new Date().toISOString(),
+            source: 'CNN'
+          }
+          return new Response(JSON.stringify(response), {
+            headers: {
+              'content-type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'public, max-age=86400'  // 24시간 캐시
+            }
+          })
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message, score: null }), {
+            status: 502,
+            headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          })
+        }
+      }
       // 루트 경로 처리
       else if (pathname === "/" || pathname === "/analysis") {
         response = {
