@@ -84,12 +84,24 @@ const url = `https://financialmodelingprep.com/stable/batch-quote?symbols=${sym}
 
 ## 📊 현재 데이터 소스
 
-| 데이터 | 소스 | 주기 | 필드 | API 엔드포인트 |
-|--------|------|------|------|---------|
-| SPY, QQQ, DIA 등 미국 주식 | FMP API | 실시간 | `price`, `changePercentage` | `/stable/batch-quote?symbols=X` |
-| 코스피, 코스닥 | FMP API | 실시간 | `price`, `changePercentage` | `/stable/batch-quote?symbols=X` |
-| 연방기금 잔액, 역레포 | FRED API | 일일 | `value` | `/fred/series/observations` |
-| 10년물, 2년물 수익률 | FRED API | 일일 | `value` | `/fred/series/observations` |
+| 데이터 | 심볼 | 소스 | 주기 | Worker 필드 | API 엔드포인트 |
+|--------|------|------|------|-------------|---------|
+| S&P500 (SPY), NASDAQ (QQQ), DOW (DIA) | SPY, QQQ, DIA | FMP API | 실시간 | `US_MARKET.SP500` 등 | `/stable/batch-quote?symbols=X` |
+| VIX, SOX (SOXX), Russell2000 (IWM) | ^VIX, SOXX, IWM | FMP API | 실시간 | `US_MARKET.VIX` 등 | `/stable/batch-quote?symbols=X` |
+| 한국 ETF (EWY) | EWY | FMP API | 실시간 | `KOREA_MARKET.EWY` | `/stable/batch-quote?symbols=X` |
+| 금, 은, 원유 (WTI) | GCUSD, SIUSD, CLUSD | FMP API | 실시간 | `COMMODITIES.GOLD` 등 | `/stable/batch-quote?symbols=X` |
+| USD/JPY, EUR/USD, 달러인덱스 | USDJPY, EURUSD, DX | FMP API | 실시간 | `FX.USDJPY` 등 | `/stable/batch-quote?symbols=X` |
+| 섹터 ETF (XLK/XLF/XLE/XLV/XLY/XLI/XLU/XLRE) | XLK~XLRE | FMP API | 실시간 | `SECTORS.TECHNOLOGY` 등 | `/stable/batch-quote?symbols=X` |
+| HYG (하이일드), LQD (투자등급), VTI, TLT | HYG, LQD, VTI, TLT | FMP API | 실시간 | `CREDIT`, `BREADTH` | `/stable/batch-quote?symbols=X` |
+| 연방준비 잔액 (Fed Balance) | WALCL | FRED API | 일일 | `LIQUIDITY.FED_BALANCE` (raw millions) | `/fred/series/observations` |
+| 역레포 (Reverse Repo) | RRPONTSYD | FRED API | 일일 | `LIQUIDITY.REVERSE_REPO` (raw millions) | `/fred/series/observations` |
+| 재무부 일반 계정 (TGA) | WTREGEN | FRED API | 일일 | `LIQUIDITY.TGA` (raw millions) | `/fred/series/observations` |
+| 10년물, 2년물 수익률 | DGS10, DGS2 | FRED API | 일일 | `RATES.US10Y`, `RATES.US2Y` (%) | `/fred/series/observations` |
+| M2 통화량 | M2SL | FRED API | 월간 | `MACRO_BASE.M2` (billions×1000=millions) | `/fred/series/observations` |
+| 10년 기대인플레이션 | T10YIE | FRED API | 일일 | `MACRO_BASE.INFLATION_EXPECTATION` (%) | `/fred/series/observations` |
+| CPI, 실업률 | CPIAUCSL, UNRATE | FRED API | 월간 | `MACRO_BASE.CPI`, `MACRO_BASE.UNEMPLOYMENT` | `/fred/series/observations` |
+| 실질 GDP, 산업생산, 비농업 고용 | GDPC1, INDPRO, PAYEMS | FRED API | 월간 | `MACRO_INDICATORS.*` | `/fred/series/observations` |
+| 소비자심리, PCE 인플레이션 | UMCSENT, PCEPILFE | FRED API | 월간 | `MACRO_INDICATORS.*` | `/fred/series/observations` |
 
 ---
 
@@ -273,4 +285,76 @@ function getCachedData(key) {
 - **index.html 갱신 주기**:
   - 시장 데이터: 5분마다 (`setInterval(..., 300000)`)
   - 경제지표: 4시간마다 (`setInterval(..., 4*60*60*1000)`)
+
+---
+
+## 📐 Worker `/market` 응답 구조 (index.html 기대 형식)
+
+```json
+{
+  "KOREA_MARKET": {
+    "EWY": { "price": 123.45, "changePercentage": -0.12 }
+  },
+  "US_MARKET": {
+    "SP500":      { "price": 560.12, "changePercentage": 0.45 },
+    "NASDAQ":     { "price": 480.34, "changePercentage": 0.67 },
+    "DOW":        { "price": 440.56, "changePercentage": 0.23 },
+    "VIX":        { "price": 18.45,  "changePercentage": -2.10 },
+    "SOX":        { "price": 210.34, "changePercentage": 1.23 },
+    "RUSSELL2000":{ "price": 220.45, "changePercentage": 0.89 }
+  },
+  "COMMODITIES": {
+    "GOLD":   { "price": 2900,  "changePercentage": 0.32 },
+    "SILVER": { "price": 32.45, "changePercentage": 0.15 },
+    "OIL":    { "price": 71.23, "changePercentage": -1.20 }
+  },
+  "FX": {
+    "USDJPY": { "price": 149.50, "changePercentage": 0.05 },
+    "EURUSD": { "price": 1.0823, "changePercentage": -0.10 },
+    "DXY":    { "price": 104.32, "changePercentage": 0.08 }
+  },
+  "LIQUIDITY": {
+    "FED_BALANCE": 7234567,
+    "REVERSE_REPO": 123456,
+    "TGA": 567890
+  },
+  "RATES": {
+    "US10Y": 4.28,
+    "US2Y":  4.15,
+    "YIELD_CURVE": 0.130
+  },
+  "SECTORS": {
+    "TECHNOLOGY": { "price": 230.12, "changePercentage": 0.56 }
+  },
+  "MACRO_BASE": {
+    "CPI": 314.12,
+    "INFLATION_EXPECTATION": 2.30,
+    "UNEMPLOYMENT": 4.10,
+    "M2": 21500000,
+    "REAL_RATES": 1.98
+  },
+  "MACRO_INDICATORS": {
+    "CONSUMER_SENTIMENT": 64.7,
+    "REAL_GDP": 23450.0,
+    "INDUSTRIAL_PRODUCTION": 103.2,
+    "NONFARM_PAYROLLS": 158400,
+    "PCE_INFLATION": 2.6
+  }
+}
+```
+
+### ⚠️ 단위 주의사항 (index.html 변환 로직)
+```javascript
+// LIQUIDITY: worker는 raw FRED 값 전달, index.html이 변환
+FED_BALANCE  → /1,000,000 → T (Trillions)   // WALCL: millions 단위
+REVERSE_REPO → /1,000     → B (Billions)    // RRPONTSYD: millions 단위
+TGA          → /1,000,000 → T (Trillions)   // WTREGEN: millions 단위
+
+// MACRO_BASE.M2: M2SL(billions) × 1000 → millions 저장
+M2           → /1,000,000 → T (Trillions)   // index.html이 변환
+
+// RATES: 직접 숫자(%) 전달 — 객체 {value: X} 형식 금지!
+US10Y: 4.28  // ✅ 올바름
+US10Y: { value: 4.28 }  // ❌ 금지 (index.html이 인식 못함)
+```
 
