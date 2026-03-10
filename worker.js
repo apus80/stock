@@ -26,8 +26,8 @@ export default {
       async function getQuote(sym) {
         try {
           // 📍 출처: FMP API (financialmodelingprep.com)
-          // Stock Batch Quote API stable (안정적 엔드포인트, 아침에 확인된 작동 버전)
-          const url = `https://financialmodelingprep.com/stable/batch-quote?symbols=${sym}&apikey=${FMP}`
+          // /stable/quote: 무료 플랜에서 동작 확인 (batch-quote는 유료 전용)
+          const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
           console.log(`📍 FMP API 호출: ${sym}`)
           console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
           console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
@@ -97,10 +97,10 @@ export default {
       }
 
       async function getKoreanQuote(symbol) {
-        // 📍 출처: FMP API (financialmodelingprep.com) - Stock Batch Quote API stable
+        // 📍 출처: FMP API (financialmodelingprep.com) - /stable/quote (무료 플랜 동작)
         try {
           const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
-          const url = `https://financialmodelingprep.com/stable/batch-quote?symbols=${fmpSymbol}&apikey=${FMP}`
+          const url = `https://financialmodelingprep.com/stable/quote?symbol=${fmpSymbol}&apikey=${FMP}`
           console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
           console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
 

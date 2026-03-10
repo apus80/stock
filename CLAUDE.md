@@ -57,14 +57,15 @@
 
 ## 🔗 FMP API 엔드포인트 (중요!)
 
-### ⚠️ MUST USE: `/stable/batch-quote` (STABLE)
+### ⚠️ MUST USE: `/stable/quote` (FREE PLAN)
 
 **FMP API 엔드포인트 종류:**
 ```
 ❌ /api/v3/quote/{symbol}           ← 사용 금지! (작동 안함)
 ❌ /api/v4/quote/{symbol}           ← 사용 금지!
 ❌ /api/stock/{symbol}/quote        ← 사용 금지! (null 반환)
-✅ /stable/batch-quote?symbols=X    ← 필수 사용! (확인된 작동 버전)
+❌ /stable/batch-quote?symbols=X    ← 사용 금지! (유료 플랜 전용 - Restricted Endpoint)
+✅ /stable/quote?symbol=X           ← 필수 사용! (무료 플랜 동작 확인)
 ```
 
 **예시:**
@@ -72,13 +73,17 @@
 // ❌ 절대 금지
 const url = `https://financialmodelingprep.com/api/v3/quote/${sym}?apikey=${FMP}`
 
-// ✅ 필수
+// ❌ 절대 금지 (유료 전용)
 const url = `https://financialmodelingprep.com/stable/batch-quote?symbols=${sym}&apikey=${FMP}`
+
+// ✅ 필수
+const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
 ```
 
 **이유:**
 - v3, v4, /api/stock/{sym}/quote: 응답이 null 또는 작동 안함
-- `/stable/batch-quote`: 가장 안정적, 응답 데이터 정상 (검증됨)
+- `/stable/batch-quote`: 유료 플랜 전용 (Restricted Endpoint 오류)
+- `/stable/quote`: 무료 플랜에서 정상 동작 (검증됨)
 
 ---
 
