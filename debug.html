@@ -276,7 +276,7 @@
       <div class="sec-label">🇰🇷 Korea Market (FMP)</div>
       <div class="data-grid" id="g-kr"></div>
 
-      <div class="sec-label">🏅 Commodities · GCUSD / SIUSD / CLUSD (FMP)</div>
+      <div class="sec-label">🏅 Commodities · GCUSD / SIUSD / BZUSD (FMP)</div>
       <div class="data-grid" id="g-comm"></div>
 
       <div class="sec-label">💱 FX · USDKRW / USDJPY / EURUSD / DX (FMP)</div>
@@ -500,7 +500,7 @@ function renderMarketData(data) {
   setGrid('g-comm',
     diObj('GCUSD (Gold)', cm.GOLD) +
     diObj('SIUSD (Silver)', cm.SILVER) +
-    diObj('CLUSD (Oil WTI)', cm.OIL)
+    diObj('BZUSD (Brent Oil)', cm.OIL)
   );
   ['GOLD','SILVER','OIL'].forEach(function(k) { countObj(k, cm[k]); });
 
