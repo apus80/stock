@@ -139,10 +139,12 @@ export default {
         }
       }
 
-      async function fredGet(series) {
+      async function fredGet(series, units = null) {
         try {
           // 📍 출처: FRED API (Federal Reserve)
-          const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json`
+          // units='pc1' → 전년동기대비 YoY% 직접 반환 (계산 불필요)
+          const unitsParam = units ? `&units=${units}` : ''
+          const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json${unitsParam}`
           const r = await fetch(url)
           if (!r.ok) {
             console.error(`❌ FRED ${series}: HTTP ${r.status}`)
@@ -161,6 +163,28 @@ export default {
         } catch (e) {
           console.error(`❌ FRED ${series}:`, e.message)
           return []
+        }
+      }
+
+      // 📍 출처: Yahoo Finance (DX-Y.NYB = ICE Dollar Index)
+      async function yahooFinanceDXY() {
+        try {
+          const url = 'https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d'
+          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+          if (!r.ok) throw new Error(`Yahoo HTTP ${r.status}`)
+          const j = await r.json()
+          const meta = j?.chart?.result?.[0]?.meta
+          if (!meta || meta.regularMarketPrice === undefined) throw new Error('no price in response')
+          console.log(`✅ Yahoo DXY: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
+          return {
+            price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+            changePercentage: meta.regularMarketChangePercent !== undefined
+              ? parseFloat(meta.regularMarketChangePercent.toFixed(2))
+              : null
+          }
+        } catch (e) {
+          console.error('❌ Yahoo DXY:', e.message)
+          return null
         }
       }
 
@@ -261,16 +285,19 @@ export default {
           getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
-          getQuote("DX"),      // 달러 인덱스 (DXY)
+          yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // 추가 FRED 경제지표
           fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
           fredGet("M2SL"),     // M2 통화량 (billions)
-          fredGet("T10YIE")    // 10년 기대인플레이션 (%)
+          fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
+          fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
+          fredGet("CPILFESL", "pc1"), // Core CPI YoY% (출처: FRED CPILFESL, units=pc1 직접 공시값)
+          fredGet("CPIAUCSL", "pc1")  // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -303,6 +330,11 @@ export default {
 
         // 신규: 추가 경제지표
         const inflExpVal = convertFredValue("T10YIE", getLatestValue(t10yie))
+
+        // CPI YoY: FRED units=pc1로 직접 공시값 사용 (계산 없음)
+        const cpiYoY = getLatestValue(cpiYoyData)         // 출처: FRED CPIAUCSL units=pc1 (%)
+        const coreCpiYoY = getLatestValue(coreCpiYoyData) // 출처: FRED CPILFESL units=pc1 (%)
+        const fedRateVal = getLatestValue(fedfunds)        // 출처: FRED FEDFUNDS (%)
         const m2RawVal = getLatestValue(m2sl)     // M2SL raw (billions) - index.html이 /1,000,000으로 T 변환하므로 *1000해서 millions로 저장
         const fedRawVal = getLatestValue(fed)     // WALCL raw (millions) - index.html이 /1,000,000으로 T 변환
         const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (Billions) - FRED 원값이 이미 Billions 단위
@@ -382,7 +414,10 @@ export default {
           },
           // 카드 12: Macro Base
           MACRO_BASE: {
-            CPI: cpiVal,
+            CPI: cpiVal,                       // CPIAUCSL 지수 레벨 (하위호환 유지)
+            CPI_YOY: cpiYoY,                  // 출처: FRED CPIAUCSL 전년동기대비 YoY %
+            CORE_CPI_YOY: coreCpiYoY,         // 출처: FRED CPILFESL (식료품·에너지 제외) YoY %
+            FED_RATE: fedRateVal,              // 출처: FRED FEDFUNDS (효과적 연방기금금리 %)
             INFLATION_EXPECTATION: inflExpVal, // 출처: FRED T10YIE (10년 기대인플레이션)
             UNEMPLOYMENT: unrateVal,
             M2: m2RawVal ? m2RawVal * 1000 : null, // M2SL billions → millions (index.html이 /1,000,000으로 T 변환)
@@ -415,13 +450,14 @@ export default {
           dataType: "institutional_score",
           score: totalScore,
           signal: totalScore >= 75 ? "🚀 강한 강세" : totalScore >= 60 ? "📈 강세" : totalScore >= 40 ? "➡️ 중립" : totalScore >= 20 ? "📉 약세" : "🔴 위기",
-          components: {
-            liquidity: liquidityScore,
-            volatility: volatilityScore,
-            credit: creditScore,
-            breadth: breadthScore,
-            macro: macroScore
-          },
+          components: [
+            { name: '유동성', value: liquidityScore, unit: 'pt' },
+            { name: '변동성', value: volatilityScore, unit: 'pt' },
+            { name: '신용', value: creditScore, unit: 'pt' },
+            { name: '시장너비', value: breadthScore, unit: 'pt' },
+            { name: '매크로', value: macroScore, unit: 'pt' }
+          ],
+          interpretation: totalScore >= 75 ? "기관 투자자 적극 매수 신호" : totalScore >= 60 ? "견조한 시장 환경" : totalScore >= 40 ? "중립 관망 구간" : "리스크 관리 필요",
           details: {
             fed: data.fed,
             vix: data.vix,
@@ -447,10 +483,12 @@ export default {
           regime: regime,
           confidence: Math.round(confidenceScore),
           signal: regime === "Risk-On" ? "🎯 공격 모드" : regime === "Risk-Off" ? "⚠️ 방어 모드" : "➡️ 중립",
-          components: {
-            trend_score: trendScore,
-            risk_score: riskScore
-          },
+          badgeClass: regime === "Risk-On" ? "bullish" : regime === "Risk-Off" ? "bearish" : "neutral",
+          factors: [
+            { name: '추세 점수', status: trendScore >= 65 ? '강세' : '약세', strength: trendScore },
+            { name: '리스크 점수', status: riskScore >= 70 ? '낮음' : '높음', strength: riskScore },
+            { name: 'SPY 방향', status: (data.spyChange || 0) >= 0 ? '상승' : '하락', strength: Math.round(Math.abs(data.spyChange || 0) * 10) }
+          ],
           details: {
             spy: data.spy,
             vix: data.vix,
@@ -464,15 +502,21 @@ export default {
         const data = await getMarketDataCached()
         const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
 
+        const fedT = data.fed ? parseFloat((data.fed / 1000000).toFixed(2)) : null
+        const rpB = data.rp ? parseFloat((data.rp / 1000).toFixed(1)) : null
         return {
           timestamp: new Date().toISOString(),
           dataType: "liquidity_pulse",
           score: liquidityScore,
           signal: liquidityScore > 75 ? "💧 풍부함" : liquidityScore > 50 ? "⚡ 적정" : "⚠️ 부족",
+          components: [
+            { name: 'Fed 잔액', value: fedT !== null ? fedT : '-', unit: 'T$' },
+            { name: '역레포(RRP)', value: rpB !== null ? rpB : '-', unit: 'B$' }
+          ],
+          interpretation: liquidityScore > 75 ? "유동성 풍부 → 위험자산 선호" : liquidityScore > 50 ? "적정 수준 유지 중" : "유동성 부족 → 안전자산 선호",
           details: {
             fed_balance: data.fed,
-            reverse_repo: data.rp,
-            liquidity_status: data.fed > 7000 ? "유동성 풍부 → 위험자산 선호" : "유동성 부족 → 안전자산 선호"
+            reverse_repo: data.rp
           }
         }
       }
@@ -491,6 +535,12 @@ export default {
           signal: isInverted ? "⚠️ 역전 신호" : "✅ 정상",
           recession_probability: isInverted ? 75 : 20,
           recommendation: isInverted ? "포트폴리오 방어 전환" : "공격적 포지셔닝",
+          metrics: [
+            { name: '10년물', value: data.us10y !== null ? data.us10y : null, trend: null, unit: '%' },
+            { name: '2년물', value: data.us2y !== null ? data.us2y : null, trend: null, unit: '%' },
+            { name: '스프레드(10Y-2Y)', value: spread !== null ? parseFloat(spread.toFixed(3)) : null, trend: null, unit: '%' },
+            { name: '경기침체 확률', value: isInverted ? 75 : 20, trend: null, unit: '%' }
+          ],
           details: {
             us10y: data.us10y,
             us2y: data.us2y
@@ -514,10 +564,10 @@ export default {
           dataType: "inflation_pressure",
           pressure: pressure,
           signal: pressure === "고" ? "🌡️ 높음" : "❄️ 낮음",
-          components: {
-            cpi: cpiVal,
-            inflation_expectation: inflationExpectation
-          },
+          metrics: [
+            { name: 'CPI 지수', value: cpiVal !== null ? parseFloat(cpiVal.toFixed(2)) : null, trend: null, unit: '' },
+            { name: '10Y 기대인플레', value: inflationExpectation !== null ? parseFloat(inflationExpectation.toFixed(2)) : null, trend: null, unit: '%' }
+          ],
           recommendation: pressure === "고" ? "금, 에너지, TIPs 선호" : "성장주 선호"
         }
       }
@@ -534,11 +584,11 @@ export default {
           stress_level: stress,
           signal: stress === "높음" ? "⚠️ 스트레스" : stress === "중간" ? "⚡ 주의" : "✅ 안정",
           spread: spread.toFixed(2),
-          details: {
-            hyg: data.hyg,
-            lqd: data.lqd,
-            hyg_lqd_ratio: data.hyg && data.lqd ? (data.hyg / data.lqd).toFixed(3) : null
-          },
+          metrics: [
+            { name: 'HYG (하이일드)', value: data.hyg ? parseFloat(data.hyg.toFixed(2)) : null, trend: null, unit: '$' },
+            { name: 'LQD (투자등급)', value: data.lqd ? parseFloat(data.lqd.toFixed(2)) : null, trend: null, unit: '$' },
+            { name: 'HYG/LQD 스프레드', value: parseFloat(spread.toFixed(3)), trend: null, unit: '%p' }
+          ],
           recommendation: stress === "높음" ? "투자등급 채권 증대" : "하이일드 공격"
         }
       }
@@ -557,6 +607,11 @@ export default {
           dataType: "market_breadth",
           score: breadthScore,
           signal: breadthScore >= 75 ? "📊 광범위 상승" : "⚠️ 소수만 상승",
+          components: [
+            { name: 'SPY 변화', value: spy?.changePercentage !== null && spy?.changePercentage !== undefined ? parseFloat(spy.changePercentage.toFixed(2)) : '-', unit: '%' },
+            { name: 'QQQ 변화', value: qqq?.changePercentage !== null && qqq?.changePercentage !== undefined ? parseFloat(qqq.changePercentage.toFixed(2)) : '-', unit: '%' }
+          ],
+          interpretation: breadthScore >= 75 ? "시장 전반 상승 중 → 강세 신호" : "일부 종목만 상승 → 주의 필요",
           details: {
             spy_change: spy?.changePercentage,
             qqq_change: qqq?.changePercentage
@@ -569,12 +624,21 @@ export default {
         const data = await getMarketDataCached()
         const regime = (data.vix < 15) ? "Low" : (data.vix < 20) ? "Medium" : "High"
 
+        const volConfidence = regime === "Low" ? 85 : regime === "Medium" ? 65 : 40
         return {
           timestamp: new Date().toISOString(),
           dataType: "volatility_regime",
           vix: data.vix,
           regime: regime,
+          state: regime,
+          confidence: volConfidence,
           signal: regime === "Low" ? "⚡ 공격 모드" : regime === "Medium" ? "⚠️ 균형" : "🔴 방어 모드",
+          badgeClass: regime === "Low" ? "bullish" : regime === "High" ? "bearish" : "neutral",
+          factors: [
+            { name: 'VIX 지수', status: regime === "Low" ? "낮음" : regime === "Medium" ? "중간" : "높음", strength: data.vix ? Math.round(100 - data.vix * 3) : 50 },
+            { name: '변동성 레짐', status: regime, strength: volConfidence },
+            { name: '투자 포지션', status: regime === "Low" ? "공격적" : regime === "Medium" ? "균형형" : "방어적", strength: regime === "Low" ? 80 : regime === "Medium" ? 55 : 30 }
+          ],
           recommendation: regime === "Low" ? "적극 투자" : regime === "Medium" ? "균형형" : "현금 보유"
         }
       }
@@ -599,12 +663,26 @@ export default {
           { name: "Industrials (XLI)", change: sectors[5]?.changePercentage }
         ].sort((a, b) => (b.change || 0) - (a.change || 0))
 
+        const sectorItems = sectorData.map(s => ({
+          name: s.name,
+          value: s.change !== null && s.change !== undefined ? parseFloat(s.change.toFixed(2)) : null,
+          unit: '%'
+        }))
+        const sectorRankings = sectorData.map((s, i) => ({
+          rank: i + 1,
+          name: s.name,
+          w1: s.change !== null && s.change !== undefined ? parseFloat(s.change.toFixed(2)) : null,
+          m1: null,
+          y1: null
+        }))
         return {
           timestamp: new Date().toISOString(),
           dataType: "sector_rotation",
           top_performers: sectorData.slice(0, 3),
           weakest: sectorData.slice(-3),
-          all_sectors: sectorData
+          all_sectors: sectorData,
+          items: sectorItems,
+          rankings: sectorRankings
         }
       }
 
@@ -618,12 +696,17 @@ export default {
         const dxyPrice = dxy?.price
         const impact = dxyPrice > 105 ? "약세 자산 약함" : "약세 자산 강함"
 
+        const btcChange = bitcoin?.changePercentage
         return {
           timestamp: new Date().toISOString(),
           dataType: "dollar_liquidity",
           dxy: dxyPrice,
           signal: dxyPrice > 105 ? "💵 달러 강함" : "📉 달러 약함",
           impact: impact,
+          metrics: [
+            { name: 'DXY (달러인덱스)', value: dxyPrice ? parseFloat(dxyPrice.toFixed(2)) : null, trend: null, unit: '' },
+            { name: 'BTC 변화', value: btcChange !== null && btcChange !== undefined ? parseFloat(btcChange.toFixed(2)) : null, trend: null, unit: '%' }
+          ],
           recommendation: dxyPrice > 105 ? "미국주식만" : "신흥국, 원자재 진입"
         }
       }
@@ -640,8 +723,14 @@ export default {
         return {
           timestamp: new Date().toISOString(),
           dataType: "crypto_sentiment",
+          score: sentiment,
           sentiment_score: sentiment,
           signal: sentiment > 70 ? "🎉 Greed" : sentiment > 50 ? "➡️ Neutral" : "😨 Fear",
+          components: [
+            { name: 'BTC 변화', value: btc?.changePercentage !== null && btc?.changePercentage !== undefined ? parseFloat(btc.changePercentage.toFixed(2)) : '-', unit: '%' },
+            { name: 'ETH 변화', value: eth?.changePercentage !== null && eth?.changePercentage !== undefined ? parseFloat(eth.changePercentage.toFixed(2)) : '-', unit: '%' }
+          ],
+          interpretation: sentiment > 70 ? "과열 구간 → 수익실현 고려" : sentiment < 30 ? "공포 구간 → 매수 기회" : "중립 구간 → 관망",
           details: {
             btc: btc?.price,
             eth: eth?.price,
@@ -661,14 +750,26 @@ export default {
 
         const signal = (spy && spy.volume > 60000000) ? "축적" : "분산"
 
+        const spyVol = spy?.volume || 0
+        const qqqVol = qqq?.volume || 0
+        const smConfidence = spyVol > 80000000 ? 85 : spyVol > 60000000 ? 70 : 50
         return {
           timestamp: new Date().toISOString(),
           dataType: "smart_money",
           signal: signal,
+          regime: signal === "축적" ? "Accumulation" : "Distribution",
+          state: signal,
+          confidence: smConfidence,
           status: signal === "축적" ? "🤖 기관 매수" : "⚠️ 기관 매도",
+          badgeClass: signal === "축적" ? "bullish" : "bearish",
+          factors: [
+            { name: 'SPY 거래량', status: spyVol > 60000000 ? '고량' : '저량', strength: Math.min(100, Math.round(spyVol / 1000000)) },
+            { name: 'QQQ 거래량', status: qqqVol > 40000000 ? '고량' : '저량', strength: Math.min(100, Math.round(qqqVol / 1000000)) },
+            { name: '기관 포지션', status: signal === "축적" ? "매수 우세" : "매도 우세", strength: smConfidence }
+          ],
           details: {
-            spy_volume: spy?.volume,
-            qqq_volume: qqq?.volume
+            spy_volume: spyVol,
+            qqq_volume: qqqVol
           },
           recommendation: signal === "축적" ? "강세장 신호" : "약세장 신호"
         }
@@ -694,10 +795,25 @@ export default {
           score: Math.round(50 + (s?.changePercentage || 0) * 5)
         })).sort((a, b) => b.score - a.score)
 
+        const top10 = ranked.slice(0, 7)
         return {
           timestamp: new Date().toISOString(),
           dataType: "stock_ranking",
-          ranking: ranked.slice(0, 10)
+          ranking: top10,
+          items: top10.map(s => ({
+            name: s.symbol,
+            value: s.change !== null && s.change !== undefined ? parseFloat(s.change.toFixed(2)) : null,
+            unit: '%'
+          })),
+          rankings: top10.map(s => ({
+            rank: s.rank,
+            name: s.symbol,
+            price: s.price ? parseFloat(s.price.toFixed(2)) : null,
+            w1: s.change !== null && s.change !== undefined ? parseFloat(s.change.toFixed(2)) : null,
+            m1: null,
+            y1: null,
+            score: s.score
+          }))
         }
       }
 
@@ -732,7 +848,15 @@ export default {
         return {
           timestamp: new Date().toISOString(),
           dataType: "market_heatmap",
-          assets: assets
+          assets: assets,
+          categories: assets.map(a => ({
+            name: a.name,
+            '1d': a.change !== null && a.change !== undefined ? parseFloat(a.change.toFixed(2)) : null,
+            '1w': null,
+            '1m': null,
+            '3m': null,
+            '1y': null
+          }))
         }
       }
 
@@ -861,6 +985,38 @@ export default {
             timestamp: new Date().toISOString(),
             error: "symbol parameter required"
           }
+        }
+      }
+      // /feargreed endpoint - CNN Fear & Greed Index (서버사이드 호출, CORS 없음)
+      else if (pathname === "/feargreed") {
+        try {
+          // 출처: CNN Fear & Greed Index 공식 API
+          const r = await fetch('https://production.dataviz.cnn.io/index/fearandgreed/graphdata', {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          })
+          if (!r.ok) throw new Error(`CNN HTTP ${r.status}`)
+          const d = await r.json()
+          const fg = d?.fear_and_greed
+          if (!fg || fg.score === undefined) throw new Error('CNN structure mismatch')
+          response = {
+            score: Math.round(fg.score),
+            rating: fg.rating || null,
+            previousClose: fg.previous_close ? Math.round(fg.previous_close) : null,
+            timestamp: new Date().toISOString(),
+            source: 'CNN'
+          }
+          return new Response(JSON.stringify(response), {
+            headers: {
+              'content-type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Cache-Control': 'public, max-age=86400'  // 24시간 캐시
+            }
+          })
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message, score: null }), {
+            status: 502,
+            headers: { 'content-type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          })
         }
       }
       // 루트 경로 처리
