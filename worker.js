@@ -644,7 +644,7 @@ export default {
       // 10. Dollar Liquidity Impact
       async function getDollarLiquidity() {
         const [dxy, bitcoin] = await Promise.all([
-          getQuote("DX"),
+          yahooFinanceDXY(),  // FMP DX 심볼은 null 반환 → Yahoo Finance DX-Y.NYB 사용
           getQuote("BTCUSD")
         ])
 
