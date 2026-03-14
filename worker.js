@@ -4,12 +4,14 @@ export default {
       const FMP = env.FMP_API_KEY
       const FRED = env.FRED_KEY
       const ITICK = env.ITICK_TOKEN
+      const FINNHUB = env.FINNHUB_KEY
 
       // 환경 변수 검증
       console.log(`🔑 환경변수 확인:`)
       console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
       console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
       console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
+      console.log(`   FINNHUB_KEY: ${FINNHUB ? '✅ 설정됨' : '❌ 없음'}`)
 
       // URL 파싱
       const url = new URL(request.url)
@@ -23,7 +25,58 @@ export default {
       /* ================================
          API 함수들
       ================================ */
-      async function getQuote(sym) {
+
+      /* ── Finnhub API (실시간 데이터) ──────────────────────── */
+      async function getFinnhubQuote(sym) {
+        try {
+          if (!FINNHUB) return null
+
+          const url = `https://finnhub.io/api/v1/quote?symbol=${sym}&token=${FINNHUB}`
+          console.log(`📍 Finnhub API 호출: ${sym}`)
+
+          const r = await fetch(url, { signal: AbortSignal.timeout(5000) })
+          if (!r.ok) {
+            console.warn(`⚠️ Finnhub ${sym}: HTTP ${r.status}`)
+            return null
+          }
+
+          const j = await r.json()
+
+          // Finnhub 응답: { c: price, d: change, dp: changePercent, ... }
+          if (!j || !j.c) {
+            console.warn(`⚠️ Finnhub ${sym}: price 필드 없음`)
+            return null
+          }
+
+          const result = {
+            symbol: sym,
+            price: j.c,
+            changePercentage: j.dp, // daily percent change
+            change: j.d,
+            timestamp: Date.now()
+          }
+
+          console.log(`✅ Finnhub ${sym}: price=${result.price}, change=${result.changePercentage}%`)
+          return result
+
+        } catch (e) {
+          console.warn(`⚠️ Finnhub ${sym} 실패: ${e.message}`)
+          return null
+        }
+      }
+
+      /* ── FMP API + Finnhub Fallback ──────────────────────────── */
+      async function getQuoteWithFallback(sym) {
+        // 1️⃣ Finnhub 시도 (실시간)
+        const finnhubData = await getFinnhubQuote(sym)
+        if (finnhubData) return finnhubData
+
+        // 2️⃣ FMP Fallback
+        console.log(`↳ Fallback to FMP: ${sym}`)
+        return await getQuoteFMP(sym)
+      }
+
+      async function getQuoteFMP(sym) {
         try {
           // 📍 출처: FMP API (financialmodelingprep.com)
           // /stable/quote: 무료 플랜에서 동작 확인 (batch-quote는 유료 전용)
@@ -94,6 +147,17 @@ export default {
           console.error(`   Stack: ${e.stack?.substring(0, 300)}`)
           return null
         }
+      }
+
+      /* ── Finnhub 또는 FMP (자동 Fallback) ──────────────────────── */
+      async function getQuote(sym) {
+        // 1️⃣ Finnhub 시도 (실시간, 기술주/선물/암호화폐에 최적)
+        const finnhubData = await getFinnhubQuote(sym)
+        if (finnhubData) return finnhubData
+
+        // 2️⃣ FMP Fallback (Finnhub 실패 시)
+        console.log(`↳ ${sym}: Fallback to FMP API`)
+        return await getQuoteFMP(sym)
       }
 
       async function getKoreanQuote(symbol) {
@@ -265,6 +329,14 @@ export default {
           getQuote("XLRE"), // REAL_ESTATE
           // 한국 시장 (FMP API)
           getQuote("EWY"),  // iShares MSCI South Korea ETF
+          // 선물 (Futures) - Finnhub 실시간
+          getQuote("ES=F"), // S&P 500 E-mini Futures
+          getQuote("NQ=F"), // Nasdaq 100 E-mini Futures
+          getQuote("RTY=F"), // Russell 2000 E-mini Futures
+          // 암호화폐 (Crypto) - Finnhub 실시간
+          getQuote("BTC-USD"), // Bitcoin
+          getQuote("ETH-USD"), // Ethereum
+          getQuote("SOL-USD"), // Solana
           // FRED 경제지표
           fredGet("WALCL"),
           fredGet("RRPONTSYD"),
@@ -297,7 +369,7 @@ export default {
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, esf, nqf, rtyf, btcusd, ethusd, solusd, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -359,6 +431,20 @@ export default {
           vixChange: vix?.changePercentage,
           ewy: ewyPrice,
           ewyChange: ewyChange,
+          // 선물 (Futures) - Finnhub 실시간
+          esf: esf?.price,
+          esfChange: esf?.changePercentage,
+          nqf: nqf?.price,
+          nqfChange: nqf?.changePercentage,
+          rtyf: rtyf?.price,
+          rtyfChange: rtyf?.changePercentage,
+          // 암호화폐 (Crypto) - Finnhub 실시간
+          btc: btcusd?.price,
+          btcChange: btcusd?.changePercentage,
+          eth: ethusd?.price,
+          ethChange: ethusd?.changePercentage,
+          sol: solusd?.price,
+          solChange: solusd?.changePercentage,
           hyg: hyg?.price,
           lqd: lqd?.price,
           hygChange: hyg?.changePercentage,
