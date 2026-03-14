@@ -187,6 +187,32 @@ export default {
           return null
         }
       }
+      // 📍 출처: Binance API (암호화폐 시세)
+      async function getBinanceCrypto(symbol) {
+        try {
+          const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`
+          console.log(`📍 Binance API 호출: ${symbol}`)
+          const r = await fetch(url)
+          if (!r.ok) {
+            console.error(`❌ Binance ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+          const j = await r.json()
+          if (!j || !j.lastPrice) {
+            console.warn(`⚠️ ${symbol}: price 필드 없음`)
+            return null
+          }
+          const result = {
+            price: parseFloat(j.lastPrice),
+            changePercentage: j.priceChangePercent ? parseFloat(j.priceChangePercent) : null
+          }
+          console.log(`✅ Binance ${symbol}: price=${result.price}, change=${result.changePercentage}%`)
+          return result
+        } catch (e) {
+          console.error(`❌ Binance ${symbol}:`, e.message)
+          return null
+        }
+      }
 
       function getLatestValue(fredArray) {
         if (!fredArray || fredArray.length === 0) return null
@@ -286,10 +312,10 @@ export default {
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
-          // 암호화폐 (Crypto)
-          getQuote("BTC-USD"), // Bitcoin
-          getQuote("ETH-USD"), // Ethereum
-          getQuote("SOL-USD"), // Solana
+          // 암호화폐 (Crypto) - Binance API
+          getBinanceCrypto("BTCUSDT"), // Bitcoin
+          getBinanceCrypto("ETHUSDT"), // Ethereum
+          getBinanceCrypto("SOLUSDT"), // Solana
           // 추가 FRED 경제지표
           fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
           fredGet("M2SL"),     // M2 통화량 (billions)
