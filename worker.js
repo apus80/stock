@@ -874,6 +874,263 @@ export default {
         }
       }
 
+      // =============================
+      // HEDGE FUND UNIVERSE SCREENER
+      // =============================
+      async function getHedgeFundUniverse() {
+        try {
+          // 📍 출처: FMP API stock-screener
+          const url = `https://financialmodelingprep.com/stable/search-company-screener?marketCapMoreThan=1000000000&volumeMoreThan=1000000&priceMoreThan=10&limit=1000&apikey=${FMP}`
+          const r = await fetch(url)
+          if (!r.ok) {
+            console.error(`❌ Stock Screener: HTTP ${r.status}`)
+            return []
+          }
+          const data = await r.json()
+          return (data || []).map(s => s.symbol).slice(0, 100) // 최대 100개로 제한
+        } catch (e) {
+          console.error(`❌ getHedgeFundUniverse:`, e.message)
+          return []
+        }
+      }
+
+      // =============================
+      // FMP FETCH HELPER
+      // =============================
+      async function fetchFMP(endpoint) {
+        try {
+          const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
+          const r = await fetch(url)
+          if (!r.ok) {
+            console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
+            return null
+          }
+          return await r.json()
+        } catch (e) {
+          console.error(`❌ fetchFMP ${endpoint}:`, e.message)
+          return null
+        }
+      }
+
+      // =============================
+      // ALPHA DATA COLLECTION
+      // =============================
+      async function getAlphaData(symbol) {
+        try {
+          const [
+            quote,
+            history,
+            metrics,
+            growth,
+            income,
+            balance,
+            cashflow,
+            earnings,
+            analyst,
+            estimates,
+            insider,
+            institutional,
+            cashflowRep
+          ] = await Promise.all([
+            fetchFMP(`/stable/quote?symbol=${symbol}`),
+            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
+            fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
+            fetchFMP(`/stable/financial-growth?symbol=${symbol}`),
+            fetchFMP(`/stable/income-statement?symbol=${symbol}`),
+            fetchFMP(`/stable/balance-sheet-statement?symbol=${symbol}`),
+            fetchFMP(`/stable/cash-flow-statement?symbol=${symbol}`),
+            fetchFMP(`/stable/earnings?symbol=${symbol}`),
+            fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
+            fetchFMP(`/stable/analyst-estimates?symbol=${symbol}`),
+            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`),
+            fetchFMP(`/stable/institutional-ownership/symbol-positions-summary?symbol=${symbol}&year=2024&quarter=3`),
+            fetchFMP(`/api/v3/cash-flow-statement/${symbol}?limit=5`)
+          ])
+
+          return {
+            quote: quote ? quote[0] : null,
+            history: history || [],
+            metrics: metrics ? metrics[0] : null,
+            growth: growth ? growth[0] : null,
+            income: income ? income[0] : null,
+            balance: balance ? balance[0] : null,
+            cashflow: cashflow ? cashflow[0] : null,
+            earnings: earnings || [],
+            analyst: analyst || [],
+            estimates: estimates || [],
+            insider: insider || [],
+            institutional: institutional || [],
+            cashflowRep: cashflowRep || []
+          }
+        } catch (e) {
+          console.error(`❌ getAlphaData ${symbol}:`, e.message)
+          return null
+        }
+      }
+
+      // =============================
+      // FACTOR ENGINE
+      // =============================
+      function calculateFactors(data) {
+        if (!data) return null
+
+        const quote = data.quote
+        const metrics = data.metrics
+        const growth = data.growth
+        const cashflowRep = data.cashflowRep
+
+        // 기본 정보
+        const price = quote?.price || 0
+        const pe = metrics?.peRatio || 50
+        const pb = metrics?.priceToBookRatio || 10
+        const float = metrics?.floatShares || 1000000000
+        const marketCap = metrics?.marketCap || 0
+
+        // 성장률
+        const revenueGrowth = growth?.revenueGrowth || 0
+        const earningsGrowth = growth?.netIncomeGrowth || 0
+
+        // 전문가 평가
+        const analystRecs = data.analyst || []
+        const buyCount = analystRecs.filter(a => a.ratingScore > 3).length
+        const analystScore = buyCount / Math.max(analystRecs.length, 1)
+
+        // 인사이더 거래
+        const insiderActivity = data.insider?.length || 0
+
+        // 자사주 매입 (Cash Flow Statement에서)
+        const buybackActivity = cashflowRep?.[0]?.commonStockRepurchased || 0
+
+        return {
+          price,
+          pe,
+          pb,
+          float,
+          marketCap,
+          revenueGrowth,
+          earningsGrowth,
+          analystScore,
+          insiderActivity,
+          buybackActivity
+        }
+      }
+
+      // =============================
+      // MOMENTUM SCORE
+      // =============================
+      function momentumScore(history) {
+        if (!history || history.length < 50) return 0
+        const recent = history[0]?.close
+        const past = history[49]?.close
+        if (!recent || !past) return 0
+        return (recent - past) / past
+      }
+
+      // =============================
+      // VOLUME SPIKE DETECTION
+      // =============================
+      function volumeSpike(history) {
+        if (!history || history.length < 20) return 0
+        const today = history[0]?.volume
+        let avg = 0
+        for (let i = 1; i < 20; i++) {
+          avg += history[i]?.volume || 0
+        }
+        avg /= 19
+        if (avg === 0) return 0
+        return today / avg
+      }
+
+      // =============================
+      // EXPLOSIVE SCORE CALCULATION
+      // =============================
+      function explosiveScore(factors, momentum, volume) {
+        if (!factors) return 0
+
+        const score =
+          Math.abs(factors.revenueGrowth) * 2 +
+          Math.abs(factors.earningsGrowth) * 2 +
+          (1 / (factors.pe + 1)) +
+          (1 / (factors.pb + 1)) +
+          factors.analystScore * 0.5 +
+          (factors.insiderActivity > 0 ? 1 : 0) * 0.3 +
+          (1 / (factors.float / 100000000 + 1)) +
+          momentum * 2 +
+          volume * 1.5
+
+        return Math.max(0, score)
+      }
+
+      // =============================
+      // ALPHA DISCOVERY ENGINE
+      // =============================
+      async function runAlphaDiscovery() {
+        try {
+          const universe = await getHedgeFundUniverse()
+          console.log(`📊 Alpha Discovery: ${universe.length}개 종목 분석 시작`)
+
+          const results = []
+          const startTime = Date.now()
+
+          for (let i = 0; i < Math.min(universe.length, 50); i++) {
+            const symbol = universe[i]
+            try {
+              const data = await getAlphaData(symbol)
+              if (!data) continue
+
+              const factors = calculateFactors(data)
+              if (!factors) continue
+
+              const momentum = momentumScore(data.history)
+              const volume = volumeSpike(data.history)
+              const score = explosiveScore(factors, momentum, volume)
+
+              results.push({
+                symbol,
+                score: parseFloat(score.toFixed(4)),
+                price: parseFloat(factors.price.toFixed(2)),
+                pe: parseFloat(factors.pe.toFixed(2)),
+                momentum: parseFloat(momentum.toFixed(4)),
+                volume: parseFloat(volume.toFixed(2)),
+                revenueGrowth: parseFloat(factors.revenueGrowth.toFixed(4)),
+                earningsGrowth: parseFloat(factors.earningsGrowth.toFixed(4)),
+                analystScore: parseFloat(factors.analystScore.toFixed(2)),
+                insiderActivity: factors.insiderActivity
+              })
+            } catch (e) {
+              console.error(`❌ ${symbol}: ${e.message}`)
+            }
+
+            // Rate limit 관리 (250/day)
+            if (i % 10 === 9) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+
+          results.sort((a, b) => b.score - a.score)
+
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
+          console.log(`✅ Alpha Discovery 완료: ${results.length}개 종목, ${elapsedTime}초`)
+
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: "alpha_discovery",
+            universe_size: universe.length,
+            analyzed: results.length,
+            execution_time_sec: parseFloat(elapsedTime),
+            top_20: results.slice(0, 20)
+          }
+        } catch (e) {
+          console.error(`❌ runAlphaDiscovery:`, e.message)
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: "alpha_discovery",
+            error: e.message,
+            top_20: []
+          }
+        }
+      }
+
       /* ================================
          경로 기반 라우팅
       ================================ */
@@ -1099,11 +1356,18 @@ export default {
         response = await getStockRanking()
       } else if (pathname === "/analysis/market-heatmap") {
         response = await getMarketHeatmap()
+
+      // =============================
+      // ALPHA DISCOVERY ENGINE
+      // =============================
+      } else if (pathname === "/alpha/discovery") {
+        response = await runAlphaDiscovery()
+
       } else if (action === 'metadata') {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "14개 AI 분석 위젯 엔드포인트 사용 가능",
+          message: "15개 AI 분석 위젯 + Alpha Discovery Engine",
           endpoints: [
             "/analysis/institutional-score",
             "/analysis/market-regime",
@@ -1118,7 +1382,8 @@ export default {
             "/analysis/crypto-sentiment",
             "/analysis/smart-money",
             "/analysis/stock-ranking",
-            "/analysis/market-heatmap"
+            "/analysis/market-heatmap",
+            "/alpha/discovery"
           ]
         }
       } else if (series) {
@@ -1137,7 +1402,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "14개 AI 분석 위젯 엔드포인트 사용 가능",
+          message: "15개 AI 분석 위젯 + Alpha Discovery Engine",
           endpoints: [
             "/analysis/institutional-score",
             "/analysis/market-regime",
@@ -1152,7 +1417,8 @@ export default {
             "/analysis/crypto-sentiment",
             "/analysis/smart-money",
             "/analysis/stock-ranking",
-            "/analysis/market-heatmap"
+            "/analysis/market-heatmap",
+            "/alpha/discovery"
           ],
           debug: {
             pathname: pathname,
