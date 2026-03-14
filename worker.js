@@ -23,6 +23,24 @@ export default {
       console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
 
       /* ================================
+         Finnhub 심볼 맵핑
+      ================================ */
+      const FINNHUB_SYMBOLS = {
+        // Futures (CME E-mini)
+        'ES=F': 'CME_MINI:ES1!',
+        'NQ=F': 'CME_MINI:NQ1!',
+        'RTY=F': 'CME_MINI:RTY1!',
+
+        // Crypto (Bitstamp & Binance)
+        'BTC-USD': 'BITSTAMP:BTCUSD',
+        'ETH-USD': 'BITSTAMP:ETHUSD',
+        'SOL-USD': 'BINANCE:SOLUSDT',
+
+        // FX (OANDA)
+        'EURUSD': 'OANDA:EUR_USD'
+      }
+
+      /* ================================
          API 함수들
       ================================ */
 
@@ -151,8 +169,9 @@ export default {
 
       /* ── Finnhub 또는 FMP (자동 Fallback) ──────────────────────── */
       async function getQuote(sym) {
-        // 1️⃣ Finnhub 시도 (실시간, 기술주/선물/암호화폐에 최적)
-        const finnhubData = await getFinnhubQuote(sym)
+        // 1️⃣ Finnhub 시도 (심볼 변환)
+        const finnhubSym = FINNHUB_SYMBOLS[sym] || sym
+        const finnhubData = await getFinnhubQuote(finnhubSym)
         if (finnhubData) return finnhubData
 
         // 2️⃣ FMP Fallback (Finnhub 실패 시)

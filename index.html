@@ -6106,8 +6106,8 @@ var ECON_DATA = {
 
         imdSetAllSync();
         imdLoadAll();
-        // Auto-refresh market data every 5 minutes (Worker API)
-        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 300000);
+        // Auto-refresh market data every 30 seconds (Worker API - near real-time)
+        setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 30000);
 
         // 경제지표 대시보드 – FRED 실시간 갱신 (별도 주기: 4시간)
         // DOMContentLoaded 이후 비동기 실행 보장
