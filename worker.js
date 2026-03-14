@@ -4,14 +4,12 @@ export default {
       const FMP = env.FMP_API_KEY
       const FRED = env.FRED_KEY
       const ITICK = env.ITICK_TOKEN
-      const FINNHUB = env.FINNHUB_KEY
 
       // 환경 변수 검증
       console.log(`🔑 환경변수 확인:`)
       console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
       console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
       console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
-      console.log(`   FINNHUB_KEY: ${FINNHUB ? '✅ 설정됨' : '❌ 없음'}`)
 
       // URL 파싱
       const url = new URL(request.url)
@@ -23,78 +21,9 @@ export default {
       console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
 
       /* ================================
-         Finnhub 심볼 맵핑
-      ================================ */
-      const FINNHUB_SYMBOLS = {
-        // Futures (CME E-mini)
-        'ES=F': 'CME_MINI:ES1!',
-        'NQ=F': 'CME_MINI:NQ1!',
-        'RTY=F': 'CME_MINI:RTY1!',
-
-        // Crypto (Bitstamp & Binance)
-        'BTC-USD': 'BITSTAMP:BTCUSD',
-        'ETH-USD': 'BITSTAMP:ETHUSD',
-        'SOL-USD': 'BINANCE:SOLUSDT',
-
-        // FX (OANDA)
-        'EURUSD': 'OANDA:EUR_USD'
-      }
-
-      /* ================================
          API 함수들
       ================================ */
-
-      /* ── Finnhub API (실시간 데이터) ──────────────────────── */
-      async function getFinnhubQuote(sym) {
-        try {
-          if (!FINNHUB) return null
-
-          const url = `https://finnhub.io/api/v1/quote?symbol=${sym}&token=${FINNHUB}`
-          console.log(`📍 Finnhub API 호출: ${sym}`)
-
-          const r = await fetch(url, { signal: AbortSignal.timeout(5000) })
-          if (!r.ok) {
-            console.warn(`⚠️ Finnhub ${sym}: HTTP ${r.status}`)
-            return null
-          }
-
-          const j = await r.json()
-
-          // Finnhub 응답: { c: price, d: change, dp: changePercent, ... }
-          if (!j || !j.c) {
-            console.warn(`⚠️ Finnhub ${sym}: price 필드 없음`)
-            return null
-          }
-
-          const result = {
-            symbol: sym,
-            price: j.c,
-            changePercentage: j.dp, // daily percent change
-            change: j.d,
-            timestamp: Date.now()
-          }
-
-          console.log(`✅ Finnhub ${sym}: price=${result.price}, change=${result.changePercentage}%`)
-          return result
-
-        } catch (e) {
-          console.warn(`⚠️ Finnhub ${sym} 실패: ${e.message}`)
-          return null
-        }
-      }
-
-      /* ── FMP API + Finnhub Fallback ──────────────────────────── */
-      async function getQuoteWithFallback(sym) {
-        // 1️⃣ Finnhub 시도 (실시간)
-        const finnhubData = await getFinnhubQuote(sym)
-        if (finnhubData) return finnhubData
-
-        // 2️⃣ FMP Fallback
-        console.log(`↳ Fallback to FMP: ${sym}`)
-        return await getQuoteFMP(sym)
-      }
-
-      async function getQuoteFMP(sym) {
+      async function getQuote(sym) {
         try {
           // 📍 출처: FMP API (financialmodelingprep.com)
           // /stable/quote: 무료 플랜에서 동작 확인 (batch-quote는 유료 전용)
@@ -167,18 +96,6 @@ export default {
         }
       }
 
-      /* ── Finnhub 또는 FMP (자동 Fallback) ──────────────────────── */
-      async function getQuote(sym) {
-        // 1️⃣ Finnhub 시도 (심볼 변환)
-        const finnhubSym = FINNHUB_SYMBOLS[sym] || sym
-        const finnhubData = await getFinnhubQuote(finnhubSym)
-        if (finnhubData) return finnhubData
-
-        // 2️⃣ FMP Fallback (Finnhub 실패 시)
-        console.log(`↳ ${sym}: Fallback to FMP API`)
-        return await getQuoteFMP(sym)
-      }
-
       async function getKoreanQuote(symbol) {
         // 📍 출처: FMP API (financialmodelingprep.com) - /stable/quote (무료 플랜 동작)
         try {
@@ -222,6 +139,7 @@ export default {
         }
       }
 
+
       async function fredGet(series, units = null) {
         try {
           // 📍 출처: FRED API (Federal Reserve)
@@ -249,31 +167,26 @@ export default {
         }
       }
 
-      // 📍 출처: Yahoo Finance (일반 심볼 조회)
-      async function yahooFinanceQuote(symbol) {
+      // 📍 출처: Yahoo Finance (DX-Y.NYB = ICE Dollar Index)
+      async function yahooFinanceDXY() {
         try {
-          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
+          const url = 'https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d'
           const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
           if (!r.ok) throw new Error(`Yahoo HTTP ${r.status}`)
           const j = await r.json()
           const meta = j?.chart?.result?.[0]?.meta
           if (!meta || meta.regularMarketPrice === undefined) throw new Error('no price in response')
-          console.log(`✅ Yahoo ${symbol}: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
+          console.log(`✅ Yahoo DXY: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
           return {
-            price: parseFloat(meta.regularMarketPrice.toFixed(4)),
+            price: parseFloat(meta.regularMarketPrice.toFixed(2)),
             changePercentage: meta.regularMarketChangePercent !== undefined
               ? parseFloat(meta.regularMarketChangePercent.toFixed(2))
               : null
           }
         } catch (e) {
-          console.error(`❌ Yahoo ${symbol}:`, e.message)
+          console.error('❌ Yahoo DXY:', e.message)
           return null
         }
-      }
-
-      // 📍 출처: Yahoo Finance (DX-Y.NYB = ICE Dollar Index)
-      async function yahooFinanceDXY() {
-        return await yahooFinanceQuote('DX-Y.NYB')
       }
 
       function getLatestValue(fredArray) {
@@ -291,7 +204,7 @@ export default {
         "UNRATE": { divisor: 1, unit: "%" },
         "M2SL": { divisor: 1000, unit: "T" },
         "WALCL": { divisor: 1000000, unit: "T" },
-        "RRPONTSYD": { divisor: 1000, unit: "B" },  // FRED 원값이 Millions → Billions로 변환
+        "RRPONTSYD": { divisor: 1, unit: "B" },  // FRED 원값이 Billions 단위
         "WTREGEN": { divisor: 1000000, unit: "T" },
         "DGS10": { divisor: 1, unit: "%" },
         "DGS2": { divisor: 1, unit: "%" },
@@ -353,14 +266,10 @@ export default {
           getQuote("XLRE"), // REAL_ESTATE
           // 한국 시장 (FMP API)
           getQuote("EWY"),  // iShares MSCI South Korea ETF
-          // 선물 (Futures) - Finnhub 실시간
-          getQuote("ES=F"), // S&P 500 E-mini Futures
-          getQuote("NQ=F"), // Nasdaq 100 E-mini Futures
-          getQuote("RTY=F"), // Russell 2000 E-mini Futures
-          // 암호화폐 (Crypto) - Finnhub 실시간
-          getQuote("BTC-USD"), // Bitcoin
-          getQuote("ETH-USD"), // Ethereum
-          getQuote("SOL-USD"), // Solana
+          // 암호화폐 (FMP API)
+          getQuote("BTCUSD"), // Bitcoin
+          getQuote("ETHUSD"), // Ethereum
+          getQuote("SOLUSD"), // Solana
           // FRED 경제지표
           fredGet("WALCL"),
           fredGet("RRPONTSYD"),
@@ -373,11 +282,11 @@ export default {
           fredGet("INDPRO"),
           fredGet("PAYEMS"),
           fredGet("PCEPILFE"),
-          // 상품 (Commodities) - FMP stable quote
+          // 상품 (Commodities) - FMP stable batch-quote
           getQuote("GCUSD"),   // 금 (Gold)
           getQuote("SIUSD"),   // 은 (Silver)
-          getQuote("BZUSD"),   // 브렌트유 (Brent Crude)
-          // 외환 (FX) - FMP stable quote
+          getQuote("BZUSD"),   // 브렌트유 (Brent Crude) - CLUSD/USOIL null 반환, BZUSD 사용
+          // 외환 (FX) - FMP stable batch-quote
           getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
@@ -393,7 +302,7 @@ export default {
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, esf, nqf, rtyf, btcusd, ethusd, solusd, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -408,6 +317,8 @@ export default {
         console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
         console.log(`🇰🇷 한국 시장 (FMP):`)
         console.log(`   EWY: ${ewy?.price || '⚠️ 실패'} (change: ${ewy?.changePercentage || '⚠️'}%)`)
+        console.log(`🪙 암호화폐 (Binance):`)
+        console.log(`   BTC: ${btc?.price || '⚠️ 실패'}, ETH: ${eth?.price || '⚠️'}, SOL: ${sol?.price || '⚠️'}`)
         console.log(`📊 FRED 경제지표:`)
         console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
         console.log(`================================\n`)
@@ -455,20 +366,6 @@ export default {
           vixChange: vix?.changePercentage,
           ewy: ewyPrice,
           ewyChange: ewyChange,
-          // 선물 (Futures) - Finnhub 실시간
-          esf: esf?.price,
-          esfChange: esf?.changePercentage,
-          nqf: nqf?.price,
-          nqfChange: nqf?.changePercentage,
-          rtyf: rtyf?.price,
-          rtyfChange: rtyf?.changePercentage,
-          // 암호화폐 (Crypto) - Finnhub 실시간
-          btc: btcusd?.price,
-          btcChange: btcusd?.changePercentage,
-          eth: ethusd?.price,
-          ethChange: ethusd?.changePercentage,
-          sol: solusd?.price,
-          solChange: solusd?.changePercentage,
           hyg: hyg?.price,
           lqd: lqd?.price,
           hygChange: hyg?.changePercentage,
@@ -477,6 +374,13 @@ export default {
           tlt: tlt?.price,
           vtiChange: vti?.changePercentage,
           tltChange: tlt?.changePercentage,
+          // 암호화폐
+          btc: btc?.price,
+          btcChange: btc?.changePercentage,
+          eth: eth?.price,
+          ethChange: eth?.changePercentage,
+          sol: sol?.price,
+          solChange: sol?.changePercentage,
           fed: fedVal,
           rp: rpVal,
           us10y: us10y,
@@ -1021,6 +925,21 @@ export default {
             LQD: {
               price: marketData.lqd ? parseFloat(marketData.lqd.toFixed(2)) : null,
               change: marketData.lqdChange ? parseFloat(marketData.lqdChange.toFixed(2)) : null
+            }
+          },
+          // 카드 3: 암호화폐
+          CRYPTO: {
+            BTC: {
+              price: marketData.btc ? parseFloat(marketData.btc.toFixed(2)) : null,
+              changePercentage: marketData.btcChange ? parseFloat(marketData.btcChange.toFixed(2)) : null
+            },
+            ETH: {
+              price: marketData.eth ? parseFloat(marketData.eth.toFixed(2)) : null,
+              changePercentage: marketData.ethChange ? parseFloat(marketData.ethChange.toFixed(2)) : null
+            },
+            SOL: {
+              price: marketData.sol ? parseFloat(marketData.sol.toFixed(2)) : null,
+              changePercentage: marketData.solChange ? parseFloat(marketData.solChange.toFixed(2)) : null
             }
           },
           // 카드 5: 원자재 - index.html COMMODITIES.GOLD.price 등에서 사용

@@ -270,31 +270,37 @@
     </div>
     <div class="panel-body">
 
-      <div class="sec-label">🇺🇸 US Market (Finnhub 1차 / FMP Fallback)</div>
+      <div class="sec-label">🇺🇸 US Market (FMP)</div>
       <div class="data-grid" id="g-us"></div>
 
-      <div class="sec-label">🇰🇷 Korea Market (Finnhub 1차 / FMP Fallback)</div>
+      <div class="sec-label">🇰🇷 Korea Market (FMP)</div>
       <div class="data-grid" id="g-kr"></div>
 
-      <div class="sec-label">📈 Futures (Finnhub 1차 / FMP Fallback) · ES=F / NQ=F / RTY=F</div>
-      <div class="data-grid" id="g-futures"></div>
-
-      <div class="sec-label">🪙 Crypto (Finnhub 1차 / FMP Fallback) · BTC-USD / ETH-USD / SOL-USD</div>
-      <div class="data-grid" id="g-crypto"></div>
-
-      <div class="sec-label">🏅 Commodities (Finnhub 1차 / FMP Fallback) · GCUSD / SIUSD / BZUSD</div>
+      <div class="sec-label">🏅 Commodities · GCUSD / SIUSD / BZUSD (FMP)</div>
       <div class="data-grid" id="g-comm"></div>
 
-      <div class="sec-label">💱 FX (Finnhub 1차 / FMP Fallback) · USDKRW / USDJPY / EURUSD / DXY</div>
+      <div class="sec-label">💱 FX · USDKRW / USDJPY / EURUSD / DX (FMP)</div>
       <div class="data-grid" id="g-fx"></div>
 
-      <div class="sec-label">💧 Liquidity (FRED) · WALCL / RRPONTSYD / WTREGEN</div>
+      <div class="sec-label">💧 Liquidity · WALCL / RRPONTSYD / WTREGEN (FRED)</div>
       <div class="data-grid" id="g-liq"></div>
 
-      <div class="sec-label">📊 Rates (FRED) · DGS10 / DGS2</div>
+      <div class="sec-label">📈 Rates · DGS10 / DGS2 (FRED)</div>
       <div class="data-grid" id="g-rates"></div>
 
-      <div class="sec-label">🏭 Sectors ETF (Finnhub 1차 / FMP Fallback) · XLK~XLRE</div>
+      <div class="sec-label">🪙 Crypto · BTCUSD / ETHUSD / SOLUSD (FMP)</div>
+      <div class="data-grid" id="g-crypto"></div>
+
+      <div class="sec-label">💰 Bonds · HYG / LQD (FMP)</div>
+      <div class="data-grid" id="g-bonds"></div>
+
+      <div class="sec-label">📊 Credit · High Yield / Investment Grade (FMP)</div>
+      <div class="data-grid" id="g-credit"></div>
+
+      <div class="sec-label">📈 Market Breadth · Total Market / Long Treasury (FMP)</div>
+      <div class="data-grid" id="g-breadth"></div>
+
+      <div class="sec-label">🏭 Sectors ETF · XLK~XLRE (FMP)</div>
       <div class="data-grid" id="g-sec"></div>
 
       <div class="sec-label">📊 Macro Base · CPI / UNRATE / M2 / T10YIE (FRED)</div>
@@ -402,18 +408,17 @@ function esc(s) {
 /* ════════════════════════════════════════════════
    Data item HTML
 ════════════════════════════════════════════════ */
-function di(label, val, extra, source) {
+function di(label, val, extra) {
   var has = val !== null && val !== undefined;
   var display = has ? (extra || String(val)) : 'null';
-  var sourceTag = source ? ' <span style="color:var(--text-muted);font-size:9px;">[' + esc(source) + ']</span>' : '';
   return '<div class="di">' +
     '<div class="dot ' + (has ? 'ok' : 'fail') + '"></div>' +
     '<span class="di-label">' + esc(label) + '</span>' +
-    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(display) + sourceTag + '</span>' +
+    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(display) + '</span>' +
     '</div>';
 }
 
-function diObj(label, obj, source) {
+function diObj(label, obj) {
   // obj = { price, changePercentage } or null
   var has = obj && (obj.price !== null && obj.price !== undefined);
   var display = '-';
@@ -424,11 +429,10 @@ function diObj(label, obj, source) {
       display += ' (' + (cp >= 0 ? '+' : '') + fmtNum(cp, 2) + '%)';
     }
   }
-  var sourceTag = source ? ' <span style="color:var(--text-muted);font-size:9px;">[' + esc(source) + ']</span>' : '';
   return '<div class="di">' +
     '<div class="dot ' + (has ? 'ok' : 'fail') + '"></div>' +
     '<span class="di-label">' + esc(label) + '</span>' +
-    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(has ? display : 'null') + sourceTag + '</span>' +
+    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(has ? display : 'null') + '</span>' +
     '</div>';
 }
 
@@ -453,7 +457,7 @@ function runAll() {
   okN = 0; failN = 0;
 
   // 로딩 표시
-  ['g-us','g-kr','g-futures','g-crypto','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
+  ['g-us','g-kr','g-crypto','g-bonds','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
     setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
   });
   document.getElementById('marketMs').textContent = '...';
@@ -494,51 +498,64 @@ function renderMarketData(data) {
     ['SP500','SPY'],['NASDAQ','QQQ'],['DOW','DIA'],
     ['VIX','^VIX'],['SOX','SOXX'],['RUSSELL2000','IWM']
   ];
-  var usHtml = usSyms.map(function(p) { return diObj(p[1] + ' ' + p[0], us[p[0]], 'Finnhub 1차'); }).join('');
+  var usHtml = usSyms.map(function(p) { return diObj(p[1] + ' ' + p[0], us[p[0]]); }).join('');
   setGrid('g-us', usHtml);
   usSyms.forEach(function(p) { countObj(p[1], us[p[0]]); });
 
   // ── Korea
   var kr = data.KOREA_MARKET || {};
-  setGrid('g-kr', diObj('EWY (Korea ETF)', kr.EWY, 'Finnhub 1차'));
+  setGrid('g-kr', diObj('EWY (Korea ETF)', kr.EWY));
   countObj('EWY', kr.EWY);
 
-  // ── Futures (새로 추가)
-  setGrid('g-futures',
-    diObj('ES=F (S&P 500 E-mini)', {price: data.esf, changePercentage: data.esfChange}, 'Finnhub 1차') +
-    diObj('NQ=F (Nasdaq 100 E-mini)', {price: data.nqf, changePercentage: data.nqfChange}, 'Finnhub 1차') +
-    diObj('RTY=F (Russell 2000 E-mini)', {price: data.rtyf, changePercentage: data.rtyfChange}, 'Finnhub 1차')
-  );
-  countObj('ES=F', {price: data.esf, changePercentage: data.esfChange});
-  countObj('NQ=F', {price: data.nqf, changePercentage: data.nqfChange});
-  countObj('RTY=F', {price: data.rtyf, changePercentage: data.rtyfChange});
-
-  // ── Crypto (새로 추가)
+  // ── Crypto
+  var crypto = data.CRYPTO || {};
   setGrid('g-crypto',
-    diObj('BTC-USD (Bitcoin)', {price: data.btc, changePercentage: data.btcChange}, 'Finnhub 1차') +
-    diObj('ETH-USD (Ethereum)', {price: data.eth, changePercentage: data.ethChange}, 'Finnhub 1차') +
-    diObj('SOL-USD (Solana)', {price: data.sol, changePercentage: data.solChange}, 'Finnhub 1차')
+    diObj('BTC (Bitcoin)', crypto.BTC) +
+    diObj('ETH (Ethereum)', crypto.ETH) +
+    diObj('SOL (Solana)', crypto.SOL)
   );
-  countObj('BTC-USD', {price: data.btc, changePercentage: data.btcChange});
-  countObj('ETH-USD', {price: data.eth, changePercentage: data.ethChange});
-  countObj('SOL-USD', {price: data.sol, changePercentage: data.solChange});
+  ['BTC','ETH','SOL'].forEach(function(k) { countObj(k, crypto[k]); });
 
-  // ── Commodities (FMP 직접 호출 - Finnhub 미지원)
+  // ── Bonds
+  var bonds = data.BONDS || {};
+  setGrid('g-bonds',
+    diObj('HYG (High Yield)', bonds.HYG) +
+    diObj('LQD (Invest Grade)', bonds.LQD)
+  );
+  ['HYG','LQD'].forEach(function(k) { countObj(k, bonds[k]); });
+
+  // ── Credit
+  var credit = data.CREDIT || {};
+  setGrid('g-credit',
+    diObj('HIGH_YIELD', credit.HIGH_YIELD) +
+    diObj('INVESTMENT_GRADE', credit.INVESTMENT_GRADE)
+  );
+  ['HIGH_YIELD','INVESTMENT_GRADE'].forEach(function(k) { countObj(k, credit[k]); });
+
+  // ── Breadth
+  var breadth = data.BREADTH || {};
+  setGrid('g-breadth',
+    diObj('TOTAL_MARKET', breadth.TOTAL_MARKET) +
+    diObj('LONG_TREASURY', breadth.LONG_TREASURY)
+  );
+  ['TOTAL_MARKET','LONG_TREASURY'].forEach(function(k) { countObj(k, breadth[k]); });
+
+  // ── Commodities
   var cm = data.COMMODITIES || {};
   setGrid('g-comm',
-    diObj('GCUSD (Gold)', cm.GOLD, 'FMP 직접') +
-    diObj('SIUSD (Silver)', cm.SILVER, 'FMP 직접') +
-    diObj('BZUSD (Brent Oil)', cm.OIL, 'FMP 직접')
+    diObj('GCUSD (Gold)', cm.GOLD) +
+    diObj('SIUSD (Silver)', cm.SILVER) +
+    diObj('BZUSD (Brent Oil)', cm.OIL)
   );
   ['GOLD','SILVER','OIL'].forEach(function(k) { countObj(k, cm[k]); });
 
   // ── FX
   var fx = data.FX || {};
   setGrid('g-fx',
-    diObj('USDKRW', fx.USDKRW, 'FMP 직접') +
-    diObj('USDJPY', fx.USDJPY, 'FMP 직접') +
-    diObj('EURUSD', fx.EURUSD, 'Finnhub 1차') +
-    diObj('DX (DXY)', fx.DXY, 'Yahoo Finance')
+    diObj('USDKRW', fx.USDKRW) +
+    diObj('USDJPY', fx.USDJPY) +
+    diObj('EURUSD', fx.EURUSD) +
+    diObj('DX (DXY)', fx.DXY)
   );
   ['USDKRW','USDJPY','EURUSD','DXY'].forEach(function(k) { countObj(k, fx[k]); });
 
@@ -548,18 +565,18 @@ function renderMarketData(data) {
   var rpB   = liq.REVERSE_REPO  ? (liq.REVERSE_REPO  / 1e3).toFixed(0) + ' B'  : null;
   var tgaT  = liq.TGA           ? (liq.TGA           / 1e6).toFixed(2) + ' T'  : null;
   setGrid('g-liq',
-    di('WALCL (Fed)', liq.FED_BALANCE, fedT, 'FRED') +
-    di('RRPONTSYD (RRP)', liq.REVERSE_REPO, rpB, 'FRED') +
-    di('WTREGEN (TGA)', liq.TGA, tgaT, 'FRED')
+    di('WALCL (Fed)', liq.FED_BALANCE, fedT) +
+    di('RRPONTSYD (RRP)', liq.REVERSE_REPO, rpB) +
+    di('WTREGEN (TGA)', liq.TGA, tgaT)
   );
   ['FED_BALANCE','REVERSE_REPO','TGA'].forEach(function(k) { countVal(k, liq[k]); });
 
   // ── Rates
   var rt = data.RATES || {};
   setGrid('g-rates',
-    di('DGS10 (10Y)', rt.US10Y, fmtNum(rt.US10Y,2) + '%', 'FRED') +
-    di('DGS2 (2Y)',   rt.US2Y,  fmtNum(rt.US2Y,2)  + '%', 'FRED') +
-    di('Yield Curve', rt.YIELD_CURVE, fmtNum(rt.YIELD_CURVE,3), 'FRED')
+    di('DGS10 (10Y)', rt.US10Y, fmtNum(rt.US10Y,2) + '%') +
+    di('DGS2 (2Y)',   rt.US2Y,  fmtNum(rt.US2Y,2)  + '%') +
+    di('Yield Curve', rt.YIELD_CURVE, fmtNum(rt.YIELD_CURVE,3))
   );
   ['US10Y','US2Y','YIELD_CURVE'].forEach(function(k) { countVal(k, rt[k]); });
 
@@ -569,29 +586,29 @@ function renderMarketData(data) {
     ['XLK','TECHNOLOGY'],['XLF','FINANCIALS'],['XLE','ENERGY'],['XLV','HEALTHCARE'],
     ['XLY','CONSUMER_DISCRETIONARY'],['XLI','INDUSTRIALS'],['XLU','UTILITIES'],['XLRE','REAL_ESTATE']
   ];
-  setGrid('g-sec', sMap.map(function(p) { return diObj(p[0], sec[p[1]], 'Finnhub 1차'); }).join(''));
+  setGrid('g-sec', sMap.map(function(p) { return diObj(p[0], sec[p[1]]); }).join(''));
   sMap.forEach(function(p) { countObj(p[0], sec[p[1]]); });
 
   // ── Macro Base
   var mb = data.MACRO_BASE || {};
   var m2T = mb.M2 ? (mb.M2 / 1e6).toFixed(2) + ' T' : null;
   setGrid('g-mb',
-    di('CPIAUCSL (CPI)',    mb.CPI,                   fmtNum(mb.CPI, 2), 'FRED') +
-    di('T10YIE (Infl Exp)',mb.INFLATION_EXPECTATION,  fmtNum(mb.INFLATION_EXPECTATION, 2) + '%', 'FRED') +
-    di('UNRATE (Unemp)',   mb.UNEMPLOYMENT,            fmtNum(mb.UNEMPLOYMENT, 1) + '%', 'FRED') +
-    di('M2SL (M2)',        mb.M2,                     m2T, 'FRED') +
-    di('Real Rates',       mb.REAL_RATES,              fmtNum(mb.REAL_RATES, 2) + '%', 'FRED')
+    di('CPIAUCSL (CPI)',    mb.CPI,                   fmtNum(mb.CPI, 2)) +
+    di('T10YIE (Infl Exp)',mb.INFLATION_EXPECTATION,  fmtNum(mb.INFLATION_EXPECTATION, 2) + '%') +
+    di('UNRATE (Unemp)',   mb.UNEMPLOYMENT,            fmtNum(mb.UNEMPLOYMENT, 1) + '%') +
+    di('M2SL (M2)',        mb.M2,                     m2T) +
+    di('Real Rates',       mb.REAL_RATES,              fmtNum(mb.REAL_RATES, 2) + '%')
   );
   ['CPI','INFLATION_EXPECTATION','UNEMPLOYMENT','M2','REAL_RATES'].forEach(function(k) { countVal(k, mb[k]); });
 
   // ── Macro Indicators
   var mi = data.MACRO_INDICATORS || {};
   setGrid('g-mi',
-    di('UMCSENT (Consumer)', mi.CONSUMER_SENTIMENT,  fmtNum(mi.CONSUMER_SENTIMENT, 1), 'FRED') +
-    di('GDPC1 (Real GDP)',   mi.REAL_GDP,             mi.REAL_GDP ? mi.REAL_GDP.toLocaleString() : null, 'FRED') +
-    di('INDPRO (Ind Prod)',  mi.INDUSTRIAL_PRODUCTION,fmtNum(mi.INDUSTRIAL_PRODUCTION, 1), 'FRED') +
-    di('PAYEMS (Nonfarm)',   mi.NONFARM_PAYROLLS,      mi.NONFARM_PAYROLLS ? mi.NONFARM_PAYROLLS.toLocaleString() : null, 'FRED') +
-    di('PCEPILFE (PCE)',     mi.PCE_INFLATION,         fmtNum(mi.PCE_INFLATION, 2) + '%', 'FRED')
+    di('UMCSENT (Consumer)', mi.CONSUMER_SENTIMENT,  fmtNum(mi.CONSUMER_SENTIMENT, 1)) +
+    di('GDPC1 (Real GDP)',   mi.REAL_GDP,             mi.REAL_GDP ? mi.REAL_GDP.toLocaleString() : null) +
+    di('INDPRO (Ind Prod)',  mi.INDUSTRIAL_PRODUCTION,fmtNum(mi.INDUSTRIAL_PRODUCTION, 1)) +
+    di('PAYEMS (Nonfarm)',   mi.NONFARM_PAYROLLS,      mi.NONFARM_PAYROLLS ? mi.NONFARM_PAYROLLS.toLocaleString() : null) +
+    di('PCEPILFE (PCE)',     mi.PCE_INFLATION,         fmtNum(mi.PCE_INFLATION, 2) + '%')
   );
   ['CONSUMER_SENTIMENT','REAL_GDP','INDUSTRIAL_PRODUCTION','NONFARM_PAYROLLS','PCE_INFLATION'].forEach(function(k) { countVal(k, mi[k]); });
 

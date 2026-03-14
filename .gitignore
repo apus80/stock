@@ -4,7 +4,4 @@ dist/
 build/
 .env
 .env.local
-node_modules/
-.wrangler/
 *.log
-.env
