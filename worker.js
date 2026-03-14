@@ -913,10 +913,23 @@ export default {
       }
 
       // =============================
+      // GET CURRENT QUARTER
+      // =============================
+      function getCurrentQuarter() {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth() + 1
+        const quarter = Math.ceil(month / 3)
+        return { year, quarter }
+      }
+
+      // =============================
       // ALPHA DATA COLLECTION
       // =============================
       async function getAlphaData(symbol) {
         try {
+          const { year, quarter } = getCurrentQuarter()
+
           const [
             quote,
             history,
@@ -942,7 +955,7 @@ export default {
             fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
             fetchFMP(`/stable/analyst-estimates?symbol=${symbol}`),
             fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`),
-            fetchFMP(`/stable/institutional-ownership/symbol-positions-summary?symbol=${symbol}&year=2024&quarter=3`)
+            fetchFMP(`/stable/institutional-ownership/symbol-positions-summary?symbol=${symbol}&year=${year}&quarter=${quarter}`)
           ])
 
           return {
