@@ -928,49 +928,28 @@ export default {
       // =============================
       async function getAlphaData(symbol) {
         try {
-          const { year, quarter } = getCurrentQuarter()
-
+          // 📍 Rate Limit Optimization: 5개 필수 API만 호출 (250 requests/day)
+          // 20개 종목 × 5개 API = 100 요청 ✅
           const [
             quote,
             history,
             metrics,
-            growth,
-            income,
-            balance,
-            cashflow,
-            earnings,
             analyst,
-            estimates,
-            insider,
-            institutional
+            insider
           ] = await Promise.all([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
             fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
             fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
-            fetchFMP(`/stable/financial-growth?symbol=${symbol}`),
-            fetchFMP(`/stable/income-statement?symbol=${symbol}`),
-            fetchFMP(`/stable/balance-sheet-statement?symbol=${symbol}`),
-            fetchFMP(`/stable/cash-flow-statement?symbol=${symbol}`),
-            fetchFMP(`/stable/earnings?symbol=${symbol}`),
             fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
-            fetchFMP(`/stable/analyst-estimates?symbol=${symbol}`),
-            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`),
-            fetchFMP(`/stable/institutional-ownership/symbol-positions-summary?symbol=${symbol}&year=${year}&quarter=${quarter}`)
+            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
           ])
 
           return {
             quote: quote ? quote[0] : null,
             history: history || [],
             metrics: metrics ? metrics[0] : null,
-            growth: growth ? growth[0] : null,
-            income: income ? income[0] : null,
-            balance: balance ? balance[0] : null,
-            cashflow: cashflow ? cashflow[0] : null,
-            earnings: earnings || [],
             analyst: analyst || [],
-            estimates: estimates || [],
-            insider: insider || [],
-            institutional: institutional || []
+            insider: insider || []
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -986,8 +965,6 @@ export default {
 
         const quote = data.quote
         const metrics = data.metrics
-        const growth = data.growth
-        const cashflowRep = data.cashflowRep
 
         // 기본 정보
         const price = quote?.price || 0
@@ -995,10 +972,6 @@ export default {
         const pb = metrics?.priceToBookRatio || 10
         const float = metrics?.floatShares || 1000000000
         const marketCap = metrics?.marketCap || 0
-
-        // 성장률
-        const revenueGrowth = growth?.revenueGrowth || 0
-        const earningsGrowth = growth?.netIncomeGrowth || 0
 
         // 전문가 평가
         const analystRecs = data.analyst || []
@@ -1014,8 +987,6 @@ export default {
           pb,
           float,
           marketCap,
-          revenueGrowth,
-          earningsGrowth,
           analystScore,
           insiderActivity
         }
@@ -1053,16 +1024,21 @@ export default {
       function explosiveScore(factors, momentum, volume) {
         if (!factors) return 0
 
+        // 📍 Optimized Score (5개 API 기반):
+        // Value: PE, PB (저평가 판별)
+        // Analyst: 전문가 평가
+        // Float: 유동성 (낮을수록 변동성 큼)
+        // Insider: 내부자 거래 (신뢰도)
+        // Momentum: 가격 추세
+        // Volume: 거래량 (수급)
         const score =
-          Math.abs(factors.revenueGrowth) * 2 +
-          Math.abs(factors.earningsGrowth) * 2 +
-          (1 / (factors.pe + 1)) +
-          (1 / (factors.pb + 1)) +
-          factors.analystScore * 0.5 +
-          (factors.insiderActivity > 0 ? 1 : 0) * 0.3 +
-          (1 / (factors.float / 100000000 + 1)) +
-          momentum * 2 +
-          volume * 1.5
+          (1 / (factors.pe + 1)) * 1.5 +        // Value factor
+          (1 / (factors.pb + 1)) * 1.5 +        // Book value factor
+          factors.analystScore * 0.8 +          // Analyst rating
+          (factors.insiderActivity > 0 ? 1 : 0) * 0.4 +  // Insider activity
+          (1 / (factors.float / 100000000 + 1)) * 0.8 +  // Low float premium
+          momentum * 2.5 +                      // Strong momentum boost
+          volume * 2.0                          // Volume spike boost
 
         return Math.max(0, score)
       }
@@ -1078,7 +1054,8 @@ export default {
           const results = []
           const startTime = Date.now()
 
-          for (let i = 0; i < Math.min(universe.length, 50); i++) {
+          // Rate Limit: 20개 종목 × 5개 API = 100 요청 (250/day 내)
+          for (let i = 0; i < Math.min(universe.length, 20); i++) {
             const symbol = universe[i]
             try {
               const data = await getAlphaData(symbol)
