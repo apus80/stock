@@ -913,6 +913,21 @@ export default {
               change: marketData.lqdChange ? parseFloat(marketData.lqdChange.toFixed(2)) : null
             }
           },
+          // 카드 3: 암호화폐 - index.html CRYPTO에서 사용
+          CRYPTO: {
+            BTC: marketData.btc ? {
+              price: parseFloat(marketData.btc.toFixed(2)),
+              changePercentage: marketData.btcChange != null ? parseFloat(marketData.btcChange.toFixed(2)) : null
+            } : null,
+            ETH: marketData.eth ? {
+              price: parseFloat(marketData.eth.toFixed(2)),
+              changePercentage: marketData.ethChange != null ? parseFloat(marketData.ethChange.toFixed(2)) : null
+            } : null,
+            SOL: marketData.sol ? {
+              price: parseFloat(marketData.sol.toFixed(2)),
+              changePercentage: marketData.solChange != null ? parseFloat(marketData.solChange.toFixed(2)) : null
+            } : null
+          },
           // 카드 5: 원자재 - index.html COMMODITIES.GOLD.price 등에서 사용
           COMMODITIES: {
             GOLD: marketData.gold ? {
