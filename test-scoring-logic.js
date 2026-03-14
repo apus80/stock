@@ -90,11 +90,24 @@ const weights = {
 };
 const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
 
-console.log("⚖️ === 가중치 분석 (현재) ===");
+console.log("⚖️ === 가중치 분석 (현재: 7개 요소) ===");
 console.log(`  총 가중치: ${totalWeight.toFixed(1)}`);
 console.log(`  Momentum 비중: ${(weights.momentum / totalWeight * 100).toFixed(1)}%`);
 console.log(`  Volume 비중: ${(weights.volume / totalWeight * 100).toFixed(1)}%`);
 console.log(`  Fundamental 비중: ${((weights.value + weights.book + weights.analyst + weights.insider + weights.float) / totalWeight * 100).toFixed(1)}%\n`);
+
+// 업데이트된 9개 요소 분석
+console.log("📊 === 업데이트된 Score (9개 요소) ===");
+console.log("  기존 7개:");
+console.log("    • Value (PE, PB): 3.0 가중치");
+console.log("    • Growth (Revenue, Earnings): 2.4 가중치 ✅ 추가");
+console.log("    • Analyst: 0.8 가중치");
+console.log("    • Insider: 0.4 가중치");
+console.log("    • Float: 0.8 가중치");
+console.log("    • Momentum: 2.5 가중치");
+console.log("    • Volume: 2.0 가중치");
+console.log("  ────────────────────────────────");
+console.log("  총 가중치: 12.1 (이전: 10.0)");
 
 console.log("⏳ === 다음 개선 예정 (FRED + Yahoo Finance) ===");
 console.log("  📊 FRED 지표 추가:");

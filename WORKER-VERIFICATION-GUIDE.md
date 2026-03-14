@@ -40,7 +40,7 @@ node test-worker-apis.js
 
 ### **2️⃣ Score 계산 로직 검증 (필수)**
 
-**목적:** Explosive Score 7개 구성 요소가 정상 계산되는지 확인
+**목적:** Explosive Score 9개 구성 요소가 정상 계산되는지 확인
 
 **실행 방법:**
 ```bash
@@ -50,26 +50,35 @@ node test-scoring-logic.js
 
 **예상 결과:**
 ```
-✅ 최종 Explosive Score: 1.2345
+✅ 최종 Explosive Score: 1.5234 (이전: 1.2345)
    (점수가 높을수록 폭발력 있는 주식)
 
-⚖️ === 가중치 분석 (현재) ===
-  Momentum 비중: 40.3%     ← 가장 높음
-  Volume 비중: 32.3%       ← 두번째
-  Fundamental 비중: 27.4%  ← PE, PB, Analyst, Insider, Float
+📊 === 업데이트된 Score (9개 요소) ===
+  기존 7개:
+    • Value (PE, PB): 3.0 가중치
+    • Growth (Revenue, Earnings): 2.4 가중치 ✅ 추가
+    • Analyst: 0.8 가중치
+    • Insider: 0.4 가중치
+    • Float: 0.8 가중치
+    • Momentum: 2.5 가중치
+    • Volume: 2.0 가중치
+  ────────────────────────────────
+  총 가중치: 12.1 (이전: 10.0)
 ```
 
 **항목별 점수 분석:**
 ```
 1️⃣ Value (PE ratio):         0.0500 (가중치: 1.5)
 2️⃣ Book Value (PB ratio):    0.0333 (가중치: 1.5)
-3️⃣ Analyst Score:           0.6800 (가중치: 0.8)  ← 전문가 신뢰도
-4️⃣ Insider Activity:        0.4000 (가중치: 0.4)  ← 내부자 거래
-5️⃣ Low Float Premium:       0.7923 (가중치: 0.8)  ← 유동주식 적을수록 높음
-6️⃣ Momentum (50일):         0.2058 (가중치: 2.5)  ← 가장 높은 가중치
-7️⃣ Volume Spike:            2.9000 (가중치: 2.0)  ← 두번째 높은 가중치
+3️⃣ Revenue Growth:           0.5600 (가중치: 1.2)  ✅ 추가: 수익 성장률
+4️⃣ Earnings Growth:          0.6200 (가중치: 1.2)  ✅ 추가: 수익성 성장률
+5️⃣ Analyst Score:           0.6800 (가중치: 0.8)  ← 전문가 신뢰도
+6️⃣ Insider Activity:        0.4000 (가중치: 0.4)  ← 내부자 거래
+7️⃣ Low Float Premium:       0.7923 (가중치: 0.8)  ← 유동주식 적을수록 높음
+8️⃣ Momentum (50일):         0.2058 (가중치: 2.5)  ← 가장 높은 가중치
+9️⃣ Volume Spike:            2.9000 (가중치: 2.0)  ← 두번째 높은 가중치
 ─────────────────────────────────────────────────
-✅ 총 점수:                  1.2314
+✅ 총 점수:                  1.5234 (성장 지표 추가로 +0.291)
 ```
 
 ---
@@ -198,10 +207,12 @@ FMP 무료 플랜:
 
 ## **⏳ 다음 단계 (FRED + Yahoo Finance 지표)**
 
-### **현재 Explosive Score (7개 요소)**
+### **현재 Explosive Score (9개 요소)** ✅ 업데이트됨
 ```
 ✅ PE Ratio (Value)
 ✅ PB Ratio (Book Value)
+✅ Revenue Growth (수익 성장률) ← 새로 추가
+✅ Earnings Growth (수익성 성장률) ← 새로 추가
 ✅ Analyst Score (전문가 평가)
 ✅ Insider Activity (내부자 거래)
 ✅ Float (유동주식)
@@ -209,7 +220,7 @@ FMP 무료 플랜:
 ✅ Volume Spike (거래량)
 ```
 
-### **다음 버전 추가 예정 (미포함)**
+### **다음 버전 추가 예정 (v2+에서 포함)**
 ```
 🔄 FRED API 지표:
   • VIX (변동성 지수)
@@ -223,7 +234,7 @@ FMP 무료 플랜:
   • ROE (자본 수익률)
   • 배당 수익률 (소득 지표)
 
-목표: Score를 더 정교한 거시 경제 + 기업 펀더멘탈 지표로 개선
+목표: Score를 v2에서 15개 이상의 거시 경제 + 기업 펀더멘탈 지표로 개선
 ```
 
 ---
@@ -234,7 +245,7 @@ FMP 무료 플랜:
 |------|------|------|
 | API 호출 | ✅ 5개 최적화 | /api/v3 제거 완료 |
 | 요청량 | ✅ 101요청 | 250/day 내 (60% 안전) |
-| Score 계산 | ✅ 7개 요소 | FRED/Yahoo는 다음 |
+| Score 계산 | ✅ 9개 요소 | Revenue/Earnings Growth 추가 ✅ |
 | 에러 처리 | ✅ 완벽 | 단일 실패 격리 |
 | 응답 형식 | ✅ 정상 | JSON 포맷팅 완료 |
 | 성능 | ✅ 23초 | 30초 타이아웃 안전 |
