@@ -178,35 +178,6 @@
         }
         }
 
-        /* 방문자 카운터 */
-        #visitorCounter {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 2px;
-            font-size: 0.72em;
-            color: rgba(255,255,255,0.8);
-            line-height: 1.4;
-            z-index: 10;
-        }
-        #visitorCounter .vc-row {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        #visitorCounter .vc-label {
-            opacity: 0.7;
-            font-size: 0.85em;
-        }
-        #visitorCounter .vc-num {
-            font-weight: 700;
-            font-size: 1.05em;
-            color: #fff;
-        }
-
         /* 레이아웃 시스템 */
         .grid-dashboard {
             display: grid;
@@ -809,11 +780,6 @@
                 left: 12px;
             }
 
-            #visitorCounter {
-                top: 12px;
-                right: 12px;
-                font-size: 0.68em;
-            }
 
             .grid-dashboard {
                 grid-template-columns: 1fr;
@@ -1647,7 +1613,6 @@
         body.mobile-view .header { padding: max(65px, calc(env(safe-area-inset-top, 0px) + 55px)) 15px 30px !important; }
         body.mobile-view .header h1 { font-size: 1.5em !important; }
         body.mobile-view .header p { font-size: 0.9em !important; }
-        body.mobile-view #visitorCounter { top: calc(env(safe-area-inset-top, 0px) + 12px); right: calc(env(safe-area-inset-right, 0px) + 12px); font-size: 0.68em; }
         body.mobile-view #pwaInstallBtn { display: none !important; }
         body.mobile-view .grid-dashboard { grid-template-columns: 1fr !important; padding: 10px !important; }
         body.mobile-view .grid-top-row,
@@ -1835,18 +1800,6 @@
                 <button id="pwaInstallBtn" onclick="pwaInstall()" title="홈 화면에 앱으로 추가">
                     📱 홈 화면에 추가
                 </button>
-
-                <!-- 방문자 카운터 (우측 상단) -->
-                <div id="visitorCounter">
-                    <div class="vc-row">
-                        <span class="vc-label">오늘</span>
-                        <span class="vc-num" id="vcToday">-</span>
-                    </div>
-                    <div class="vc-row">
-                        <span class="vc-label">누적</span>
-                        <span class="vc-num" id="vcTotal">-</span>
-                    </div>
-                </div>
 
                 <h1>📊 주식 분석 통합 리포트 뷰어</h1>
 
@@ -4293,7 +4246,7 @@ var ECON_DATA = {
         </script>
 
 
-    <!-- PWA 설치 + 방문자 카운터 -->
+    <!-- PWA 설치 프롬프트 -->
     <script>
         // ── PWA 설치 프롬프트 ──────────────────────────────────────────────
         var _pwaPrompt = null;
@@ -4335,66 +4288,6 @@ var ECON_DATA = {
             if (isIOS && !isInApp) {
                 var btn = document.getElementById('pwaInstallBtn');
                 if (btn) btn.style.display = 'inline-flex';
-            }
-        })();
-
-        // ── 방문자 카운터 (counterapi.dev) ──────────────────────────────────
-        (function() {
-            var ns = 'investflow-apus80';
-            var today = new Date().toISOString().split('T')[0].replace(/-/g, '');
-            var counted = sessionStorage.getItem('vc_counted');
-            var BASE = 'https://api.counterapi.dev/v1/' + ns + '/';
-
-            function fmt(n) {
-                var num = Number(n);
-                return isNaN(num) ? '?' : num.toLocaleString('ko-KR');
-            }
-
-            function updateDisplay(todayVal, totalVal) {
-                var t = document.getElementById('vcToday');
-                var v = document.getElementById('vcTotal');
-                if (t) t.textContent = fmt(todayVal);
-                if (v) v.textContent = fmt(totalVal);
-            }
-
-            function setError() {
-                var t = document.getElementById('vcToday');
-                var v = document.getElementById('vcTotal');
-                if (t) t.textContent = '?';
-                if (v) v.textContent = '?';
-            }
-
-            // 5초 타임아웃 fetch
-            function fetchWithTimeout(url, ms) {
-                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-                var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, ms) : null;
-                var opts = ctrl ? { signal: ctrl.signal } : {};
-                return fetch(url, opts).then(function(r) {
-                    if (timer) clearTimeout(timer);
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    return r.json();
-                }).then(function(data) {
-                    // counterapi.dev 응답: { count: N } 또는 { value: N } 대응
-                    var val = data.count !== undefined ? data.count : (data.value !== undefined ? data.value : data);
-                    return { count: Number(val) };
-                });
-            }
-
-            if (!counted) {
-                sessionStorage.setItem('vc_counted', '1');
-                Promise.all([
-                    fetchWithTimeout(BASE + 'total/up', 5000),
-                    fetchWithTimeout(BASE + 'day-' + today + '/up', 5000)
-                ]).then(function(results) {
-                    updateDisplay(results[1].count, results[0].count);
-                }).catch(function() { setError(); });
-            } else {
-                Promise.all([
-                    fetchWithTimeout(BASE + 'total', 5000),
-                    fetchWithTimeout(BASE + 'day-' + today, 5000)
-                ]).then(function(results) {
-                    updateDisplay(results[1].count, results[0].count);
-                }).catch(function() { setError(); });
             }
         })();
     </script>
