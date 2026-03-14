@@ -929,8 +929,7 @@ export default {
             analyst,
             estimates,
             insider,
-            institutional,
-            cashflowRep
+            institutional
           ] = await Promise.all([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
             fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
@@ -943,8 +942,7 @@ export default {
             fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
             fetchFMP(`/stable/analyst-estimates?symbol=${symbol}`),
             fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`),
-            fetchFMP(`/stable/institutional-ownership/symbol-positions-summary?symbol=${symbol}&year=2024&quarter=3`),
-            fetchFMP(`/api/v3/cash-flow-statement/${symbol}?limit=5`)
+            fetchFMP(`/stable/institutional-ownership/symbol-positions-summary?symbol=${symbol}&year=2024&quarter=3`)
           ])
 
           return {
@@ -959,8 +957,7 @@ export default {
             analyst: analyst || [],
             estimates: estimates || [],
             insider: insider || [],
-            institutional: institutional || [],
-            cashflowRep: cashflowRep || []
+            institutional: institutional || []
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -998,9 +995,6 @@ export default {
         // 인사이더 거래
         const insiderActivity = data.insider?.length || 0
 
-        // 자사주 매입 (Cash Flow Statement에서)
-        const buybackActivity = cashflowRep?.[0]?.commonStockRepurchased || 0
-
         return {
           price,
           pe,
@@ -1010,8 +1004,7 @@ export default {
           revenueGrowth,
           earningsGrowth,
           analystScore,
-          insiderActivity,
-          buybackActivity
+          insiderActivity
         }
       }
 
