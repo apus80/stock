@@ -349,13 +349,13 @@ export default {
           fredGet("INDPRO"),
           fredGet("PAYEMS"),
           fredGet("PCEPILFE"),
-          // 상품 (Commodities) - FMP stable batch-quote
-          getQuote("GCUSD"),   // 금 (Gold)
-          getQuote("SIUSD"),   // 은 (Silver)
-          getQuote("BZUSD"),   // 브렌트유 (Brent Crude) - CLUSD/USOIL null 반환, BZUSD 사용
-          // 외환 (FX) - FMP stable batch-quote
-          getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
-          getQuote("USDJPY"),  // USD/JPY
+          // 상품 (Commodities) - FMP 직접 (Finnhub 미지원)
+          getQuoteFMP("GCUSD"),   // 금 (Gold)
+          getQuoteFMP("SIUSD"),   // 은 (Silver)
+          getQuoteFMP("BZUSD"),   // 브렌트유 (Brent Crude) - CLUSD/USOIL null 반환, BZUSD 사용
+          // 외환 (FX) - FMP 직접 (Finnhub 미지원)
+          getQuoteFMP("USDKRW"),  // USD/KRW (원/달러 환율)
+          getQuoteFMP("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // 추가 FRED 경제지표
