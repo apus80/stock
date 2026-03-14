@@ -1,8 +1,10 @@
 name = "fmp-proxy"
 main = "worker.js"
 workers_dev = true
+account_id = "05ba87763e81af6206c77d3bd3d79d84"
 
 [vars]
 FMP_API_KEY = "JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK"
 FRED_KEY = "8a2fc0e51f931c3f4506eba1e177c644"
 ITICK_TOKEN = "c3e0a891c9854f8ba7da0593ec618cd50f971ef73d1149da9873394c5a0"
+FINNHUB_KEY = ""
