@@ -270,25 +270,31 @@
     </div>
     <div class="panel-body">
 
-      <div class="sec-label">🇺🇸 US Market (FMP)</div>
+      <div class="sec-label">🇺🇸 US Market (Finnhub 1차 / FMP Fallback)</div>
       <div class="data-grid" id="g-us"></div>
 
-      <div class="sec-label">🇰🇷 Korea Market (FMP)</div>
+      <div class="sec-label">🇰🇷 Korea Market (Finnhub 1차 / FMP Fallback)</div>
       <div class="data-grid" id="g-kr"></div>
 
-      <div class="sec-label">🏅 Commodities · GCUSD / SIUSD / BZUSD (FMP)</div>
+      <div class="sec-label">📈 Futures (Finnhub 1차 / FMP Fallback) · ES=F / NQ=F / RTY=F</div>
+      <div class="data-grid" id="g-futures"></div>
+
+      <div class="sec-label">🪙 Crypto (Finnhub 1차 / FMP Fallback) · BTC-USD / ETH-USD / SOL-USD</div>
+      <div class="data-grid" id="g-crypto"></div>
+
+      <div class="sec-label">🏅 Commodities (Finnhub 1차 / FMP Fallback) · GCUSD / SIUSD / BZUSD</div>
       <div class="data-grid" id="g-comm"></div>
 
-      <div class="sec-label">💱 FX · USDKRW / USDJPY / EURUSD / DX (FMP)</div>
+      <div class="sec-label">💱 FX (Finnhub 1차 / FMP Fallback) · USDKRW / USDJPY / EURUSD / DXY</div>
       <div class="data-grid" id="g-fx"></div>
 
-      <div class="sec-label">💧 Liquidity · WALCL / RRPONTSYD / WTREGEN (FRED)</div>
+      <div class="sec-label">💧 Liquidity (FRED) · WALCL / RRPONTSYD / WTREGEN</div>
       <div class="data-grid" id="g-liq"></div>
 
-      <div class="sec-label">📈 Rates · DGS10 / DGS2 (FRED)</div>
+      <div class="sec-label">📊 Rates (FRED) · DGS10 / DGS2</div>
       <div class="data-grid" id="g-rates"></div>
 
-      <div class="sec-label">🏭 Sectors ETF · XLK~XLRE (FMP)</div>
+      <div class="sec-label">🏭 Sectors ETF (Finnhub 1차 / FMP Fallback) · XLK~XLRE</div>
       <div class="data-grid" id="g-sec"></div>
 
       <div class="sec-label">📊 Macro Base · CPI / UNRATE / M2 / T10YIE (FRED)</div>
@@ -445,7 +451,7 @@ function runAll() {
   okN = 0; failN = 0;
 
   // 로딩 표시
-  ['g-us','g-kr','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
+  ['g-us','g-kr','g-futures','g-crypto','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
     setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
   });
   document.getElementById('marketMs').textContent = '...';
@@ -494,6 +500,26 @@ function renderMarketData(data) {
   var kr = data.KOREA_MARKET || {};
   setGrid('g-kr', diObj('EWY (Korea ETF)', kr.EWY));
   countObj('EWY', kr.EWY);
+
+  // ── Futures (새로 추가)
+  setGrid('g-futures',
+    diObj('ES=F (S&P 500 E-mini)', {price: data.esf, changePercentage: data.esfChange}) +
+    diObj('NQ=F (Nasdaq 100 E-mini)', {price: data.nqf, changePercentage: data.nqfChange}) +
+    diObj('RTY=F (Russell 2000 E-mini)', {price: data.rtyf, changePercentage: data.rtyfChange})
+  );
+  countObj('ES=F', {price: data.esf, changePercentage: data.esfChange});
+  countObj('NQ=F', {price: data.nqf, changePercentage: data.nqfChange});
+  countObj('RTY=F', {price: data.rtyf, changePercentage: data.rtyfChange});
+
+  // ── Crypto (새로 추가)
+  setGrid('g-crypto',
+    diObj('BTC-USD (Bitcoin)', {price: data.btc, changePercentage: data.btcChange}) +
+    diObj('ETH-USD (Ethereum)', {price: data.eth, changePercentage: data.ethChange}) +
+    diObj('SOL-USD (Solana)', {price: data.sol, changePercentage: data.solChange})
+  );
+  countObj('BTC-USD', {price: data.btc, changePercentage: data.btcChange});
+  countObj('ETH-USD', {price: data.eth, changePercentage: data.ethChange});
+  countObj('SOL-USD', {price: data.sol, changePercentage: data.solChange});
 
   // ── Commodities
   var cm = data.COMMODITIES || {};
