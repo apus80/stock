@@ -139,33 +139,6 @@ export default {
         }
       }
 
-      // 📍 출처: Binance API (암호화폐 시세)
-      async function getBinanceCrypto(symbol) {
-        try {
-          const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`
-          console.log(`📍 Binance API 호출: ${symbol}`)
-          const r = await fetch(url)
-          if (!r.ok) {
-            console.error(`❌ Binance ${symbol}: HTTP ${r.status}`)
-            return null
-          }
-          const j = await r.json()
-          if (!j || !j.lastPrice) {
-            console.warn(`⚠️ ${symbol}: price 필드 없음`)
-            return null
-          }
-          const result = {
-            price: parseFloat(j.lastPrice),
-            changePercentage: j.priceChangePercent ? parseFloat(j.priceChangePercent) : null,
-            volume: j.volume
-          }
-          console.log(`✅ Binance ${symbol}: price=${result.price}, change=${result.changePercentage}%`)
-          return result
-        } catch (e) {
-          console.error(`❌ Binance ${symbol}:`, e.message)
-          return null
-        }
-      }
 
       async function fredGet(series, units = null) {
         try {
@@ -293,10 +266,10 @@ export default {
           getQuote("XLRE"), // REAL_ESTATE
           // 한국 시장 (FMP API)
           getQuote("EWY"),  // iShares MSCI South Korea ETF
-          // 암호화폐 (Binance API)
-          getBinanceCrypto("BTCUSDT"), // Bitcoin
-          getBinanceCrypto("ETHUSDT"), // Ethereum
-          getBinanceCrypto("SOLUSDT"), // Solana
+          // 암호화폐 (FMP API)
+          getQuote("BTCUSD"), // Bitcoin
+          getQuote("ETHUSD"), // Ethereum
+          getQuote("SOLUSD"), // Solana
           // FRED 경제지표
           fredGet("WALCL"),
           fredGet("RRPONTSYD"),
