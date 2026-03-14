@@ -288,6 +288,18 @@
       <div class="sec-label">📈 Rates · DGS10 / DGS2 (FRED)</div>
       <div class="data-grid" id="g-rates"></div>
 
+      <div class="sec-label">🪙 Crypto · BTCUSD / ETHUSD / SOLUSD (FMP)</div>
+      <div class="data-grid" id="g-crypto"></div>
+
+      <div class="sec-label">💰 Bonds · HYG / LQD (FMP)</div>
+      <div class="data-grid" id="g-bonds"></div>
+
+      <div class="sec-label">📊 Credit · High Yield / Investment Grade (FMP)</div>
+      <div class="data-grid" id="g-credit"></div>
+
+      <div class="sec-label">📈 Market Breadth · Total Market / Long Treasury (FMP)</div>
+      <div class="data-grid" id="g-breadth"></div>
+
       <div class="sec-label">🏭 Sectors ETF · XLK~XLRE (FMP)</div>
       <div class="data-grid" id="g-sec"></div>
 
@@ -445,7 +457,7 @@ function runAll() {
   okN = 0; failN = 0;
 
   // 로딩 표시
-  ['g-us','g-kr','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
+  ['g-us','g-kr','g-crypto','g-bonds','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
     setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
   });
   document.getElementById('marketMs').textContent = '...';
@@ -494,6 +506,39 @@ function renderMarketData(data) {
   var kr = data.KOREA_MARKET || {};
   setGrid('g-kr', diObj('EWY (Korea ETF)', kr.EWY));
   countObj('EWY', kr.EWY);
+
+  // ── Crypto
+  var crypto = data.CRYPTO || {};
+  setGrid('g-crypto',
+    diObj('BTC (Bitcoin)', crypto.BTC) +
+    diObj('ETH (Ethereum)', crypto.ETH) +
+    diObj('SOL (Solana)', crypto.SOL)
+  );
+  ['BTC','ETH','SOL'].forEach(function(k) { countObj(k, crypto[k]); });
+
+  // ── Bonds
+  var bonds = data.BONDS || {};
+  setGrid('g-bonds',
+    diObj('HYG (High Yield)', bonds.HYG) +
+    diObj('LQD (Invest Grade)', bonds.LQD)
+  );
+  ['HYG','LQD'].forEach(function(k) { countObj(k, bonds[k]); });
+
+  // ── Credit
+  var credit = data.CREDIT || {};
+  setGrid('g-credit',
+    diObj('HIGH_YIELD', credit.HIGH_YIELD) +
+    diObj('INVESTMENT_GRADE', credit.INVESTMENT_GRADE)
+  );
+  ['HIGH_YIELD','INVESTMENT_GRADE'].forEach(function(k) { countObj(k, credit[k]); });
+
+  // ── Breadth
+  var breadth = data.BREADTH || {};
+  setGrid('g-breadth',
+    diObj('TOTAL_MARKET', breadth.TOTAL_MARKET) +
+    diObj('LONG_TREASURY', breadth.LONG_TREASURY)
+  );
+  ['TOTAL_MARKET','LONG_TREASURY'].forEach(function(k) { countObj(k, breadth[k]); });
 
   // ── Commodities
   var cm = data.COMMODITIES || {};
