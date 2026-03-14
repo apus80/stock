@@ -286,6 +286,10 @@ export default {
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
+          // 암호화폐 (Crypto)
+          getQuote("BTC-USD"), // Bitcoin
+          getQuote("ETH-USD"), // Ethereum
+          getQuote("SOL-USD"), // Solana
           // 추가 FRED 경제지표
           fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
           fredGet("M2SL"),     // M2 통화량 (billions)
@@ -297,7 +301,7 @@ export default {
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, btcusd, ethusd, solusd, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -392,6 +396,13 @@ export default {
           eurusdChange: eurUsdQ?.changePercentage,
           dxyPrice: dxyQ?.price,
           dxyChange: dxyQ?.changePercentage,
+          // 암호화폐 (Crypto)
+          btc: btcusd?.price,
+          btcChange: btcusd?.changePercentage,
+          eth: ethusd?.price,
+          ethChange: ethusd?.changePercentage,
+          sol: solusd?.price,
+          solChange: solusd?.changePercentage,
           // 카드 10: Sectors
           SECTORS: {
             TECHNOLOGY: xlk ? {price: xlk.price, changePercentage: xlk.changePercentage} : null,
