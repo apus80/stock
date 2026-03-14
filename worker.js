@@ -23,6 +23,24 @@ export default {
       console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
 
       /* ================================
+         Finnhub 심볼 맵핑
+      ================================ */
+      const FINNHUB_SYMBOLS = {
+        // Futures (CME E-mini)
+        'ES=F': 'CME_MINI:ES1!',
+        'NQ=F': 'CME_MINI:NQ1!',
+        'RTY=F': 'CME_MINI:RTY1!',
+
+        // Crypto (Bitstamp & Binance)
+        'BTC-USD': 'BITSTAMP:BTCUSD',
+        'ETH-USD': 'BITSTAMP:ETHUSD',
+        'SOL-USD': 'BINANCE:SOLUSDT',
+
+        // FX (OANDA)
+        'EURUSD': 'OANDA:EUR_USD'
+      }
+
+      /* ================================
          API 함수들
       ================================ */
 
@@ -151,8 +169,9 @@ export default {
 
       /* ── Finnhub 또는 FMP (자동 Fallback) ──────────────────────── */
       async function getQuote(sym) {
-        // 1️⃣ Finnhub 시도 (실시간, 기술주/선물/암호화폐에 최적)
-        const finnhubData = await getFinnhubQuote(sym)
+        // 1️⃣ Finnhub 시도 (심볼 변환)
+        const finnhubSym = FINNHUB_SYMBOLS[sym] || sym
+        const finnhubData = await getFinnhubQuote(finnhubSym)
         if (finnhubData) return finnhubData
 
         // 2️⃣ FMP Fallback (Finnhub 실패 시)
@@ -230,26 +249,31 @@ export default {
         }
       }
 
-      // 📍 출처: Yahoo Finance (DX-Y.NYB = ICE Dollar Index)
-      async function yahooFinanceDXY() {
+      // 📍 출처: Yahoo Finance (일반 심볼 조회)
+      async function yahooFinanceQuote(symbol) {
         try {
-          const url = 'https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d'
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`
           const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
           if (!r.ok) throw new Error(`Yahoo HTTP ${r.status}`)
           const j = await r.json()
           const meta = j?.chart?.result?.[0]?.meta
           if (!meta || meta.regularMarketPrice === undefined) throw new Error('no price in response')
-          console.log(`✅ Yahoo DXY: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
+          console.log(`✅ Yahoo ${symbol}: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
           return {
-            price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+            price: parseFloat(meta.regularMarketPrice.toFixed(4)),
             changePercentage: meta.regularMarketChangePercent !== undefined
               ? parseFloat(meta.regularMarketChangePercent.toFixed(2))
               : null
           }
         } catch (e) {
-          console.error('❌ Yahoo DXY:', e.message)
+          console.error(`❌ Yahoo ${symbol}:`, e.message)
           return null
         }
+      }
+
+      // 📍 출처: Yahoo Finance (DX-Y.NYB = ICE Dollar Index)
+      async function yahooFinanceDXY() {
+        return await yahooFinanceQuote('DX-Y.NYB')
       }
 
       function getLatestValue(fredArray) {
@@ -267,7 +291,7 @@ export default {
         "UNRATE": { divisor: 1, unit: "%" },
         "M2SL": { divisor: 1000, unit: "T" },
         "WALCL": { divisor: 1000000, unit: "T" },
-        "RRPONTSYD": { divisor: 1, unit: "B" },  // FRED 원값이 Billions 단위
+        "RRPONTSYD": { divisor: 1000, unit: "B" },  // FRED 원값이 Millions → Billions로 변환
         "WTREGEN": { divisor: 1000000, unit: "T" },
         "DGS10": { divisor: 1, unit: "%" },
         "DGS2": { divisor: 1, unit: "%" },
@@ -349,13 +373,13 @@ export default {
           fredGet("INDPRO"),
           fredGet("PAYEMS"),
           fredGet("PCEPILFE"),
-          // 상품 (Commodities) - FMP 직접 (Finnhub 미지원)
-          getQuoteFMP("GCUSD"),   // 금 (Gold)
-          getQuoteFMP("SIUSD"),   // 은 (Silver)
-          getQuoteFMP("BZUSD"),   // 브렌트유 (Brent Crude) - CLUSD/USOIL null 반환, BZUSD 사용
-          // 외환 (FX) - FMP 직접 (Finnhub 미지원)
-          getQuoteFMP("USDKRW"),  // USD/KRW (원/달러 환율)
-          getQuoteFMP("USDJPY"),  // USD/JPY
+          // 상품 (Commodities) - FMP stable quote
+          getQuote("GCUSD"),   // 금 (Gold)
+          getQuote("SIUSD"),   // 은 (Silver)
+          getQuote("BZUSD"),   // 브렌트유 (Brent Crude)
+          // 외환 (FX) - FMP stable quote
+          getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
+          getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // 추가 FRED 경제지표
