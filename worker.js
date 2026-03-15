@@ -252,19 +252,24 @@ export default {
       async function getAlphaData(symbol) {
         try {
           console.log(`📍 Alpha 데이터 수집 시작: ${symbol}`)
-          const [quote, history, metrics, analyst, insider] = await Promise.all([
+          // Promise.allSettled로 부분 실패 허용
+          const results = await Promise.allSettled([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
             fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
             fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
-            fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
+            // 주의: /stable/analyst-stock-recommendations는 FMP 무료 플랜에서 404 반환
+            // analyst 데이터 대신 insiderActivity로 신뢰도 판단
             fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
           ])
+
+          const extract = (r) => r.status === 'fulfilled' ? r.value : null
+          const [quote, history, metrics, insider] = results.map(extract)
 
           return {
             quote: quote ? (Array.isArray(quote) ? quote[0] : quote) : null,
             history: history || [],
             metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null,
-            analyst: analyst || [],
+            analyst: [], // FMP 무료 플랜에서 지원 안 함
             insider: insider || []
           }
         } catch (e) {
