@@ -235,12 +235,34 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
+          console.log(`📍 FMP API 호출: ${endpoint}`)
           const r = await fetch(url, { signal: controller.signal })
+          console.log(`   📊 Status: ${r.status}`)
+
           if (!r.ok) {
             console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
             return null
           }
-          return await r.json()
+
+          const data = await r.json()
+
+          // 🔍 DEBUG: 각 API별 응답 확인
+          if (endpoint.includes('quote')) {
+            console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - ${JSON.stringify(data).substring(0, 100)}`)
+          } else if (endpoint.includes('key-metrics')) {
+            console.log(`   📦 key-metrics 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            if (Array.isArray(data) && data[0]) {
+              const fields = Object.keys(data[0]).filter(k => k.includes('Ratio') || k.includes('Growth') || k.includes('Cap') || k.includes('Shares'))
+              console.log(`   📋 필드: peRatio=${data[0].peRatio}, priceToBookRatio=${data[0].priceToBookRatio}, floatShares=${data[0].floatShares}`)
+              console.log(`   📈 성장률: revenueGrowth=${data[0].revenueGrowth}, earningsGrowth=${data[0].earningsGrowth}`)
+            }
+          } else if (endpoint.includes('historical')) {
+            console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - 최근 3개: ${data.substring ? data : JSON.stringify(data).substring(0, 100)}`)
+          } else if (endpoint.includes('insider')) {
+            console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+          }
+
+          return data
         } catch (e) {
           console.error(`❌ fetchFMP ${endpoint}:`, e.message)
           return null
