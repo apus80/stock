@@ -318,7 +318,52 @@ export default {
         return { price, pe, pb, float, marketCap, revenueGrowth, earningsGrowth, analystScore, insiderActivity }
       }
 
-      // 9개 인디케이터 기반 Explosive Score 계산
+      // Momentum Score (50일)
+      function momentumScore(history) {
+        if (!history || history.length < 50) return 0
+        const recent = history[0]?.close
+        const past = history[49]?.close
+        if (!recent || !past) return 0
+        return (recent - past) / past
+      }
+
+      // Volume Spike Detection
+      function volumeSpike(history) {
+        if (!history || history.length < 20) return 0
+        const today = history[0]?.volume
+        let avg = 0
+        for (let i = 1; i < 20; i++) {
+          avg += history[i]?.volume || 0
+        }
+        avg /= 19
+        if (avg === 0) return 0
+        return today / avg
+      }
+
+      // Explosive Score (9개 지표 가중합)
+      function explosiveScore(factors, momentum, volume) {
+        if (!factors) return 0
+
+        // 성장률 정규화 (0~1 범위)
+        const normalizeGrowth = (g) => Math.max(0, Math.min(1, (g + 0.5) / 1.0))
+        const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
+        const earningsScore = normalizeGrowth(factors.earningsGrowth || 0)
+
+        const score =
+          (1 / (factors.pe + 1)) * 1.5 +        // Value: PE 저평가 (1.5x)
+          (1 / (factors.pb + 1)) * 1.5 +        // Value: PB 저평가 (1.5x)
+          revenueScore * 1.2 +                  // Growth: 수익 성장률 (1.2x)
+          earningsScore * 1.2 +                 // Growth: 수익성 성장률 (1.2x)
+          factors.analystScore * 0.8 +          // Quality: 전문가 평가 (0.8x)
+          (factors.insiderActivity > 0 ? 1 : 0) * 0.4 +  // Quality: 내부자 거래 (0.4x)
+          (1 / (factors.float / 100000000 + 1)) * 0.8 +  // Technical: 유동성 (0.8x)
+          momentum * 2.5 +                      // Technical: 모멘텀 (2.5x)
+          volume * 2.0                          // Technical: 거래량 (2.0x)
+
+        return Math.max(0, score)
+      }
+
+      // 9개 인디케이터 기반 Explosive Score 계산 (가중합)
       async function getAlphaScore(symbol) {
         try {
           console.log(`🔍 Alpha Score 계산 시작: ${symbol}`)
@@ -335,29 +380,33 @@ export default {
             return null
           }
 
-          // 9개 인디케이터 점수 계산 (각각 0-10 범위)
-          const indicators = {
-            price: { value: factors.price, score: Math.min(10, (factors.price / 500) * 10) },
-            pe: { value: factors.pe, score: Math.min(10, Math.max(0, 10 - (factors.pe / 30))) },
-            pb: { value: factors.pb, score: Math.min(10, Math.max(0, 10 - factors.pb * 2)) },
-            floatShares: { value: factors.float, score: Math.min(10, (factors.float / 1000000000) * 5) },
-            marketCap: { value: factors.marketCap, score: Math.min(10, Math.log10(factors.marketCap || 1) / 2) },
-            revenueGrowth: { value: factors.revenueGrowth, score: Math.min(10, Math.max(0, factors.revenueGrowth * 100)) },
-            earningsGrowth: { value: factors.earningsGrowth, score: Math.min(10, Math.max(0, factors.earningsGrowth * 100)) },
-            analystScore: { value: factors.analystScore, score: factors.analystScore * 10 },
-            insiderActivity: { value: factors.insiderActivity, score: Math.min(10, factors.insiderActivity) }
-          }
+          // Momentum & Volume 계산
+          const momentum = momentumScore(data.history)
+          const volume = volumeSpike(data.history)
 
-          // Explosive Score = 9개 지표의 평균 (0-10 범위)
-          const scores = Object.values(indicators).map(ind => ind.score)
-          const explosiveScore = parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2))
+          // Explosive Score (9개 지표 가중합)
+          const score = explosiveScore(factors, momentum, volume)
 
-          console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${explosiveScore}`)
+          console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${score.toFixed(4)}`)
 
           return {
             symbol,
-            explosiveScore,
-            indicators,
+            explosiveScore: parseFloat(score.toFixed(4)),
+            factors: {
+              price: factors.price,
+              pe: factors.pe,
+              pb: factors.pb,
+              floatShares: factors.float,
+              marketCap: factors.marketCap,
+              revenueGrowth: factors.revenueGrowth,
+              earningsGrowth: factors.earningsGrowth,
+              analystScore: factors.analystScore,
+              insiderActivity: factors.insiderActivity
+            },
+            metrics: {
+              momentum: parseFloat(momentum.toFixed(4)),
+              volume: parseFloat(volume.toFixed(2))
+            },
             profile: {
               company: data.quote?.symbol || symbol,
               sector: data.metrics?.sector || null,
