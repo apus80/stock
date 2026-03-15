@@ -1125,16 +1125,14 @@ export default {
         const data = await getMarketDataCached()
         const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
 
-        const fedT = data.fedRaw ? parseFloat((data.fedRaw / 1000000).toFixed(2)) : null
-        const rpB = data.rpRaw ? parseFloat((data.rpRaw / 1000).toFixed(1)) : null
         return {
           timestamp: new Date().toISOString(),
           dataType: "liquidity_pulse",
           score: liquidityScore,
           signal: liquidityScore > 75 ? "💧 풍부함" : liquidityScore > 50 ? "⚡ 적정" : "⚠️ 부족",
           components: [
-            { name: 'Fed 잔액', value: fedT !== null ? fedT : '-', unit: 'T$' },
-            { name: '역레포(RRP)', value: rpB !== null ? rpB : '-', unit: 'B$' }
+            { name: 'Fed 잔액', value: data.fed !== null && data.fed !== undefined ? data.fed : '-', unit: 'T$' },
+            { name: '역레포(RRP)', value: data.rp !== null && data.rp !== undefined ? data.rp : '-', unit: 'B$' }
           ],
           interpretation: liquidityScore > 75 ? "유동성 풍부 → 위험자산 선호" : liquidityScore > 50 ? "적정 수준 유지 중" : "유동성 부족 → 안전자산 선호",
           details: {
