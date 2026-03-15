@@ -1479,24 +1479,6 @@ export default {
       }
 
       // =============================
-      // FMP FETCH HELPER
-      // =============================
-      async function fetchFMP(endpoint) {
-        try {
-          const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
-          const r = await fetch(url)
-          if (!r.ok) {
-            console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
-            return null
-          }
-          return await r.json()
-        } catch (e) {
-          console.error(`❌ fetchFMP ${endpoint}:`, e.message)
-          return null
-        }
-      }
-
-      // =============================
       // GET CURRENT QUARTER
       // =============================
       function getCurrentQuarter() {
