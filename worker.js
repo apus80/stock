@@ -228,37 +228,45 @@ export default {
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
-      // 출처: verify-9-indicators.js 검증 로직 (GitHub 211b7d4)
+      // 출처: verify-9-indicators.js 검증 로직 (로컬 테스트 통과)
 
-      async function getAlphaData(symbol, timeoutMs = 10000) {
+      async function fetchFMP(endpoint, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
+            return null
+          }
+          return await r.json()
+        } catch (e) {
+          console.error(`❌ fetchFMP ${endpoint}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      async function getAlphaData(symbol) {
         try {
           console.log(`📍 Alpha 데이터 수집 시작: ${symbol}`)
-          const controller = new AbortController()
-          const timeout = setTimeout(() => controller.abort(), timeoutMs)
-
-          // Promise.allSettled로 부분 실패 허용
-          const results = await Promise.allSettled([
-            fetch(`https://financialmodelingprep.com/stable/quote?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
-            fetch(`https://financialmodelingprep.com/stable/key-metrics?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
-            fetch(`https://financialmodelingprep.com/stable/analyst-stock-recommendations?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
-            fetch(`https://financialmodelingprep.com/stable/insider-trading/search?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
-            fetch(`https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${symbol}&limit=200&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null)
+          const [quote, history, metrics, analyst, insider] = await Promise.all([
+            fetchFMP(`/stable/quote?symbol=${symbol}`),
+            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
+            fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
+            fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
+            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
           ])
 
-          clearTimeout(timeout)
-
-          const extract = (r) => r.status === 'fulfilled' ? r.value : null
-          const [quoteData, metricsData, analystData, insiderData, historyData] = results.map(extract)
-
-          const quote = Array.isArray(quoteData) ? quoteData[0] : quoteData
-          const metrics = Array.isArray(metricsData) ? metricsData[0] : metricsData
-          const analyst = Array.isArray(analystData) ? analystData : []
-          const insider = Array.isArray(insiderData) ? insiderData : []
-          const history = historyData?.historical || []
-
-          console.log(`✅ Alpha 데이터 수집 완료: quote=${!!quote}, metrics=${!!metrics}, analyst=${analyst.length}, insider=${insider.length}`)
-
-          return { quote, metrics, analyst, insider, history }
+          return {
+            quote: quote ? (Array.isArray(quote) ? quote[0] : quote) : null,
+            history: history || [],
+            metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null,
+            analyst: analyst || [],
+            insider: insider || []
+          }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
           return null
