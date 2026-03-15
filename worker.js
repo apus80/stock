@@ -205,6 +205,45 @@ export default {
         }
       }
 
+      // 📍 출처: Yahoo Finance (Market Structure Indicators)
+      async function getYahooMarketStructure(timeoutMs = 12000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const symbols = ["^VVIX", "^MOVE", "^NYA"]
+          const results = {}
+
+          for (const symbol of symbols) {
+            try {
+              const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+              const r = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Mozilla/5.0' } })
+              if (!r.ok) continue
+
+              const j = await r.json()
+              const meta = j?.chart?.result?.[0]?.meta
+              if (meta && meta.regularMarketPrice !== undefined) {
+                results[symbol] = {
+                  price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+                  changePercentage: meta.regularMarketChangePercent !== undefined
+                    ? parseFloat(meta.regularMarketChangePercent.toFixed(2))
+                    : null
+                }
+                console.log(`✅ Yahoo ${symbol}: price=${results[symbol].price}, change=${results[symbol].changePercentage}%`)
+              }
+            } catch (e) {
+              console.error(`❌ Yahoo ${symbol}:`, e.message)
+            }
+          }
+
+          return results.length > 0 ? results : null
+        } catch (e) {
+          console.error('❌ Yahoo Market Structure:', e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
       function getLatestValue(fredArray) {
         if (!fredArray || fredArray.length === 0) return null
         for (let i = fredArray.length - 1; i >= 0; i--) {
@@ -895,12 +934,13 @@ export default {
           getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
-          yahooFinanceDXY()   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
+          yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
+          getYahooMarketStructure() // 시장 구조 (VVIX, MOVE, NYA)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, yahooMarketStructure] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -1053,7 +1093,13 @@ export default {
             INDUSTRIAL_PRODUCTION: indproVal,
             NONFARM_PAYROLLS: payelmsVal,
             PCE_INFLATION: pcepilfeVal
-          }
+          },
+          // 카드 16: Yahoo Market Structure (신규)
+          YAHOO_MARKET_STRUCTURE: yahooMarketStructure ? {
+            VVIX: yahooMarketStructure["^VVIX"] || null,        // Volatility of Volatility
+            MOVE: yahooMarketStructure["^MOVE"] || null,        // Bond Market Volatility
+            NYA: yahooMarketStructure["^NYA"] || null           // NYSE Composite
+          } : null
         }
       }
 
