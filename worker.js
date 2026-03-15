@@ -967,6 +967,10 @@ export default {
           soxxChange: soxx?.changePercentage,
           iwmChange: iwm?.changePercentage,
           vixChange: vix?.changePercentage,
+          // ETF Smart Money - Volume (거래량)
+          spyVolume: spy?.volume,
+          qqqVolume: qqq?.volume,
+          iwmVolume: iwm?.volume,
           ewy: ewyPrice,
           ewyChange: ewyChange,
           hyg: hyg?.price,
@@ -1706,11 +1710,13 @@ export default {
           US_MARKET: {
             SP500: {
               price: marketData.spy ? parseFloat(marketData.spy.toFixed(2)) : null,
-              changePercentage: marketData.spyChange ? parseFloat(marketData.spyChange.toFixed(2)) : null
+              changePercentage: marketData.spyChange ? parseFloat(marketData.spyChange.toFixed(2)) : null,
+              volume: marketData.spyVolume || null
             },
             NASDAQ: {
               price: marketData.qqq ? parseFloat(marketData.qqq.toFixed(2)) : null,
-              changePercentage: marketData.qqqChange ? parseFloat(marketData.qqqChange.toFixed(2)) : null
+              changePercentage: marketData.qqqChange ? parseFloat(marketData.qqqChange.toFixed(2)) : null,
+              volume: marketData.qqqVolume || null
             },
             DOW: {
               price: marketData.dia ? parseFloat(marketData.dia.toFixed(2)) : null,
@@ -1722,7 +1728,8 @@ export default {
             },
             RUSSELL2000: {
               price: marketData.iwm ? parseFloat(marketData.iwm.toFixed(2)) : null,
-              changePercentage: marketData.iwmChange ? parseFloat(marketData.iwmChange.toFixed(2)) : null
+              changePercentage: marketData.iwmChange ? parseFloat(marketData.iwmChange.toFixed(2)) : null,
+              volume: marketData.iwmVolume || null
             },
             VIX: {
               price: marketData.vix ? parseFloat(marketData.vix.toFixed(2)) : null,
