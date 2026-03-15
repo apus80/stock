@@ -1498,40 +1498,6 @@ export default {
       }
 
       // =============================
-      // ALPHA DATA COLLECTION
-      // =============================
-      async function getAlphaData(symbol) {
-        try {
-          // 📍 Rate Limit Optimization: 5개 필수 API만 호출 (250 requests/day)
-          // 20개 종목 × 5개 API = 100 요청 ✅
-          const [
-            quote,
-            history,
-            metrics,
-            analyst,
-            insider
-          ] = await Promise.all([
-            fetchFMP(`/stable/quote?symbol=${symbol}`),
-            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
-            fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
-            fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
-            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
-          ])
-
-          return {
-            quote: quote ? quote[0] : null,
-            history: history || [],
-            metrics: metrics ? metrics[0] : null,
-            analyst: analyst || [],
-            insider: insider || []
-          }
-        } catch (e) {
-          console.error(`❌ getAlphaData ${symbol}:`, e.message)
-          return null
-        }
-      }
-
-      // =============================
       // FACTOR ENGINE
       // =============================
       function calculateFactors(data) {
