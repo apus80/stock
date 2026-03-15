@@ -228,31 +228,94 @@ export default {
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
-      async function getCompanyProfile(symbol, timeoutMs = 10000) {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+      // 출처: verify-9-indicators.js 검증 로직 (GitHub 211b7d4)
+
+      async function getAlphaData(symbol, timeoutMs = 10000) {
         try {
-          // 출처: FMP API - Company Profile
-          const url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${FMP}`
-          console.log(`📍 FMP Profile 호출: ${symbol}`)
-          const r = await fetch(url, { signal: controller.signal })
-          if (!r.ok) {
-            console.error(`❌ FMP Profile ${symbol}: HTTP ${r.status}`)
-            return null
-          }
-          const j = await r.json()
-          if (!Array.isArray(j) || j.length === 0) {
-            console.warn(`⚠️ ${symbol}: Profile 응답 없음`)
-            return null
-          }
-          console.log(`✅ FMP Profile ${symbol}: 조회됨`)
-          return j[0] // 첫번째 결과
-        } catch (e) {
-          console.error(`❌ Profile ${symbol}:`, e.message)
-          return null
-        } finally {
+          console.log(`📍 Alpha 데이터 수집 시작: ${symbol}`)
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+          // Promise.allSettled로 부분 실패 허용
+          const results = await Promise.allSettled([
+            fetch(`https://financialmodelingprep.com/stable/quote?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
+            fetch(`https://financialmodelingprep.com/stable/key-metrics?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
+            fetch(`https://financialmodelingprep.com/stable/analyst-stock-recommendations?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
+            fetch(`https://financialmodelingprep.com/stable/insider-trading/search?symbol=${symbol}&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null),
+            fetch(`https://financialmodelingprep.com/stable/historical-price-eod/full?symbol=${symbol}&limit=200&apikey=${FMP}`, { signal: controller.signal }).then(r => r.ok ? r.json() : null)
+          ])
+
           clearTimeout(timeout)
+
+          const extract = (r) => r.status === 'fulfilled' ? r.value : null
+          const [quoteData, metricsData, analystData, insiderData, historyData] = results.map(extract)
+
+          const quote = Array.isArray(quoteData) ? quoteData[0] : quoteData
+          const metrics = Array.isArray(metricsData) ? metricsData[0] : metricsData
+          const analyst = Array.isArray(analystData) ? analystData : []
+          const insider = Array.isArray(insiderData) ? insiderData : []
+          const history = historyData?.historical || []
+
+          console.log(`✅ Alpha 데이터 수집 완료: quote=${!!quote}, metrics=${!!metrics}, analyst=${analyst.length}, insider=${insider.length}`)
+
+          return { quote, metrics, analyst, insider, history }
+        } catch (e) {
+          console.error(`❌ getAlphaData ${symbol}:`, e.message)
+          return null
         }
+      }
+
+      function calculateFactors(data) {
+        if (!data || !data.quote) return null
+
+        const quote = data.quote
+        const metrics = data.metrics
+        const history = data.history || []
+
+        // 기본 정보
+        const price = quote.price || 0
+        const pe = metrics?.peRatio || 50
+        const pb = metrics?.priceToBookRatio || 10
+        const float = metrics?.floatShares || 1000000000
+        const marketCap = metrics?.marketCap || 0
+
+        // 성장률 지표 (FMP key-metrics에서 직접 가져옴)
+        let revenueGrowth = 0
+        let earningsGrowth = 0
+
+        if (metrics) {
+          revenueGrowth = metrics.revenueGrowth || metrics.revenuePerShareGrowth || metrics.netIncomeGrowth || 0
+          earningsGrowth = metrics.earningsGrowth || metrics.epsGrowth || metrics.earningsPerShareGrowth || 0
+        }
+
+        // 성장률이 없으면 가격 데이터로 근사 계산
+        if (revenueGrowth === 0 && history.length >= 50) {
+          const current = history[0]?.close
+          const past50 = history[49]?.close
+          if (current && past50) {
+            const priceGrowth = (current - past50) / past50
+            revenueGrowth = priceGrowth * 0.7
+          }
+        }
+
+        if (earningsGrowth === 0 && history.length >= 50) {
+          const current = history[0]?.close
+          const past50 = history[49]?.close
+          if (current && past50) {
+            const priceGrowth = (current - past50) / past50
+            earningsGrowth = priceGrowth * 1.1
+          }
+        }
+
+        // 전문가 평가
+        const analystRecs = data.analyst || []
+        const buyCount = analystRecs.filter(a => a.ratingScore > 3).length
+        const analystScore = buyCount / Math.max(analystRecs.length, 1)
+
+        // 인사이더 거래
+        const insiderActivity = data.insider?.length || 0
+
+        return { price, pe, pb, float, marketCap, revenueGrowth, earningsGrowth, analystScore, insiderActivity }
       }
 
       // 9개 인디케이터 기반 Explosive Score 계산
@@ -260,75 +323,45 @@ export default {
         try {
           console.log(`🔍 Alpha Score 계산 시작: ${symbol}`)
 
-          // 1. Quote (Price) 정보
-          const quote = await getQuote(symbol)
-          if (!quote) {
-            console.warn(`⚠️ ${symbol}: Quote 조회 실패`)
+          const data = await getAlphaData(symbol)
+          if (!data) {
+            console.warn(`⚠️ ${symbol}: 데이터 수집 실패`)
             return null
           }
 
-          // 2. Profile 정보 (PE, PB, Market Cap 등)
-          const profile = await getCompanyProfile(symbol)
-          if (!profile) {
-            console.warn(`⚠️ ${symbol}: Profile 조회 실패`)
+          const factors = calculateFactors(data)
+          if (!factors) {
+            console.warn(`⚠️ ${symbol}: 지표 계산 실패`)
             return null
           }
 
           // 9개 인디케이터 점수 계산 (각각 0-10 범위)
           const indicators = {
-            price: {
-              value: quote.price,
-              score: Math.min(10, (quote.price / 500) * 10) // 정규화
-            },
-            pe: {
-              value: profile.pe || null,
-              score: profile.pe ? Math.min(10, Math.max(0, 10 - (profile.pe / 30))) : 5 // PE가 낮을수록 좋음
-            },
-            pb: {
-              value: profile.priceToBookRatio || null,
-              score: profile.priceToBookRatio ? Math.min(10, Math.max(0, 10 - profile.priceToBookRatio * 2)) : 5
-            },
-            floatShares: {
-              value: profile.floatShares || null,
-              score: profile.floatShares ? Math.min(10, (profile.floatShares / 1000000000) * 5) : 5
-            },
-            marketCap: {
-              value: profile.marketCapitalization || null,
-              score: profile.marketCapitalization ? Math.min(10, Math.log10(profile.marketCapitalization) / 2) : 5
-            },
-            revenueGrowth: {
-              value: profile.revenueGrowth || null,
-              score: profile.revenueGrowth ? Math.min(10, profile.revenueGrowth * 100) : 5
-            },
-            earningsGrowth: {
-              value: profile.earningsGrowth || null,
-              score: profile.earningsGrowth ? Math.min(10, profile.earningsGrowth * 100) : 5
-            },
-            analystScore: {
-              value: profile.targetPrice || null,
-              score: profile.targetPrice && quote.price ? Math.min(10, ((profile.targetPrice - quote.price) / quote.price * 100) / 10) : 5
-            },
-            insiderActivity: {
-              value: "N/A", // TODO: insider trading data 추가 예정
-              score: 5 // 기본값
-            }
+            price: { value: factors.price, score: Math.min(10, (factors.price / 500) * 10) },
+            pe: { value: factors.pe, score: Math.min(10, Math.max(0, 10 - (factors.pe / 30))) },
+            pb: { value: factors.pb, score: Math.min(10, Math.max(0, 10 - factors.pb * 2)) },
+            floatShares: { value: factors.float, score: Math.min(10, (factors.float / 1000000000) * 5) },
+            marketCap: { value: factors.marketCap, score: Math.min(10, Math.log10(factors.marketCap || 1) / 2) },
+            revenueGrowth: { value: factors.revenueGrowth, score: Math.min(10, Math.max(0, factors.revenueGrowth * 100)) },
+            earningsGrowth: { value: factors.earningsGrowth, score: Math.min(10, Math.max(0, factors.earningsGrowth * 100)) },
+            analystScore: { value: factors.analystScore, score: factors.analystScore * 10 },
+            insiderActivity: { value: factors.insiderActivity, score: Math.min(10, factors.insiderActivity) }
           }
 
           // Explosive Score = 9개 지표의 평균 (0-10 범위)
           const scores = Object.values(indicators).map(ind => ind.score)
-          const explosiveScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
+          const explosiveScore = parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2))
 
           console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${explosiveScore}`)
 
           return {
             symbol,
-            explosiveScore: parseFloat(explosiveScore),
+            explosiveScore,
             indicators,
             profile: {
-              company: profile.companyName || symbol,
-              sector: profile.sector || null,
-              industry: profile.industry || null,
-              description: profile.description || null
+              company: data.quote?.symbol || symbol,
+              sector: data.metrics?.sector || null,
+              industry: data.metrics?.industry || null
             }
           }
         } catch (e) {
