@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI 분석 - 투자 전문가 분석 대시보드</title>
+
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --text-light: #ffffff;
+            --radius-main: 15px;
+            --radius-small: 8px;
+            --shadow-main: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --shadow-deep: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+            /* 신호 색상 */
+            --bull: #00d084;
+            --bear: #ff6b6b;
+            --neutral: #ffa500;
+            --info: #4dabf7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
+            background: var(--light-bg);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: var(--primary);
+            border: none;
+            color: white;
+            border-radius: var(--radius-small);
+            cursor: pointer;
+            font-size: 0.9em;
+            z-index: 100;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+
+        /* 헤더 */
+        .header {
+            background: var(--bg-gradient);
+            color: white;
+            padding: 40px 30px;
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.05em;
+            margin-bottom: 20px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .timestamp {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-left: auto;
+        }
+
+        /* 탭 네비게이션 */
+        .nav-tabs {
+            max-width: 1400px;
+            margin: 0 auto 30px;
+            display: flex;
+            gap: 10px;
+            padding: 0 30px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .nav-tab:hover {
+            color: var(--primary);
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 30px 40px;
+        }
+
+        /* 대시보드 그리드 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 위젯 기본 스타일 */
+        .widget {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow-main);
+            transition: all 0.3s;
+            border-left: 4px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .widget:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-deep);
+        }
+
+        .widget.featured {
+            grid-column: span 2;
+        }
+
+        .widget.full {
+            grid-column: 1 / -1;
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 15px;
+        }
+
+        .widget-icon {
+            font-size: 1.5em;
+        }
+
+        .widget-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--text-main);
+            flex: 1;
+        }
+
+        .widget-refresh {
+            background: var(--light-bg);
+            border: none;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .widget-refresh:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .widget-refresh.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 로딩 상태 */
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 6px;
+            height: 20px;
+            margin: 10px 0;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* 스코어 디스플레이 (패턴 A) */
+        .score-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 12px;
+        }
+
+        .score-value {
+            font-size: 3.5em;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .score-label {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-gauge {
+            flex: 1;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin: 0 20px;
+            overflow: hidden;
+        }
+
+        .score-gauge-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--bull), var(--primary));
+            border-radius: 10px;
+        }
+
+        /* 상태 배지 (패턴 B) */
+        .state-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .state-badge.bullish {
+            background: rgba(0, 208, 132, 0.2);
+            color: var(--bull);
+        }
+
+        .state-badge.bearish {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--bear);
+        }
+
+        .state-badge.neutral {
+            background: rgba(255, 165, 0, 0.2);
+            color: var(--neutral);
+        }
+
+        /* 테이블 스타일 (패턴 C) */
+        .widget-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .widget-table th {
+            background: var(--light-bg);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .widget-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .widget-table tbody tr:hover {
+            background: var(--light-bg);
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .metric-trend {
+            margin-left: 10px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .trend-up {
+            color: var(--bull);
+        }
+
+        .trend-down {
+            color: var(--bear);
+        }
+
+        /* 히트맵 (패턴 D) */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .heatmap-cell {
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+        }
+
+        .heatmap-cell.positive {
+            background: rgba(0, 208, 132, 0.2);
+            color: var(--bull);
+        }
+
+        .heatmap-cell.negative {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--bear);
+        }
+
+        .heatmap-cell.neutral {
+            background: rgba(255, 165, 0, 0.2);
+            color: var(--neutral);
+        }
+
+        /* 차트 컨테이너 (패턴 D) */
+        .chart-container {
+            margin: 15px 0;
+            padding: 15px;
+            background: var(--light-bg);
+            border-radius: 8px;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .chart-placeholder {
+            text-align: center;
+        }
+
+        .chart-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        /* 지표 격자 */
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .indicator {
+            background: var(--light-bg);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .indicator-name {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .indicator-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .indicator-unit {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            margin-left: 3px;
+        }
+
+        /* 위젯별 스타일 오버라이드 */
+        .widget.widget-1 {
+            border-left-color: #667eea;
+            background: linear-gradient(135deg, white 0%, #667eea05 100%);
+        }
+
+        .widget.widget-2 {
+            border-left-color: #764ba2;
+        }
+
+        .widget.widget-3 {
+            border-left-color: #f093fb;
+        }
+
+        .widget.widget-4 {
+            border-left-color: #4facfe;
+        }
+
+        .widget.widget-5 {
+            border-left-color: #00f2fe;
+        }
+
+        .widget.widget-6 {
+            border-left-color: #fa709a;
+        }
+
+        .widget.widget-7 {
+            border-left-color: #30b0fe;
+        }
+
+        .widget.widget-8 {
+            border-left-color: #a8edea;
+        }
+
+        .widget.widget-9 {
+            border-left-color: #fed6e3;
+        }
+
+        .widget.widget-10 {
+            border-left-color: #ffecd2;
+        }
+
+        .widget.widget-11 {
+            border-left-color: #fcb69f;
+        }
+
+        .widget.widget-12 {
+            border-left-color: #ff9a56;
+        }
+
+        .widget.widget-13 {
+            border-left-color: #ff6b6b;
+        }
+
+        .widget.widget-14 {
+            border-left-color: #ee5a6f;
+        }
+
+        /* 에러 상태 */
+        .widget-error {
+            color: var(--bear);
+            padding: 20px;
+            text-align: center;
+            background: rgba(255, 107, 107, 0.05);
+            border-radius: 8px;
+        }
+
+        /* 데이터 타임스탬프 */
+        .widget-footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 0.75em;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-timestamp {
+            opacity: 0.7;
+        }
+
+        .widget-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .widget-link:hover {
+            text-decoration: underline;
+        }
+
+        /* 위젯 설명 섹션 */
+        .widget-description {
+            margin-top: 12px;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .desc-item {
+            font-size: 0.8em;
+            line-height: 1.5;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            padding: 6px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .desc-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .desc-label {
+            font-weight: 600;
+            color: var(--primary);
+            margin-right: 6px;
+        }
+
+        .desc-content {
+            color: var(--text-muted);
+            word-break: break-word;
+        }
+
+        /* 반응형 */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+
+            .widget.featured {
+                grid-column: span 1;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .container {
+                padding: 0 20px 30px;
+            }
+
+            .nav-tabs {
+                padding: 0 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .widget {
+                padding: 16px;
+            }
+
+            .score-display {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .score-gauge {
+                margin: 15px 0;
+            }
+
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .header-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .timestamp {
+                margin-left: 0;
+            }
+
+            .nav-tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                border-bottom: 2px solid #e2e8f0;
+            }
+
+            .back-btn {
+                top: 10px;
+                left: 10px;
+                padding: 8px 16px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <button class="back-btn" onclick="window.history.back()">← 뒤로가기</button>
+
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-content">
+            <h1>📊 AI 분석 대시보드</h1>
+            <p>투자 전문가를 위한 고급 시장 분석 및 기관 신호 모니터링 플랫폼</p>
+            <div class="header-controls">
+                <button class="btn btn-primary" onclick="refreshAllWidgets()">🔄 전체 새로고침</button>
+                <button class="btn btn-primary" onclick="toggleAutoRefresh()">⏱️ 자동 새로고침</button>
+                <span class="timestamp" id="last-update">마지막 업데이트: --:--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 탭 네비게이션 -->
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('overview')">📈 종합 대시보드</button>
+        <button class="nav-tab" onclick="switchTab('detailed')">🔍 상세 분석</button>
+        <button class="nav-tab" onclick="switchTab('signals')">⚡ 신호 모니터</button>
+        <button class="nav-tab" onclick="switchTab('settings')">⚙️ 설정</button>
+    </div>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container">
+        <div id="dashboard" class="dashboard-grid">
+            <!-- 동적으로 생성됨 -->
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 설정 및 전역 변수
+        // ============================================
+        const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+        const REFRESH_INTERVAL = 60000; // 1분
+        let autoRefreshEnabled = false;
+        let autoRefreshTimer = null;
+        let currentTab = 'overview';
+
+        // ============================================
+        // 위젯 정의 (14개)
+        // ============================================
+        const WIDGETS = [
+            {
+                id: 1,
+                title: "Institutional Market Score",
+                icon: "⭐",
+                endpoint: "/analysis/institutional-score",
+                pattern: "gauge",
+                featured: true,
+                description: "제도권 기관 시장 건강 지표 (0-100)",
+                logic: "S&P500 가격, VIX 변동성, 신용스프레드, Fed Balance Sheet, 수익률곡선을 종합 계산",
+                meaning: "기관 투자자들이 평가하는 시장의 건강도와 위험도",
+                usage: "75점↑ 강한 강세 | 50~75점 약세 | 25점↓ 위기 신호 → 포트폴리오 방향 결정"
+            },
+            {
+                id: 2,
+                title: "Market Regime Engine",
+                icon: "🎯",
+                endpoint: "/analysis/market-regime",
+                pattern: "state",
+                description: "현재 시장 레짐 및 위험도 판단",
+                logic: "가격 추세(상승/하락), 변동성(VIX), 거시지표를 조합하여 시장 환경 분류",
+                meaning: "Risk-On(강세), Neutral(중립), Risk-Off(약세) 3가지 시장 상태 구분",
+                usage: "Risk-On → 공격적 포트폴리오 | Neutral → 균형형 | Risk-Off → 방어적 전환"
+            },
+            {
+                id: 3,
+                title: "Liquidity Pulse Indicator",
+                icon: "💧",
+                endpoint: "/analysis/liquidity-pulse",
+                pattern: "gauge",
+                description: "글로벌 금융 유동성 지표",
+                logic: "Fed Balance Sheet, M2 통화량, Reverse Repo 규모로 시장 유동성 평가",
+                meaning: "금융 시스템에 공급되는 유동성 수준 (풍부함 ↔ 부족함)",
+                usage: "유동성 풍부 → 위험자산(주식, 크립토) 선호 | 부족 → 현금/채권 선호"
+            },
+            {
+                id: 4,
+                title: "Yield Curve Recession Monitor",
+                icon: "📉",
+                endpoint: "/analysis/yield-curve-monitor",
+                pattern: "chart",
+                description: "수익률곡선 역전 및 경기침체 확률",
+                logic: "2년물-10년물 금리 스프레드 역전 여부와 역사적 경기침체 기간 비교",
+                meaning: "금리 역전 = 경기침체 신호 (70~80% 정확도의 역사적 지표)",
+                usage: "스프레드 양수(+) → 정상 | 음수(-) → 경기침체 신호 → 포트폴리오 방어전환"
+            },
+            {
+                id: 5,
+                title: "Inflation Pressure Monitor",
+                icon: "🌡️",
+                endpoint: "/analysis/inflation-pressure",
+                pattern: "chart",
+                description: "인플레이션 압력 및 실질 수익률",
+                logic: "CPI, PCE, 브레이크이븐 인플레 기대치를 조합하여 인플레 압력 평가",
+                meaning: "현재 인플레이션 수준과 시장의 미래 인플레 기대치",
+                usage: "고인플레 → 인플레 헤지(금, 에너지, TIPs) | 저인플레 → 성장주 선호"
+            },
+            {
+                id: 6,
+                title: "Credit Stress Monitor",
+                icon: "⚠️",
+                endpoint: "/analysis/credit-stress",
+                pattern: "chart",
+                description: "신용시장 스트레스 지수",
+                logic: "HYG/LQD 스프레드(하이일드/투자등급 채권), CCC 스프레드 분석",
+                meaning: "신용 구간의 위험도 평가 (스프레드 확대 = 위험 증가)",
+                usage: "스프레드 확대 → 투자등급 채권 증대 | 축소 → 하이일드 공격"
+            },
+            {
+                id: 7,
+                title: "Market Breadth Analyzer",
+                icon: "📊",
+                endpoint: "/analysis/market-breadth",
+                pattern: "gauge",
+                description: "상승장의 광범위성 평가",
+                logic: "상승 종목 수 / 전체 종목 수 비율, 신규고가/신규저가 분석",
+                meaning: "지수는 상승하지만 소수 종목만 오르는 상황 감지",
+                usage: "80%↑ 광범위 상승 → 상승장 강함 | 50%↓ 소수만 → 하락장 신호"
+            },
+            {
+                id: 8,
+                title: "Volatility Regime Indicator",
+                icon: "⚡",
+                endpoint: "/analysis/volatility-regime",
+                pattern: "state",
+                description: "변동성 환경 분류 및 추세",
+                logic: "VIX, ATR(평균 참 범위), 호가스프레드를 조합한 변동성 평가",
+                meaning: "현재 시장의 공포/탐욕 수준과 변동성 환경",
+                usage: "VIX <15 낮음 → 공격 모드 | 15~20 중간 → 균형 | >20 높음 → 방어"
+            },
+            {
+                id: 9,
+                title: "Sector Rotation Tracker",
+                icon: "🔄",
+                endpoint: "/analysis/sector-rotation",
+                pattern: "matrix",
+                description: "섹터별 자금 흐름 및 로테이션",
+                logic: "11개 섹터의 상대강도지수(RSI), 기술지표, 자금흐름 분석",
+                meaning: "경기 사이클에 따른 섹터 간 자금 이동",
+                usage: "경기초반 → Cyclical(금융,산업) | 중기 → Tech | 후기 → Defensive(생필)"
+            },
+            {
+                id: 10,
+                title: "Dollar Liquidity Impact",
+                icon: "💵",
+                endpoint: "/analysis/dollar-liquidity",
+                pattern: "chart",
+                description: "달러 강도가 글로벌 시장에 미치는 영향",
+                logic: "달러지수(DXY)와 신흥국, 원자재, 크립토의 상관관계 분석",
+                meaning: "달러 강세 = 신흥국·원자재·크립토 약세, 약세 = 강세",
+                usage: "달러 강함 → 미국주식만 | 달러 약함 → 신흥국·원자재 진입"
+            },
+            {
+                id: 11,
+                title: "Crypto Risk Sentiment",
+                icon: "🪙",
+                endpoint: "/analysis/crypto-sentiment",
+                pattern: "gauge",
+                description: "암호화폐 시장의 위험 심리 지표",
+                logic: "비트코인/이더 가격, Fear&Greed 지표, 거래량 기반 심리 평가",
+                meaning: "암호화폐 시장의 공포(저)와 탐욕(고) 수준",
+                usage: "Greed(75+) 과열 → 수익실현 | Fear(<25) → 매수 기회"
+            },
+            {
+                id: 12,
+                title: "Smart Money Signal",
+                icon: "🤖",
+                endpoint: "/analysis/smart-money",
+                pattern: "state",
+                description: "기관 자금의 축적/분산 신호",
+                logic: "ETF 대량 거래, 기관 포지셔닝, 옵션 포지션 분석",
+                meaning: "기관이 현재 매수(축적) 중인지 매도(분산) 중인지 판단",
+                usage: "축적 신호 → 강세장 신호 | 분산 신호 → 약세장 신호"
+            },
+            {
+                id: 13,
+                title: "AI Stock Ranking Engine",
+                icon: "🏆",
+                endpoint: "/analysis/stock-ranking",
+                pattern: "matrix",
+                description: "AI 기반 주식 멀티팩터 순위",
+                logic: "모멘텀, 밸류, 퀄리티, 성장성 4가지 팩터로 500개 미국주식 순위",
+                meaning: "AI가 추천하는 가장 매력적인 주식 Top 10",
+                usage: "Top 10만 추적하기 | 분기마다 리밸런싱 | 상위 3개 집중투자"
+            },
+            {
+                id: 14,
+                title: "Market Heatmap Engine",
+                icon: "🔥",
+                endpoint: "/analysis/market-heatmap",
+                pattern: "heatmap",
+                featured: true,
+                description: "시장 전체 성과 시각화",
+                logic: "주식, 채권, 원자재, 크립토, FX 등 모든 자산의 수익률 색상 코딩",
+                meaning: "한눈에 보는 글로벌 시장의 강한 자산과 약한 자산",
+                usage: "매일 아침 확인 → 강한 섹터 추적 | 약한 자산은 피하기"
+            }
+        ];
+
+        // ============================================
+        // 초기화
+        // ============================================
+        async function init() {
+            renderDashboard();
+            loadAllWidgets();
+            updateTimestamp();
+            setInterval(updateTimestamp, 1000);
+        }
+
+        function renderDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '';
+
+            WIDGETS.forEach(widget => {
+                const widgetEl = createWidgetElement(widget);
+                dashboard.appendChild(widgetEl);
+            });
+        }
+
+        function createWidgetElement(widget) {
+            const div = document.createElement('div');
+            div.className = `widget widget-${widget.id}${widget.featured ? ' featured' : ''}`;
+            div.id = `widget-${widget.id}`;
+
+            div.innerHTML = `
+                <div class="widget-header">
+                    <span class="widget-icon">${widget.icon}</span>
+                    <span class="widget-title">${widget.title}</span>
+                    <button class="widget-refresh" onclick="loadWidget(${widget.id})">⟳</button>
+                </div>
+                <div class="widget-content">
+                    <div class="loading-skeleton"></div>
+                    <div class="loading-skeleton" style="margin-top: 10px;"></div>
+                </div>
+                <div class="widget-description">
+                    <div class="desc-item">
+                        <span class="desc-label">📘 로직:</span>
+                        <span class="desc-content">${widget.logic}</span>
+                    </div>
+                    <div class="desc-item">
+                        <span class="desc-label">📊 의미:</span>
+                        <span class="desc-content">${widget.meaning}</span>
+                    </div>
+                    <div class="desc-item">
+                        <span class="desc-label">💰 활용:</span>
+                        <span class="desc-content">${widget.usage}</span>
+                    </div>
+                </div>
+                <div class="widget-footer">
+                    <span class="data-timestamp">데이터 로드 중...</span>
+                </div>
+            `;
+            return div;
+        }
+
+        // ============================================
+        // 데이터 로드 및 렌더링
+        // ============================================
+        async function loadAllWidgets() {
+            WIDGETS.forEach(widget => loadWidget(widget.id));
+        }
+
+        async function loadWidget(widgetId) {
+            const widget = WIDGETS.find(w => w.id === widgetId);
+            if (!widget) return;
+
+            const widgetEl = document.getElementById(`widget-${widgetId}`);
+            const refreshBtn = widgetEl.querySelector('.widget-refresh');
+            const contentDiv = widgetEl.querySelector('.widget-content');
+
+            // 로딩 상태 표시
+            refreshBtn?.classList.add('loading');
+
+            try {
+                const response = await fetch(`${API_BASE}${widget.endpoint}`);
+
+                if (!response.ok) {
+                    throw new Error(`API 오류: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 패턴별 렌더링
+                switch (widget.pattern) {
+                    case 'gauge':
+                        renderGaugeWidget(contentDiv, data, widget);
+                        break;
+                    case 'state':
+                        renderStateWidget(contentDiv, data, widget);
+                        break;
+                    case 'matrix':
+                        renderMatrixWidget(contentDiv, data, widget);
+                        break;
+                    case 'chart':
+                        renderChartWidget(contentDiv, data, widget);
+                        break;
+                    case 'heatmap':
+                        renderHeatmapWidget(contentDiv, data, widget);
+                        break;
+                    default:
+                        renderGenericWidget(contentDiv, data, widget);
+                }
+
+                // 타임스탬프 업데이트
+                const timestamp = new Date(data.timestamp);
+                widgetEl.querySelector('.data-timestamp').textContent =
+                    `업데이트: ${timestamp.toLocaleTimeString('ko-KR')}`;
+
+            } catch (error) {
+                console.error(`위젯 ${widgetId} 로드 실패:`, error);
+                contentDiv.innerHTML = `
+                    <div class="widget-error">
+                        ❌ 데이터 로드 실패<br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            } finally {
+                refreshBtn?.classList.remove('loading');
+            }
+        }
+
+        // ============================================
+        // 렌더링 함수
+        // ============================================
+        function renderGaugeWidget(container, data, widget) {
+            const score = data.score || 0;
+            const percentage = (score / 100) * 100;
+            const interpretation = getScoreInterpretation(score);
+
+            container.innerHTML = `
+                <div class="score-display">
+                    <div>
+                        <div class="score-label">${widget.title}</div>
+                        <div class="score-value">${score}</div>
+                    </div>
+                    <div class="score-gauge">
+                        <div class="score-gauge-fill" style="width: ${percentage}%"></div>
+                    </div>
+                </div>
+                <div class="indicators-grid">
+                    ${(data.components || []).map(c => `
+                        <div class="indicator">
+                            <div class="indicator-name">${c.name}</div>
+                            <div class="indicator-value">${c.value}<span class="indicator-unit">${c.unit || ''}</span></div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin-top: 15px; padding: 12px; background: var(--light-bg); border-radius: 8px;">
+                    <strong style="color: var(--primary);">${interpretation}</strong><br>
+                    <small style="color: var(--text-muted);">${data.interpretation || ''}</small>
+                </div>
+            `;
+        }
+
+        function renderStateWidget(container, data, widget) {
+            // worker.js에서 badgeClass 직접 전달; 없으면 signal 기반 fallback
+            const badgeClass = data.badgeClass ||
+                               (data.signal?.toLowerCase().includes('bullish') ? 'bullish' :
+                                data.signal?.toLowerCase().includes('bearish') ? 'bearish' : 'neutral');
+
+            container.innerHTML = `
+                <div>
+                    <div class="state-badge ${badgeClass}">${data.regime || data.state || '---'}</div>
+                    <div style="margin-bottom: 15px;">
+                        <div class="metric-row">
+                            <span class="metric-label">신뢰도</span>
+                            <span class="metric-value">${(data.confidence || 0).toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <table class="widget-table" style="font-size: 0.8em;">
+                        <thead>
+                            <tr>
+                                <th>핵심 인자</th>
+                                <th>상태</th>
+                                <th>강도</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(data.factors || []).map(f => {
+                                const s = typeof f.strength === 'number' ? f.strength : 0;
+                                return `<tr>
+                                    <td>${f.name}</td>
+                                    <td>${f.status}</td>
+                                    <td><span class="trend-${s > 0 ? 'up' : 'down'}">${s > 0 ? '↑' : '↓'} ${Math.abs(s)}</span></td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderMatrixWidget(container, data, widget) {
+            const items = data.items || [];
+
+            container.innerHTML = `
+                <div class="heatmap-grid">
+                    ${items.map(item => {
+                        const isPositive = item.value > 0;
+                        const cellClass = isPositive ? 'positive' : item.value < 0 ? 'negative' : 'neutral';
+                        return `
+                            <div class="heatmap-cell ${cellClass}">
+                                <div style="font-weight: 700;">${item.name}</div>
+                                <div style="font-size: 0.85em;">${item.value > 0 ? '+' : ''}${typeof item.value === 'string' ? item.value : item.value.toFixed(1)}${item.unit || '%'}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div class="widget-table" style="margin-top: 15px;">
+                    <table class="widget-table" style="font-size: 0.8em;">
+                        <thead>
+                            <tr>
+                                <th>항목</th>
+                                <th>당일%</th>
+                                <th>1M</th>
+                                <th>1Y</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(data.rankings || []).slice(0, 5).map(r => {
+                                const fmtPct = v => {
+                                    const n = typeof v === 'string' ? parseFloat(v) : v;
+                                    return (n === null || n === undefined || isNaN(n)) ? '<span style="color:var(--text-muted)">-</span>' : `${n > 0 ? '+' : ''}${n.toFixed(1)}%`;
+                                };
+                                return `<tr>
+                                    <td><strong>${r.rank}.</strong> ${r.name}</td>
+                                    <td>${fmtPct(r.w1)}</td>
+                                    <td>${fmtPct(r.m1)}</td>
+                                    <td>${fmtPct(r.y1)}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderChartWidget(container, data, widget) {
+            const metrics = data.metrics || [];
+            const canvasId = 'chart-' + widget.id;
+            const signal = data.signal || '';
+            const recommendation = data.recommendation || '';
+
+            // 메트릭 row HTML (차트 아래 요약용)
+            const metricRowsHtml = metrics.map(m => {
+                const raw = typeof m.value === 'string' ? parseFloat(m.value) : m.value;
+                const val = (raw !== null && raw !== undefined && !isNaN(raw)) ? raw.toFixed(2) : '-';
+                const unit = m.unit || '';
+                return `
+                <div class="metric-row">
+                    <span class="metric-label">${m.name}</span>
+                    <span class="metric-value">${val} <span class="metric-unit">${unit}</span></span>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div style="margin-bottom: 8px; font-size: 0.85em; color: var(--text-muted);">${signal}${recommendation ? ' &nbsp;·&nbsp; ' + recommendation : ''}</div>
+                <div class="chart-container" style="min-height: 200px; padding: 10px;">
+                    <canvas id="${canvasId}" style="max-height: 200px;"></canvas>
+                </div>
+                <div style="margin-top: 12px;">${metricRowsHtml}</div>
+            `;
+
+            // Chart.js Bar 차트 렌더링
+            if (typeof Chart === 'undefined' || metrics.length === 0) return;
+            const validMetrics = metrics.filter(m => m.value !== null && m.value !== undefined && !isNaN(parseFloat(m.value)));
+            if (validMetrics.length === 0) return;
+
+            const labels = validMetrics.map(m => m.name);
+            const values = validMetrics.map(m => parseFloat(m.value));
+            const colors = values.map(v => v >= 0 ? 'rgba(74,222,128,0.75)' : 'rgba(248,113,113,0.75)');
+            const borderColors = values.map(v => v >= 0 ? 'rgb(74,222,128)' : 'rgb(248,113,113)');
+
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: widget.title,
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: borderColors,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const m = validMetrics[ctx.dataIndex];
+                                    return ` ${ctx.parsed.y.toFixed(2)} ${m.unit || ''}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#6b7280', font: { size: 11 } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { color: '#6b7280', font: { size: 11 } },
+                            grid: { color: 'rgba(0,0,0,0.06)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderHeatmapWidget(container, data, widget) {
+            const categories = data.categories || [];
+
+            let html = '<table class="widget-table" style="font-size: 0.75em; width: 100%; overflow-x: auto;">';
+            html += '<thead><tr><th style="width: 60px;">카테고리</th>';
+
+            // 헤더 행 생성 (시간 범위)
+            const timeframes = ['1D', '1W', '1M', '3M', '1Y'];
+            timeframes.forEach(tf => html += `<th style="text-align: center; width: 80px;">${tf}</th>`);
+            html += '</tr></thead><tbody>';
+
+            // 데이터 행
+            categories.forEach(cat => {
+                html += `<tr><td style="font-weight: 600;">${cat.name}</td>`;
+                timeframes.forEach(tf => {
+                    const raw = cat[tf.toLowerCase()];
+                    const value = (raw !== null && raw !== undefined) ? raw : null;
+                    if (value === null) {
+                        html += `<td style="text-align: center; background: var(--light-bg);">
+                            <span style="color: var(--text-muted); font-size: 0.85em;">-</span>
+                        </td>`;
+                    } else {
+                        const cellClass = value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral';
+                        html += `<td style="text-align: center; background: var(--light-bg);">
+                            <span class="heatmap-cell ${cellClass}" style="display: block; margin: 0;">
+                                ${value > 0 ? '+' : ''}${value.toFixed(1)}%
+                            </span>
+                        </td>`;
+                    }
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderGenericWidget(container, data, widget) {
+            container.innerHTML = `
+                <pre style="background: var(--light-bg); padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 0.8em;">
+${JSON.stringify(data, null, 2).substring(0, 500)}...
+                </pre>
+            `;
+        }
+
+        // ============================================
+        // 유틸리티
+        // ============================================
+        function getScoreInterpretation(score) {
+            if (score >= 80) return '🚀 강한 강세장';
+            if (score >= 60) return '📈 강세';
+            if (score >= 40) return '➡️ 중립';
+            if (score >= 20) return '📉 약세';
+            return '🔴 위기';
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('last-update').textContent =
+                `마지막 업데이트: ${now.toLocaleTimeString('ko-KR')}`;
+        }
+
+        function refreshAllWidgets() {
+            loadAllWidgets();
+            updateTimestamp();
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            if (autoRefreshEnabled) {
+                autoRefreshTimer = setInterval(refreshAllWidgets, REFRESH_INTERVAL);
+                alert('자동 새로고침이 활성화되었습니다 (1분 간격)');
+            } else {
+                clearInterval(autoRefreshTimer);
+                alert('자동 새로고침이 비활성화되었습니다');
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 추후 탭별 필터링 로직 추가
+            console.log(`탭 전환: ${tab}`);
+        }
+
+        // 페이지 로드
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InvestFlow Debug Panel</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2128;
+      --bg4: #21262d;
+      --border: #30363d;
+      --muted: #484f58;
+      --text-muted: #8b949e;
+      --text: #c9d1d9;
+      --text-bright: #e6edf3;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* ─── Header ───────────────────────────────── */
+    .header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .header-title { font-size: 13px; color: var(--blue); font-weight: 700; white-space: nowrap; }
+
+    .header-meta {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex: 1;
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 0;
+    }
+
+    .header-btns { display: flex; gap: 6px; align-items: center; }
+
+    .btn {
+      padding: 4px 12px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--bg4);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--border); }
+    .btn.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+
+    /* ─── Summary chips ─────────────────────────── */
+    .chips { display: flex; gap: 6px; align-items: center; }
+    .chip {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .chip.ok   { background: rgba(63,185,80,.18);  color: var(--green); }
+    .chip.fail { background: rgba(248,81,73,.18);  color: var(--red); }
+    .chip.warn { background: rgba(210,153,34,.18); color: var(--yellow); }
+
+    /* ─── Layout ────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 14px 18px;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    /* ─── Panel ─────────────────────────────────── */
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-title { color: var(--text-bright); font-weight: 700; font-size: 12px; }
+    .panel-sub   { color: var(--text-muted);  font-size: 11px; }
+
+    .panel-body { padding: 11px 13px; }
+
+    /* ─── Section labels inside panels ──────────── */
+    .sec-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--bg4);
+      margin: 10px 0 6px;
+      padding-bottom: 4px;
+    }
+    .sec-label:first-child { margin-top: 0; }
+
+    /* ─── Data grid ──────────────────────────────── */
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 5px;
+    }
+
+    .di {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border-radius: 4px;
+      padding: 4px 8px;
+      min-width: 0;
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.ok   { background: var(--green); }
+    .dot.fail { background: var(--red); }
+    .dot.spin { background: var(--yellow); animation: spin-pulse 1s infinite; }
+
+    @keyframes spin-pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.35; }
+    }
+
+    .di-label { color: var(--text-muted); font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+    .di-val   { color: var(--green);  font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .di-val.fail { color: var(--red); }
+    .di-val.load { color: var(--muted); }
+
+    /* ─── Log area ───────────────────────────────── */
+    .log-area {
+      height: 320px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .log-line {
+      padding: 2px 0;
+      border-bottom: 1px solid var(--bg);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .log-line.ok   { color: var(--green); }
+    .log-line.fail { color: var(--red); }
+    .log-line.warn { color: var(--yellow); }
+    .log-line.info { color: var(--blue); }
+    .log-line.dim  { color: var(--muted); }
+
+    /* ─── JSON viewer ────────────────────────────── */
+    .json-viewer {
+      max-height: 420px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 11px;
+      color: #a5d6ff;
+      line-height: 1.55;
+    }
+
+    /* ─── Worker source viewer ───────────────────── */
+    .worker-frame-wrap {
+      position: relative;
+    }
+    .worker-panel-body {
+      padding: 0;
+      overflow: hidden;
+    }
+    .worker-link {
+      display: block;
+      padding: 10px 13px;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    .worker-link a { color: var(--blue); }
+
+    /* ─── Timing bar ─────────────────────────────── */
+    .timing-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 3px 0;
+    }
+    .timing-name { color: var(--text-muted); font-size: 11px; min-width: 100px; }
+    .timing-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: var(--bg4);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .timing-bar-fill {
+      height: 100%;
+      background: var(--blue);
+      border-radius: 2px;
+      transition: width .4s;
+    }
+    .timing-ms { color: var(--text-bright); font-size: 11px; min-width: 50px; text-align: right; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="header">
+  <span class="header-title">🔍 InvestFlow Debug</span>
+
+  <div class="header-meta">
+    <span id="hLastTime">-</span>
+    <span id="hCountdown"></span>
+    <div class="chips" id="hChips"></div>
+  </div>
+
+  <div class="header-btns">
+    <button class="btn" onclick="runAll()">⟳ /market</button>
+    <button class="btn" onclick="runAlpha()">🧬 /alpha</button>
+    <button class="btn" id="autoBtn" onclick="toggleAuto()">자동갱신 OFF</button>
+    <button class="btn" onclick="clearLog()">로그 지우기</button>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN LAYOUT ═══════════════ -->
+<div class="layout">
+
+  <!-- ── Panel 1: /market 응답 요약 ── -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">📊 /market 응답 필드 현황</span>
+      <span class="panel-sub" id="marketMs"></span>
+    </div>
+    <div class="panel-body">
+
+      <div class="sec-label">🇺🇸 US Market (FMP)</div>
+      <div class="data-grid" id="g-us"></div>
+
+      <div class="sec-label">🇰🇷 Korea Market (FMP)</div>
+      <div class="data-grid" id="g-kr"></div>
+
+      <div class="sec-label">🏅 Commodities · GCUSD / SIUSD / BZUSD (FMP)</div>
+      <div class="data-grid" id="g-comm"></div>
+
+      <div class="sec-label">💱 FX · USDKRW / USDJPY / EURUSD / DX (FMP)</div>
+      <div class="data-grid" id="g-fx"></div>
+
+      <div class="sec-label">💧 Liquidity · WALCL / RRPONTSYD / WTREGEN (FRED)</div>
+      <div class="data-grid" id="g-liq"></div>
+
+      <div class="sec-label">📈 Rates · DGS10 / DGS2 (FRED)</div>
+      <div class="data-grid" id="g-rates"></div>
+
+      <div class="sec-label">🪙 Crypto · BTCUSD / ETHUSD / SOLUSD (FMP)</div>
+      <div class="data-grid" id="g-crypto"></div>
+
+      <div class="sec-label">💰 Bonds · HYG / LQD (FMP)</div>
+      <div class="data-grid" id="g-bonds"></div>
+
+      <div class="sec-label">📊 Credit · High Yield / Investment Grade (FMP)</div>
+      <div class="data-grid" id="g-credit"></div>
+
+      <div class="sec-label">📈 Market Breadth · Total Market / Long Treasury (FMP)</div>
+      <div class="data-grid" id="g-breadth"></div>
+
+      <div class="sec-label">🏭 Sectors ETF · XLK~XLRE (FMP)</div>
+      <div class="data-grid" id="g-sec"></div>
+
+      <div class="sec-label">📊 Macro Base · CPI / UNRATE / M2 / T10YIE (FRED)</div>
+      <div class="data-grid" id="g-mb"></div>
+
+      <div class="sec-label">📉 Macro Indicators · GDP / INDPRO / PAYEMS … (FRED)</div>
+      <div class="data-grid" id="g-mi"></div>
+
+    </div>
+  </div>
+
+  <!-- ── Panel 1.5: Alpha Discovery ── -->
+  <div class="panel full">
+    <div class="panel-head">
+      <span class="panel-title">🧬 Alpha Discovery Engine (Top 20 Stocks)</span>
+      <span class="panel-sub" id="alphaMs"></span>
+    </div>
+    <div class="panel-body">
+      <div style="margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
+        📌 종목 발굴: 20개 종목 × 5개 API = ~100 요청 | Status: <span id="alphaStatus">-</span>
+      </div>
+      <div id="alphaResultTable" style="overflow-x: auto;">
+        <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+          <thead style="background: var(--bg3); border-bottom: 1px solid var(--border);">
+            <tr>
+              <th style="padding: 6px; text-align: left; color: var(--text-muted);">Rank</th>
+              <th style="padding: 6px; text-align: left; color: var(--text-muted);">Symbol</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Score</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Price</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">PE</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Momentum</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Volume</th>
+              <th style="padding: 6px; text-align: center; color: var(--text-muted);">Insider</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Analyst</th>
+            </tr>
+          </thead>
+          <tbody id="alphaTableBody" style="color: var(--green);">
+            <tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--muted);">⏳ 호출 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel 2: 로그 ── -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">📋 API 호출 로그</span>
+      <span class="panel-sub" id="logCount">0 lines</span>
+    </div>
+    <div class="panel-body">
+      <div class="log-area" id="logArea"></div>
+    </div>
+  </div>
+
+  <!-- ── Panel 3: 응답 시간 ── -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">⏱ 응답 시간</span>
+    </div>
+    <div class="panel-body" id="timingPanel">
+      <div style="color:var(--muted);">-</div>
+    </div>
+  </div>
+
+  <!-- ── Panel 4: Worker 엔드포인트 현황 ── -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">🔗 Worker 엔드포인트 테스트</span>
+      <button class="btn" onclick="testEndpoints()">테스트</button>
+    </div>
+    <div class="panel-body">
+      <div id="endpointGrid" class="data-grid">
+        <div style="color:var(--muted);">버튼 클릭 후 테스트</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Raw JSON (full width) ── -->
+  <div class="panel full">
+    <div class="panel-head">
+      <span class="panel-title">🗂 Raw /market Response</span>
+      <button class="btn" onclick="copyJson()">📋 복사</button>
+    </div>
+    <div class="panel-body">
+      <div class="json-viewer" id="jsonViewer">새로고침을 누르면 응답이 여기에 표시됩니다.</div>
+    </div>
+  </div>
+
+</div><!-- /layout -->
+
+<script>
+/* ════════════════════════════════════════════════
+   설정
+════════════════════════════════════════════════ */
+var WORKER = 'https://fmp-proxy.aiinvestflow.workers.dev';
+var AUTO_SEC = 60;
+
+/* ════════════════════════════════════════════════
+   상태
+════════════════════════════════════════════════ */
+var logs = [];
+var autoOn = false;
+var autoTimer = null;
+var cdTimer = null;
+var cdRemain = AUTO_SEC;
+var okN = 0, failN = 0;
+var timings = {};
+
+/* ════════════════════════════════════════════════
+   로그
+════════════════════════════════════════════════ */
+function lg(msg, cls) {
+  var ts = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+  logs.push({ ts: ts, msg: String(msg), cls: cls || 'dim' });
+  renderLog();
+}
+
+function renderLog() {
+  var el = document.getElementById('logArea');
+  var MAX = 300;
+  var start = Math.max(0, logs.length - MAX);
+  var html = '';
+  for (var i = logs.length - 1; i >= start; i--) {
+    var l = logs[i];
+    html += '<div class="log-line ' + l.cls + '">[' + l.ts + '] ' + esc(l.msg) + '</div>';
+  }
+  el.innerHTML = html;
+  document.getElementById('logCount').textContent = logs.length + ' lines';
+}
+
+function clearLog() { logs = []; renderLog(); }
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ════════════════════════════════════════════════
+   Data item HTML
+════════════════════════════════════════════════ */
+function di(label, val, extra) {
+  var has = val !== null && val !== undefined;
+  var display = has ? (extra || String(val)) : 'null';
+  return '<div class="di">' +
+    '<div class="dot ' + (has ? 'ok' : 'fail') + '"></div>' +
+    '<span class="di-label">' + esc(label) + '</span>' +
+    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(display) + '</span>' +
+    '</div>';
+}
+
+function diObj(label, obj) {
+  // obj = { price, changePercentage } or null
+  var has = obj && (obj.price !== null && obj.price !== undefined);
+  var display = '-';
+  if (has) {
+    display = fmtNum(obj.price, 2);
+    if (obj.changePercentage !== null && obj.changePercentage !== undefined) {
+      var cp = obj.changePercentage;
+      display += ' (' + (cp >= 0 ? '+' : '') + fmtNum(cp, 2) + '%)';
+    }
+  }
+  return '<div class="di">' +
+    '<div class="dot ' + (has ? 'ok' : 'fail') + '"></div>' +
+    '<span class="di-label">' + esc(label) + '</span>' +
+    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(has ? display : 'null') + '</span>' +
+    '</div>';
+}
+
+function diLoad(label) {
+  return '<div class="di"><div class="dot spin"></div><span class="di-label">' + esc(label) + '</span><span class="di-val load">…</span></div>';
+}
+
+function fmtNum(v, dec) {
+  if (v === null || v === undefined) return '-';
+  return typeof v === 'number' ? v.toFixed(dec) : String(v);
+}
+
+function setGrid(id, html) {
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════
+   Alpha Discovery Test
+════════════════════════════════════════════════ */
+function runAlpha() {
+  lg('═══ /alpha/discovery 호출 시작 ═══', 'info');
+  document.getElementById('alphaStatus').textContent = '⏳ 호출 중...';
+  document.getElementById('alphaMs').textContent = '...';
+
+  var t0 = Date.now();
+  fetch(WORKER + '/alpha/discovery')
+    .then(function(r) {
+      var ms = Date.now() - t0;
+      timings['/alpha/discovery'] = ms;
+      renderTimings();
+      document.getElementById('alphaMs').textContent = ms + 'ms';
+      lg('/alpha/discovery → HTTP ' + r.status + ' (' + ms + 'ms)', r.ok ? 'ok' : 'fail');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      renderAlphaData(data);
+      document.getElementById('alphaStatus').textContent = '✅ 완료';
+      lg('✅ Alpha Discovery: ' + (data.top_20 ? data.top_20.length : 0) + '개 종목 발견', 'ok');
+    })
+    .catch(function(e) {
+      lg('❌ /alpha/discovery 실패: ' + e.message, 'fail');
+      document.getElementById('alphaStatus').textContent = '❌ 실패: ' + e.message;
+      document.getElementById('alphaTableBody').innerHTML =
+        '<tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--red);">❌ ' + esc(e.message) + '</td></tr>';
+    });
+}
+
+function renderAlphaData(data) {
+  if (!data.top_20 || data.top_20.length === 0) {
+    document.getElementById('alphaTableBody').innerHTML =
+      '<tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--muted);">데이터 없음</td></tr>';
+    return;
+  }
+
+  var html = '';
+  data.top_20.forEach(function(stock, idx) {
+    var score = stock.score || 0;
+    var momentum = stock.momentum || 0;
+    var volume = stock.volume || 1.0;
+    var analyst = stock.analystScore || 0;
+    var insider = stock.insiderActivity || 0;
+
+    // 색상 판정
+    var scoreColor = score > 10 ? '#3fb950' : score > 5 ? '#d29922' : '#f85149';
+    var momentumColor = momentum > 0 ? '#3fb950' : '#f85149';
+    var volumeColor = volume > 1.2 ? '#3fb950' : volume > 1.0 ? '#d29922' : '#f85149';
+    var analystColor = analyst > 0.5 ? '#3fb950' : analyst > 0.2 ? '#d29922' : '#f85149';
+
+    html += '<tr style="border-bottom: 1px solid var(--bg3);">' +
+      '<td style="padding: 6px; color: var(--text-muted);">#' + (idx + 1) + '</td>' +
+      '<td style="padding: 6px; color: var(--blue); font-weight: 700;">' + esc(stock.symbol) + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + scoreColor + '; font-weight: 700;">' + fmtNum(score, 2) + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: var(--text);">$' + fmtNum(stock.price, 2) + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: var(--text);">' + fmtNum(stock.pe, 1) + 'x</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + momentumColor + ';">' +
+        (momentum >= 0 ? '+' : '') + fmtNum(momentum * 100, 1) + '%</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + volumeColor + ';">' + fmtNum(volume, 2) + 'x</td>' +
+      '<td style="padding: 6px; text-align: center; color: var(--text);">' +
+        (insider > 0 ? '🔥 ' + insider : '-') + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + analystColor + ';">' + fmtNum(analyst, 2) + '</td>' +
+      '</tr>';
+  });
+
+  document.getElementById('alphaTableBody').innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════
+   Main Test
+════════════════════════════════════════════════ */
+function runAll() {
+  okN = 0; failN = 0;
+
+  // 로딩 표시
+  ['g-us','g-kr','g-crypto','g-bonds','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
+    setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
+  });
+  document.getElementById('marketMs').textContent = '...';
+  document.getElementById('jsonViewer').textContent = '...';
+
+  lg('═══ /market 호출 시작 ═══', 'info');
+
+  var t0 = Date.now();
+  fetch(WORKER + '/market')
+    .then(function(r) {
+      var ms = Date.now() - t0;
+      timings['/market'] = ms;
+      renderTimings();
+      document.getElementById('marketMs').textContent = ms + 'ms';
+      lg('/market → HTTP ' + r.status + ' (' + ms + 'ms)', r.ok ? 'ok' : 'fail');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      renderMarketData(data);
+      document.getElementById('jsonViewer').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('hLastTime').textContent = '최근: ' + new Date().toLocaleTimeString('ko-KR');
+      updateChips();
+    })
+    .catch(function(e) {
+      lg('❌ /market 실패: ' + e.message, 'fail');
+      document.getElementById('jsonViewer').textContent = 'Error: ' + e.message;
+      failN += 25;
+      updateChips();
+    });
+}
+
+function renderMarketData(data) {
+
+  // ── US Market
+  var us = data.US_MARKET || {};
+  var usSyms = [
+    ['SP500','SPY'],['NASDAQ','QQQ'],['DOW','DIA'],
+    ['VIX','^VIX'],['SOX','SOXX'],['RUSSELL2000','IWM']
+  ];
+  var usHtml = usSyms.map(function(p) { return diObj(p[1] + ' ' + p[0], us[p[0]]); }).join('');
+  setGrid('g-us', usHtml);
+  usSyms.forEach(function(p) { countObj(p[1], us[p[0]]); });
+
+  // ── Korea
+  var kr = data.KOREA_MARKET || {};
+  setGrid('g-kr', diObj('EWY (Korea ETF)', kr.EWY));
+  countObj('EWY', kr.EWY);
+
+  // ── Crypto
+  var crypto = data.CRYPTO || {};
+  setGrid('g-crypto',
+    diObj('BTC (Bitcoin)', crypto.BTC) +
+    diObj('ETH (Ethereum)', crypto.ETH) +
+    diObj('SOL (Solana)', crypto.SOL)
+  );
+  ['BTC','ETH','SOL'].forEach(function(k) { countObj(k, crypto[k]); });
+
+  // ── Bonds
+  var bonds = data.BONDS || {};
+  setGrid('g-bonds',
+    diObj('HYG (High Yield)', bonds.HYG) +
+    diObj('LQD (Invest Grade)', bonds.LQD)
+  );
+  ['HYG','LQD'].forEach(function(k) { countObj(k, bonds[k]); });
+
+  // ── Credit
+  var credit = data.CREDIT || {};
+  setGrid('g-credit',
+    diObj('HIGH_YIELD', credit.HIGH_YIELD) +
+    diObj('INVESTMENT_GRADE', credit.INVESTMENT_GRADE)
+  );
+  ['HIGH_YIELD','INVESTMENT_GRADE'].forEach(function(k) { countObj(k, credit[k]); });
+
+  // ── Breadth
+  var breadth = data.BREADTH || {};
+  setGrid('g-breadth',
+    diObj('TOTAL_MARKET', breadth.TOTAL_MARKET) +
+    diObj('LONG_TREASURY', breadth.LONG_TREASURY)
+  );
+  ['TOTAL_MARKET','LONG_TREASURY'].forEach(function(k) { countObj(k, breadth[k]); });
+
+  // ── Commodities
+  var cm = data.COMMODITIES || {};
+  setGrid('g-comm',
+    diObj('GCUSD (Gold)', cm.GOLD) +
+    diObj('SIUSD (Silver)', cm.SILVER) +
+    diObj('BZUSD (Brent Oil)', cm.OIL)
+  );
+  ['GOLD','SILVER','OIL'].forEach(function(k) { countObj(k, cm[k]); });
+
+  // ── FX
+  var fx = data.FX || {};
+  setGrid('g-fx',
+    diObj('USDKRW', fx.USDKRW) +
+    diObj('USDJPY', fx.USDJPY) +
+    diObj('EURUSD', fx.EURUSD) +
+    diObj('DX (DXY)', fx.DXY)
+  );
+  ['USDKRW','USDJPY','EURUSD','DXY'].forEach(function(k) { countObj(k, fx[k]); });
+
+  // ── Liquidity (raw FRED → 변환 표시)
+  var liq = data.LIQUIDITY || {};
+  var fedT  = liq.FED_BALANCE   ? (liq.FED_BALANCE   / 1e6).toFixed(2) + ' T'  : null;
+  var rpB   = liq.REVERSE_REPO  ? (liq.REVERSE_REPO  / 1e3).toFixed(0) + ' B'  : null;
+  var tgaT  = liq.TGA           ? (liq.TGA           / 1e6).toFixed(2) + ' T'  : null;
+  setGrid('g-liq',
+    di('WALCL (Fed)', liq.FED_BALANCE, fedT) +
+    di('RRPONTSYD (RRP)', liq.REVERSE_REPO, rpB) +
+    di('WTREGEN (TGA)', liq.TGA, tgaT)
+  );
+  ['FED_BALANCE','REVERSE_REPO','TGA'].forEach(function(k) { countVal(k, liq[k]); });
+
+  // ── Rates
+  var rt = data.RATES || {};
+  setGrid('g-rates',
+    di('DGS10 (10Y)', rt.US10Y, fmtNum(rt.US10Y,2) + '%') +
+    di('DGS2 (2Y)',   rt.US2Y,  fmtNum(rt.US2Y,2)  + '%') +
+    di('Yield Curve', rt.YIELD_CURVE, fmtNum(rt.YIELD_CURVE,3))
+  );
+  ['US10Y','US2Y','YIELD_CURVE'].forEach(function(k) { countVal(k, rt[k]); });
+
+  // ── Sectors
+  var sec = data.SECTORS || {};
+  var sMap = [
+    ['XLK','TECHNOLOGY'],['XLF','FINANCIALS'],['XLE','ENERGY'],['XLV','HEALTHCARE'],
+    ['XLY','CONSUMER_DISCRETIONARY'],['XLI','INDUSTRIALS'],['XLU','UTILITIES'],['XLRE','REAL_ESTATE']
+  ];
+  setGrid('g-sec', sMap.map(function(p) { return diObj(p[0], sec[p[1]]); }).join(''));
+  sMap.forEach(function(p) { countObj(p[0], sec[p[1]]); });
+
+  // ── Macro Base
+  var mb = data.MACRO_BASE || {};
+  var m2T = mb.M2 ? (mb.M2 / 1e6).toFixed(2) + ' T' : null;
+  setGrid('g-mb',
+    di('CPIAUCSL (CPI)',    mb.CPI,                   fmtNum(mb.CPI, 2)) +
+    di('T10YIE (Infl Exp)',mb.INFLATION_EXPECTATION,  fmtNum(mb.INFLATION_EXPECTATION, 2) + '%') +
+    di('UNRATE (Unemp)',   mb.UNEMPLOYMENT,            fmtNum(mb.UNEMPLOYMENT, 1) + '%') +
+    di('M2SL (M2)',        mb.M2,                     m2T) +
+    di('Real Rates',       mb.REAL_RATES,              fmtNum(mb.REAL_RATES, 2) + '%')
+  );
+  ['CPI','INFLATION_EXPECTATION','UNEMPLOYMENT','M2','REAL_RATES'].forEach(function(k) { countVal(k, mb[k]); });
+
+  // ── Macro Indicators
+  var mi = data.MACRO_INDICATORS || {};
+  setGrid('g-mi',
+    di('UMCSENT (Consumer)', mi.CONSUMER_SENTIMENT,  fmtNum(mi.CONSUMER_SENTIMENT, 1)) +
+    di('GDPC1 (Real GDP)',   mi.REAL_GDP,             mi.REAL_GDP ? mi.REAL_GDP.toLocaleString() : null) +
+    di('INDPRO (Ind Prod)',  mi.INDUSTRIAL_PRODUCTION,fmtNum(mi.INDUSTRIAL_PRODUCTION, 1)) +
+    di('PAYEMS (Nonfarm)',   mi.NONFARM_PAYROLLS,      mi.NONFARM_PAYROLLS ? mi.NONFARM_PAYROLLS.toLocaleString() : null) +
+    di('PCEPILFE (PCE)',     mi.PCE_INFLATION,         fmtNum(mi.PCE_INFLATION, 2) + '%')
+  );
+  ['CONSUMER_SENTIMENT','REAL_GDP','INDUSTRIAL_PRODUCTION','NONFARM_PAYROLLS','PCE_INFLATION'].forEach(function(k) { countVal(k, mi[k]); });
+
+  lg('═══ 처리 완료: ✅ ' + okN + ' | ❌ ' + failN + ' ═══', okN > failN ? 'ok' : 'warn');
+}
+
+function countObj(label, obj) {
+  var has = obj && obj.price !== null && obj.price !== undefined;
+  if (has) { okN++; lg('  ✅ ' + label + ': ' + fmtNum(obj.price, 2) + (obj.changePercentage != null ? ' (' + (obj.changePercentage >= 0 ? '+' : '') + fmtNum(obj.changePercentage,2) + '%)' : ''), 'ok'); }
+  else      { failN++; lg('  ❌ ' + label + ': null', 'fail'); }
+}
+
+function countVal(label, val) {
+  if (val !== null && val !== undefined) { okN++; lg('  ✅ ' + label + ': ' + val, 'ok'); }
+  else { failN++; lg('  ❌ ' + label + ': null', 'fail'); }
+}
+
+/* ════════════════════════════════════════════════
+   Endpoint tests
+════════════════════════════════════════════════ */
+var ENDPOINTS = [
+  '/market',
+  '/analysis/institutional-score',
+  '/analysis/market-regime',
+  '/analysis/liquidity-pulse',
+  '/analysis/yield-curve-monitor',
+  '/analysis/sector-rotation',
+  '/analysis/volatility-regime'
+];
+
+function testEndpoints() {
+  var grid = document.getElementById('endpointGrid');
+  grid.innerHTML = ENDPOINTS.map(function(ep) { return diLoad(ep); }).join('');
+
+  ENDPOINTS.forEach(function(ep, i) {
+    var t0 = Date.now();
+    fetch(WORKER + ep)
+      .then(function(r) {
+        var ms = Date.now() - t0;
+        timings[ep] = ms;
+        renderTimings();
+        var ok = r.ok;
+        return r.json().then(function(d) { return { ok: ok, ms: ms, data: d }; });
+      })
+      .then(function(res) {
+        updateEndpointItem(i, ep, res.ok, res.ms, res.data);
+        lg(ep + ' → ' + (res.ok ? '✅' : '❌') + ' ' + res.ms + 'ms', res.ok ? 'ok' : 'fail');
+      })
+      .catch(function(e) {
+        updateEndpointItem(i, ep, false, null, null);
+        lg(ep + ' → ❌ ' + e.message, 'fail');
+      });
+  });
+}
+
+function updateEndpointItem(idx, ep, ok, ms, data) {
+  var grid = document.getElementById('endpointGrid');
+  var items = grid.querySelectorAll('.di');
+  if (!items[idx]) return;
+  var dot = items[idx].querySelector('.dot');
+  var val = items[idx].querySelector('.di-val');
+  dot.className = 'dot ' + (ok ? 'ok' : 'fail');
+  val.className = 'di-val ' + (ok ? '' : 'fail');
+  val.textContent = ok ? (ms + 'ms') : 'FAIL';
+}
+
+/* ════════════════════════════════════════════════
+   Timings panel
+════════════════════════════════════════════════ */
+function renderTimings() {
+  var keys = Object.keys(timings);
+  if (!keys.length) return;
+  var maxMs = Math.max.apply(null, keys.map(function(k) { return timings[k]; }));
+  var html = keys.map(function(k) {
+    var ms = timings[k];
+    var pct = maxMs > 0 ? Math.round(ms / maxMs * 100) : 100;
+    return '<div class="timing-row">' +
+      '<span class="timing-name">' + esc(k) + '</span>' +
+      '<div class="timing-bar-bg"><div class="timing-bar-fill" style="width:' + pct + '%"></div></div>' +
+      '<span class="timing-ms">' + ms + 'ms</span>' +
+      '</div>';
+  }).join('');
+  document.getElementById('timingPanel').innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════
+   Summary chips
+════════════════════════════════════════════════ */
+function updateChips() {
+  var total = okN + failN;
+  var pct = total > 0 ? Math.round(okN / total * 100) : 0;
+  var cls = pct >= 80 ? 'ok' : pct >= 50 ? 'warn' : 'fail';
+  document.getElementById('hChips').innerHTML =
+    '<div class="chip ok">✅ ' + okN + '</div>' +
+    '<div class="chip fail">❌ ' + failN + '</div>' +
+    '<div class="chip ' + cls + '">' + pct + '%</div>';
+}
+
+/* ════════════════════════════════════════════════
+   Auto refresh
+════════════════════════════════════════════════ */
+function toggleAuto() {
+  autoOn = !autoOn;
+  var btn = document.getElementById('autoBtn');
+  if (autoOn) {
+    btn.classList.add('active');
+    btn.textContent = '자동갱신 ON';
+    startCd();
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '자동갱신 OFF';
+    clearInterval(autoTimer);
+    clearInterval(cdTimer);
+    document.getElementById('hCountdown').textContent = '';
+  }
+}
+
+function startCd() {
+  cdRemain = AUTO_SEC;
+  clearInterval(autoTimer);
+  clearInterval(cdTimer);
+  autoTimer = setInterval(function() { runAll(); cdRemain = AUTO_SEC; }, AUTO_SEC * 1000);
+  cdTimer = setInterval(function() {
+    cdRemain--;
+    document.getElementById('hCountdown').textContent = '다음: ' + cdRemain + 's';
+  }, 1000);
+}
+
+/* ════════════════════════════════════════════════
+   Utils
+════════════════════════════════════════════════ */
+function copyJson() {
+  navigator.clipboard.writeText(document.getElementById('jsonViewer').textContent)
+    .then(function() { lg('JSON 클립보드 복사됨', 'ok'); })
+    .catch(function(e) { lg('복사 실패: ' + e.message, 'fail'); });
+}
+
+/* ════════════════════════════════════════════════
+   Init
+════════════════════════════════════════════════ */
+runAll();
+</script>
+</body>
+</html>
