@@ -346,6 +346,26 @@
     </div>
   </div>
 
+  <!-- ── Panel 5: 재무 데이터 검증 (NEW) ── -->
+  <div class="panel full">
+    <div class="panel-head">
+      <span class="panel-title">💰 재무 데이터 점검 (개별 종목)</span>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="text" id="symbolInput" value="AAPL" placeholder="Symbol" style="padding:4px 8px; border:1px solid var(--border); background:var(--bg); color:var(--text); border-radius:3px; width:80px; font-family:inherit; font-size:11px;" />
+        <button class="btn" onclick="testFundamentals()">점검 시작</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="sec-label">📊 Fundamentals Data (8개 엔드포인트)</div>
+      <div class="data-grid" id="fundamentalsGrid">
+        <div style="color:var(--muted);">symbol 입력 후 "점검 시작" 클릭</div>
+      </div>
+
+      <div class="sec-label">📋 상세 데이터</div>
+      <div class="json-viewer" id="fundamentalsJson" style="max-height:300px;">-</div>
+    </div>
+  </div>
+
   <!-- ── Raw JSON (full width) ── -->
   <div class="panel full">
     <div class="panel-head">
@@ -639,6 +659,109 @@ var ENDPOINTS = [
   '/analysis/volatility-regime'
 ];
 
+/* ════════════════════════════════════════════════
+   Fundamentals Data Tests (NEW)
+════════════════════════════════════════════════ */
+var FUNDAMENTALS_ENDPOINTS = [
+  { path: '/fundamentals/earnings', fields: ['epsActual', 'epsEstimated', 'revenueActual', 'revenueEstimated'], label: '📊 Earnings' },
+  { path: '/fundamentals/growth', fields: ['revenueGrowth', 'netIncomeGrowth', 'epsGrowth'], label: '📈 Growth' },
+  { path: '/fundamentals/income', fields: ['revenue', 'grossProfit', 'operatingIncome', 'netIncome', 'eps', 'ebitda'], label: '💼 Income' },
+  { path: '/fundamentals/balance', fields: ['cashAndCashEquivalents', 'totalAssets', 'totalLiabilities', 'totalStockholdersEquity'], label: '⚖️ Balance' },
+  { path: '/fundamentals/cashflow', fields: ['operatingCashFlow', 'freeCashFlow', 'capitalExpenditure'], label: '💧 CashFlow' },
+  { path: '/fundamentals/ratios', fields: ['priceToEarningsRatio', 'priceToBookRatio'], label: '📊 Ratios' },
+  { path: '/fundamentals/profile', fields: ['sector', 'industry', 'companyName'], label: '🏢 Profile' },
+  { path: '/fundamentals/shares', fields: ['floatShares'], label: '📋 Shares' }
+];
+
+function testFundamentals() {
+  var symbol = (document.getElementById('symbolInput').value || 'AAPL').toUpperCase();
+  var grid = document.getElementById('fundamentalsGrid');
+  grid.innerHTML = FUNDAMENTALS_ENDPOINTS.map(function(ep) { return diLoad(ep.label); }).join('');
+
+  document.getElementById('fundamentalsJson').textContent = '⏳ 로딩 중...';
+  lg('═══ ' + symbol + ' 재무 데이터 검증 시작 ═══', 'info');
+
+  var results = {};
+  var completed = 0;
+
+  FUNDAMENTALS_ENDPOINTS.forEach(function(ep, i) {
+    var url = WORKER + ep.path + '?symbol=' + symbol;
+    var t0 = Date.now();
+
+    fetch(url)
+      .then(function(r) {
+        var ms = Date.now() - t0;
+        timings[ep.path] = ms;
+        renderTimings();
+        return r.json().then(function(d) { return { ok: r.ok, ms: ms, data: d }; });
+      })
+      .then(function(res) {
+        var ok = res.ok && res.data && res.data.data;
+        var status = '✅';
+        var detail = res.ms + 'ms';
+
+        if (!ok) {
+          status = '❌';
+          detail = res.data?.error || 'Error';
+        } else {
+          // 필드 검증
+          var data = res.data.data;
+          var fieldCheck = ep.fields.filter(function(f) { return data[f] !== null && data[f] !== undefined; });
+          detail = fieldCheck.length + '/' + ep.fields.length + ' fields';
+        }
+
+        results[ep.path] = {
+          ok: ok,
+          ms: res.ms,
+          data: res.data.data || res.data,
+          status: status,
+          detail: detail
+        };
+
+        updateFundamentalsItem(i, ep.label, ok, res.ms, detail);
+        lg(ep.label + ' ' + status + ' → ' + detail, ok ? 'ok' : 'fail');
+
+        completed++;
+        if (completed === FUNDAMENTALS_ENDPOINTS.length) {
+          renderFundamentalsJson(results);
+        }
+      })
+      .catch(function(e) {
+        results[ep.path] = { ok: false, error: e.message };
+        updateFundamentalsItem(i, ep.label, false, null, 'FAIL');
+        lg(ep.label + ' ❌ ' + e.message, 'fail');
+        completed++;
+        if (completed === FUNDAMENTALS_ENDPOINTS.length) {
+          renderFundamentalsJson(results);
+        }
+      });
+  });
+}
+
+function updateFundamentalsItem(idx, label, ok, ms, detail) {
+  var grid = document.getElementById('fundamentalsGrid');
+  var items = grid.querySelectorAll('.di');
+  if (!items[idx]) return;
+  var dot = items[idx].querySelector('.dot');
+  var val = items[idx].querySelector('.di-val');
+  dot.className = 'dot ' + (ok ? 'ok' : 'fail');
+  val.className = 'di-val ' + (ok ? '' : 'fail');
+  val.textContent = ok ? detail : 'FAIL';
+}
+
+function renderFundamentalsJson(results) {
+  var json = {};
+  Object.keys(results).forEach(function(k) {
+    json[k] = {
+      ok: results[k].ok,
+      ms: results[k].ms,
+      error: results[k].error || null,
+      data: results[k].data || null
+    };
+  });
+  document.getElementById('fundamentalsJson').textContent = JSON.stringify(json, null, 2);
+}
+
 function testEndpoints() {
   var grid = document.getElementById('endpointGrid');
   grid.innerHTML = ENDPOINTS.map(function(ep) { return diLoad(ep); }).join('');
@@ -749,7 +872,11 @@ function copyJson() {
 /* ════════════════════════════════════════════════
    Init
 ════════════════════════════════════════════════ */
-runAll();
+window.addEventListener('load', function() {
+  runAll();
+  // 자동으로 AAPL 재무 데이터 검증
+  setTimeout(function() { testFundamentals(); }, 800);
+});
 </script>
 </body>
 </html>
