@@ -328,6 +328,9 @@
       <div class="sec-label">📈 Macro Momentum · Economic Vitality / Growth / Inflation</div>
       <div class="data-grid" id="g-mm"></div>
 
+      <div class="sec-label">🌐 Yahoo Market Structure · VVIX / MOVE / NYA (Yahoo Finance)</div>
+      <div class="data-grid" id="g-yahoo"></div>
+
     </div>
   </div>
 
@@ -600,7 +603,7 @@ function runAll() {
   okN = 0; failN = 0;
 
   // 로딩 표시
-  ['g-us','g-kr','g-crypto','g-bonds','g-risk','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi','g-mr','g-rrm','g-fpi','g-lmh','g-mm'].forEach(function(id) {
+  ['g-us','g-kr','g-crypto','g-bonds','g-risk','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi','g-mr','g-rrm','g-fpi','g-lmh','g-mm','g-yahoo'].forEach(function(id) {
     setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
   });
   document.getElementById('marketMs').textContent = '...';
@@ -811,6 +814,17 @@ function renderMarketData(data) {
       di('CPI YoY', mm_data.CPI_YOY, fmtNum(mm_data.CPI_YOY, 2) + '%') +
       di('Infl Exp', mm_data.INFLATION_EXPECTATION, fmtNum(mm_data.INFLATION_EXPECTATION, 2) + '%')
     );
+  }
+
+  // ── Yahoo Market Structure
+  var yahoo = data.YAHOO_MARKET_STRUCTURE || {};
+  if (yahoo.VVIX || yahoo.MOVE || yahoo.NYA) {
+    setGrid('g-yahoo',
+      diObj('VVIX (Vol of Vol)', yahoo.VVIX) +
+      diObj('MOVE (Bond Vol)', yahoo.MOVE) +
+      diObj('NYA (NYSE Composite)', yahoo.NYA)
+    );
+    ['VVIX','MOVE','NYA'].forEach(function(k) { countObj(k, yahoo[k]); });
   }
 
   lg('═══ 처리 완료: ✅ ' + okN + ' | ❌ ' + failN + ' ═══', okN > failN ? 'ok' : 'warn');
