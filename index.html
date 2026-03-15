@@ -4813,28 +4813,34 @@ var ECON_DATA = {
                 return;
             }
 
-            var html = '<table style="width:100%;border-collapse:collapse;font-size:0.8em;">';
-            html += '<thead><tr style="border-bottom:2px solid #334155;">';
-            html += '<th style="text-align:left;padding:6px;">순위</th>';
-            html += '<th style="text-align:left;padding:6px;">심볼</th>';
-            html += '<th style="text-align:right;padding:6px;">점수</th>';
-            html += '<th style="text-align:right;padding:6px;">가격</th>';
-            html += '<th style="text-align:right;padding:6px;">PE</th>';
-            html += '<th style="text-align:right;padding:6px;">모멘텀</th>';
-            html += '<th style="text-align:right;padding:6px;">거래량</th>';
+            var html = '<table style="width:100%;border-collapse:collapse;font-size:0.75em;overflow-x:auto;">';
+            html += '<thead><tr style="border-bottom:2px solid #334155;white-space:nowrap;">';
+            html += '<th style="text-align:left;padding:4px;min-width:30px;">순위</th>';
+            html += '<th style="text-align:left;padding:4px;min-width:50px;">심볼</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:45px;">점수</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:50px;">가격</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:40px;">PE</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:45px;">모멘텀</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:45px;">거래량</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:50px;">수익성장</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:50px;">수익가장</th>';
+            html += '<th style="text-align:right;padding:4px;min-width:50px;">분석가점수</th>';
             html += '</tr></thead><tbody>';
 
             for (var i = 0; i < Math.min(data.top_20.length, 15); i++) {
                 var stock = data.top_20[i];
                 var rowColor = i < 5 ? 'background-color:#1e293b20;' : '';
                 html += '<tr style="border-bottom:1px solid #475569;' + rowColor + '">';
-                html += '<td style="text-align:left;padding:6px;color:#94a3b8;">' + (i + 1) + '</td>';
-                html += '<td style="text-align:left;padding:6px;font-weight:600;">' + (stock.symbol || '-') + '</td>';
-                html += '<td style="text-align:right;padding:6px;color:#4ade80;">' + (stock.score ? stock.score.toFixed(2) : '-') + '</td>';
-                html += '<td style="text-align:right;padding:6px;color:#60a5fa;">' + (stock.price ? stock.price.toFixed(2) : '-') + '</td>';
-                html += '<td style="text-align:right;padding:6px;">' + (stock.pe ? stock.pe.toFixed(1) : '-') + '</td>';
-                html += '<td style="text-align:right;padding:6px;color:#fbbf24;">' + (stock.momentum ? stock.momentum.toFixed(3) : '-') + '</td>';
-                html += '<td style="text-align:right;padding:6px;color:#a78bfa;">' + (stock.volume ? stock.volume.toFixed(1) + '%' : '-') + '</td>';
+                html += '<td style="text-align:left;padding:4px;color:#94a3b8;">' + (i + 1) + '</td>';
+                html += '<td style="text-align:left;padding:4px;font-weight:600;">' + (stock.symbol || '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;color:#4ade80;font-weight:600;">' + (stock.score ? stock.score.toFixed(2) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;color:#60a5fa;">' + (stock.price ? stock.price.toFixed(2) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;">' + (stock.pe ? stock.pe.toFixed(1) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;color:#fbbf24;">' + (stock.momentum ? stock.momentum.toFixed(3) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;color:#a78bfa;">' + (stock.volume ? stock.volume.toFixed(1) + '%' : '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;color:#818cf8;">' + (stock.revenueGrowth ? (stock.revenueGrowth * 100).toFixed(1) + '%' : '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;color:#f472b6;">' + (stock.earningsGrowth ? (stock.earningsGrowth * 100).toFixed(1) + '%' : '-') + '</td>';
+                html += '<td style="text-align:right;padding:4px;color:#facc15;">' + (stock.analystScore ? stock.analystScore.toFixed(2) : '-') + '</td>';
                 html += '</tr>';
             }
 
