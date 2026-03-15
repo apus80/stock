@@ -248,7 +248,13 @@ export default {
 
           // 🔍 DEBUG: 각 API별 응답 확인
           if (endpoint.includes('quote')) {
-            console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - ${JSON.stringify(data).substring(0, 100)}`)
+            console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            if (Array.isArray(data) && data[0]) {
+              const quote = data[0]
+              console.log(`   📋 quote 필드: ${Object.keys(quote).slice(0, 30).join(', ')}`)
+              console.log(`   💰 주요값: price=${quote.price}, pe=${quote.pe}, pb=${quote.priceToBook}, epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
+              console.log(`   📊 전체: ${JSON.stringify(quote).substring(0, 200)}`)
+            }
           } else if (endpoint.includes('key-metrics')) {
             console.log(`   📦 key-metrics 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
             if (Array.isArray(data) && data[0]) {
