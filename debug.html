@@ -253,7 +253,8 @@
   </div>
 
   <div class="header-btns">
-    <button class="btn" onclick="runAll()">⟳ 새로고침</button>
+    <button class="btn" onclick="runAll()">⟳ /market</button>
+    <button class="btn" onclick="runAlpha()">🧬 /alpha</button>
     <button class="btn" id="autoBtn" onclick="toggleAuto()">자동갱신 OFF</button>
     <button class="btn" onclick="clearLog()">로그 지우기</button>
   </div>
@@ -309,6 +310,39 @@
       <div class="sec-label">📉 Macro Indicators · GDP / INDPRO / PAYEMS … (FRED)</div>
       <div class="data-grid" id="g-mi"></div>
 
+    </div>
+  </div>
+
+  <!-- ── Panel 1.5: Alpha Discovery ── -->
+  <div class="panel full">
+    <div class="panel-head">
+      <span class="panel-title">🧬 Alpha Discovery Engine (Top 20 Stocks)</span>
+      <span class="panel-sub" id="alphaMs"></span>
+    </div>
+    <div class="panel-body">
+      <div style="margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
+        📌 종목 발굴: 20개 종목 × 5개 API = ~100 요청 | Status: <span id="alphaStatus">-</span>
+      </div>
+      <div id="alphaResultTable" style="overflow-x: auto;">
+        <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+          <thead style="background: var(--bg3); border-bottom: 1px solid var(--border);">
+            <tr>
+              <th style="padding: 6px; text-align: left; color: var(--text-muted);">Rank</th>
+              <th style="padding: 6px; text-align: left; color: var(--text-muted);">Symbol</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Score</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Price</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">PE</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Momentum</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Volume</th>
+              <th style="padding: 6px; text-align: center; color: var(--text-muted);">Insider</th>
+              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Analyst</th>
+            </tr>
+          </thead>
+          <tbody id="alphaTableBody" style="color: var(--green);">
+            <tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--muted);">⏳ 호출 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -468,6 +502,77 @@ function fmtNum(v, dec) {
 function setGrid(id, html) {
   var el = document.getElementById(id);
   if (el) el.innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════
+   Alpha Discovery Test
+════════════════════════════════════════════════ */
+function runAlpha() {
+  lg('═══ /alpha/discovery 호출 시작 ═══', 'info');
+  document.getElementById('alphaStatus').textContent = '⏳ 호출 중...';
+  document.getElementById('alphaMs').textContent = '...';
+
+  var t0 = Date.now();
+  fetch(WORKER + '/alpha/discovery')
+    .then(function(r) {
+      var ms = Date.now() - t0;
+      timings['/alpha/discovery'] = ms;
+      renderTimings();
+      document.getElementById('alphaMs').textContent = ms + 'ms';
+      lg('/alpha/discovery → HTTP ' + r.status + ' (' + ms + 'ms)', r.ok ? 'ok' : 'fail');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      renderAlphaData(data);
+      document.getElementById('alphaStatus').textContent = '✅ 완료';
+      lg('✅ Alpha Discovery: ' + (data.top_20 ? data.top_20.length : 0) + '개 종목 발견', 'ok');
+    })
+    .catch(function(e) {
+      lg('❌ /alpha/discovery 실패: ' + e.message, 'fail');
+      document.getElementById('alphaStatus').textContent = '❌ 실패: ' + e.message;
+      document.getElementById('alphaTableBody').innerHTML =
+        '<tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--red);">❌ ' + esc(e.message) + '</td></tr>';
+    });
+}
+
+function renderAlphaData(data) {
+  if (!data.top_20 || data.top_20.length === 0) {
+    document.getElementById('alphaTableBody').innerHTML =
+      '<tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--muted);">데이터 없음</td></tr>';
+    return;
+  }
+
+  var html = '';
+  data.top_20.forEach(function(stock, idx) {
+    var score = stock.score || 0;
+    var momentum = stock.momentum || 0;
+    var volume = stock.volume || 1.0;
+    var analyst = stock.analystScore || 0;
+    var insider = stock.insiderActivity || 0;
+
+    // 색상 판정
+    var scoreColor = score > 10 ? '#3fb950' : score > 5 ? '#d29922' : '#f85149';
+    var momentumColor = momentum > 0 ? '#3fb950' : '#f85149';
+    var volumeColor = volume > 1.2 ? '#3fb950' : volume > 1.0 ? '#d29922' : '#f85149';
+    var analystColor = analyst > 0.5 ? '#3fb950' : analyst > 0.2 ? '#d29922' : '#f85149';
+
+    html += '<tr style="border-bottom: 1px solid var(--bg3);">' +
+      '<td style="padding: 6px; color: var(--text-muted);">#' + (idx + 1) + '</td>' +
+      '<td style="padding: 6px; color: var(--blue); font-weight: 700;">' + esc(stock.symbol) + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + scoreColor + '; font-weight: 700;">' + fmtNum(score, 2) + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: var(--text);">$' + fmtNum(stock.price, 2) + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: var(--text);">' + fmtNum(stock.pe, 1) + 'x</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + momentumColor + ';">' +
+        (momentum >= 0 ? '+' : '') + fmtNum(momentum * 100, 1) + '%</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + volumeColor + ';">' + fmtNum(volume, 2) + 'x</td>' +
+      '<td style="padding: 6px; text-align: center; color: var(--text);">' +
+        (insider > 0 ? '🔥 ' + insider : '-') + '</td>' +
+      '<td style="padding: 6px; text-align: right; color: ' + analystColor + ';">' + fmtNum(analyst, 2) + '</td>' +
+      '</tr>';
+  });
+
+  document.getElementById('alphaTableBody').innerHTML = html;
 }
 
 /* ════════════════════════════════════════════════

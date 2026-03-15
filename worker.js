@@ -1458,6 +1458,298 @@ export default {
         }
       }
 
+      // =============================
+      // HEDGE FUND UNIVERSE SCREENER
+      // =============================
+      async function getHedgeFundUniverse() {
+        try {
+          // 📍 출처: FMP API stock-screener
+          const url = `https://financialmodelingprep.com/stable/search-company-screener?marketCapMoreThan=1000000000&volumeMoreThan=1000000&priceMoreThan=10&limit=1000&apikey=${FMP}`
+          const r = await fetch(url)
+          if (!r.ok) {
+            console.error(`❌ Stock Screener: HTTP ${r.status}`)
+            return []
+          }
+          const data = await r.json()
+          return (data || []).map(s => s.symbol).slice(0, 100) // 최대 100개로 제한
+        } catch (e) {
+          console.error(`❌ getHedgeFundUniverse:`, e.message)
+          return []
+        }
+      }
+
+      // =============================
+      // FMP FETCH HELPER
+      // =============================
+      async function fetchFMP(endpoint) {
+        try {
+          const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
+          const r = await fetch(url)
+          if (!r.ok) {
+            console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
+            return null
+          }
+          return await r.json()
+        } catch (e) {
+          console.error(`❌ fetchFMP ${endpoint}:`, e.message)
+          return null
+        }
+      }
+
+      // =============================
+      // GET CURRENT QUARTER
+      // =============================
+      function getCurrentQuarter() {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth() + 1
+        const quarter = Math.ceil(month / 3)
+        return { year, quarter }
+      }
+
+      // =============================
+      // ALPHA DATA COLLECTION
+      // =============================
+      async function getAlphaData(symbol) {
+        try {
+          // 📍 Rate Limit Optimization: 5개 필수 API만 호출 (250 requests/day)
+          // 20개 종목 × 5개 API = 100 요청 ✅
+          const [
+            quote,
+            history,
+            metrics,
+            analyst,
+            insider
+          ] = await Promise.all([
+            fetchFMP(`/stable/quote?symbol=${symbol}`),
+            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
+            fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
+            fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
+            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
+          ])
+
+          return {
+            quote: quote ? quote[0] : null,
+            history: history || [],
+            metrics: metrics ? metrics[0] : null,
+            analyst: analyst || [],
+            insider: insider || []
+          }
+        } catch (e) {
+          console.error(`❌ getAlphaData ${symbol}:`, e.message)
+          return null
+        }
+      }
+
+      // =============================
+      // FACTOR ENGINE
+      // =============================
+      function calculateFactors(data) {
+        if (!data) return null
+
+        const quote = data.quote
+        const metrics = data.metrics
+        const history = data.history || []
+
+        // 기본 정보
+        const price = quote?.price || 0
+        const pe = metrics?.peRatio || 50
+        const pb = metrics?.priceToBookRatio || 10
+        const float = metrics?.floatShares || 1000000000
+        const marketCap = metrics?.marketCap || 0
+
+        // 📊 성장률 지표 (FMP key-metrics에서 직접 가져옴)
+        // 출처: FMP API - /stable/key-metrics
+        let revenueGrowth = 0
+        let earningsGrowth = 0
+
+        // Option A: FMP가 제공하는 공식 성장률 필드 사용
+        if (metrics) {
+          // FMP는 다양한 형식으로 성장률 제공 가능
+          revenueGrowth =
+            metrics.revenueGrowth ||           // 일반적인 형식
+            metrics.revenuePerShareGrowth ||   // RPS 기반
+            metrics.netIncomeGrowth || 0       // 순이익 성장률
+
+          earningsGrowth =
+            metrics.earningsGrowth ||          // 일반적인 형식
+            metrics.epsGrowth ||               // EPS 기반
+            metrics.earningsPerShareGrowth || 0 // EPS 성장률
+        }
+
+        // Option B: 성장률 필드가 없으면 가격 데이터로 근사 계산
+        if (revenueGrowth === 0 && history.length >= 50) {
+          const current = history[0]?.close
+          const past50 = history[49]?.close
+          if (current && past50) {
+            const priceGrowth = (current - past50) / past50
+            // 가격 성장이 곧 수익 성장으로 근사 (보수적으로 70% 적용)
+            revenueGrowth = priceGrowth * 0.7
+          }
+        }
+
+        if (earningsGrowth === 0 && history.length >= 50) {
+          const current = history[0]?.close
+          const past50 = history[49]?.close
+          if (current && past50) {
+            const priceGrowth = (current - past50) / past50
+            // 수익 성장이 가격보다 크다고 가정 (110% 적용)
+            earningsGrowth = priceGrowth * 1.1
+          }
+        }
+
+        // 전문가 평가
+        const analystRecs = data.analyst || []
+        const buyCount = analystRecs.filter(a => a.ratingScore > 3).length
+        const analystScore = buyCount / Math.max(analystRecs.length, 1)
+
+        // 인사이더 거래
+        const insiderActivity = data.insider?.length || 0
+
+        return {
+          price,
+          pe,
+          pb,
+          float,
+          marketCap,
+          revenueGrowth,      // ✅ 추가: 수익 성장률
+          earningsGrowth,     // ✅ 추가: 수익성 성장률
+          analystScore,
+          insiderActivity
+        }
+      }
+
+      // =============================
+      // MOMENTUM SCORE
+      // =============================
+      function momentumScore(history) {
+        if (!history || history.length < 50) return 0
+        const recent = history[0]?.close
+        const past = history[49]?.close
+        if (!recent || !past) return 0
+        return (recent - past) / past
+      }
+
+      // =============================
+      // VOLUME SPIKE DETECTION
+      // =============================
+      function volumeSpike(history) {
+        if (!history || history.length < 20) return 0
+        const today = history[0]?.volume
+        let avg = 0
+        for (let i = 1; i < 20; i++) {
+          avg += history[i]?.volume || 0
+        }
+        avg /= 19
+        if (avg === 0) return 0
+        return today / avg
+      }
+
+      // =============================
+      // EXPLOSIVE SCORE CALCULATION
+      // =============================
+      function explosiveScore(factors, momentum, volume) {
+        if (!factors) return 0
+
+        // 📍 Explosive Score (9개 지표):
+        // 1. Value: PE, PB (저평가 판별)
+        // 2. Growth: Revenue, Earnings (성장성)
+        // 3. Analyst: 전문가 평가
+        // 4. Insider: 내부자 거래 (신뢰도)
+        // 5. Float: 유동성 (낮을수록 변동성 큼)
+        // 6. Momentum: 가격 추세 (50일)
+        // 7. Volume: 거래량 (수급)
+
+        // 성장률 정규화 (음수 방지, 0~1 범위)
+        const normalizeGrowth = (g) => Math.max(0, Math.min(1, (g + 0.5) / 1.0))
+        const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
+        const earningsScore = normalizeGrowth(factors.earningsGrowth || 0)
+
+        const score =
+          (1 / (factors.pe + 1)) * 1.5 +        // 1. Value factor (PE 저평가)
+          (1 / (factors.pb + 1)) * 1.5 +        // 1. Book value factor (PB 저평가)
+          revenueScore * 1.2 +                  // 2. Revenue growth (수익 성장)
+          earningsScore * 1.2 +                 // 2. Earnings growth (수익성 성장)
+          factors.analystScore * 0.8 +          // 3. Analyst rating (전문가 평가)
+          (factors.insiderActivity > 0 ? 1 : 0) * 0.4 +  // 4. Insider activity (내부자 신뢰)
+          (1 / (factors.float / 100000000 + 1)) * 0.8 +  // 5. Low float premium (유동성)
+          momentum * 2.5 +                      // 6. Strong momentum boost (50일 추세)
+          volume * 2.0                          // 7. Volume spike boost (거래량 급증)
+
+        return Math.max(0, score)
+      }
+
+      // =============================
+      // ALPHA DISCOVERY ENGINE
+      // =============================
+      async function runAlphaDiscovery() {
+        try {
+          const universe = await getHedgeFundUniverse()
+          console.log(`📊 Alpha Discovery: ${universe.length}개 종목 분석 시작`)
+
+          const results = []
+          const startTime = Date.now()
+
+          // Rate Limit: 20개 종목 × 5개 API = 100 요청 (250/day 내)
+          for (let i = 0; i < Math.min(universe.length, 20); i++) {
+            const symbol = universe[i]
+            try {
+              const data = await getAlphaData(symbol)
+              if (!data) continue
+
+              const factors = calculateFactors(data)
+              if (!factors) continue
+
+              const momentum = momentumScore(data.history)
+              const volume = volumeSpike(data.history)
+              const score = explosiveScore(factors, momentum, volume)
+
+              results.push({
+                symbol,
+                score: parseFloat(score.toFixed(4)),
+                price: parseFloat(factors.price.toFixed(2)),
+                pe: parseFloat(factors.pe.toFixed(2)),
+                momentum: parseFloat(momentum.toFixed(4)),
+                volume: parseFloat(volume.toFixed(2)),
+                revenueGrowth: parseFloat(factors.revenueGrowth.toFixed(4)),
+                earningsGrowth: parseFloat(factors.earningsGrowth.toFixed(4)),
+                analystScore: parseFloat(factors.analystScore.toFixed(2)),
+                insiderActivity: factors.insiderActivity
+              })
+            } catch (e) {
+              console.error(`❌ ${symbol}: ${e.message}`)
+            }
+
+            // Rate limit 관리 (250/day)
+            if (i % 10 === 9) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+
+          results.sort((a, b) => b.score - a.score)
+
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
+          console.log(`✅ Alpha Discovery 완료: ${results.length}개 종목, ${elapsedTime}초`)
+
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: "alpha_discovery",
+            universe_size: universe.length,
+            analyzed: results.length,
+            execution_time_sec: parseFloat(elapsedTime),
+            top_20: results.slice(0, 20)
+          }
+        } catch (e) {
+          console.error(`❌ runAlphaDiscovery:`, e.message)
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: "alpha_discovery",
+            error: e.message,
+            top_20: []
+          }
+        }
+      }
+
       /* ================================
          경로 기반 라우팅
       ================================ */
@@ -1925,11 +2217,18 @@ export default {
         response = await getStockRanking()
       } else if (pathname === "/analysis/market-heatmap") {
         response = await getMarketHeatmap()
+
+      // =============================
+      // ALPHA DISCOVERY ENGINE
+      // =============================
+      } else if (pathname === "/alpha/discovery") {
+        response = await runAlphaDiscovery()
+
       } else if (action === 'metadata') {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "22개 엔드포인트 사용 가능 (14개 분석 + 8개 재무데이터)",
+          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
@@ -1961,6 +2260,9 @@ export default {
               "/market",
               "/alpha?symbol=SYMBOL",
               "/feargreed"
+            ],
+            discovery: [
+              "/alpha/discovery"
             ]
           }
         }
@@ -1980,7 +2282,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "22개 엔드포인트 사용 가능 (14개 분석 + 8개 재무데이터)",
+          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
@@ -2012,6 +2314,9 @@ export default {
               "/market",
               "/alpha?symbol=SYMBOL",
               "/feargreed"
+            ],
+            discovery: [
+              "/alpha/discovery"
             ]
           },
           debug: {
