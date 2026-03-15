@@ -504,13 +504,21 @@ export default {
             return null
           }
 
-          const earnings = Array.isArray(data) ? data[0] : data
+          // ✅ epsActual이 있는 가장 최신 실적 찾기
+          let earnings = null
+          if (Array.isArray(data)) {
+            earnings = data.find(e => e.epsActual) || data[0]
+          } else {
+            earnings = data
+          }
+
           return {
             symbol: symbol,
-            epsActual: earnings.epsActual || null,
-            epsEstimated: earnings.epsEstimated || null,
-            revenueActual: earnings.revenueActual || null,
-            revenueEstimated: earnings.revenueEstimated || null,
+            epsActual: earnings?.epsActual || null,
+            epsEstimated: earnings?.epsEstimated || null,
+            revenueActual: earnings?.revenueActual || null,
+            revenueEstimated: earnings?.revenueEstimated || null,
+            reportDate: earnings?.date || null,
             timestamp: new Date().toISOString()
           }
         } catch (e) {
@@ -1475,24 +1483,6 @@ export default {
         } catch (e) {
           console.error(`❌ getHedgeFundUniverse:`, e.message)
           return []
-        }
-      }
-
-      // =============================
-      // FMP FETCH HELPER
-      // =============================
-      async function fetchFMP(endpoint) {
-        try {
-          const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
-          const r = await fetch(url)
-          if (!r.ok) {
-            console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
-            return null
-          }
-          return await r.json()
-        } catch (e) {
-          console.error(`❌ fetchFMP ${endpoint}:`, e.message)
-          return null
         }
       }
 
