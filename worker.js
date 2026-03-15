@@ -2190,10 +2190,7 @@ export default {
         }, null, 2),
         {
           status: 500,
-          headers: {
-            "content-type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
+          headers: { "content-type": "application/json" }
         }
       )
     }
