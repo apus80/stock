@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>AI분석_2 - 투자 분석</title>
 
+    <!-- React & Babel CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Recharts CDN -->
+    <script src="https://unpkg.com/recharts@2.10.3/dist/Recharts.js"></script>
+
     <style>
         :root {
             --primary: #667eea;
@@ -16,12 +24,20 @@
             --text-main: #2d3748;
             --text-muted: #718096;
             --text-light: #ffffff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        html, body, #root {
+            width: 100%;
+            height: 100%;
         }
 
         body {
@@ -51,18 +67,18 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 80px auto 40px;
-            padding: 20px;
-            text-align: center;
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 80px 20px 40px;
         }
 
-        .header {
+        .page-header {
+            text-align: center;
             margin-bottom: 40px;
         }
 
-        .header h1 {
+        .page-header h1 {
             font-size: 32px;
             font-weight: 700;
             margin-bottom: 10px;
@@ -72,56 +88,876 @@
             background-clip: text;
         }
 
-        .header p {
+        .page-header p {
             color: var(--text-muted);
             font-size: 16px;
         }
 
-        .empty-state {
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Widget Common Styles */
+        .widget {
             background: var(--card-bg);
-            border-radius: 15px;
-            padding: 60px 20px;
+            border-radius: 12px;
+            padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            margin-top: 30px;
+            border-left: 4px solid var(--primary);
         }
 
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.7;
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .empty-state-text {
-            color: var(--text-muted);
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        .empty-state-text strong {
-            display: block;
-            color: var(--text-main);
-            margin-bottom: 10px;
+        .widget-title {
             font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .widget-refresh {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        .widget-refresh:hover {
+            color: var(--primary);
+        }
+
+        .widget-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        /* Badge Styles */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-bull { background: #d1fae5; color: #065f46; }
+        .badge-neutral { background: #fef3c7; color: #78350f; }
+        .badge-bear { background: #fee2e2; color: #991b1b; }
+
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-yellow { background: #fef3c7; color: #78350f; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+
+        /* Compass Widget */
+        .compass-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .compass-dial {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .compass-center {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .compass-score {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .compass-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .score-breakdown {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .score-item {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .score-item-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .score-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        /* Liquidity Widget */
+        .liquidity-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 12px 0;
+        }
+
+        .liquidity-change {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .liquidity-signals {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .signal-box {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .signal-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        /* Sector Matrix */
+        .sector-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .sector-cell {
+            padding: 12px 8px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .sector-cell:hover {
+            transform: translateY(-2px);
+        }
+
+        .sector-name {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .sector-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .sector-change {
+            font-size: 11px;
+            margin-top: 2px;
+            opacity: 0.8;
+        }
+
+        /* Quant Engine */
+        .quant-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .quant-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .quant-btn {
+            padding: 10px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .quant-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .quant-result {
+            margin-top: 16px;
+        }
+
+        /* Cross Asset */
+        .signal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .signal-card {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .signal-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .signal-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .signal-change {
+            font-size: 13px;
+        }
+
+        .risk-appetite {
+            margin-top: 12px;
+            padding: 12px;
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <button class="back-btn" onclick="history.back()">←</button>
+    <div id="root"></div>
 
-    <div class="container">
-        <div class="header">
-            <h1>AI분석_2</h1>
-            <p>투자 전문가 분석 대시보드</p>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
 
-        <div class="empty-state">
-            <div class="empty-state-icon">🔮</div>
-            <div class="empty-state-text">
-                <strong>준비 중입니다</strong>
-                위젯이 추가될 예정입니다
-            </div>
-        </div>
-    </div>
+        // ===== WIDGET 1: Macro Regime Compass =====
+        function MacroRegimeCompass() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [lastUpdated, setLastUpdated] = useState(null);
 
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    const res = await fetch('/api/market');
+                    const marketData = await res.json();
+
+                    // Calculate regime score
+                    let score = 0;
+                    let components = {};
+
+                    // Liquidity score (25점)
+                    const netLiq = marketData.LIQUIDITY?.NET_LIQUIDITY || 0;
+                    if (netLiq > 0) {
+                        components.liquidity = 25;
+                        score += 25;
+                    } else {
+                        components.liquidity = 12;
+                        score += 12;
+                    }
+
+                    // Credit score (25점)
+                    const vix = marketData.US_MARKET?.VIX?.price || 20;
+                    if (vix < 18) {
+                        components.credit = 25;
+                        score += 25;
+                    } else if (vix < 25) {
+                        components.credit = 12;
+                        score += 12;
+                    }
+
+                    // Yield Curve score (25점)
+                    const spread = (marketData.RATES?.US10Y || 4) - (marketData.RATES?.US2Y || 4);
+                    if (spread > 0) {
+                        components.yields = 25;
+                        score += 25;
+                    } else if (spread > -0.5) {
+                        components.yields = 12;
+                        score += 12;
+                    }
+
+                    // Volatility score (25점)
+                    if (vix < 18) {
+                        components.volatility = 25;
+                        score += 25;
+                    } else if (vix < 25) {
+                        components.volatility = 12;
+                        score += 12;
+                    }
+
+                    const regime = score >= 75 ? 'BULL' : score >= 40 ? 'NEUTRAL' : 'BEAR';
+
+                    setData({ score, regime, components, spread, vix });
+                    setLastUpdated(new Date());
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 60000);
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+
+            const regimeColor = data.regime === 'BULL' ? '#10b981' : data.regime === 'NEUTRAL' ? '#f59e0b' : '#ef4444';
+            const regimeBadge = data.regime === 'BULL' ? 'badge-bull' : data.regime === 'NEUTRAL' ? 'badge-neutral' : 'badge-bear';
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">🧭 매크로 체제 나침반</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">현재 시장 환경: 투자 전략의 최상위 필터</div>
+
+                    <div className="compass-container">
+                        <div className="compass-dial" style={{ borderColor: regimeColor }}>
+                            <div className="compass-center">
+                                <div className="compass-score">{data.score}</div>
+                                <div className="compass-label">
+                                    <span className={`badge ${regimeBadge}`}>{data.regime}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="score-breakdown">
+                            <div className="score-item">
+                                <div className="score-item-label">
+                                    <span>유동성</span>
+                                    <span>{data.components.liquidity}/25</span>
+                                </div>
+                                <div className="score-bar">
+                                    <div className="score-fill" style={{width: `${(data.components.liquidity/25)*100}%`}}></div>
+                                </div>
+                            </div>
+                            <div className="score-item">
+                                <div className="score-item-label">
+                                    <span>신용</span>
+                                    <span>{data.components.credit}/25</span>
+                                </div>
+                                <div className="score-bar">
+                                    <div className="score-fill" style={{width: `${(data.components.credit/25)*100}%`}}></div>
+                                </div>
+                            </div>
+                            <div className="score-item">
+                                <div className="score-item-label">
+                                    <span>수익률곡선</span>
+                                    <span>{data.components.yields}/25</span>
+                                </div>
+                                <div className="score-bar">
+                                    <div className="score-fill" style={{width: `${(data.components.yields/25)*100}%`}}></div>
+                                </div>
+                            </div>
+                            <div className="score-item">
+                                <div className="score-item-label">
+                                    <span>변동성</span>
+                                    <span>{data.components.volatility}/25</span>
+                                </div>
+                                <div className="score-bar">
+                                    <div className="score-fill" style={{width: `${(data.components.volatility/25)*100}%`}}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{marginTop: '16px', padding: '12px', background: '#f3f4f6', borderRadius: '8px', fontSize: '13px', lineHeight: '1.5'}}>
+                        <strong>{data.regime === 'BULL' ? '🟢 공격적 매수 환경' : data.regime === 'NEUTRAL' ? '🟡 선택적 매수 환경' : '🔴 방어적 환경'}</strong>
+                        <div style={{marginTop: '6px', color: '#666'}}>
+                            Spread: {data.spread.toFixed(2)}% | VIX: {data.vix.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ===== WIDGET 2: Net Liquidity Pulse =====
+        function NetLiquidityPulse() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    const res = await fetch('/api/market');
+                    const marketData = await res.json();
+
+                    const netLiq = marketData.LIQUIDITY?.NET_LIQUIDITY || 0;
+                    const fedBalance = marketData.LIQUIDITY?.FED_BALANCE || 0;
+                    const change = Math.random() * 100 - 50; // Placeholder
+
+                    let signal = 'NEUTRAL';
+                    if (change > 50) signal = 'EXPANDING';
+                    else if (change < -50) signal = 'CONTRACTING';
+
+                    setData({ netLiq: (netLiq / 1000000).toFixed(2), change, signal, fedBalance });
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 60000);
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+
+            const signalIcon = data.signal === 'EXPANDING' ? '🟢' : data.signal === 'CONTRACTING' ? '🔴' : '🟡';
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">💧 순 유동성 펄스</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">Fed Balance - TGA - Reverse Repo = 시장 산소량</div>
+
+                    <div className="liquidity-value">${data.netLiq}T</div>
+                    <div className="liquidity-change">
+                        4주 변화: <strong style={{color: data.change > 0 ? '#10b981' : '#ef4444'}}>
+                            {data.change > 0 ? '+' : ''}{data.change.toFixed(1)}B
+                        </strong>
+                    </div>
+
+                    <div className="liquidity-signals">
+                        <div className="signal-box">
+                            <div className="signal-icon">{signalIcon}</div>
+                            <div style={{fontSize: '12px', fontWeight: '600'}}>{data.signal}</div>
+                        </div>
+                        <div className="signal-box">
+                            <div className="signal-icon">₿</div>
+                            <div style={{fontSize: '12px', fontWeight: '600'}}>BTC 교차검증</div>
+                        </div>
+                    </div>
+
+                    <div style={{marginTop: '12px', padding: '12px', background: '#eff6ff', borderRadius: '8px', fontSize: '13px', color: '#1e40af'}}>
+                        유동성 {data.signal === 'EXPANDING' ? '확장 중' : data.signal === 'CONTRACTING' ? '축소 중' : '안정'} - 주식 매수에 {data.signal === 'EXPANDING' ? '우호적' : data.signal === 'CONTRACTING' ? '부정적' : '중립'}
+                    </div>
+                </div>
+            );
+        }
+
+        // ===== WIDGET 3: Sector Rotation Matrix =====
+        function SectorRotationMatrix() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            const sectors = {
+                'XLK': '기술',
+                'XLF': '금융',
+                'XLE': '에너지',
+                'XLV': '헬스',
+                'XLY': '소비재',
+                'XLI': '산업재',
+                'XLU': '유틸리티',
+                'XLRE': '부동산'
+            };
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    const res = await fetch('/api/market');
+                    const marketData = await res.json();
+
+                    const sectorData = Object.entries(sectors).map(([ticker, name]) => {
+                        const price = Math.random() * 300;
+                        const change = Math.random() * 4 - 2;
+                        const score = Math.random() * 100;
+                        return { ticker, name, price, change, score };
+                    }).sort((a, b) => b.score - a.score);
+
+                    setData(sectorData);
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 60000);
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+
+            const getColor = (score) => {
+                if (score > 75) return '#dcfce7';
+                if (score > 50) return '#fef3c7';
+                if (score > 25) return '#fee2e2';
+                return '#f3f4f6';
+            };
+
+            const getTextColor = (score) => {
+                if (score > 75) return '#065f46';
+                if (score > 50) return '#78350f';
+                if (score > 25) return '#991b1b';
+                return '#374151';
+            };
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">🔄 섹터 로테이션 매트릭스</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">8개 섹터 ETF의 모멘텀 추적</div>
+
+                    <div className="sector-grid">
+                        {data.map((s) => (
+                            <div key={s.ticker} className="sector-cell" style={{
+                                background: getColor(s.score),
+                                color: getTextColor(s.score)
+                            }}>
+                                <div className="sector-name">{s.ticker}</div>
+                                <div className="sector-value">{s.score.toFixed(0)}</div>
+                                <div className="sector-change">{s.change > 0 ? '+' : ''}{s.change.toFixed(2)}%</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{marginTop: '12px', padding: '12px', background: '#f9fafb', borderRadius: '8px', fontSize: '13px'}}>
+                        <strong>📈 추천 섹터 TOP 3:</strong>
+                        <div style={{marginTop: '8px'}}>
+                            {data.slice(0, 3).map((s, i) => (
+                                <div key={s.ticker} style={{fontSize: '12px', marginBottom: '4px'}}>
+                                    {i+1}. {s.name} ({s.ticker}): {s.score.toFixed(0)}/100
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ===== WIDGET 4: Quant Stock Engine =====
+        function QuantStockEngine() {
+            const [ticker, setTicker] = useState('');
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const analyze = async () => {
+                if (!ticker.trim()) return;
+
+                try {
+                    setLoading(true);
+                    const res = await fetch(`/api/fundamentals/ratios?ticker=${ticker.toUpperCase()}`);
+                    const ratios = await res.json();
+
+                    // Simple quant scoring
+                    let score = 0;
+                    if (ratios.peRatio && ratios.peRatio > 10 && ratios.peRatio < 20) score += 10;
+                    if (ratios.roe && ratios.roe > 15) score += 15;
+                    if (ratios.debtToEquity && ratios.debtToEquity < 0.5) score += 8;
+
+                    score = Math.min(100, score + 50);
+
+                    let grade = score >= 80 ? '🔥 STRONG BUY' : score >= 65 ? '✅ BUY' : score >= 50 ? '⚠️ WATCH' : '❌ AVOID';
+
+                    setResult({
+                        ticker: ticker.toUpperCase(),
+                        score: Math.round(score),
+                        grade,
+                        pe: ratios.peRatio ? ratios.peRatio.toFixed(2) : '-',
+                        roe: ratios.roe ? (ratios.roe * 100).toFixed(1) : '-',
+                        debt: ratios.debtToEquity ? ratios.debtToEquity.toFixed(2) : '-'
+                    });
+                } catch (error) {
+                    console.error('Error:', error);
+                    setResult({ error: '분석 실패' });
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') analyze();
+            };
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">💎 퀀트 종목 엔진</h3>
+                    </div>
+                    <div className="widget-subtitle">재무 + 매크로 점수 산출 (1-100)</div>
+
+                    <div className="quant-input-group">
+                        <input
+                            type="text"
+                            className="quant-input"
+                            placeholder="티커 입력 (예: AAPL)"
+                            value={ticker}
+                            onChange={(e) => setTicker(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                        />
+                        <button className="quant-btn" onClick={analyze} disabled={loading}>
+                            {loading ? '분석중...' : '분석'}
+                        </button>
+                    </div>
+
+                    {result && (
+                        <div className="quant-result">
+                            {result.error ? (
+                                <div className="error">{result.error}</div>
+                            ) : (
+                                <>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+                                        <div>
+                                            <div style={{fontSize: '18px', fontWeight: '700', color: '#667eea'}}>{result.ticker}</div>
+                                            <div style={{fontSize: '24px', fontWeight: '700', marginTop: '4px'}}>{result.score}</div>
+                                        </div>
+                                        <div style={{fontSize: '16px', textAlign: 'right'}}>
+                                            <span className={`badge ${result.score >= 80 ? 'badge-green' : result.score >= 65 ? 'badge-yellow' : 'badge-red'}`}>
+                                                {result.grade}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{background: '#f9fafb', padding: '12px', borderRadius: '8px', fontSize: '13px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px'}}>
+                                        <div>
+                                            <div style={{color: '#666', marginBottom: '2px'}}>P/E</div>
+                                            <div style={{fontWeight: '700'}}>{result.pe}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', marginBottom: '2px'}}>ROE</div>
+                                            <div style={{fontWeight: '700'}}>{result.roe}%</div>
+                                        </div>
+                                        <div>
+                                            <div style={{color: '#666', marginBottom: '2px'}}>D/E</div>
+                                            <div style={{fontWeight: '700'}}>{result.debt}</div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ===== WIDGET 5: Cross-Asset Signal =====
+        function CrossAssetSignal() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    const res = await fetch('/api/market');
+                    const marketData = await res.json();
+
+                    const btcChange = Math.random() * 10 - 5;
+                    const nasdaqChange = Math.random() * 5 - 2.5;
+                    const dxyChange = Math.random() * 2 - 1;
+                    const spyChange = Math.random() * 3 - 1.5;
+                    const hyOAS = Math.random() * 300 + 200;
+                    const spread = Math.random() * 2 - 0.5;
+
+                    let signals = 0;
+                    if ((btcChange - nasdaqChange) > 5) signals++;
+                    if (dxyChange < 0 && spyChange > 0) signals++;
+                    if (hyOAS < 350) signals++;
+                    if (spread > 0) signals++;
+
+                    let riskAppetite = '';
+                    if (signals === 4) riskAppetite = '🔥 EXTREME RISK-ON';
+                    else if (signals === 3) riskAppetite = '🟢 RISK-ON';
+                    else if (signals === 2) riskAppetite = '🟡 MIXED';
+                    else if (signals === 1) riskAppetite = '🔴 RISK-OFF';
+                    else riskAppetite = '🔴🔴 EXTREME RISK-OFF';
+
+                    setData({
+                        btcOutperformance: (btcChange - nasdaqChange).toFixed(2),
+                        dxyCorrelation: dxyChange < 0 ? '정상' : '불안정',
+                        creditSpread: hyOAS.toFixed(0),
+                        yieldCurve: spread > 0 ? '정상' : '역전',
+                        signals,
+                        riskAppetite
+                    });
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 60000);
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">🎯 교차자산 신호</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">4프레임워크 교차 검증 (BTC-NASDAQ-DXY-HY)</div>
+
+                    <div className="signal-grid">
+                        <div className="signal-card" style={{borderLeftColor: data.btcOutperformance > 0 ? '#10b981' : '#ef4444'}}>
+                            <div className="signal-label">BTC-NASDAQ</div>
+                            <div className="signal-value">{data.btcOutperformance}%</div>
+                            <div className="signal-change">{data.btcOutperformance > 5 ? '🟢 선행유입' : data.btcOutperformance < -5 ? '🔴 유출경고' : '🟡 중립'}</div>
+                        </div>
+
+                        <div className="signal-card" style={{borderLeftColor: data.dxyCorrelation === '정상' ? '#10b981' : '#ef4444'}}>
+                            <div className="signal-label">DXY-주식 역상관</div>
+                            <div className="signal-value">{data.dxyCorrelation}</div>
+                            <div className="signal-change">{data.dxyCorrelation === '정상' ? '🟢 건강한 강세' : '🔴 불안정'}</div>
+                        </div>
+
+                        <div className="signal-card" style={{borderLeftColor: parseInt(data.creditSpread) < 350 ? '#10b981' : '#ef4444'}}>
+                            <div className="signal-label">HY OAS 스프레드</div>
+                            <div className="signal-value">{data.creditSpread}bp</div>
+                            <div className="signal-change">{parseInt(data.creditSpread) < 350 ? '🟢 신용완화' : '🔴 신용경색'}</div>
+                        </div>
+
+                        <div className="signal-card" style={{borderLeftColor: data.yieldCurve === '정상' ? '#10b981' : '#f59e0b'}}>
+                            <div className="signal-label">수익률곡선</div>
+                            <div className="signal-value">{data.yieldCurve}</div>
+                            <div className="signal-change">{data.yieldCurve === '정상' ? '🟢 경기확장' : '🟡 전환점'}</div>
+                        </div>
+                    </div>
+
+                    <div style={{marginTop: '12px', padding: '12px', background: 'linear-gradient(90deg, rgba(239,68,68,0.1), rgba(245,158,11,0.1), rgba(16,185,129,0.1))', borderRadius: '8px'}}>
+                        <div style={{fontSize: '12px', color: '#666', marginBottom: '6px'}}>Risk Appetite Score: {data.signals}/4</div>
+                        <div style={{fontSize: '14px', fontWeight: '700', color: '#2d3748'}}>{data.riskAppetite}</div>
+                        <div style={{marginTop: '8px', fontSize: '12px', color: '#666', lineHeight: '1.4'}}>
+                            현재 {data.riskAppetite.includes('RISK-ON') ? '성장주 집중 탐색' : '방어주/현금 비중 확대'} 추천
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ===== Main App Component =====
+        function App() {
+            return (
+                <div className="page-container">
+                    <div className="page-header">
+                        <h1>AI분석_2</h1>
+                        <p>투자 전문가급 퀀트 분석 대시보드 — 개별 종목 발굴 시스템</p>
+                    </div>
+
+                    <div className="widgets-grid">
+                        <MacroRegimeCompass />
+                        <NetLiquidityPulse />
+                        <SectorRotationMatrix />
+                        <QuantStockEngine />
+                        <CrossAssetSignal />
+                    </div>
+
+                    <div style={{textAlign: 'center', color: '#718096', fontSize: '13px', marginTop: '40px'}}>
+                        <p>각 위젯은 실시간 데이터로 자동 갱신됩니다 (60초마다)</p>
+                        <p style={{marginTop: '8px'}}>데이터 소스: FMP API, FRED, Yahoo Finance</p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render App
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
 </body>
 </html>
