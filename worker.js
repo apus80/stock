@@ -227,6 +227,116 @@ export default {
         "DCOILWTICO": { divisor: 1, unit: "$" }
       }
 
+      // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
+      async function getCompanyProfile(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          // 출처: FMP API - Company Profile
+          const url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${FMP}`
+          console.log(`📍 FMP Profile 호출: ${symbol}`)
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Profile ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+          const j = await r.json()
+          if (!Array.isArray(j) || j.length === 0) {
+            console.warn(`⚠️ ${symbol}: Profile 응답 없음`)
+            return null
+          }
+          console.log(`✅ FMP Profile ${symbol}: 조회됨`)
+          return j[0] // 첫번째 결과
+        } catch (e) {
+          console.error(`❌ Profile ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 9개 인디케이터 기반 Explosive Score 계산
+      async function getAlphaScore(symbol) {
+        try {
+          console.log(`🔍 Alpha Score 계산 시작: ${symbol}`)
+
+          // 1. Quote (Price) 정보
+          const quote = await getQuote(symbol)
+          if (!quote) {
+            console.warn(`⚠️ ${symbol}: Quote 조회 실패`)
+            return null
+          }
+
+          // 2. Profile 정보 (PE, PB, Market Cap 등)
+          const profile = await getCompanyProfile(symbol)
+          if (!profile) {
+            console.warn(`⚠️ ${symbol}: Profile 조회 실패`)
+            return null
+          }
+
+          // 9개 인디케이터 점수 계산 (각각 0-10 범위)
+          const indicators = {
+            price: {
+              value: quote.price,
+              score: Math.min(10, (quote.price / 500) * 10) // 정규화
+            },
+            pe: {
+              value: profile.pe || null,
+              score: profile.pe ? Math.min(10, Math.max(0, 10 - (profile.pe / 30))) : 5 // PE가 낮을수록 좋음
+            },
+            pb: {
+              value: profile.priceToBookRatio || null,
+              score: profile.priceToBookRatio ? Math.min(10, Math.max(0, 10 - profile.priceToBookRatio * 2)) : 5
+            },
+            floatShares: {
+              value: profile.floatShares || null,
+              score: profile.floatShares ? Math.min(10, (profile.floatShares / 1000000000) * 5) : 5
+            },
+            marketCap: {
+              value: profile.marketCapitalization || null,
+              score: profile.marketCapitalization ? Math.min(10, Math.log10(profile.marketCapitalization) / 2) : 5
+            },
+            revenueGrowth: {
+              value: profile.revenueGrowth || null,
+              score: profile.revenueGrowth ? Math.min(10, profile.revenueGrowth * 100) : 5
+            },
+            earningsGrowth: {
+              value: profile.earningsGrowth || null,
+              score: profile.earningsGrowth ? Math.min(10, profile.earningsGrowth * 100) : 5
+            },
+            analystScore: {
+              value: profile.targetPrice || null,
+              score: profile.targetPrice && quote.price ? Math.min(10, ((profile.targetPrice - quote.price) / quote.price * 100) / 10) : 5
+            },
+            insiderActivity: {
+              value: "N/A", // TODO: insider trading data 추가 예정
+              score: 5 // 기본값
+            }
+          }
+
+          // Explosive Score = 9개 지표의 평균 (0-10 범위)
+          const scores = Object.values(indicators).map(ind => ind.score)
+          const explosiveScore = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
+
+          console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${explosiveScore}`)
+
+          return {
+            symbol,
+            explosiveScore: parseFloat(explosiveScore),
+            indicators,
+            profile: {
+              company: profile.companyName || symbol,
+              sector: profile.sector || null,
+              industry: profile.industry || null,
+              description: profile.description || null
+            }
+          }
+        } catch (e) {
+          console.error(`❌ Alpha Score Error:`, e.message)
+          return null
+        }
+      }
+
       function convertFredValue(series, rawValue) {
         if (rawValue === null || rawValue === undefined) return null
         const conversion = FRED_CONVERSIONS[series]
@@ -1024,6 +1134,31 @@ export default {
             dataType: "stock",
             symbol: stockSymbol,
             data: quote
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /alpha endpoint - Alpha Discovery Engine (9개 인디케이터 기반 점수)
+      else if (pathname === "/alpha") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const alphaData = await getAlphaScore(stockSymbol)
+          if (alphaData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "alpha",
+              symbol: stockSymbol,
+              data: alphaData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Alpha score calculation failed for ${stockSymbol}`
+            }
           }
         } else {
           response = {
