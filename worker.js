@@ -967,6 +967,10 @@ export default {
           soxxChange: soxx?.changePercentage,
           iwmChange: iwm?.changePercentage,
           vixChange: vix?.changePercentage,
+          // ETF Smart Money - Volume (거래량)
+          spyVolume: spy?.volume,
+          qqqVolume: qqq?.volume,
+          iwmVolume: iwm?.volume,
           ewy: ewyPrice,
           ewyChange: ewyChange,
           hyg: hyg?.price,
@@ -1558,20 +1562,13 @@ export default {
       // 18. Macro Momentum
       async function getMacroMomentum() {
         const data = await getMarketDataCached()
-        const gdpRaw = data.MACRO_INDICATORS?.REAL_GDP
+        const gdp = data.MACRO_INDICATORS?.REAL_GDP
         const indpro = data.MACRO_INDICATORS?.INDUSTRIAL_PRODUCTION
         const cpi = data.MACRO_BASE?.CPI_YOY
         const inflation_exp = data.MACRO_BASE?.INFLATION_EXPECTATION
 
-        // GDP 정규화 (GDPC1 Billions → 경제 활력 지수)
-        // 기준: 23500B+ 강함, 23000B 중간, 22500B 약함
-        const gdpScore = gdpRaw > 23500 ? 85 : gdpRaw > 23000 ? 75 : gdpRaw > 22500 ? 65 : 50
-        const gdpNormalized = parseFloat(((gdpRaw - 22000) / 2000 * 100).toFixed(1)) // 0-100 스케일로 변환
-
-        const indproScore = indpro > 103 ? 85 : indpro > 102 ? 75 : 60
+        const growthScore = gdp > 2 ? 80 : gdp > 1 ? 60 : 30
         const inflationScore = cpi < 3 ? 80 : cpi < 4 ? 60 : 30
-
-        const growthScore = (gdpScore + indproScore) / 2
         const combinedScore = (growthScore + inflationScore) / 2
 
         return {
@@ -1580,18 +1577,13 @@ export default {
           score: Math.round(combinedScore),
           signal: combinedScore > 70 ? "🚀 강한 성장" : combinedScore > 50 ? "📈 중간" : "📉 약한",
           components: [
-            { name: '경제 활력도', value: gdpNormalized, unit: 'idx', score: Math.round(gdpScore) },
-            { name: '산업생산', value: indpro, unit: 'idx', score: Math.round(indproScore) },
+            { name: '실질 GDP', value: gdp, unit: '%', score: growthScore },
+            { name: '산업생산', value: indpro, unit: 'idx', score: growthScore },
             { name: 'CPI YoY', value: cpi, unit: '%', score: inflationScore },
             { name: '기대인플레', value: inflation_exp, unit: '%' }
           ],
           regime: combinedScore > 70 ? "고성장 저인플레" : combinedScore > 50 ? "중성장 중인플레" : "저성장 고인플레",
-          recommendation: combinedScore > 70 ? "성장주/주식 선호" : combinedScore > 50 ? "밸런스형" : "안전자산 선호",
-          details: {
-            gdp_raw: gdpRaw,
-            industrial_production: indpro,
-            cpi_yoy: cpi
-          }
+          recommendation: combinedScore > 70 ? "성장주/주식 선호" : combinedScore > 50 ? "밸런스형" : "안전자산 선호"
         }
       }
 
@@ -1718,11 +1710,13 @@ export default {
           US_MARKET: {
             SP500: {
               price: marketData.spy ? parseFloat(marketData.spy.toFixed(2)) : null,
-              changePercentage: marketData.spyChange ? parseFloat(marketData.spyChange.toFixed(2)) : null
+              changePercentage: marketData.spyChange ? parseFloat(marketData.spyChange.toFixed(2)) : null,
+              volume: marketData.spyVolume || null
             },
             NASDAQ: {
               price: marketData.qqq ? parseFloat(marketData.qqq.toFixed(2)) : null,
-              changePercentage: marketData.qqqChange ? parseFloat(marketData.qqqChange.toFixed(2)) : null
+              changePercentage: marketData.qqqChange ? parseFloat(marketData.qqqChange.toFixed(2)) : null,
+              volume: marketData.qqqVolume || null
             },
             DOW: {
               price: marketData.dia ? parseFloat(marketData.dia.toFixed(2)) : null,
@@ -1734,7 +1728,8 @@ export default {
             },
             RUSSELL2000: {
               price: marketData.iwm ? parseFloat(marketData.iwm.toFixed(2)) : null,
-              changePercentage: marketData.iwmChange ? parseFloat(marketData.iwmChange.toFixed(2)) : null
+              changePercentage: marketData.iwmChange ? parseFloat(marketData.iwmChange.toFixed(2)) : null,
+              volume: marketData.iwmVolume || null
             },
             VIX: {
               price: marketData.vix ? parseFloat(marketData.vix.toFixed(2)) : null,

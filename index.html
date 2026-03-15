@@ -5806,11 +5806,30 @@ var ECON_DATA = {
          * FMP → Twelvedata → Yahoo
          * ══════════════════════════════════════════════════════ */
         function imdLoadSmartMoney() {
+            // 1️⃣ /market 응답에서 volume 가져오기 (FMP 포함됨)
+            if (workerMarketCache && workerMarketCache.US_MARKET) {
+                var spyData = workerMarketCache.US_MARKET.SP500;
+                var qqqData = workerMarketCache.US_MARKET.NASDAQ;
+                var iwmData = workerMarketCache.US_MARKET.RUSSELL2000;
+
+                var spyV = (spyData && spyData.volume) ? Math.round(spyData.volume / 1000000) : null;
+                var qqqV = (qqqData && qqqData.volume) ? Math.round(qqqData.volume / 1000000) : null;
+                var iwmV = (iwmData && iwmData.volume) ? Math.round(iwmData.volume / 1000000) : null;
+
+                if (spyV !== null) imdSetValue('spyflow', spyV, 0);
+                if (qqqV !== null) imdSetValue('qqqflow', qqqV, 0);
+                if (iwmV !== null) imdSetValue('iwmflow', iwmV, 0);
+
+                console.log('[Smart Money] From /market - SPY:', spyV, 'QQQ:', qqqV, 'IWM:', iwmV);
+                return;
+            }
+
+            // 2️⃣ /market 캐시가 없으면 FMP 직접 호출 (폴백)
+            console.log('[Smart Money] /market cache unavailable, using FMP fallback');
             fmpQ('SPY,QQQ,IWM').then(function(m) {
                 function volM(sym) {
                     return (m[sym] && m[sym].volume) ? Math.round(m[sym].volume / 1000000) : null;
                 }
-                // FMP 성공 시 바로 표시
                 var spyV = volM('SPY'), qqqV = volM('QQQ'), iwmV = volM('IWM');
                 if (spyV !== null) imdSetValue('spyflow', spyV, 0);
                 if (qqqV !== null) imdSetValue('qqqflow', qqqV, 0);
