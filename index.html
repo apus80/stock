@@ -1975,6 +1975,16 @@
                             <div class="item"><span>PCE Inflation</span><span class="item-right"><span id="pce_inf" class="value">-</span><span id="chg-pce_inf" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-pce_inf"></span></span></div>
                         </div>
 
+                        <!-- 카드 14: Alpha Discovery Engine -->
+                        <div class="imd-card">
+                            <div class="title-area"><span class="title">14. Alpha Discovery Engine</span><button class="card-rfbtn" id="rfbtn-14" onclick="imdRefreshCard(14)" title="새로고침">↻</button></div>
+                            <div id="alpha_discovery_container" style="font-size:0.85em;line-height:1.5;">
+                                <div style="text-align:center;color:#94a3b8;padding:10px;">
+                                    <span id="alpha_loading" style="display:none;">⏳ 분석 중...</span>
+                                    <span id="alpha_empty" style="display:block;">데이터 로드 중...</span>
+                                </div>
+                            </div>
+                        </div>
 
                     </div><!-- /.grid -->
                 </div><!-- /.imd-wrap -->
@@ -4772,6 +4782,70 @@ var ECON_DATA = {
             return false;
         }
 
+        /* ── Worker Alpha Discovery Engine ────────────────────── */
+        function workerFetchAlphaDiscovery() {
+            var url = API_BASE + '/alpha/discovery';
+            console.log('[ALPHA] Fetching from:', url);
+
+            document.getElementById('alpha_loading').style.display = 'inline';
+            document.getElementById('alpha_empty').style.display = 'none';
+
+            return imdGet(url, 30000)
+                .then(function(data) {
+                    console.log('[ALPHA] Discovery data loaded:', data);
+                    displayAlphaDiscovery(data);
+                    return data;
+                })
+                .catch(function(e) {
+                    console.error('[ALPHA] Discovery fetch failed:', e.message);
+                    document.getElementById('alpha_loading').style.display = 'none';
+                    document.getElementById('alpha_empty').style.display = 'block';
+                    document.getElementById('alpha_empty').innerHTML = '❌ 데이터 로드 실패';
+                    return null;
+                });
+        }
+
+        function displayAlphaDiscovery(data) {
+            var container = document.getElementById('alpha_discovery_container');
+
+            if (!data || !data.top_20 || data.top_20.length === 0) {
+                container.innerHTML = '<div style="color:#94a3b8;padding:10px;text-align:center;">분석 데이터 없음</div>';
+                return;
+            }
+
+            var html = '<table style="width:100%;border-collapse:collapse;font-size:0.8em;">';
+            html += '<thead><tr style="border-bottom:2px solid #334155;">';
+            html += '<th style="text-align:left;padding:6px;">순위</th>';
+            html += '<th style="text-align:left;padding:6px;">심볼</th>';
+            html += '<th style="text-align:right;padding:6px;">점수</th>';
+            html += '<th style="text-align:right;padding:6px;">가격</th>';
+            html += '<th style="text-align:right;padding:6px;">PE</th>';
+            html += '<th style="text-align:right;padding:6px;">모멘텀</th>';
+            html += '<th style="text-align:right;padding:6px;">거래량</th>';
+            html += '</tr></thead><tbody>';
+
+            for (var i = 0; i < Math.min(data.top_20.length, 15); i++) {
+                var stock = data.top_20[i];
+                var rowColor = i < 5 ? 'background-color:#1e293b20;' : '';
+                html += '<tr style="border-bottom:1px solid #475569;' + rowColor + '">';
+                html += '<td style="text-align:left;padding:6px;color:#94a3b8;">' + (i + 1) + '</td>';
+                html += '<td style="text-align:left;padding:6px;font-weight:600;">' + (stock.symbol || '-') + '</td>';
+                html += '<td style="text-align:right;padding:6px;color:#4ade80;">' + (stock.score ? stock.score.toFixed(2) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:6px;color:#60a5fa;">' + (stock.price ? stock.price.toFixed(2) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:6px;">' + (stock.pe ? stock.pe.toFixed(1) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:6px;color:#fbbf24;">' + (stock.momentum ? stock.momentum.toFixed(3) : '-') + '</td>';
+                html += '<td style="text-align:right;padding:6px;color:#a78bfa;">' + (stock.volume ? stock.volume.toFixed(1) + '%' : '-') + '</td>';
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            html += '<div style="margin-top:8px;font-size:0.75em;color:#64748b;">📊 분석 타임: ' + (data.execution_time_sec || '-') + '초 | 우주선: ' + (data.analyzed || '-') + '개</div>';
+
+            container.innerHTML = html;
+            document.getElementById('alpha_loading').style.display = 'none';
+            document.getElementById('alpha_empty').style.display = 'none';
+        }
+
         /* ── Worker 개별 주식 분석 ───────────────────────────── */
         function workerFetchStock(symbol) {
             var url = WORKER_BASE + '/stock?symbol=' + encodeURIComponent(symbol);
@@ -6112,6 +6186,11 @@ var ECON_DATA = {
         imdLoadAll();
         // Auto-refresh market data every 30 seconds (Worker API - near real-time)
         setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 30000);
+
+        // Alpha Discovery Engine – 개별 종목 분석 (별도 주기: 5분)
+        // DOMContentLoaded 이후 비동기 실행 보장
+        setTimeout(workerFetchAlphaDiscovery, 2000);
+        setInterval(workerFetchAlphaDiscovery, 5 * 60 * 1000);
 
         // 경제지표 대시보드 – FRED 실시간 갱신 (별도 주기: 4시간)
         // DOMContentLoaded 이후 비동기 실행 보장
