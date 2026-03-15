@@ -2974,7 +2974,28 @@ var ECON_DATA = {
                     }
                 } catch(e) { console.log("CryptoCompare 실패"); }
 
-                // --- 3단계: 로컬 뉴스 (최종 백업) ---
+                // --- 3단계: Alpha Vantage (뉴스 센티먼트) ---
+                try {
+                    const apiKey = 'NP58RFOBOUKNIOLV';
+                    const url = `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&limit=5&apikey=${apiKey}`;
+                    const res = await fetch(url);
+                    const json = await res.json();
+                    if (json.feed && json.feed.length > 0) {
+                        const formattedData = json.feed.slice(0, 9).map(function(item) {
+                            return {
+                                title: item.title,
+                                url: item.url,
+                                source: item.source,
+                                published_at: item.time_published
+                            };
+                        });
+                        renderNews(formattedData, 'Alpha Vantage');
+                        translateAndUpdate(formattedData);
+                        return;
+                    }
+                } catch(e) { console.log("Alpha Vantage 실패"); }
+
+                // --- 4단계: 로컬 뉴스 (최종 백업) ---
                 loadLocalNews();
             }
 
