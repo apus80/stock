@@ -295,6 +295,9 @@
       <div class="sec-label">💰 Bonds · HYG / LQD (FMP)</div>
       <div class="data-grid" id="g-bonds"></div>
 
+      <div class="sec-label">⚠️ Market Risk · VIX / HY OAS Spread (FRED)</div>
+      <div class="data-grid" id="g-risk"></div>
+
       <div class="sec-label">📊 Credit · High Yield / Investment Grade (FMP)</div>
       <div class="data-grid" id="g-credit"></div>
 
@@ -304,11 +307,29 @@
       <div class="sec-label">🏭 Sectors ETF · XLK~XLRE (FMP)</div>
       <div class="data-grid" id="g-sec"></div>
 
-      <div class="sec-label">📊 Macro Base · CPI / UNRATE / M2 / T10YIE (FRED)</div>
+      <div class="sec-label">📊 Macro Base · CPI / PCE / UNRATE / M2 / T10YIE (FRED)</div>
       <div class="data-grid" id="g-mb"></div>
 
       <div class="sec-label">📉 Macro Indicators · GDP / INDPRO / PAYEMS … (FRED)</div>
       <div class="data-grid" id="g-mi"></div>
+
+      <div class="sec-label">⚠️ Market Risk · VIX / HY OAS (FRED)</div>
+      <div class="data-grid" id="g-mr"></div>
+
+      <div class="sec-label">💰 Real Rate Monitor · Fed Rate / Inflation / Real Rate</div>
+      <div class="data-grid" id="g-rrm"></div>
+
+      <div class="sec-label">🏦 Fed Policy Impact · Fed Balance / M2 / Policy Stance</div>
+      <div class="data-grid" id="g-fpi"></div>
+
+      <div class="sec-label">💼 Labor Market Health · Unemployment / Payroll / Sentiment</div>
+      <div class="data-grid" id="g-lmh"></div>
+
+      <div class="sec-label">📈 Macro Momentum · Economic Vitality / Growth / Inflation</div>
+      <div class="data-grid" id="g-mm"></div>
+
+      <div class="sec-label">🌐 Yahoo Market Structure · VVIX / MOVE / NYA (Yahoo Finance)</div>
+      <div class="data-grid" id="g-yahoo"></div>
 
     </div>
   </div>
@@ -582,7 +603,7 @@ function runAll() {
   okN = 0; failN = 0;
 
   // 로딩 표시
-  ['g-us','g-kr','g-crypto','g-bonds','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
+  ['g-us','g-kr','g-crypto','g-bonds','g-risk','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi','g-mr','g-rrm','g-fpi','g-lmh','g-mm','g-yahoo'].forEach(function(id) {
     setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
   });
   document.getElementById('marketMs').textContent = '...';
@@ -648,6 +669,14 @@ function renderMarketData(data) {
     diObj('LQD (Invest Grade)', bonds.LQD)
   );
   ['HYG','LQD'].forEach(function(k) { countObj(k, bonds[k]); });
+
+  // ── Market Risk (FRED)
+  var risk = data.MARKET_RISK || {};
+  setGrid('g-risk',
+    diVal('VIX (FRED)', risk.VIX_FRED, 'idx') +
+    diVal('HY OAS Spread', risk.HY_OAS_SPREAD, '%')
+  );
+  ['VIX_FRED','HY_OAS_SPREAD'].forEach(function(k) { countObj(k, risk[k]); });
 
   // ── Credit
   var credit = data.CREDIT || {};
@@ -719,6 +748,7 @@ function renderMarketData(data) {
   var m2T = mb.M2 ? (mb.M2 / 1e6).toFixed(2) + ' T' : null;
   setGrid('g-mb',
     di('CPIAUCSL (CPI)',    mb.CPI,                   fmtNum(mb.CPI, 2)) +
+    di('PCEPI (PCE)',       mb.PCE_INFLATION,         fmtNum(mb.PCE_INFLATION, 2)) +
     di('T10YIE (Infl Exp)',mb.INFLATION_EXPECTATION,  fmtNum(mb.INFLATION_EXPECTATION, 2) + '%') +
     di('UNRATE (Unemp)',   mb.UNEMPLOYMENT,            fmtNum(mb.UNEMPLOYMENT, 1) + '%') +
     di('M2SL (M2)',        mb.M2,                     m2T) +
@@ -736,6 +766,66 @@ function renderMarketData(data) {
     di('PCEPILFE (PCE)',     mi.PCE_INFLATION,         fmtNum(mi.PCE_INFLATION, 2) + '%')
   );
   ['CONSUMER_SENTIMENT','REAL_GDP','INDUSTRIAL_PRODUCTION','NONFARM_PAYROLLS','PCE_INFLATION'].forEach(function(k) { countVal(k, mi[k]); });
+
+  // ── Market Risk (FRED)
+  var mr = data.MARKET_RISK || {};
+  setGrid('g-mr',
+    diVal('VIXCLS (VIX)', mr.VIX_FRED, 'idx') +
+    diVal('BAMLH0A0HYM2 (HY OAS)', mr.HY_OAS_SPREAD, '%')
+  );
+  ['VIX_FRED','HY_OAS_SPREAD'].forEach(function(k) { countVal(k, mr[k]); });
+
+  // ── Real Rate Monitor (분석)
+  var rrm_data = { ...(data.MACRO_BASE || {}), timestamp: data.timestamp };
+  if (rrm_data.FED_RATE && rrm_data.INFLATION_EXPECTATION) {
+    setGrid('g-rrm',
+      di('Fed Rate', rrm_data.FED_RATE, fmtNum(rrm_data.FED_RATE, 2) + '%') +
+      di('Infl Exp', rrm_data.INFLATION_EXPECTATION, fmtNum(rrm_data.INFLATION_EXPECTATION, 2) + '%') +
+      di('Real Rate', rrm_data.REAL_RATES, fmtNum(rrm_data.REAL_RATES, 2) + '%')
+    );
+  }
+
+  // ── Fed Policy Impact
+  var fpi_data = data.MACRO_BASE || {};
+  if (fpi_data.FED_RATE) {
+    setGrid('g-fpi',
+      di('Fed Balance', data.fed, data.fed ? fmtNum(data.fed, 2) + ' T$' : '-') +
+      di('M2 Money', fpi_data.M2, fpi_data.M2 ? ((fpi_data.M2 / 1e6).toFixed(2) + ' T') : '-') +
+      di('Fed Rate', fpi_data.FED_RATE, fmtNum(fpi_data.FED_RATE, 2) + '%')
+    );
+  }
+
+  // ── Labor Market Health
+  var lmh_data = data.MACRO_BASE || {};
+  if (lmh_data.UNEMPLOYMENT) {
+    setGrid('g-lmh',
+      di('Unemployment', lmh_data.UNEMPLOYMENT, fmtNum(lmh_data.UNEMPLOYMENT, 1) + '%') +
+      di('Nonfarm Payroll', data.MACRO_INDICATORS?.NONFARM_PAYROLLS, data.MACRO_INDICATORS?.NONFARM_PAYROLLS ? data.MACRO_INDICATORS.NONFARM_PAYROLLS.toLocaleString() + 'K' : '-') +
+      di('Sentiment', data.MACRO_INDICATORS?.CONSUMER_SENTIMENT, fmtNum(data.MACRO_INDICATORS?.CONSUMER_SENTIMENT, 1))
+    );
+  }
+
+  // ── Macro Momentum
+  var mm_data = data.MACRO_BASE || {};
+  if (mm_data.CPI_YOY) {
+    setGrid('g-mm',
+      di('Economic Vitality', data.MACRO_INDICATORS?.REAL_GDP ? ((data.MACRO_INDICATORS.REAL_GDP - 22000) / 2000 * 100).toFixed(1) : '-', '%') +
+      di('Ind Production', data.MACRO_INDICATORS?.INDUSTRIAL_PRODUCTION, fmtNum(data.MACRO_INDICATORS?.INDUSTRIAL_PRODUCTION, 1)) +
+      di('CPI YoY', mm_data.CPI_YOY, fmtNum(mm_data.CPI_YOY, 2) + '%') +
+      di('Infl Exp', mm_data.INFLATION_EXPECTATION, fmtNum(mm_data.INFLATION_EXPECTATION, 2) + '%')
+    );
+  }
+
+  // ── Yahoo Market Structure
+  var yahoo = data.YAHOO_MARKET_STRUCTURE || {};
+  if (yahoo.VVIX || yahoo.MOVE || yahoo.NYA) {
+    setGrid('g-yahoo',
+      diObj('VVIX (Vol of Vol)', yahoo.VVIX) +
+      diObj('MOVE (Bond Vol)', yahoo.MOVE) +
+      diObj('NYA (NYSE Composite)', yahoo.NYA)
+    );
+    ['VVIX','MOVE','NYA'].forEach(function(k) { countObj(k, yahoo[k]); });
+  }
 
   lg('═══ 처리 완료: ✅ ' + okN + ' | ❌ ' + failN + ' ═══', okN > failN ? 'ok' : 'warn');
 }

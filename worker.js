@@ -205,6 +205,45 @@ export default {
         }
       }
 
+      // 📍 출처: Yahoo Finance (Market Structure Indicators)
+      async function getYahooMarketStructure(timeoutMs = 12000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const symbols = ["^VVIX", "^MOVE", "^NYA"]
+          const results = {}
+
+          for (const symbol of symbols) {
+            try {
+              const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+              const r = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Mozilla/5.0' } })
+              if (!r.ok) continue
+
+              const j = await r.json()
+              const meta = j?.chart?.result?.[0]?.meta
+              if (meta && meta.regularMarketPrice !== undefined) {
+                results[symbol] = {
+                  price: parseFloat(meta.regularMarketPrice.toFixed(2)),
+                  changePercentage: meta.regularMarketChangePercent !== undefined
+                    ? parseFloat(meta.regularMarketChangePercent.toFixed(2))
+                    : null
+                }
+                console.log(`✅ Yahoo ${symbol}: price=${results[symbol].price}, change=${results[symbol].changePercentage}%`)
+              }
+            } catch (e) {
+              console.error(`❌ Yahoo ${symbol}:`, e.message)
+            }
+          }
+
+          return results.length > 0 ? results : null
+        } catch (e) {
+          console.error('❌ Yahoo Market Structure:', e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
       function getLatestValue(fredArray) {
         if (!fredArray || fredArray.length === 0) return null
         for (let i = fredArray.length - 1; i >= 0; i--) {
@@ -224,7 +263,10 @@ export default {
         "WTREGEN": { divisor: 1000000, unit: "T" },
         "DGS10": { divisor: 1, unit: "%" },
         "DGS2": { divisor: 1, unit: "%" },
-        "DCOILWTICO": { divisor: 1, unit: "$" }
+        "DCOILWTICO": { divisor: 1, unit: "$" },
+        "PCEPI": { divisor: 1, unit: "idx" },  // PCE Inflation Index
+        "VIXCLS": { divisor: 1, unit: "idx" },  // VIX from FRED
+        "BAMLH0A0HYM2": { divisor: 1, unit: "%" }  // High Yield OAS Spread
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
@@ -874,6 +916,16 @@ export default {
           fredGet("INDPRO"),
           fredGet("PAYEMS"),
           fredGet("PCEPILFE"),
+          fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
+          fredGet("M2SL"),     // M2 통화량 (billions)
+          fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
+          fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
+          fredGet("CPILFESL", "pc1"), // Core CPI YoY% (출처: FRED CPILFESL, units=pc1 직접 공시값)
+          fredGet("CPIAUCSL", "pc1"),  // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
+          // 신규 FRED 경제지표 (3개)
+          fredGet("PCEPI"),    // PCE Inflation Index
+          fredGet("VIXCLS"),   // VIX from FRED
+          fredGet("BAMLH0A0HYM2"), // High Yield OAS Spread
           // 상품 (Commodities) - FMP stable batch-quote
           getQuote("GCUSD"),   // 금 (Gold)
           getQuote("SIUSD"),   // 은 (Silver)
@@ -883,18 +935,12 @@ export default {
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
-          // 추가 FRED 경제지표
-          fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
-          fredGet("M2SL"),     // M2 통화량 (billions)
-          fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
-          fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
-          fredGet("CPILFESL", "pc1"), // Core CPI YoY% (출처: FRED CPILFESL, units=pc1 직접 공시값)
-          fredGet("CPIAUCSL", "pc1")  // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
+          getYahooMarketStructure() // 시장 구조 (VVIX, MOVE, NYA)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, yahooMarketStructure] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -938,6 +984,11 @@ export default {
         const fedRawVal = getLatestValue(fed)     // WALCL raw (millions) - index.html이 /1,000,000으로 T 변환
         const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (Billions) - FRED 원값이 이미 Billions 단위
         const tgaRawVal = getLatestValue(tga)     // WTREGEN raw (millions) - index.html이 /1,000,000으로 T 변환
+
+        // 신규 FRED 인디케이터 (3개)
+        const pcepiVal = convertFredValue("PCEPI", getLatestValue(pcepi))     // PCE Inflation Index
+        const vixclsVal = convertFredValue("VIXCLS", getLatestValue(vixcls))  // VIX from FRED
+        const hyOasVal = convertFredValue("BAMLH0A0HYM2", getLatestValue(hyOas)) // High Yield OAS Spread
 
         // EWY 가격 처리
         const ewyPrice = ewy?.price
@@ -1023,11 +1074,17 @@ export default {
             CPI: cpiVal,                       // CPIAUCSL 지수 레벨 (하위호환 유지)
             CPI_YOY: cpiYoY,                  // 출처: FRED CPIAUCSL 전년동기대비 YoY %
             CORE_CPI_YOY: coreCpiYoY,         // 출처: FRED CPILFESL (식료품·에너지 제외) YoY %
+            PCE_INFLATION: pcepiVal,           // 출처: FRED PCEPI (Personal Consumption Expenditures)
             FED_RATE: fedRateVal,              // 출처: FRED FEDFUNDS (효과적 연방기금금리 %)
             INFLATION_EXPECTATION: inflExpVal, // 출처: FRED T10YIE (10년 기대인플레이션)
             UNEMPLOYMENT: unrateVal,
             M2: m2RawVal ? m2RawVal * 1000 : null, // M2SL billions → millions (index.html이 /1,000,000으로 T 변환)
             REAL_RATES: us10y && inflExpVal ? parseFloat((us10y - inflExpVal).toFixed(2)) : null // 실질금리 = 10Y - 기대인플레이션
+          },
+          // 카드 15: Market Risk (신규)
+          MARKET_RISK: {
+            VIX_FRED: vixclsVal,               // 출처: FRED VIXCLS (VIX from FRED)
+            HY_OAS_SPREAD: hyOasVal            // 출처: FRED BAMLH0A0HYM2 (High Yield OAS Spread)
           },
           // 카드 13: Macro Indicators
           MACRO_INDICATORS: {
@@ -1036,7 +1093,13 @@ export default {
             INDUSTRIAL_PRODUCTION: indproVal,
             NONFARM_PAYROLLS: payelmsVal,
             PCE_INFLATION: pcepilfeVal
-          }
+          },
+          // 카드 16: Yahoo Market Structure (신규)
+          YAHOO_MARKET_STRUCTURE: yahooMarketStructure ? {
+            VVIX: yahooMarketStructure["^VVIX"] || null,        // Volatility of Volatility
+            MOVE: yahooMarketStructure["^MOVE"] || null,        // Bond Market Volatility
+            NYA: yahooMarketStructure["^NYA"] || null           // NYSE Composite
+          } : null
         }
       }
 
@@ -1108,16 +1171,14 @@ export default {
         const data = await getMarketDataCached()
         const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
 
-        const fedT = data.fed ? parseFloat((data.fed / 1000000).toFixed(2)) : null
-        const rpB = data.rp ? parseFloat((data.rp / 1000).toFixed(1)) : null
         return {
           timestamp: new Date().toISOString(),
           dataType: "liquidity_pulse",
           score: liquidityScore,
           signal: liquidityScore > 75 ? "💧 풍부함" : liquidityScore > 50 ? "⚡ 적정" : "⚠️ 부족",
           components: [
-            { name: 'Fed 잔액', value: fedT !== null ? fedT : '-', unit: 'T$' },
-            { name: '역레포(RRP)', value: rpB !== null ? rpB : '-', unit: 'B$' }
+            { name: 'Fed 잔액', value: data.fed !== null && data.fed !== undefined ? data.fed : '-', unit: 'T$' },
+            { name: '역레포(RRP)', value: data.rp !== null && data.rp !== undefined ? data.rp : '-', unit: 'B$' }
           ],
           interpretation: liquidityScore > 75 ? "유동성 풍부 → 위험자산 선호" : liquidityScore > 50 ? "적정 수준 유지 중" : "유동성 부족 → 안전자산 선호",
           details: {
@@ -1466,6 +1527,120 @@ export default {
         }
       }
 
+      // 15. Real Rate Monitor
+      async function getRealRateMonitor() {
+        const data = await getMarketDataCached()
+        const fedRate = data.fedRateVal || data.MACRO_BASE?.FED_RATE
+        const inflation = data.inflExpVal || data.MACRO_BASE?.INFLATION_EXPECTATION
+        const realRate = data.MACRO_BASE?.REAL_RATES
+        const policy = fedRate > inflation ? "긴축" : fedRate < inflation ? "완화" : "중립"
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "real_rate_monitor",
+          policy: policy,
+          signal: fedRate > inflation ? "🔴 긴축 모드" : fedRate < inflation ? "🟢 완화 모드" : "🟡 중립",
+          metrics: [
+            { name: 'Fed 기준금리', value: fedRate, unit: '%' },
+            { name: '기대인플레이션', value: inflation, unit: '%' },
+            { name: '실질금리', value: realRate, unit: '%' }
+          ],
+          interpretation: fedRate > inflation ? "실질금리 양수 → 긴축 신호" : "실질금리 음수 → 완화 신호",
+          recommendation: fedRate > inflation ? "채권 선호, 현금 보유" : "주식, 위험자산 선호"
+        }
+      }
+
+      // 16. Fed Policy Impact
+      async function getFedPolicyImpact() {
+        const data = await getMarketDataCached()
+        const fedBalance = data.fed
+        const m2 = data.MACRO_BASE?.M2
+        const fedRate = data.MACRO_BASE?.FED_RATE
+
+        const liquidityTrend = fedBalance > 7000 ? "확대" : fedBalance > 6000 ? "중립" : "축소"
+        const policyStrength = (fedRate < 2) ? "강한 완화" : (fedRate < 4) ? "완화" : "중립/긴축"
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "fed_policy_impact",
+          policy_stance: policyStrength,
+          signal: policyStrength === "강한 완화" ? "💰 리스크온" : policyStrength === "완화" ? "📈 약한 리스크온" : "📉 리스크오프",
+          components: [
+            { name: 'Fed Balance', value: fedBalance, unit: 'T$', trend: liquidityTrend },
+            { name: 'M2 Money Supply', value: m2 ? (m2 / 1e6).toFixed(2) : null, unit: 'T$' },
+            { name: 'Fed Rate', value: fedRate, unit: '%' }
+          ],
+          interpretation: policyStrength === "강한 완화" ? "유동성 풍부 상태" : "유동성 축소 중",
+          impact: "자산가격 상승압력" + (liquidityTrend === "축소" ? " 약화" : " 유지")
+        }
+      }
+
+      // 17. Labor Market Health
+      async function getLaborMarketHealth() {
+        const data = await getMarketDataCached()
+        const unemployment = data.MACRO_BASE?.UNEMPLOYMENT
+        const payroll = data.MACRO_INDICATORS?.NONFARM_PAYROLLS
+        const sentiment = data.MACRO_INDICATORS?.CONSUMER_SENTIMENT
+
+        const healthScore = (unemployment < 4.5) ? 80 : (unemployment < 5) ? 70 : 50
+        const trend = unemployment < 4 ? "강세" : unemployment < 5 ? "중립" : "약세"
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "labor_market_health",
+          score: healthScore,
+          trend: trend,
+          signal: healthScore > 75 ? "💪 강세" : healthScore > 60 ? "➡️ 중립" : "⚠️ 약세",
+          metrics: [
+            { name: '실업률', value: unemployment, unit: '%', status: unemployment < 4.5 ? "좋음" : "주의" },
+            { name: '비농업 고용', value: payroll, unit: '천명' },
+            { name: '소비자심리', value: sentiment, unit: 'idx' }
+          ],
+          interpretation: unemployment < 4.5 ? "강한 고용 시장" : "고용 시장 약화",
+          wage_pressure: unemployment < 3.8 ? "높음 (임금 상승)" : "보통"
+        }
+      }
+
+      // 18. Macro Momentum
+      async function getMacroMomentum() {
+        const data = await getMarketDataCached()
+        const gdpRaw = data.MACRO_INDICATORS?.REAL_GDP
+        const indpro = data.MACRO_INDICATORS?.INDUSTRIAL_PRODUCTION
+        const cpi = data.MACRO_BASE?.CPI_YOY
+        const inflation_exp = data.MACRO_BASE?.INFLATION_EXPECTATION
+
+        // GDP 정규화 (GDPC1 Billions → 경제 활력 지수)
+        // 기준: 23500B+ 강함, 23000B 중간, 22500B 약함
+        const gdpScore = gdpRaw > 23500 ? 85 : gdpRaw > 23000 ? 75 : gdpRaw > 22500 ? 65 : 50
+        const gdpNormalized = parseFloat(((gdpRaw - 22000) / 2000 * 100).toFixed(1)) // 0-100 스케일로 변환
+
+        const indproScore = indpro > 103 ? 85 : indpro > 102 ? 75 : 60
+        const inflationScore = cpi < 3 ? 80 : cpi < 4 ? 60 : 30
+
+        const growthScore = (gdpScore + indproScore) / 2
+        const combinedScore = (growthScore + inflationScore) / 2
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "macro_momentum",
+          score: Math.round(combinedScore),
+          signal: combinedScore > 70 ? "🚀 강한 성장" : combinedScore > 50 ? "📈 중간" : "📉 약한",
+          components: [
+            { name: '경제 활력도', value: gdpNormalized, unit: 'idx', score: Math.round(gdpScore) },
+            { name: '산업생산', value: indpro, unit: 'idx', score: Math.round(indproScore) },
+            { name: 'CPI YoY', value: cpi, unit: '%', score: inflationScore },
+            { name: '기대인플레', value: inflation_exp, unit: '%' }
+          ],
+          regime: combinedScore > 70 ? "고성장 저인플레" : combinedScore > 50 ? "중성장 중인플레" : "저성장 고인플레",
+          recommendation: combinedScore > 70 ? "성장주/주식 선호" : combinedScore > 50 ? "밸런스형" : "안전자산 선호",
+          details: {
+            gdp_raw: gdpRaw,
+            industrial_production: indpro,
+            cpi_yoy: cpi
+          }
+        }
+      }
+
       // =============================
       // HEDGE FUND UNIVERSE SCREENER
       // =============================
@@ -1498,190 +1673,19 @@ export default {
       }
 
       // =============================
-      // ALPHA DATA COLLECTION
-      // =============================
-      async function getAlphaData(symbol) {
-        try {
-          // 📍 Rate Limit Optimization: 5개 필수 API만 호출 (250 requests/day)
-          // 20개 종목 × 5개 API = 100 요청 ✅
-          const [
-            quote,
-            history,
-            metrics,
-            analyst,
-            insider
-          ] = await Promise.all([
-            fetchFMP(`/stable/quote?symbol=${symbol}`),
-            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
-            fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
-            fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`),
-            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
-          ])
-
-          return {
-            quote: quote ? quote[0] : null,
-            history: history || [],
-            metrics: metrics ? metrics[0] : null,
-            analyst: analyst || [],
-            insider: insider || []
-          }
-        } catch (e) {
-          console.error(`❌ getAlphaData ${symbol}:`, e.message)
-          return null
-        }
-      }
-
-      // =============================
-      // FACTOR ENGINE
-      // =============================
-      function calculateFactors(data) {
-        if (!data) return null
-
-        const quote = data.quote
-        const metrics = data.metrics
-        const history = data.history || []
-
-        // 기본 정보
-        const price = quote?.price || 0
-        const pe = metrics?.peRatio || 50
-        const pb = metrics?.priceToBookRatio || 10
-        const float = metrics?.floatShares || 1000000000
-        const marketCap = metrics?.marketCap || 0
-
-        // 📊 성장률 지표 (FMP key-metrics에서 직접 가져옴)
-        // 출처: FMP API - /stable/key-metrics
-        let revenueGrowth = 0
-        let earningsGrowth = 0
-
-        // Option A: FMP가 제공하는 공식 성장률 필드 사용
-        if (metrics) {
-          // FMP는 다양한 형식으로 성장률 제공 가능
-          revenueGrowth =
-            metrics.revenueGrowth ||           // 일반적인 형식
-            metrics.revenuePerShareGrowth ||   // RPS 기반
-            metrics.netIncomeGrowth || 0       // 순이익 성장률
-
-          earningsGrowth =
-            metrics.earningsGrowth ||          // 일반적인 형식
-            metrics.epsGrowth ||               // EPS 기반
-            metrics.earningsPerShareGrowth || 0 // EPS 성장률
-        }
-
-        // Option B: 성장률 필드가 없으면 가격 데이터로 근사 계산
-        if (revenueGrowth === 0 && history.length >= 50) {
-          const current = history[0]?.close
-          const past50 = history[49]?.close
-          if (current && past50) {
-            const priceGrowth = (current - past50) / past50
-            // 가격 성장이 곧 수익 성장으로 근사 (보수적으로 70% 적용)
-            revenueGrowth = priceGrowth * 0.7
-          }
-        }
-
-        if (earningsGrowth === 0 && history.length >= 50) {
-          const current = history[0]?.close
-          const past50 = history[49]?.close
-          if (current && past50) {
-            const priceGrowth = (current - past50) / past50
-            // 수익 성장이 가격보다 크다고 가정 (110% 적용)
-            earningsGrowth = priceGrowth * 1.1
-          }
-        }
-
-        // 전문가 평가
-        const analystRecs = data.analyst || []
-        const buyCount = analystRecs.filter(a => a.ratingScore > 3).length
-        const analystScore = buyCount / Math.max(analystRecs.length, 1)
-
-        // 인사이더 거래
-        const insiderActivity = data.insider?.length || 0
-
-        return {
-          price,
-          pe,
-          pb,
-          float,
-          marketCap,
-          revenueGrowth,      // ✅ 추가: 수익 성장률
-          earningsGrowth,     // ✅ 추가: 수익성 성장률
-          analystScore,
-          insiderActivity
-        }
-      }
-
-      // =============================
-      // MOMENTUM SCORE
-      // =============================
-      function momentumScore(history) {
-        if (!history || history.length < 50) return 0
-        const recent = history[0]?.close
-        const past = history[49]?.close
-        if (!recent || !past) return 0
-        return (recent - past) / past
-      }
-
-      // =============================
-      // VOLUME SPIKE DETECTION
-      // =============================
-      function volumeSpike(history) {
-        if (!history || history.length < 20) return 0
-        const today = history[0]?.volume
-        let avg = 0
-        for (let i = 1; i < 20; i++) {
-          avg += history[i]?.volume || 0
-        }
-        avg /= 19
-        if (avg === 0) return 0
-        return today / avg
-      }
-
-      // =============================
-      // EXPLOSIVE SCORE CALCULATION
-      // =============================
-      function explosiveScore(factors, momentum, volume) {
-        if (!factors) return 0
-
-        // 📍 Explosive Score (9개 지표):
-        // 1. Value: PE, PB (저평가 판별)
-        // 2. Growth: Revenue, Earnings (성장성)
-        // 3. Analyst: 전문가 평가
-        // 4. Insider: 내부자 거래 (신뢰도)
-        // 5. Float: 유동성 (낮을수록 변동성 큼)
-        // 6. Momentum: 가격 추세 (50일)
-        // 7. Volume: 거래량 (수급)
-
-        // 성장률 정규화 (음수 방지, 0~1 범위)
-        const normalizeGrowth = (g) => Math.max(0, Math.min(1, (g + 0.5) / 1.0))
-        const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
-        const earningsScore = normalizeGrowth(factors.earningsGrowth || 0)
-
-        const score =
-          (1 / (factors.pe + 1)) * 1.5 +        // 1. Value factor (PE 저평가)
-          (1 / (factors.pb + 1)) * 1.5 +        // 1. Book value factor (PB 저평가)
-          revenueScore * 1.2 +                  // 2. Revenue growth (수익 성장)
-          earningsScore * 1.2 +                 // 2. Earnings growth (수익성 성장)
-          factors.analystScore * 0.8 +          // 3. Analyst rating (전문가 평가)
-          (factors.insiderActivity > 0 ? 1 : 0) * 0.4 +  // 4. Insider activity (내부자 신뢰)
-          (1 / (factors.float / 100000000 + 1)) * 0.8 +  // 5. Low float premium (유동성)
-          momentum * 2.5 +                      // 6. Strong momentum boost (50일 추세)
-          volume * 2.0                          // 7. Volume spike boost (거래량 급증)
-
-        return Math.max(0, score)
-      }
-
-      // =============================
       // ALPHA DISCOVERY ENGINE
       // =============================
-      async function runAlphaDiscovery() {
+      async function runAlphaDiscovery(singleSymbol) {
         try {
-          const universe = await getHedgeFundUniverse()
+          // 단일 종목 또는 전체 universe 분석
+          const universe = singleSymbol ? [singleSymbol] : await getHedgeFundUniverse()
           console.log(`📊 Alpha Discovery: ${universe.length}개 종목 분석 시작`)
 
           const results = []
           const startTime = Date.now()
 
           // Rate Limit: 20개 종목 × 5개 API = 100 요청 (250/day 내)
-          for (let i = 0; i < Math.min(universe.length, 20); i++) {
+          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 20); i++) {
             const symbol = universe[i]
             try {
               const data = await getAlphaData(symbol)
@@ -2144,7 +2148,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "22개 엔드포인트 사용 가능 (14개 분석 + 8개 재무데이터)",
+          message: "26개 엔드포인트 사용 가능 (18개 분석 + 8개 재무데이터)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
@@ -2160,7 +2164,11 @@ export default {
               "/analysis/crypto-sentiment",
               "/analysis/smart-money",
               "/analysis/stock-ranking",
-              "/analysis/market-heatmap"
+              "/analysis/market-heatmap",
+              "/analysis/real-rate-monitor",
+              "/analysis/fed-policy-impact",
+              "/analysis/labor-market-health",
+              "/analysis/macro-momentum"
             ],
             fundamentals: [
               "/fundamentals/earnings?symbol=SYMBOL",
@@ -2207,10 +2215,26 @@ export default {
         response = await getStockRanking()
       } else if (pathname === "/analysis/market-heatmap") {
         response = await getMarketHeatmap()
+      } else if (pathname === "/analysis/real-rate-monitor") {
+        response = await getRealRateMonitor()
+      } else if (pathname === "/analysis/fed-policy-impact") {
+        response = await getFedPolicyImpact()
+      } else if (pathname === "/analysis/labor-market-health") {
+        response = await getLaborMarketHealth()
+      } else if (pathname === "/analysis/macro-momentum") {
+        response = await getMacroMomentum()
 
       // =============================
-      // ALPHA DISCOVERY ENGINE
+      // EARNINGS & ALPHA DISCOVERY
       // =============================
+      } else if (pathname === "/earnings") {
+        const symbol = url.searchParams.get('symbol')
+        if (symbol) {
+          response = await runAlphaDiscovery(symbol)
+        } else {
+          response = await runAlphaDiscovery()
+        }
+
       } else if (pathname === "/alpha/discovery") {
         response = await runAlphaDiscovery()
 
@@ -2218,7 +2242,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
+          message: "26개 엔드포인트 사용 가능 (18개 분석 + 8개 재무데이터)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
@@ -2272,7 +2296,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
+          message: "26개 엔드포인트 사용 가능 (18개 분석 + 8개 재무데이터)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
