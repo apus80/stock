@@ -235,12 +235,40 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
+          console.log(`📍 FMP API 호출: ${endpoint}`)
           const r = await fetch(url, { signal: controller.signal })
+          console.log(`   📊 Status: ${r.status}`)
+
           if (!r.ok) {
             console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
             return null
           }
-          return await r.json()
+
+          const data = await r.json()
+
+          // 🔍 DEBUG: 각 API별 응답 확인
+          if (endpoint.includes('quote')) {
+            console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            if (Array.isArray(data) && data[0]) {
+              const quote = data[0]
+              console.log(`   📋 quote 필드: ${Object.keys(quote).slice(0, 30).join(', ')}`)
+              console.log(`   💰 주요값: price=${quote.price}, pe=${quote.pe}, pb=${quote.priceToBook}, epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
+              console.log(`   📊 전체: ${JSON.stringify(quote).substring(0, 200)}`)
+            }
+          } else if (endpoint.includes('key-metrics')) {
+            console.log(`   📦 key-metrics 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            if (Array.isArray(data) && data[0]) {
+              const fields = Object.keys(data[0]).filter(k => k.includes('Ratio') || k.includes('Growth') || k.includes('Cap') || k.includes('Shares'))
+              console.log(`   📋 필드: peRatio=${data[0].peRatio}, priceToBookRatio=${data[0].priceToBookRatio}, floatShares=${data[0].floatShares}`)
+              console.log(`   📈 성장률: revenueGrowth=${data[0].revenueGrowth}, earningsGrowth=${data[0].earningsGrowth}`)
+            }
+          } else if (endpoint.includes('historical')) {
+            console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - 최근 3개: ${data.substring ? data : JSON.stringify(data).substring(0, 100)}`)
+          } else if (endpoint.includes('insider')) {
+            console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+          }
+
+          return data
         } catch (e) {
           console.error(`❌ fetchFMP ${endpoint}:`, e.message)
           return null
@@ -285,20 +313,39 @@ export default {
         const metrics = data.metrics
         const history = data.history || []
 
+        // 🔍 DEBUG: metrics 전체 구조 확인
+        if (metrics) {
+          console.log(`📊 metrics 객체 키: ${Object.keys(metrics).slice(0, 20).join(', ')}`)
+          console.log(`📊 metrics 전체: ${JSON.stringify(metrics).substring(0, 300)}`)
+        }
+
         // 기본 정보
         const price = quote.price || 0
-        const pe = metrics?.peRatio || 50
-        const pb = metrics?.priceToBookRatio || 10
-        const float = metrics?.floatShares || 1000000000
-        const marketCap = metrics?.marketCap || 0
+        const pe = metrics?.peRatio || metrics?.pe || 50
+        const pb = metrics?.priceToBookRatio || metrics?.pb || 10
+        const float = metrics?.floatShares || metrics?.shares || 1000000000
+        const marketCap = metrics?.marketCap || metrics?.market_cap || 0
 
         // 성장률 지표 (FMP key-metrics에서 직접 가져옴)
         let revenueGrowth = 0
         let earningsGrowth = 0
 
         if (metrics) {
-          revenueGrowth = metrics.revenueGrowth || metrics.revenuePerShareGrowth || metrics.netIncomeGrowth || 0
-          earningsGrowth = metrics.earningsGrowth || metrics.epsGrowth || metrics.earningsPerShareGrowth || 0
+          // FMP 필드명 다양성 대응
+          revenueGrowth =
+            metrics.revenueGrowth ||
+            metrics.revenue_growth ||
+            metrics.revenuePerShareGrowth ||
+            metrics.netIncomeGrowth || 0
+
+          earningsGrowth =
+            metrics.earningsGrowth ||
+            metrics.earnings_growth ||
+            metrics.epsGrowth ||
+            metrics.earnings_per_share_growth ||
+            metrics.earningsPerShareGrowth || 0
+
+          console.log(`📊 성장률 필드 상세: revenueGrowth=${revenueGrowth}, earningsGrowth=${earningsGrowth}`)
         }
 
         // 성장률이 없으면 가격 데이터로 근사 계산
@@ -429,6 +476,322 @@ export default {
         } catch (e) {
           console.error(`❌ Alpha Score Error:`, e.message)
           return null
+        }
+      }
+
+      // ========================================
+      // 개별 종목 재무 데이터 함수들
+      // 출처: FMP API (financialmodelingprep.com)
+      // ========================================
+
+      // 2. Earnings (실적 데이터)
+      async function getEarnings(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/earnings?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Earnings 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Earnings ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Earnings 응답값 없음`)
+            return null
+          }
+
+          const earnings = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            epsActual: earnings.epsActual || null,
+            epsEstimated: earnings.epsEstimated || null,
+            revenueActual: earnings.revenueActual || null,
+            revenueEstimated: earnings.revenueEstimated || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getEarnings ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 11. Financial Growth (성장률)
+      async function getFinancialGrowth(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/financial-growth?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Financial Growth 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Financial Growth ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Financial Growth 응답값 없음`)
+            return null
+          }
+
+          const growth = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            revenueGrowth: growth.revenueGrowth || null,
+            netIncomeGrowth: growth.netIncomeGrowth || null,
+            epsGrowth: growth.epsGrowth || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getFinancialGrowth ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 12. Income Statement (수입 명세서)
+      async function getIncomeStatement(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/income-statement?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Income Statement 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Income Statement ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Income Statement 응답값 없음`)
+            return null
+          }
+
+          const income = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            revenue: income.revenue || null,
+            grossProfit: income.grossProfit || null,
+            operatingIncome: income.operatingIncome || null,
+            netIncome: income.netIncome || null,
+            eps: income.eps || null,
+            ebitda: income.ebitda || null,
+            researchAndDevelopmentExpenses: income.researchAndDevelopmentExpenses || null,
+            sellingGeneralAndAdministrativeExpenses: income.sellingGeneralAndAdministrativeExpenses || null,
+            incomeBeforeTax: income.incomeBeforeTax || null,
+            weightedAverageShsOut: income.weightedAverageShsOut || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getIncomeStatement ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 13. Balance Sheet (재무 상태표)
+      async function getBalanceSheet(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/balance-sheet-statement?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Balance Sheet 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Balance Sheet ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Balance Sheet 응답값 없음`)
+            return null
+          }
+
+          const balance = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            cashAndCashEquivalents: balance.cashAndCashEquivalents || null,
+            totalAssets: balance.totalAssets || null,
+            totalCurrentAssets: balance.totalCurrentAssets || null,
+            totalLiabilities: balance.totalLiabilities || null,
+            totalCurrentLiabilities: balance.totalCurrentLiabilities || null,
+            totalStockholdersEquity: balance.totalStockholdersEquity || null,
+            longTermDebt: balance.longTermDebt || null,
+            shortTermDebt: balance.shortTermDebt || null,
+            inventory: balance.inventory || null,
+            accountsPayable: balance.accountPayables || null,
+            netDebt: balance.netDebt || null,
+            totalDebt: balance.totalDebt || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getBalanceSheet ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 14. Cash Flow (현금 흐름표)
+      async function getCashFlow(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/cash-flow-statement?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Cash Flow 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Cash Flow ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Cash Flow 응답값 없음`)
+            return null
+          }
+
+          const cashflow = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            operatingCashFlow: cashflow.operatingCashFlow || null,
+            freeCashFlow: cashflow.freeCashFlow || null,
+            capitalExpenditure: cashflow.capitalExpenditure || null,
+            netCashProvidedByOperatingActivities: cashflow.netCashProvidedByOperatingActivities || null,
+            netCashProvidedByInvestingActivities: cashflow.netCashProvidedByInvestingActivities || null,
+            netCashProvidedByFinancingActivities: cashflow.netCashProvidedByFinancingActivities || null,
+            netDividendsPaid: cashflow.netDividendsPaid || null,
+            commonStockRepurchased: cashflow.commonStockRepurchased || null,
+            stockBasedCompensation: cashflow.stockBasedCompensation || null,
+            netChangeInCash: cashflow.netChangeInCash || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getCashFlow ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 16. Ratios (PE, PB)
+      async function getRatios(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/ratios?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Ratios 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Ratios ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Ratios 응답값 없음`)
+            return null
+          }
+
+          const ratios = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            priceToEarningsRatio: ratios.priceToEarningsRatio || null,
+            priceToBookRatio: ratios.priceToBookRatio || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getRatios ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 21. Company Profile (Sector, Industry)
+      async function getCompanyProfile(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/profile?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Company Profile 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Company Profile ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Company Profile 응답값 없음`)
+            return null
+          }
+
+          const profile = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            sector: profile.sector || null,
+            industry: profile.industry || null,
+            companyName: profile.companyName || null,
+            website: profile.website || null,
+            description: profile.description || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getCompanyProfile ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      // 22. Shares Float (유통주식)
+      async function getSharesFloat(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/shares-float?symbol=${symbol}&apikey=${FMP}`
+          console.log(`📍 FMP Shares Float 호출: ${symbol}`)
+
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP Shares Float ${symbol}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          if (!data || (Array.isArray(data) && data.length === 0)) {
+            console.warn(`⚠️ ${symbol}: Shares Float 응답값 없음`)
+            return null
+          }
+
+          const shares = Array.isArray(data) ? data[0] : data
+          return {
+            symbol: symbol,
+            floatShares: shares.floatShares || null,
+            timestamp: new Date().toISOString()
+          }
+        } catch (e) {
+          console.error(`❌ getSharesFloat ${symbol}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
         }
       }
 
@@ -1554,6 +1917,206 @@ export default {
           }
         }
       }
+      // /fundamentals/earnings endpoint - 실적 데이터
+      else if (pathname === "/fundamentals/earnings") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const earningsData = await getEarnings(stockSymbol)
+          if (earningsData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "earnings",
+              symbol: stockSymbol,
+              data: earningsData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Earnings data not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /fundamentals/growth endpoint - 성장률 데이터
+      else if (pathname === "/fundamentals/growth") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const growthData = await getFinancialGrowth(stockSymbol)
+          if (growthData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "financial_growth",
+              symbol: stockSymbol,
+              data: growthData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Growth data not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /fundamentals/income endpoint - 수입 명세서
+      else if (pathname === "/fundamentals/income") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const incomeData = await getIncomeStatement(stockSymbol)
+          if (incomeData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "income_statement",
+              symbol: stockSymbol,
+              data: incomeData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Income statement not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /fundamentals/balance endpoint - 재무 상태표
+      else if (pathname === "/fundamentals/balance") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const balanceData = await getBalanceSheet(stockSymbol)
+          if (balanceData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "balance_sheet",
+              symbol: stockSymbol,
+              data: balanceData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Balance sheet not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /fundamentals/cashflow endpoint - 현금 흐름표
+      else if (pathname === "/fundamentals/cashflow") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const cashflowData = await getCashFlow(stockSymbol)
+          if (cashflowData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "cash_flow",
+              symbol: stockSymbol,
+              data: cashflowData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Cash flow statement not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /fundamentals/ratios endpoint - PE, PB 비율
+      else if (pathname === "/fundamentals/ratios") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const ratiosData = await getRatios(stockSymbol)
+          if (ratiosData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "ratios",
+              symbol: stockSymbol,
+              data: ratiosData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Ratios not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /fundamentals/profile endpoint - 회사 프로필 (sector, industry)
+      else if (pathname === "/fundamentals/profile") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const profileData = await getCompanyProfile(stockSymbol)
+          if (profileData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "company_profile",
+              symbol: stockSymbol,
+              data: profileData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Company profile not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /fundamentals/shares endpoint - 유통주식
+      else if (pathname === "/fundamentals/shares") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const sharesData = await getSharesFloat(stockSymbol)
+          if (sharesData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "shares_float",
+              symbol: stockSymbol,
+              data: sharesData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Shares float not available for ${stockSymbol}`
+            }
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
       // /feargreed endpoint - CNN Fear & Greed Index (서버사이드 호출, CORS 없음)
       else if (pathname === "/feargreed") {
         try {
@@ -1591,23 +2154,40 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "14개 AI 분석 위젯 엔드포인트 사용 가능",
-          endpoints: [
-            "/analysis/institutional-score",
-            "/analysis/market-regime",
-            "/analysis/liquidity-pulse",
-            "/analysis/yield-curve-monitor",
-            "/analysis/inflation-pressure",
-            "/analysis/credit-stress",
-            "/analysis/market-breadth",
-            "/analysis/volatility-regime",
-            "/analysis/sector-rotation",
-            "/analysis/dollar-liquidity",
-            "/analysis/crypto-sentiment",
-            "/analysis/smart-money",
-            "/analysis/stock-ranking",
-            "/analysis/market-heatmap"
-          ]
+          message: "22개 엔드포인트 사용 가능 (14개 분석 + 8개 재무데이터)",
+          endpoints: {
+            analysis: [
+              "/analysis/institutional-score",
+              "/analysis/market-regime",
+              "/analysis/liquidity-pulse",
+              "/analysis/yield-curve-monitor",
+              "/analysis/inflation-pressure",
+              "/analysis/credit-stress",
+              "/analysis/market-breadth",
+              "/analysis/volatility-regime",
+              "/analysis/sector-rotation",
+              "/analysis/dollar-liquidity",
+              "/analysis/crypto-sentiment",
+              "/analysis/smart-money",
+              "/analysis/stock-ranking",
+              "/analysis/market-heatmap"
+            ],
+            fundamentals: [
+              "/fundamentals/earnings?symbol=SYMBOL",
+              "/fundamentals/growth?symbol=SYMBOL",
+              "/fundamentals/income?symbol=SYMBOL",
+              "/fundamentals/balance?symbol=SYMBOL",
+              "/fundamentals/cashflow?symbol=SYMBOL",
+              "/fundamentals/ratios?symbol=SYMBOL",
+              "/fundamentals/profile?symbol=SYMBOL",
+              "/fundamentals/shares?symbol=SYMBOL"
+            ],
+            market: [
+              "/market",
+              "/alpha?symbol=SYMBOL",
+              "/feargreed"
+            ]
+          }
         }
       } else if (pathname === "/analysis/institutional-score") {
         response = await getInstitutionalScore()
@@ -1648,24 +2228,43 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "15개 AI 분석 위젯 + Alpha Discovery Engine",
-          endpoints: [
-            "/analysis/institutional-score",
-            "/analysis/market-regime",
-            "/analysis/liquidity-pulse",
-            "/analysis/yield-curve-monitor",
-            "/analysis/inflation-pressure",
-            "/analysis/credit-stress",
-            "/analysis/market-breadth",
-            "/analysis/volatility-regime",
-            "/analysis/sector-rotation",
-            "/analysis/dollar-liquidity",
-            "/analysis/crypto-sentiment",
-            "/analysis/smart-money",
-            "/analysis/stock-ranking",
-            "/analysis/market-heatmap",
-            "/alpha/discovery"
-          ]
+          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
+          endpoints: {
+            analysis: [
+              "/analysis/institutional-score",
+              "/analysis/market-regime",
+              "/analysis/liquidity-pulse",
+              "/analysis/yield-curve-monitor",
+              "/analysis/inflation-pressure",
+              "/analysis/credit-stress",
+              "/analysis/market-breadth",
+              "/analysis/volatility-regime",
+              "/analysis/sector-rotation",
+              "/analysis/dollar-liquidity",
+              "/analysis/crypto-sentiment",
+              "/analysis/smart-money",
+              "/analysis/stock-ranking",
+              "/analysis/market-heatmap"
+            ],
+            fundamentals: [
+              "/fundamentals/earnings?symbol=SYMBOL",
+              "/fundamentals/growth?symbol=SYMBOL",
+              "/fundamentals/income?symbol=SYMBOL",
+              "/fundamentals/balance?symbol=SYMBOL",
+              "/fundamentals/cashflow?symbol=SYMBOL",
+              "/fundamentals/ratios?symbol=SYMBOL",
+              "/fundamentals/profile?symbol=SYMBOL",
+              "/fundamentals/shares?symbol=SYMBOL"
+            ],
+            market: [
+              "/market",
+              "/alpha?symbol=SYMBOL",
+              "/feargreed"
+            ],
+            discovery: [
+              "/alpha/discovery"
+            ]
+          }
         }
       } else if (series) {
         const fredData = await fredGet(series)
@@ -1683,24 +2282,43 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "15개 AI 분석 위젯 + Alpha Discovery Engine",
-          endpoints: [
-            "/analysis/institutional-score",
-            "/analysis/market-regime",
-            "/analysis/liquidity-pulse",
-            "/analysis/yield-curve-monitor",
-            "/analysis/inflation-pressure",
-            "/analysis/credit-stress",
-            "/analysis/market-breadth",
-            "/analysis/volatility-regime",
-            "/analysis/sector-rotation",
-            "/analysis/dollar-liquidity",
-            "/analysis/crypto-sentiment",
-            "/analysis/smart-money",
-            "/analysis/stock-ranking",
-            "/analysis/market-heatmap",
-            "/alpha/discovery"
-          ],
+          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
+          endpoints: {
+            analysis: [
+              "/analysis/institutional-score",
+              "/analysis/market-regime",
+              "/analysis/liquidity-pulse",
+              "/analysis/yield-curve-monitor",
+              "/analysis/inflation-pressure",
+              "/analysis/credit-stress",
+              "/analysis/market-breadth",
+              "/analysis/volatility-regime",
+              "/analysis/sector-rotation",
+              "/analysis/dollar-liquidity",
+              "/analysis/crypto-sentiment",
+              "/analysis/smart-money",
+              "/analysis/stock-ranking",
+              "/analysis/market-heatmap"
+            ],
+            fundamentals: [
+              "/fundamentals/earnings?symbol=SYMBOL",
+              "/fundamentals/growth?symbol=SYMBOL",
+              "/fundamentals/income?symbol=SYMBOL",
+              "/fundamentals/balance?symbol=SYMBOL",
+              "/fundamentals/cashflow?symbol=SYMBOL",
+              "/fundamentals/ratios?symbol=SYMBOL",
+              "/fundamentals/profile?symbol=SYMBOL",
+              "/fundamentals/shares?symbol=SYMBOL"
+            ],
+            market: [
+              "/market",
+              "/alpha?symbol=SYMBOL",
+              "/feargreed"
+            ],
+            discovery: [
+              "/alpha/discovery"
+            ]
+          },
           debug: {
             pathname: pathname,
             action: action,
