@@ -23,7 +23,9 @@ export default {
       /* ================================
          API 함수들
       ================================ */
-      async function getQuote(sym) {
+      async function getQuote(sym, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           // 📍 출처: FMP API (financialmodelingprep.com)
           // /stable/quote: 무료 플랜에서 동작 확인 (batch-quote는 유료 전용)
@@ -32,7 +34,7 @@ export default {
           console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
           console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
 
-          const r = await fetch(url)
+          const r = await fetch(url, { signal: controller.signal })
           console.log(`   📊 Status: ${r.status} ${r.statusText}`)
           console.log(`   Headers: Content-Type=${r.headers.get('content-type')}`)
 
@@ -93,10 +95,14 @@ export default {
           console.error(`   Type: ${e.name}`)
           console.error(`   Stack: ${e.stack?.substring(0, 300)}`)
           return null
+        } finally {
+          clearTimeout(timeout)
         }
       }
 
-      async function getKoreanQuote(symbol) {
+      async function getKoreanQuote(symbol, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
         // 📍 출처: FMP API (financialmodelingprep.com) - /stable/quote (무료 플랜 동작)
         try {
           const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
@@ -104,7 +110,7 @@ export default {
           console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
           console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
 
-          const r = await fetch(url)
+          const r = await fetch(url, { signal: controller.signal })
           console.log(`   📊 Status: ${r.status} ${r.statusText}`)
 
           if (!r.ok) {
@@ -136,17 +142,21 @@ export default {
         } catch (e) {
           console.error(`❌ FMP 한국 ${symbol}:`, e.message)
           return null
+        } finally {
+          clearTimeout(timeout)
         }
       }
 
 
-      async function fredGet(series, units = null) {
+      async function fredGet(series, units = null, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           // 📍 출처: FRED API (Federal Reserve)
           // units='pc1' → 전년동기대비 YoY% 직접 반환 (계산 불필요)
           const unitsParam = units ? `&units=${units}` : ''
           const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json${unitsParam}`
-          const r = await fetch(url)
+          const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
             console.error(`❌ FRED ${series}: HTTP ${r.status}`)
             return []
@@ -164,14 +174,18 @@ export default {
         } catch (e) {
           console.error(`❌ FRED ${series}:`, e.message)
           return []
+        } finally {
+          clearTimeout(timeout)
         }
       }
 
       // 📍 출처: Yahoo Finance (DX-Y.NYB = ICE Dollar Index)
-      async function yahooFinanceDXY() {
+      async function yahooFinanceDXY(timeoutMs = 12000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = 'https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d'
-          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+          const r = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'Mozilla/5.0' } })
           if (!r.ok) throw new Error(`Yahoo HTTP ${r.status}`)
           const j = await r.json()
           const meta = j?.chart?.result?.[0]?.meta
@@ -186,6 +200,8 @@ export default {
         } catch (e) {
           console.error('❌ Yahoo DXY:', e.message)
           return null
+        } finally {
+          clearTimeout(timeout)
         }
       }
 
