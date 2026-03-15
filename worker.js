@@ -1125,16 +1125,14 @@ export default {
         const data = await getMarketDataCached()
         const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
 
-        const fedT = data.fed ? parseFloat((data.fed / 1000000).toFixed(2)) : null
-        const rpB = data.rp ? parseFloat((data.rp / 1000).toFixed(1)) : null
         return {
           timestamp: new Date().toISOString(),
           dataType: "liquidity_pulse",
           score: liquidityScore,
           signal: liquidityScore > 75 ? "💧 풍부함" : liquidityScore > 50 ? "⚡ 적정" : "⚠️ 부족",
           components: [
-            { name: 'Fed 잔액', value: fedT !== null ? fedT : '-', unit: 'T$' },
-            { name: '역레포(RRP)', value: rpB !== null ? rpB : '-', unit: 'B$' }
+            { name: 'Fed 잔액', value: data.fed !== null && data.fed !== undefined ? data.fed : '-', unit: 'T$' },
+            { name: '역레포(RRP)', value: data.rp !== null && data.rp !== undefined ? data.rp : '-', unit: 'B$' }
           ],
           interpretation: liquidityScore > 75 ? "유동성 풍부 → 위험자산 선호" : liquidityScore > 50 ? "적정 수준 유지 중" : "유동성 부족 → 안전자산 선호",
           details: {
@@ -1480,6 +1478,108 @@ export default {
             '3m': null,
             '1y': null
           }))
+        }
+      }
+
+      // 15. Real Rate Monitor
+      async function getRealRateMonitor() {
+        const data = await getMarketDataCached()
+        const fedRate = data.fedRateVal || data.MACRO_BASE?.FED_RATE
+        const inflation = data.inflExpVal || data.MACRO_BASE?.INFLATION_EXPECTATION
+        const realRate = data.MACRO_BASE?.REAL_RATES
+        const policy = fedRate > inflation ? "긴축" : fedRate < inflation ? "완화" : "중립"
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "real_rate_monitor",
+          policy: policy,
+          signal: fedRate > inflation ? "🔴 긴축 모드" : fedRate < inflation ? "🟢 완화 모드" : "🟡 중립",
+          metrics: [
+            { name: 'Fed 기준금리', value: fedRate, unit: '%' },
+            { name: '기대인플레이션', value: inflation, unit: '%' },
+            { name: '실질금리', value: realRate, unit: '%' }
+          ],
+          interpretation: fedRate > inflation ? "실질금리 양수 → 긴축 신호" : "실질금리 음수 → 완화 신호",
+          recommendation: fedRate > inflation ? "채권 선호, 현금 보유" : "주식, 위험자산 선호"
+        }
+      }
+
+      // 16. Fed Policy Impact
+      async function getFedPolicyImpact() {
+        const data = await getMarketDataCached()
+        const fedBalance = data.fed
+        const m2 = data.MACRO_BASE?.M2
+        const fedRate = data.MACRO_BASE?.FED_RATE
+
+        const liquidityTrend = fedBalance > 7000 ? "확대" : fedBalance > 6000 ? "중립" : "축소"
+        const policyStrength = (fedRate < 2) ? "강한 완화" : (fedRate < 4) ? "완화" : "중립/긴축"
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "fed_policy_impact",
+          policy_stance: policyStrength,
+          signal: policyStrength === "강한 완화" ? "💰 리스크온" : policyStrength === "완화" ? "📈 약한 리스크온" : "📉 리스크오프",
+          components: [
+            { name: 'Fed Balance', value: fedBalance, unit: 'T$', trend: liquidityTrend },
+            { name: 'M2 Money Supply', value: m2 ? (m2 / 1e6).toFixed(2) : null, unit: 'T$' },
+            { name: 'Fed Rate', value: fedRate, unit: '%' }
+          ],
+          interpretation: policyStrength === "강한 완화" ? "유동성 풍부 상태" : "유동성 축소 중",
+          impact: "자산가격 상승압력" + (liquidityTrend === "축소" ? " 약화" : " 유지")
+        }
+      }
+
+      // 17. Labor Market Health
+      async function getLaborMarketHealth() {
+        const data = await getMarketDataCached()
+        const unemployment = data.MACRO_BASE?.UNEMPLOYMENT
+        const payroll = data.MACRO_INDICATORS?.NONFARM_PAYROLLS
+        const sentiment = data.MACRO_INDICATORS?.CONSUMER_SENTIMENT
+
+        const healthScore = (unemployment < 4.5) ? 80 : (unemployment < 5) ? 70 : 50
+        const trend = unemployment < 4 ? "강세" : unemployment < 5 ? "중립" : "약세"
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "labor_market_health",
+          score: healthScore,
+          trend: trend,
+          signal: healthScore > 75 ? "💪 강세" : healthScore > 60 ? "➡️ 중립" : "⚠️ 약세",
+          metrics: [
+            { name: '실업률', value: unemployment, unit: '%', status: unemployment < 4.5 ? "좋음" : "주의" },
+            { name: '비농업 고용', value: payroll, unit: '천명' },
+            { name: '소비자심리', value: sentiment, unit: 'idx' }
+          ],
+          interpretation: unemployment < 4.5 ? "강한 고용 시장" : "고용 시장 약화",
+          wage_pressure: unemployment < 3.8 ? "높음 (임금 상승)" : "보통"
+        }
+      }
+
+      // 18. Macro Momentum
+      async function getMacroMomentum() {
+        const data = await getMarketDataCached()
+        const gdp = data.MACRO_INDICATORS?.REAL_GDP
+        const indpro = data.MACRO_INDICATORS?.INDUSTRIAL_PRODUCTION
+        const cpi = data.MACRO_BASE?.CPI_YOY
+        const inflation_exp = data.MACRO_BASE?.INFLATION_EXPECTATION
+
+        const growthScore = gdp > 2 ? 80 : gdp > 1 ? 60 : 30
+        const inflationScore = cpi < 3 ? 80 : cpi < 4 ? 60 : 30
+        const combinedScore = (growthScore + inflationScore) / 2
+
+        return {
+          timestamp: new Date().toISOString(),
+          dataType: "macro_momentum",
+          score: Math.round(combinedScore),
+          signal: combinedScore > 70 ? "🚀 강한 성장" : combinedScore > 50 ? "📈 중간" : "📉 약한",
+          components: [
+            { name: '실질 GDP', value: gdp, unit: '%', score: growthScore },
+            { name: '산업생산', value: indpro, unit: 'idx', score: growthScore },
+            { name: 'CPI YoY', value: cpi, unit: '%', score: inflationScore },
+            { name: '기대인플레', value: inflation_exp, unit: '%' }
+          ],
+          regime: combinedScore > 70 ? "고성장 저인플레" : combinedScore > 50 ? "중성장 중인플레" : "저성장 고인플레",
+          recommendation: combinedScore > 70 ? "성장주/주식 선호" : combinedScore > 50 ? "밸런스형" : "안전자산 선호"
         }
       }
 
@@ -1990,7 +2090,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "22개 엔드포인트 사용 가능 (14개 분석 + 8개 재무데이터)",
+          message: "26개 엔드포인트 사용 가능 (18개 분석 + 8개 재무데이터)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
@@ -2006,7 +2106,11 @@ export default {
               "/analysis/crypto-sentiment",
               "/analysis/smart-money",
               "/analysis/stock-ranking",
-              "/analysis/market-heatmap"
+              "/analysis/market-heatmap",
+              "/analysis/real-rate-monitor",
+              "/analysis/fed-policy-impact",
+              "/analysis/labor-market-health",
+              "/analysis/macro-momentum"
             ],
             fundamentals: [
               "/fundamentals/earnings?symbol=SYMBOL",
@@ -2053,6 +2157,14 @@ export default {
         response = await getStockRanking()
       } else if (pathname === "/analysis/market-heatmap") {
         response = await getMarketHeatmap()
+      } else if (pathname === "/analysis/real-rate-monitor") {
+        response = await getRealRateMonitor()
+      } else if (pathname === "/analysis/fed-policy-impact") {
+        response = await getFedPolicyImpact()
+      } else if (pathname === "/analysis/labor-market-health") {
+        response = await getLaborMarketHealth()
+      } else if (pathname === "/analysis/macro-momentum") {
+        response = await getMacroMomentum()
 
       // =============================
       // EARNINGS & ALPHA DISCOVERY
@@ -2072,7 +2184,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
+          message: "26개 엔드포인트 사용 가능 (18개 분석 + 8개 재무데이터)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
@@ -2126,7 +2238,7 @@ export default {
         response = {
           timestamp: new Date().toISOString(),
           dataType: "metadata",
-          message: "23개 엔드포인트 사용 가능 (14개 분석 + 8개 재무 + 1개 Alpha Discovery)",
+          message: "26개 엔드포인트 사용 가능 (18개 분석 + 8개 재무데이터)",
           endpoints: {
             analysis: [
               "/analysis/institutional-score",
