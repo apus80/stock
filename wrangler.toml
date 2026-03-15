@@ -2,6 +2,7 @@ name = "fmp-proxy"
 main = "worker.js"
 workers_dev = true
 account_id = "05ba87763e81af6206c77d3bd3d79d84"
+compatibility_date = "2025-09-27"
 
 [vars]
 FMP_API_KEY = "JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK"

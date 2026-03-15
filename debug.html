@@ -328,9 +328,6 @@
       <div class="sec-label">📈 Macro Momentum · Economic Vitality / Growth / Inflation</div>
       <div class="data-grid" id="g-mm"></div>
 
-      <div class="sec-label">🌐 Yahoo Market Structure · VVIX / MOVE / NYA (Yahoo Finance)</div>
-      <div class="data-grid" id="g-yahoo"></div>
-
     </div>
   </div>
 
@@ -814,17 +811,6 @@ function renderMarketData(data) {
       di('CPI YoY', mm_data.CPI_YOY, fmtNum(mm_data.CPI_YOY, 2) + '%') +
       di('Infl Exp', mm_data.INFLATION_EXPECTATION, fmtNum(mm_data.INFLATION_EXPECTATION, 2) + '%')
     );
-  }
-
-  // ── Yahoo Market Structure
-  var yahoo = data.YAHOO_MARKET_STRUCTURE || {};
-  if (yahoo.VVIX || yahoo.MOVE || yahoo.NYA) {
-    setGrid('g-yahoo',
-      diObj('VVIX (Vol of Vol)', yahoo.VVIX) +
-      diObj('MOVE (Bond Vol)', yahoo.MOVE) +
-      diObj('NYA (NYSE Composite)', yahoo.NYA)
-    );
-    ['VVIX','MOVE','NYA'].forEach(function(k) { countObj(k, yahoo[k]); });
   }
 
   lg('═══ 처리 완료: ✅ ' + okN + ' | ❌ ' + failN + ' ═══', okN > failN ? 'ok' : 'warn');
