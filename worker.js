@@ -227,6 +227,211 @@ export default {
         "DCOILWTICO": { divisor: 1, unit: "$" }
       }
 
+      // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
+      // 출처: verify-9-indicators.js 검증 로직 (로컬 테스트 통과)
+
+      async function fetchFMP(endpoint, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) {
+            console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
+            return null
+          }
+          return await r.json()
+        } catch (e) {
+          console.error(`❌ fetchFMP ${endpoint}:`, e.message)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      async function getAlphaData(symbol) {
+        try {
+          console.log(`📍 Alpha 데이터 수집 시작: ${symbol}`)
+          // Promise.allSettled로 부분 실패 허용
+          const results = await Promise.allSettled([
+            fetchFMP(`/stable/quote?symbol=${symbol}`),
+            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
+            fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
+            // 주의: /stable/analyst-stock-recommendations는 FMP 무료 플랜에서 404 반환
+            // analyst 데이터 대신 insiderActivity로 신뢰도 판단
+            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
+          ])
+
+          const extract = (r) => r.status === 'fulfilled' ? r.value : null
+          const [quote, history, metrics, insider] = results.map(extract)
+
+          return {
+            quote: quote ? (Array.isArray(quote) ? quote[0] : quote) : null,
+            history: history || [],
+            metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null,
+            analyst: [], // FMP 무료 플랜에서 지원 안 함
+            insider: insider || []
+          }
+        } catch (e) {
+          console.error(`❌ getAlphaData ${symbol}:`, e.message)
+          return null
+        }
+      }
+
+      function calculateFactors(data) {
+        if (!data || !data.quote) return null
+
+        const quote = data.quote
+        const metrics = data.metrics
+        const history = data.history || []
+
+        // 기본 정보
+        const price = quote.price || 0
+        const pe = metrics?.peRatio || 50
+        const pb = metrics?.priceToBookRatio || 10
+        const float = metrics?.floatShares || 1000000000
+        const marketCap = metrics?.marketCap || 0
+
+        // 성장률 지표 (FMP key-metrics에서 직접 가져옴)
+        let revenueGrowth = 0
+        let earningsGrowth = 0
+
+        if (metrics) {
+          revenueGrowth = metrics.revenueGrowth || metrics.revenuePerShareGrowth || metrics.netIncomeGrowth || 0
+          earningsGrowth = metrics.earningsGrowth || metrics.epsGrowth || metrics.earningsPerShareGrowth || 0
+        }
+
+        // 성장률이 없으면 가격 데이터로 근사 계산
+        if (revenueGrowth === 0 && history.length >= 50) {
+          const current = history[0]?.close
+          const past50 = history[49]?.close
+          if (current && past50) {
+            const priceGrowth = (current - past50) / past50
+            revenueGrowth = priceGrowth * 0.7
+          }
+        }
+
+        if (earningsGrowth === 0 && history.length >= 50) {
+          const current = history[0]?.close
+          const past50 = history[49]?.close
+          if (current && past50) {
+            const priceGrowth = (current - past50) / past50
+            earningsGrowth = priceGrowth * 1.1
+          }
+        }
+
+        // 전문가 평가
+        const analystRecs = data.analyst || []
+        const buyCount = analystRecs.filter(a => a.ratingScore > 3).length
+        const analystScore = buyCount / Math.max(analystRecs.length, 1)
+
+        // 인사이더 거래
+        const insiderActivity = data.insider?.length || 0
+
+        return { price, pe, pb, float, marketCap, revenueGrowth, earningsGrowth, analystScore, insiderActivity }
+      }
+
+      // Momentum Score (50일)
+      function momentumScore(history) {
+        if (!history || history.length < 50) return 0
+        const recent = history[0]?.close
+        const past = history[49]?.close
+        if (!recent || !past) return 0
+        return (recent - past) / past
+      }
+
+      // Volume Spike Detection
+      function volumeSpike(history) {
+        if (!history || history.length < 20) return 0
+        const today = history[0]?.volume
+        let avg = 0
+        for (let i = 1; i < 20; i++) {
+          avg += history[i]?.volume || 0
+        }
+        avg /= 19
+        if (avg === 0) return 0
+        return today / avg
+      }
+
+      // Explosive Score (9개 지표 가중합)
+      function explosiveScore(factors, momentum, volume) {
+        if (!factors) return 0
+
+        // 성장률 정규화 (0~1 범위)
+        const normalizeGrowth = (g) => Math.max(0, Math.min(1, (g + 0.5) / 1.0))
+        const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
+        const earningsScore = normalizeGrowth(factors.earningsGrowth || 0)
+
+        const score =
+          (1 / (factors.pe + 1)) * 1.5 +        // Value: PE 저평가 (1.5x)
+          (1 / (factors.pb + 1)) * 1.5 +        // Value: PB 저평가 (1.5x)
+          revenueScore * 1.2 +                  // Growth: 수익 성장률 (1.2x)
+          earningsScore * 1.2 +                 // Growth: 수익성 성장률 (1.2x)
+          factors.analystScore * 0.8 +          // Quality: 전문가 평가 (0.8x)
+          (factors.insiderActivity > 0 ? 1 : 0) * 0.4 +  // Quality: 내부자 거래 (0.4x)
+          (1 / (factors.float / 100000000 + 1)) * 0.8 +  // Technical: 유동성 (0.8x)
+          momentum * 2.5 +                      // Technical: 모멘텀 (2.5x)
+          volume * 2.0                          // Technical: 거래량 (2.0x)
+
+        return Math.max(0, score)
+      }
+
+      // 9개 인디케이터 기반 Explosive Score 계산 (가중합)
+      async function getAlphaScore(symbol) {
+        try {
+          console.log(`🔍 Alpha Score 계산 시작: ${symbol}`)
+
+          const data = await getAlphaData(symbol)
+          if (!data) {
+            console.warn(`⚠️ ${symbol}: 데이터 수집 실패`)
+            return null
+          }
+
+          const factors = calculateFactors(data)
+          if (!factors) {
+            console.warn(`⚠️ ${symbol}: 지표 계산 실패`)
+            return null
+          }
+
+          // Momentum & Volume 계산
+          const momentum = momentumScore(data.history)
+          const volume = volumeSpike(data.history)
+
+          // Explosive Score (9개 지표 가중합)
+          const score = explosiveScore(factors, momentum, volume)
+
+          console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${score.toFixed(4)}`)
+
+          return {
+            symbol,
+            explosiveScore: parseFloat(score.toFixed(4)),
+            factors: {
+              price: factors.price,
+              pe: factors.pe,
+              pb: factors.pb,
+              floatShares: factors.float,
+              marketCap: factors.marketCap,
+              revenueGrowth: factors.revenueGrowth,
+              earningsGrowth: factors.earningsGrowth,
+              analystScore: factors.analystScore,
+              insiderActivity: factors.insiderActivity
+            },
+            metrics: {
+              momentum: parseFloat(momentum.toFixed(4)),
+              volume: parseFloat(volume.toFixed(2))
+            },
+            profile: {
+              company: data.quote?.symbol || symbol,
+              sector: data.metrics?.sector || null,
+              industry: data.metrics?.industry || null
+            }
+          }
+        } catch (e) {
+          console.error(`❌ Alpha Score Error:`, e.message)
+          return null
+        }
+      }
+
       function convertFredValue(series, rawValue) {
         if (rawValue === null || rawValue === undefined) return null
         const conversion = FRED_CONVERSIONS[series]
@@ -1316,6 +1521,31 @@ export default {
             dataType: "stock",
             symbol: stockSymbol,
             data: quote
+          }
+        } else {
+          response = {
+            timestamp: new Date().toISOString(),
+            error: "symbol parameter required"
+          }
+        }
+      }
+      // /alpha endpoint - Alpha Discovery Engine (9개 인디케이터 기반 점수)
+      else if (pathname === "/alpha") {
+        const stockSymbol = url.searchParams.get('symbol')
+        if (stockSymbol) {
+          const alphaData = await getAlphaScore(stockSymbol)
+          if (alphaData) {
+            response = {
+              timestamp: new Date().toISOString(),
+              dataType: "alpha",
+              symbol: stockSymbol,
+              data: alphaData
+            }
+          } else {
+            response = {
+              timestamp: new Date().toISOString(),
+              error: `Alpha score calculation failed for ${stockSymbol}`
+            }
           }
         } else {
           response = {
