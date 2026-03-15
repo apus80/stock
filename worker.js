@@ -307,20 +307,39 @@ export default {
         const metrics = data.metrics
         const history = data.history || []
 
+        // 🔍 DEBUG: metrics 전체 구조 확인
+        if (metrics) {
+          console.log(`📊 metrics 객체 키: ${Object.keys(metrics).slice(0, 20).join(', ')}`)
+          console.log(`📊 metrics 전체: ${JSON.stringify(metrics).substring(0, 300)}`)
+        }
+
         // 기본 정보
         const price = quote.price || 0
-        const pe = metrics?.peRatio || 50
-        const pb = metrics?.priceToBookRatio || 10
-        const float = metrics?.floatShares || 1000000000
-        const marketCap = metrics?.marketCap || 0
+        const pe = metrics?.peRatio || metrics?.pe || 50
+        const pb = metrics?.priceToBookRatio || metrics?.pb || 10
+        const float = metrics?.floatShares || metrics?.shares || 1000000000
+        const marketCap = metrics?.marketCap || metrics?.market_cap || 0
 
         // 성장률 지표 (FMP key-metrics에서 직접 가져옴)
         let revenueGrowth = 0
         let earningsGrowth = 0
 
         if (metrics) {
-          revenueGrowth = metrics.revenueGrowth || metrics.revenuePerShareGrowth || metrics.netIncomeGrowth || 0
-          earningsGrowth = metrics.earningsGrowth || metrics.epsGrowth || metrics.earningsPerShareGrowth || 0
+          // FMP 필드명 다양성 대응
+          revenueGrowth =
+            metrics.revenueGrowth ||
+            metrics.revenue_growth ||
+            metrics.revenuePerShareGrowth ||
+            metrics.netIncomeGrowth || 0
+
+          earningsGrowth =
+            metrics.earningsGrowth ||
+            metrics.earnings_growth ||
+            metrics.epsGrowth ||
+            metrics.earnings_per_share_growth ||
+            metrics.earningsPerShareGrowth || 0
+
+          console.log(`📊 성장률 필드 상세: revenueGrowth=${revenueGrowth}, earningsGrowth=${earningsGrowth}`)
         }
 
         // 성장률이 없으면 가격 데이터로 근사 계산
