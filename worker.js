@@ -224,7 +224,10 @@ export default {
         "WTREGEN": { divisor: 1000000, unit: "T" },
         "DGS10": { divisor: 1, unit: "%" },
         "DGS2": { divisor: 1, unit: "%" },
-        "DCOILWTICO": { divisor: 1, unit: "$" }
+        "DCOILWTICO": { divisor: 1, unit: "$" },
+        "PCEPI": { divisor: 1, unit: "idx" },  // PCE Inflation Index
+        "VIXCLS": { divisor: 1, unit: "idx" },  // VIX from FRED
+        "BAMLH0A0HYM2": { divisor: 1, unit: "%" }  // High Yield OAS Spread
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
@@ -874,6 +877,16 @@ export default {
           fredGet("INDPRO"),
           fredGet("PAYEMS"),
           fredGet("PCEPILFE"),
+          fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
+          fredGet("M2SL"),     // M2 통화량 (billions)
+          fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
+          fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
+          fredGet("CPILFESL", "pc1"), // Core CPI YoY% (출처: FRED CPILFESL, units=pc1 직접 공시값)
+          fredGet("CPIAUCSL", "pc1"),  // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
+          // 신규 FRED 경제지표 (3개)
+          fredGet("PCEPI"),    // PCE Inflation Index
+          fredGet("VIXCLS"),   // VIX from FRED
+          fredGet("BAMLH0A0HYM2"), // High Yield OAS Spread
           // 상품 (Commodities) - FMP stable batch-quote
           getQuote("GCUSD"),   // 금 (Gold)
           getQuote("SIUSD"),   // 은 (Silver)
@@ -882,19 +895,12 @@ export default {
           getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
-          yahooFinanceDXY(),   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
-          // 추가 FRED 경제지표
-          fredGet("WTREGEN"),  // TGA (재무부 일반 계정)
-          fredGet("M2SL"),     // M2 통화량 (billions)
-          fredGet("T10YIE"),   // 10년 기대인플레이션 (%)
-          fredGet("FEDFUNDS"), // Fed 기준금리 (효과적 연방기금금리, %)
-          fredGet("CPILFESL", "pc1"), // Core CPI YoY% (출처: FRED CPILFESL, units=pc1 직접 공시값)
-          fredGet("CPIAUCSL", "pc1")  // CPI YoY% (출처: FRED CPIAUCSL, units=pc1 직접 공시값)
+          yahooFinanceDXY()   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -938,6 +944,11 @@ export default {
         const fedRawVal = getLatestValue(fed)     // WALCL raw (millions) - index.html이 /1,000,000으로 T 변환
         const rpRawVal = getLatestValue(rp)       // RRPONTSYD raw (Billions) - FRED 원값이 이미 Billions 단위
         const tgaRawVal = getLatestValue(tga)     // WTREGEN raw (millions) - index.html이 /1,000,000으로 T 변환
+
+        // 신규 FRED 인디케이터 (3개)
+        const pcepiVal = convertFredValue("PCEPI", getLatestValue(pcepi))     // PCE Inflation Index
+        const vixclsVal = convertFredValue("VIXCLS", getLatestValue(vixcls))  // VIX from FRED
+        const hyOasVal = convertFredValue("BAMLH0A0HYM2", getLatestValue(hyOas)) // High Yield OAS Spread
 
         // EWY 가격 처리
         const ewyPrice = ewy?.price
@@ -1023,11 +1034,17 @@ export default {
             CPI: cpiVal,                       // CPIAUCSL 지수 레벨 (하위호환 유지)
             CPI_YOY: cpiYoY,                  // 출처: FRED CPIAUCSL 전년동기대비 YoY %
             CORE_CPI_YOY: coreCpiYoY,         // 출처: FRED CPILFESL (식료품·에너지 제외) YoY %
+            PCE_INFLATION: pcepiVal,           // 출처: FRED PCEPI (Personal Consumption Expenditures)
             FED_RATE: fedRateVal,              // 출처: FRED FEDFUNDS (효과적 연방기금금리 %)
             INFLATION_EXPECTATION: inflExpVal, // 출처: FRED T10YIE (10년 기대인플레이션)
             UNEMPLOYMENT: unrateVal,
             M2: m2RawVal ? m2RawVal * 1000 : null, // M2SL billions → millions (index.html이 /1,000,000으로 T 변환)
             REAL_RATES: us10y && inflExpVal ? parseFloat((us10y - inflExpVal).toFixed(2)) : null // 실질금리 = 10Y - 기대인플레이션
+          },
+          // 카드 15: Market Risk (신규)
+          MARKET_RISK: {
+            VIX_FRED: vixclsVal,               // 출처: FRED VIXCLS (VIX from FRED)
+            HY_OAS_SPREAD: hyOasVal            // 출처: FRED BAMLH0A0HYM2 (High Yield OAS Spread)
           },
           // 카드 13: Macro Indicators
           MACRO_INDICATORS: {
