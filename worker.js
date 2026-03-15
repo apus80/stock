@@ -235,7 +235,7 @@ export default {
             }
           }
 
-          return results.length > 0 ? results : null
+          return Object.keys(results).length > 0 ? results : null
         } catch (e) {
           console.error('❌ Yahoo Market Structure:', e.message)
           return null
