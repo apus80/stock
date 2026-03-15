@@ -1125,8 +1125,8 @@ export default {
         const data = await getMarketDataCached()
         const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
 
-        const fedT = data.fed ? parseFloat((data.fed / 1000000).toFixed(2)) : null
-        const rpB = data.rp ? parseFloat((data.rp / 1000).toFixed(1)) : null
+        const fedT = data.fedRaw ? parseFloat((data.fedRaw / 1000000).toFixed(2)) : null
+        const rpB = data.rpRaw ? parseFloat((data.rpRaw / 1000).toFixed(1)) : null
         return {
           timestamp: new Date().toISOString(),
           dataType: "liquidity_pulse",
