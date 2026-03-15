@@ -1500,16 +1500,17 @@ export default {
       // =============================
       // ALPHA DISCOVERY ENGINE
       // =============================
-      async function runAlphaDiscovery() {
+      async function runAlphaDiscovery(singleSymbol) {
         try {
-          const universe = await getHedgeFundUniverse()
+          // 단일 종목 또는 전체 universe 분석
+          const universe = singleSymbol ? [singleSymbol] : await getHedgeFundUniverse()
           console.log(`📊 Alpha Discovery: ${universe.length}개 종목 분석 시작`)
 
           const results = []
           const startTime = Date.now()
 
           // Rate Limit: 20개 종목 × 5개 API = 100 요청 (250/day 내)
-          for (let i = 0; i < Math.min(universe.length, 20); i++) {
+          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 20); i++) {
             const symbol = universe[i]
             try {
               const data = await getAlphaData(symbol)
@@ -2037,8 +2038,16 @@ export default {
         response = await getMarketHeatmap()
 
       // =============================
-      // ALPHA DISCOVERY ENGINE
+      // EARNINGS & ALPHA DISCOVERY
       // =============================
+      } else if (pathname === "/earnings") {
+        const symbol = url.searchParams.get('symbol')
+        if (symbol) {
+          response = await runAlphaDiscovery(symbol)
+        } else {
+          response = await runAlphaDiscovery()
+        }
+
       } else if (pathname === "/alpha/discovery") {
         response = await runAlphaDiscovery()
 
