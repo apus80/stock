@@ -403,28 +403,39 @@ export default {
         const revenueScore = normalizeGrowth(factors.revenueGrowth)
         const epsScore = normalizeGrowth(factors.epsGrowth)
 
-        // ✅ 2. 수익성 정규화 (0~100, 20%를 100점으로)
+        // ⚠️ 기본값 문제 수정: quote에서만 데이터를 받으므로 profitMargin, roe는 기본값만 존재
+        // 따라서 이 점수들은 모든 종목에서 동일
+        // 대신 PE, PB, Momentum 점수에 더 큰 가중치를 줌
         const profitScore = Math.min(100, (factors.profitMargin || 10) * 5)
         const roiScore = Math.min(100, (factors.roe || 15) * 5)
 
-        // ✅ 3. 밸류에이션 정규화 (PE/PB 낮을수록 높음, 범위 확장)
-        // PE 정규화: PE 10을 100점, PE 50을 0점 (기울기 조정)
+        // ✅ 2. 밸류에이션 정규화 (PE/PB 낮을수록 높음, 범위 확장)
+        // PE 정규화: PE 10을 100점, PE 50을 0점
         const peScore = Math.max(0, Math.min(100, 100 - (factors.pe || 50) / 0.4))
         // PB 정규화: PB 1을 100점, PB 10을 0점
         const pbScore = Math.max(0, Math.min(100, 100 - (factors.pb || 10) / 0.1))
 
-        // ✅ 4. 모멘텀 정규화 (0~100, 10%를 100점)
+        // ✅ 3. 모멘텀 정규화 (0~100, 10%를 100점)
         const momentumScore = Math.min(100, Math.max(0, (factors.momentum || 0) * 1000))
 
+        console.log(`   📊 Score 계산 상세:`)
+        console.log(`      - Revenue: ${revenueScore.toFixed(1)} (가중 ${(revenueScore*0.15).toFixed(1)})`)
+        console.log(`      - EPS:     ${epsScore.toFixed(1)} (가중 ${(epsScore*0.15).toFixed(1)})`)
+        console.log(`      - PE:      ${peScore.toFixed(1)} (가중 ${(peScore*0.3).toFixed(1)})`)
+        console.log(`      - PB:      ${pbScore.toFixed(1)} (가중 ${(pbScore*0.25).toFixed(1)})`)
+        console.log(`      - Momentum:${momentumScore.toFixed(1)} (가중 ${(momentumScore*0.15).toFixed(1)})`)
+
         // ✅ 최종 점수 (가중합 → 100점 만점)
+        // 변경: revenueScore, epsScore 가중치 증가
+        //      profitScore, roiScore 제거 (항상 동일한 기본값)
+        //      peScore, pbScore, momentumScore 가중치 증가 (quote 필드에서 계산 가능)
         const score =
-          revenueScore * 0.25 +        // 수익성장 (25%)
-          epsScore * 0.25 +            // EPS성장 (25%)
-          profitScore * 0.15 +         // 수익성 (15%)
-          roiScore * 0.15 +            // ROE (15%)
-          peScore * 0.10 +             // PE 가치 (10%)
-          pbScore * 0.05 +             // PB 가치 (5%)
-          momentumScore * 0.05         // 모멘텀 (5%)
+          revenueScore * 0.15 +        // 수익성장 (15%)
+          epsScore * 0.15 +            // EPS성장 (15%)
+          peScore * 0.30 +             // PE 가치 (30%) ← 증가
+          pbScore * 0.25 +             // PB 가치 (25%) ← 증가
+          momentumScore * 0.15         // 모멘텀 (15%) ← 증가
+          // profitScore, roiScore 제거 (기본값만 존재해서 모든 종목이 동일)
 
         return Math.max(0, Math.min(100, score))
       }
