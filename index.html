@@ -123,7 +123,7 @@
         }
 
         .tooltip {
-            visibility: visible !important;
+            visibility: hidden;
             position: absolute;
             bottom: 125%;
             left: 50%;
@@ -139,14 +139,13 @@
             white-space: pre-wrap;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
             border: 1px solid #475569;
-            opacity: 1 !important;
+            opacity: 0;
             transition: opacity 0.3s ease, visibility 0.3s ease;
             pointer-events: auto;
             max-width: 350px;
             word-break: break-word;
             min-height: auto;
             margin-bottom: 8px;
-            display: block !important;
         }
 
         .help-icon:hover .tooltip {
@@ -6895,6 +6894,72 @@ var ECON_DATA = {
         addDebugLog('API_BASE: ' + (typeof API_BASE !== 'undefined' ? API_BASE : 'NOT DEFINED'), 'log');
     })();
     </script>
+
+    <!-- Tooltip Toggle for Mobile & Desktop -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const helpIcons = document.querySelectorAll('.help-icon');
+
+            helpIcons.forEach(icon => {
+                const tooltip = icon.querySelector('.tooltip');
+                if (!tooltip) return;
+
+                // 클릭/탭으로 토글
+                icon.addEventListener('click', function(e) {
+                    e.stopPropagation();
+
+                    // 다른 tooltip은 모두 숨김
+                    document.querySelectorAll('.tooltip').forEach(t => {
+                        if (t !== tooltip) {
+                            t.classList.remove('active');
+                        }
+                    });
+
+                    // 현재 tooltip 토글
+                    tooltip.classList.toggle('active');
+                });
+
+                // 다른 곳 클릭 시 닫기
+                document.addEventListener('click', function(e) {
+                    if (!icon.contains(e.target)) {
+                        tooltip.classList.remove('active');
+                    }
+                });
+
+                // 터치 이벤트도 처리
+                icon.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    document.querySelectorAll('.tooltip').forEach(t => {
+                        if (t !== tooltip) {
+                            t.classList.remove('active');
+                        }
+                    });
+
+                    tooltip.classList.toggle('active');
+                });
+            });
+        });
+    </script>
+
+    <style>
+        /* Tooltip toggle styles */
+        .tooltip.active {
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            display: block !important;
+        }
+
+        /* 호버도 유지 */
+        .help-icon:hover .tooltip {
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            display: block !important;
+        }
+    </style>
 
 </body>
 
