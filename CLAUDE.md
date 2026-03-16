@@ -363,3 +363,176 @@ US10Y: 4.28  // ✅ 올바름
 US10Y: { value: 4.28 }  // ❌ 금지 (index.html이 인식 못함)
 ```
 
+---
+
+## 📐 Worker 개별 종목 엔드포인트 응답 구조
+
+### 1️⃣ `/stock` 엔드포인트 (실시간 주가)
+**용도:** index.html 종목 검색 → 기본 주가 데이터
+
+```json
+{
+  "timestamp": "2026-03-16T10:30:00Z",
+  "dataType": "stock",
+  "symbol": "AAPL",
+  "data": {
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "price": 185.42,
+    "change": 2.15,
+    "changePercentage": 1.17,
+    "timestamp": "2026-03-16T15:59:00Z"
+  }
+}
+```
+
+**데이터 소스:** FMP API `/stable/quote?symbol=X`
+**사용처:** index.html의 종목 검색 결과 표시
+
+---
+
+### 2️⃣ `/alpha` 엔드포인트 (Alpha Discovery Score + PE/PB)
+**용도:** ai-analysis-2.html 개별 종목 상세 분석
+
+```json
+{
+  "timestamp": "2026-03-16T10:30:00Z",
+  "dataType": "alpha",
+  "symbol": "AAPL",
+  "data": {
+    "symbol": "AAPL",
+    "explosiveScore": 75.4321,
+    "factors": {
+      "price": 185.42,
+      "pe": 28.5,                    // ✅ FMP fundamentals/ratios에서 가져옴
+      "pb": 42.3,                    // ✅ FMP fundamentals/ratios에서 가져옴
+      "floatShares": 2540000000,
+      "marketCap": 2850000000000,
+      "revenueGrowth": 5.8,
+      "earningsGrowth": 12.4,
+      "analystScore": 78,
+      "insiderActivity": 0.42
+    },
+    "metrics": {
+      "momentum": 3.2145,
+      "volume": 42.15
+    },
+    "profile": {
+      "company": "AAPL",
+      "sector": "Technology",
+      "industry": "Consumer Electronics"
+    }
+  }
+}
+```
+
+**데이터 소스:**
+- `quote`: FMP API `/stable/quote?symbol=X` (실시간)
+- `fundamentals`: FMP API `/fundamentals/financials?symbol=X` (분기/연간)
+- `ratios`: FMP API `/fundamentals/ratios?symbol=X` (**PE/PB 출처** ✅)
+- `metrics`: FMP API `/quote-short?symbol=X` + `/financials/metric?symbol=X`
+
+**PE/PB 데이터 흐름:**
+```javascript
+// worker.js getAlphaData() → calculateFactors()
+1. getRatios(symbol) 호출 → FMP /fundamentals/ratios
+2. priceToEarningsRatio, priceToBookRatio 추출
+3. fallback: quote.pe, metrics.peRatio 등 (순서대로)
+4. 최종 기본값: pe=50, pb=10
+
+const pe = ratios?.priceToEarningsRatio
+        || quote?.pe
+        || metrics?.peRatio
+        || 50
+const pb = ratios?.priceToBookRatio
+        || quote?.priceToBook
+        || quote?.pb
+        || metrics?.priceToBookRatio
+        || 10
+```
+
+**사용처:** ai-analysis-2.html의 개별 종목 상세 분석 (pe/pb 계산 포함)
+
+---
+
+### 3️⃣ `/alpha/discovery` 엔드포인트 (Top 20 종목 + Alpha Score)
+**용도:** ai-analysis-2.html의 Alpha Discovery Scanner 위젯
+
+```json
+{
+  "timestamp": "2026-03-16T10:30:00Z",
+  "analysis_type": "alpha_discovery",
+  "top_20": [
+    {
+      "rank": 1,
+      "symbol": "NVDA",
+      "explosiveScore": 92.1234,
+      "factors": {
+        "price": 945.23,
+        "pe": 45.2,              // ✅ /fundamentals/ratios에서 가져옴
+        "pb": 15.8,              // ✅ /fundamentals/ratios에서 가져옴
+        "revenueGrowth": 24.5,
+        "earningsGrowth": 35.2,
+        "analystScore": 85,
+        "insiderActivity": 0.65
+      },
+      "profile": {
+        "company": "NVDA",
+        "sector": "Technology"
+      }
+    },
+    // ... 19개 더
+  ],
+  "analyzed": 500,
+  "universe_size": 5000,
+  "execution_time_sec": 12.45
+}
+```
+
+**특징:**
+- 내부적으로 `/alpha` 호출 (모든 종목)
+- explosiveScore 기준 상위 20개 반환
+- 각 종목의 factors에 pe/pb 포함
+
+---
+
+## 🔗 엔드포인트별 필드 비교표
+
+| 엔드포인트 | PE 필드 | PB 필드 | 데이터 소스 | 사용처 | 응답 형식 |
+|-----------|---------|---------|-----------|--------|---------|
+| `/stock` | ❌ 없음 | ❌ 없음 | FMP `/stable/quote` | index.html 검색 | `{ data: quote }` |
+| `/alpha` | ✅ `factors.pe` | ✅ `factors.pb` | FMP `/fundamentals/ratios` (1순위) | ai-analysis-2.html 상세분석 | `{ data: { factors, metrics, profile } }` |
+| `/alpha/discovery` | ✅ `factors.pe` | ✅ `factors.pb` | FMP `/fundamentals/ratios` (1순위) | ai-analysis-2.html Scanner위젯 | `{ top_20: [...], analyzed, universe_size }` |
+
+---
+
+## 📝 PE/PB 데이터 검증 체크리스트
+
+- [x] `/alpha` 엔드포인트에서 `factors.pe`, `factors.pb` 반환 여부 ✅
+- [x] `getRatios()` 함수가 FMP `/fundamentals/ratios` 호출 ✅
+- [x] `calculateFactors()` 함수에서 ratios 우선 사용 ✅
+- [x] Balance Sheet 필드명 `accountPayables` 수정 ✅
+- [x] ai-analysis-2.html에서 `/alpha/discovery` 호출 (770번 줄) ✅
+- [x] ai-analysis-2.html에서 `factors.pe ?? 50`, `factors.pb ?? 10` 사용 (730-731번 줄) ✅
+- [x] HTML 기본값은 자동으로 ratios 값으로 대체됨 ✅
+
+---
+
+## 📌 마지막 수정 내역 (2026-03-16)
+
+### worker.js 변경사항:
+1. **getAlphaData() 함수** (line ~450)
+   - `getRatios(symbol)` 호출 추가
+   - PE/PB를 FMP ratios 데이터에서 가져오도록 개선
+
+2. **calculateFactors() 함수** (line ~348-349)
+   - `priceToEarningsRatio` 우선 사용
+   - `priceToBookRatio` 우선 사용
+   - fallback 체인 설정 (metrics → quote → 기본값)
+
+3. **Balance Sheet 필드명 수정** (line ~367)
+   - `accountsPayable` → `accountPayables`
+
+### HTML 변경사항:
+- **없음** ✅ (worker 변경으로 자동 반영됨)
+
