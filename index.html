@@ -5322,9 +5322,10 @@ var ECON_DATA = {
             if (cardDef.fields && cardDef.fields.length > 0) {
                 cardDef.fields.forEach(function(fieldPath) {
                     var value = getNestedValue(data, fieldPath);
-                    var formattedValue = formatValue(value);
-                    var label = fieldPath.split('.').pop();
-                    content += '<div class="item"><span>' + label + '</span><span class="item-right"><span class="value">' + formattedValue + '</span></span></div>';
+                    var formattedValue = formatValue(value, fieldPath);
+                    var label = getFieldLabel(fieldPath);
+                    var unit = getFieldUnit(fieldPath);
+                    content += '<div class="item"><span>' + label + '</span><span class="item-right"><span class="value">' + formattedValue + (unit ? ' ' + unit : '') + '</span></span></div>';
                 });
             } else {
                 content += '<div style="color:#888;">데이터 없음</div>';
@@ -5443,6 +5444,103 @@ var ECON_DATA = {
             return html;
         }
 
+        // 필드별 단위 맵
+        var fieldUnits = {
+            'changePercentage': '%',
+            'change': '%',
+            'US10Y': '%',
+            'US2Y': '%',
+            'YIELD_CURVE': '%',
+            'FED_BALANCE': 'T',
+            'REVERSE_REPO': 'B',
+            'TGA': 'T',
+            'M2': 'T',
+            'INFLATION_EXPECTATION': '%',
+            'UNEMPLOYMENT': '%',
+            'CPI': '',
+            'PCE_INFLATION': '%',
+            'REAL_GDP': 'B',
+            'INDUSTRIAL_PRODUCTION': '',
+            'NONFARM_PAYROLLS': 'K',
+            'CONSUMER_SENTIMENT': '',
+            'USDKRW': '',
+            'USDJPY': '',
+            'EURUSD': '',
+            'DXY': '',
+            'GOLD': '',
+            'SILVER': '',
+            'OIL': '',
+            'BTC': '',
+            'ETH': '',
+            'SOL': '',
+            'KODEX200': '',
+            'KODEXNASDAQ': '',
+            'SP500': '',
+            'NASDAQ': '',
+            'DOW': '',
+            'SOX': '',
+            'VIX': '',
+            'RUSSELL2000': '',
+            'EWY': '',
+            'HYG': '',
+            'LQD': '',
+            'VTI': '',
+            'TLT': ''
+        };
+
+        // 필드별 라벨 추출 (한글/영문 이름)
+        var fieldLabels = {
+            'KODEX200': 'KODEX 200',
+            'KODEXNASDAQ': 'KODEX NASDAQ',
+            'SP500': 'S&P 500',
+            'NASDAQ': 'NASDAQ',
+            'DOW': 'DOW Jones',
+            'SP500_FUTURES': 'ES Futures',
+            'NASDAQ_FUTURES': 'NQ Futures',
+            'DOW_FUTURES': 'YM Futures',
+            'BTC': 'Bitcoin',
+            'ETH': 'Ethereum',
+            'SOL': 'Solana',
+            'DXY': 'Dollar Index',
+            'USDJPY': 'USD/JPY',
+            'EURUSD': 'EUR/USD',
+            'USDKRW': 'USD/KRW',
+            'GOLD': 'Gold',
+            'SILVER': 'Silver',
+            'OIL': 'WTI Oil',
+            'VIX': 'VIX',
+            'SOX': 'Semiconductors',
+            'RUSSELL2000': 'Russell 2000',
+            'HYG': 'High Yield Bond',
+            'LQD': 'Investment Grade Bond',
+            'VTI': 'Total Stock Market',
+            'TLT': '20Y Treasury',
+            'EWY': 'Korea ETF',
+            'FED_BALANCE': 'Fed Balance',
+            'REVERSE_REPO': 'Reverse Repo',
+            'TGA': 'Treasury Account',
+            'M2': 'M2 Money Supply',
+            'INFLATION_EXPECTATION': '기대인플레이션',
+            'UNEMPLOYMENT': '실업률',
+            'CPI': 'CPI',
+            'PCE_INFLATION': 'PCE',
+            'REAL_GDP': 'Real GDP',
+            'INDUSTRIAL_PRODUCTION': '산업생산',
+            'NONFARM_PAYROLLS': '비농업 고용',
+            'CONSUMER_SENTIMENT': '소비자심리',
+            'TECHNOLOGY': 'Tech',
+            'FINANCIALS': 'Finance',
+            'ENERGY': 'Energy',
+            'HEALTHCARE': 'Healthcare',
+            'CONSUMER_DISCRETIONARY': 'Consumer',
+            'UTILITIES': 'Utilities',
+            'REAL_ESTATE': 'Real Estate',
+            'CONSUMER_STAPLES': 'Staples',
+            'INDUSTRIALS': 'Industrial',
+            'price': 'Price',
+            'changePercentage': 'Change %'
+        };
+
         // 유틸리티 함수들
         function setCardContent(cardId, html) {
             var el = document.getElementById('card-content-' + cardId);
@@ -5455,9 +5553,77 @@ var ECON_DATA = {
             }, obj);
         }
 
-        function formatValue(value) {
+        function getFieldLabel(fieldPath) {
+            var parts = fieldPath.split('.');
+            var lastPart = parts[parts.length - 1];
+            var secondLastPart = parts[parts.length - 2] || '';
+
+            // 마지막 부분이 'price'나 'changePercentage'이면 이전 부분 사용
+            var mainPart = (lastPart === 'price' || lastPart === 'changePercentage' || lastPart === 'change')
+                ? secondLastPart
+                : lastPart;
+
+            // 라벨 맵에서 찾기
+            if (fieldLabels[mainPart]) {
+                var baseLabel = fieldLabels[mainPart];
+                // changePercentage는 이미 % 단위가 표시되므로 'Chg' 추가 불필요
+                return baseLabel;
+            }
+
+            // 라벨 맵에 없으면 기본값
+            if (fieldLabels[lastPart]) {
+                return fieldLabels[lastPart];
+            }
+
+            // 기본값: camelCase를 띄어쓰기로 변환
+            var cleanLabel = mainPart.replace(/([A-Z])/g, ' $1').trim();
+            return cleanLabel;
+        }
+
+        function getFieldUnit(fieldPath) {
+            var parts = fieldPath.split('.');
+            var lastPart = parts[parts.length - 1];
+            var secondLastPart = parts[parts.length - 2] || '';
+
+            // 특정 필드의 단위 반환
+            if (fieldUnits[lastPart] !== undefined) {
+                return fieldUnits[lastPart];
+            }
+            if (fieldUnits[secondLastPart] !== undefined) {
+                return fieldUnits[secondLastPart];
+            }
+
+            // 환율, 지수 등은 단위 없음
+            if (lastPart === 'price' && (fieldPath.includes('FX') || fieldPath.includes('CRYPTO'))) {
+                return '';
+            }
+
+            // 화폐 기호 추가
+            if (fieldPath.includes('GOLD')) return '';
+            if (fieldPath.includes('SILVER')) return '';
+            if (fieldPath.includes('OIL')) return '';
+
+            return '';
+        }
+
+        function formatValue(value, fieldPath) {
             if (value === null || value === undefined) return '-';
-            if (typeof value === 'number') return value.toFixed(2);
+            if (typeof value === 'number') {
+                // 특별한 처리
+                if (fieldPath && fieldPath.includes('REVERSE_REPO')) {
+                    return (value / 1000).toFixed(0); // Billions
+                }
+                if (fieldPath && (fieldPath.includes('FED_BALANCE') || fieldPath.includes('TGA') || fieldPath.includes('M2'))) {
+                    return (value / 1000000).toFixed(1); // Trillions
+                }
+                if (fieldPath && fieldPath.includes('changePercentage')) {
+                    return value.toFixed(2);
+                }
+                if (fieldPath && fieldPath.includes('price')) {
+                    return value.toFixed(2);
+                }
+                return value.toFixed(2);
+            }
             if (typeof value === 'string') return value;
             return JSON.stringify(value);
         }
