@@ -693,7 +693,7 @@
         // UTILITIES (하드코딩 0개)
         // =============================
 
-        const API_BASE = ''
+        const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev'
 
         const fmt = {
             pct: (v, d = 1) => v != null ? (v > 0 ? '+' : '') + Number(v).toFixed(d) + '%' : '-',
@@ -766,9 +766,9 @@
                     const counter = setInterval(() => setElapsed(e => e + 1), 1000)
 
                     const results = await Promise.allSettled([
-                        fetch('/alpha/discovery').then(r => r.json()),
-                        fetch('/analysis/market-regime').then(r => r.json()),
-                        fetch('/feargreed').then(r => r.json())
+                        fetch(API_BASE + '/alpha/discovery').then(r => r.json()),
+                        fetch(API_BASE + '/analysis/market-regime').then(r => r.json()),
+                        fetch(API_BASE + '/feargreed').then(r => r.json())
                     ])
 
                     clearInterval(counter)
@@ -915,10 +915,10 @@
                 try {
                     setLoading(true)
                     const results = await Promise.allSettled([
-                        fetch('/analysis/market-regime').then(r => r.json()),
-                        fetch('/analysis/volatility-regime').then(r => r.json()),
-                        fetch('/analysis/credit-stress').then(r => r.json()),
-                        fetch('/feargreed').then(r => r.json())
+                        fetch(API_BASE + '/analysis/market-regime').then(r => r.json()),
+                        fetch(API_BASE + '/analysis/volatility-regime').then(r => r.json()),
+                        fetch(API_BASE + '/analysis/credit-stress').then(r => r.json()),
+                        fetch(API_BASE + '/feargreed').then(r => r.json())
                     ])
 
                     const regime = results[0].status === 'fulfilled' ? results[0].value : null
@@ -1036,12 +1036,12 @@
                     setError(null)
 
                     const results = await Promise.allSettled([
-                        fetch(`/alpha?symbol=${symbol}`).then(r => r.json()),
-                        fetch(`/fundamentals/growth?symbol=${symbol}`).then(r => r.json()),
-                        fetch(`/fundamentals/income?symbol=${symbol}`).then(r => r.json()),
-                        fetch(`/fundamentals/balance?symbol=${symbol}`).then(r => r.json()),
-                        fetch(`/fundamentals/cashflow?symbol=${symbol}`).then(r => r.json()),
-                        fetch(`/fundamentals/profile?symbol=${symbol}`).then(r => r.json())
+                        fetch(API_BASE + `/alpha?symbol=${symbol}`).then(r => r.json()),
+                        fetch(API_BASE + `/fundamentals/growth?symbol=${symbol}`).then(r => r.json()),
+                        fetch(API_BASE + `/fundamentals/income?symbol=${symbol}`).then(r => r.json()),
+                        fetch(API_BASE + `/fundamentals/balance?symbol=${symbol}`).then(r => r.json()),
+                        fetch(API_BASE + `/fundamentals/cashflow?symbol=${symbol}`).then(r => r.json()),
+                        fetch(API_BASE + `/fundamentals/profile?symbol=${symbol}`).then(r => r.json())
                     ])
 
                     const alpha = results[0].status === 'fulfilled' ? results[0].value : null
@@ -1196,8 +1196,8 @@
                     setLoading(true)
 
                     const results = await Promise.allSettled([
-                        fetch('/analysis/sector-rotation').then(r => r.json()),
-                        fetch('/alpha/discovery').then(r => r.json())
+                        fetch(API_BASE + '/analysis/sector-rotation').then(r => r.json()),
+                        fetch(API_BASE + '/alpha/discovery').then(r => r.json())
                     ])
 
                     const rotation = results[0].status === 'fulfilled' ? results[0].value : null
@@ -1213,7 +1213,7 @@
 
                     const profileResults = await Promise.allSettled(
                         discovery.top_20.map(stock =>
-                            fetch(`/fundamentals/profile?symbol=${stock.symbol}`).then(r => r.json())
+                            fetch(API_BASE + `/fundamentals/profile?symbol=${stock.symbol}`).then(r => r.json())
                         )
                     )
 
