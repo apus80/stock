@@ -307,19 +307,32 @@
             const [loading, setLoading] = useState(true);
             const [macroData, setMacroData] = useState(null);
 
-            // 종목 데이터 (실제로는 API에서 가져옴)
-            const stockDatabase = [
-                { ticker: 'AAPL', name: 'Apple', revenueGrowth: 18, epsGrowth: 22, roe: 18, debtToEquity: 0.8 },
-                { ticker: 'MSFT', name: 'Microsoft', revenueGrowth: 20, epsGrowth: 25, roe: 20, debtToEquity: 0.6 },
-                { ticker: 'NVDA', name: 'NVIDIA', revenueGrowth: 45, epsGrowth: 50, roe: 25, debtToEquity: 0.5 },
-                { ticker: 'TSLA', name: 'Tesla', revenueGrowth: 25, epsGrowth: 30, roe: 16, debtToEquity: 1.2 },
-                { ticker: 'META', name: 'Meta', revenueGrowth: 28, epsGrowth: 35, roe: 19, debtToEquity: 0.3 },
-                { ticker: 'AMZN', name: 'Amazon', revenueGrowth: 16, epsGrowth: 21, roe: 17, debtToEquity: 0.9 },
-                { ticker: 'GOOGL', name: 'Alphabet', revenueGrowth: 17, epsGrowth: 24, roe: 18, debtToEquity: 0.4 },
-                { ticker: 'NFLX', name: 'Netflix', revenueGrowth: 19, epsGrowth: 28, roe: 21, debtToEquity: 1.1 },
-                { ticker: 'CRM', name: 'Salesforce', revenueGrowth: 15, epsGrowth: 22, roe: 16, debtToEquity: 0.5 },
-                { ticker: 'ADBE', name: 'Adobe', revenueGrowth: 16, epsGrowth: 20, roe: 17, debtToEquity: 0.7 },
+            // 추적 종목 리스트 (API에서 가져올 예정)
+            const trackedStocks = [
+                { ticker: 'AAPL', name: 'Apple' },
+                { ticker: 'MSFT', name: 'Microsoft' },
+                { ticker: 'NVDA', name: 'NVIDIA' },
+                { ticker: 'TSLA', name: 'Tesla' },
+                { ticker: 'META', name: 'Meta' },
+                { ticker: 'AMZN', name: 'Amazon' },
+                { ticker: 'GOOGL', name: 'Alphabet' },
+                { ticker: 'NFLX', name: 'Netflix' },
+                { ticker: 'CRM', name: 'Salesforce' },
+                { ticker: 'ADBE', name: 'Adobe' },
             ];
+
+            const calculateLiquidityScore = (marketData) => {
+                // 유동성 점수 = FED_BALANCE + M2 - REVERSE_REPO - TGA
+                // 출처: FRED API (Federal Reserve) - 경제지표 기반 계산
+                const fedBalance = marketData.LIQUIDITY?.FED_BALANCE || 0;
+                const m2 = marketData.MACRO_BASE?.M2 || 0;
+                const reverseRepo = marketData.LIQUIDITY?.REVERSE_REPO || 0;
+                const tga = marketData.LIQUIDITY?.TGA || 0;
+
+                // 단위 정규화 (모두 millions로 변환)
+                const score = (fedBalance + m2 - reverseRepo - tga) / 1000000;
+                return score;
+            };
 
             const fetchData = useCallback(async () => {
                 try {
@@ -327,29 +340,62 @@
                     const res = await fetch('/api/market');
                     const marketData = await res.json();
 
-                    // 매크로 조건 계산
-                    const vix = marketData.US_MARKET?.VIX?.price || 20;
-                    const hyOAS = marketData.CREDIT?.HYG?.spread || 350;
+                    // 매크로 조건 계산 (API에서 실제 데이터 사용)
+                    const vix = marketData.US_MARKET?.VIX?.price;
+                    const hyOAS = marketData.CREDIT?.HYG?.spread;
 
-                    // Liquidity Score 계산 (간단화)
-                    // 실제로는 ΔFedBalance, ΔM2, ΔReverseRepo, ΔTGA 필요
-                    const liquidityScore = Math.random() * 100 - 50;
-                    const isBullishRegime = liquidityScore > 0 && vix < 20 && hyOAS < 350;
+                    // Liquidity Score 동적 계산 (API 데이터 기반)
+                    const liquidityScore = calculateLiquidityScore(marketData);
+
+                    // null 체크: 필요한 데이터가 없으면 판단 불가
+                    const isBullishRegime =
+                        vix !== null && vix !== undefined &&
+                        hyOAS !== null && hyOAS !== undefined ?
+                        liquidityScore > 0 && vix < 20 && hyOAS < 350 :
+                        null;
 
                     setMacroData({
                         liquidityScore: liquidityScore.toFixed(1),
-                        vix: vix.toFixed(2),
-                        hyOAS: hyOAS.toFixed(0),
+                        vix: vix ? vix.toFixed(2) : '-',
+                        hyOAS: hyOAS ? hyOAS.toFixed(0) : '-',
                         isBullish: isBullishRegime
                     });
 
+                    // 종목별 펀더멘탈 데이터 동적 호출
+                    // 현재는 /api/market에서 제공하지 않으므로, 향후 /api/fundamentals 엔드포인트 필요
+                    const stockDetails = await Promise.all(
+                        trackedStocks.map(async (stock) => {
+                            try {
+                                // TODO: /api/fundamentals/{ticker} 엔드포인트 구현 필요
+                                // 현재는 빈 데이터 처리
+                                return {
+                                    ticker: stock.ticker,
+                                    name: stock.name,
+                                    revenueGrowth: null,
+                                    epsGrowth: null,
+                                    roe: null,
+                                    debtToEquity: null
+                                };
+                            } catch (err) {
+                                return {
+                                    ticker: stock.ticker,
+                                    name: stock.name,
+                                    revenueGrowth: null,
+                                    epsGrowth: null,
+                                    roe: null,
+                                    debtToEquity: null
+                                };
+                            }
+                        })
+                    );
+
                     // 종목 필터링 및 스코링
-                    const filteredStocks = stockDatabase
+                    const filteredStocks = stockDetails
                         .filter(stock =>
-                            stock.revenueGrowth > 15 &&
-                            stock.epsGrowth > 20 &&
-                            stock.debtToEquity < 1.5 &&
-                            stock.roe > 15
+                            stock.revenueGrowth !== null && stock.revenueGrowth > 15 &&
+                            stock.epsGrowth !== null && stock.epsGrowth > 20 &&
+                            stock.debtToEquity !== null && stock.debtToEquity < 1.5 &&
+                            stock.roe !== null && stock.roe > 15
                         )
                         .map((stock, idx) => {
                             // Growth Score (0-30)
@@ -359,7 +405,7 @@
                             const profitScore = Math.min(30, (stock.roe - 15) * 2);
 
                             // Macro Score (0-40)
-                            const macroScore = isBullishRegime ? 40 : 20;
+                            const macroScore = isBullishRegime === true ? 40 : 20;
 
                             // Total Score
                             const totalScore = Math.round(growthScore + profitScore + macroScore);
@@ -373,15 +419,15 @@
                                 epsGrowth: stock.epsGrowth,
                                 roe: stock.roe,
                                 debtToEquity: stock.debtToEquity,
-                                regime: isBullishRegime ? 'BULL' : 'NEUTRAL'
+                                regime: isBullishRegime === true ? 'BULL' : 'NEUTRAL'
                             };
                         })
                         .sort((a, b) => b.score - a.score);
 
-                    setData(filteredStocks);
+                    setData(filteredStocks.length > 0 ? filteredStocks : null);
                 } catch (error) {
                     console.error('Error fetching data:', error);
-                    setData([]);
+                    setData(null);
                 } finally {
                     setLoading(false);
                 }
@@ -394,7 +440,7 @@
             }, [fetchData]);
 
             if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
-            if (!data || !macroData) return <div className="widget"><div className="loading">데이터 없음</div></div>;
+            if (!macroData) return <div className="widget"><div className="loading">매크로 데이터 로딩 실패</div></div>;
 
             return (
                 <div className="widget">
@@ -441,46 +487,52 @@
                     </div>
 
                     {/* 종목 테이블 */}
-                    <table className="scanner-table">
-                        <thead>
-                            <tr>
-                                <th style={{width: '8%'}}>Rank</th>
-                                <th style={{width: '12%'}}>종목</th>
-                                <th style={{width: '12%'}}>점수</th>
-                                <th style={{width: '15%'}}>매출성장률</th>
-                                <th style={{width: '15%'}}>EPS성장률</th>
-                                <th style={{width: '13%'}}>ROE</th>
-                                <th style={{width: '15%'}}>부채비율</th>
-                                <th style={{width: '10%'}}>레짐</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.map((stock) => (
-                                <tr key={stock.ticker}>
-                                    <td style={{textAlign: 'center', fontWeight: '700'}}>{stock.rank}</td>
-                                    <td className="stock-ticker">{stock.ticker}</td>
-                                    <td>
-                                        <span className={`score-badge ${stock.score >= 80 ? 'score-strong' : stock.score >= 65 ? 'score-moderate' : 'score-weak'}`}>
-                                            {stock.score}
-                                        </span>
-                                    </td>
-                                    <td className="value-positive">{stock.revenueGrowth}%</td>
-                                    <td className="value-positive">{stock.epsGrowth}%</td>
-                                    <td className="value-positive">{stock.roe}%</td>
-                                    <td>
-                                        <span className={stock.debtToEquity < 1.0 ? 'value-positive' : 'value-negative'}>
-                                            {stock.debtToEquity.toFixed(1)}x
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`macro-regime-badge ${stock.regime === 'BULL' ? 'regime-bull' : 'regime-neutral'}`}>
-                                            {stock.regime}
-                                        </span>
-                                    </td>
+                    {data && data.length > 0 ? (
+                        <table className="scanner-table">
+                            <thead>
+                                <tr>
+                                    <th style={{width: '8%'}}>Rank</th>
+                                    <th style={{width: '12%'}}>종목</th>
+                                    <th style={{width: '12%'}}>점수</th>
+                                    <th style={{width: '15%'}}>매출성장률</th>
+                                    <th style={{width: '15%'}}>EPS성장률</th>
+                                    <th style={{width: '13%'}}>ROE</th>
+                                    <th style={{width: '15%'}}>부채비율</th>
+                                    <th style={{width: '10%'}}>레짐</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {data.map((stock) => (
+                                    <tr key={stock.ticker}>
+                                        <td style={{textAlign: 'center', fontWeight: '700'}}>{stock.rank}</td>
+                                        <td className="stock-ticker">{stock.ticker}</td>
+                                        <td>
+                                            <span className={`score-badge ${stock.score >= 80 ? 'score-strong' : stock.score >= 65 ? 'score-moderate' : 'score-weak'}`}>
+                                                {stock.score}
+                                            </span>
+                                        </td>
+                                        <td className="value-positive">{stock.revenueGrowth}%</td>
+                                        <td className="value-positive">{stock.epsGrowth}%</td>
+                                        <td className="value-positive">{stock.roe}%</td>
+                                        <td>
+                                            <span className={stock.debtToEquity < 1.0 ? 'value-positive' : 'value-negative'}>
+                                                {stock.debtToEquity.toFixed(1)}x
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`macro-regime-badge ${stock.regime === 'BULL' ? 'regime-bull' : 'regime-neutral'}`}>
+                                                {stock.regime}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div style={{padding: '40px', textAlign: 'center', color: '#718096', fontSize: '14px'}}>
+                            ℹ️ 펀더멘탈 데이터가 필요합니다. /api/fundamentals 엔드포인트 구현이 필요합니다.
+                        </div>
+                    )}
 
                     {/* 설명 패널 */}
                     <div className="explanation-panel">
@@ -537,23 +589,43 @@
                     const res = await fetch('/api/market');
                     const marketData = await res.json();
 
-                    const spyPrice = marketData.US_MARKET?.SP500?.price || 500;
-
-                    // 섹터 데이터 생성 (실제로는 API에서 가져옴)
+                    // 출처: FMP API - 섹터별 가격 데이터
                     const sectorData = sectors.map((sector) => {
-                        // 3M, 6M 리턴 시뮬레이션 (실제로는 API에서)
-                        const return3m = (Math.random() * 15 - 5);
-                        const return6m = (Math.random() * 25 - 5);
+                        // API에서 섹터 가격 데이터 추출
+                        const sectorPrice = marketData.SECTORS?.[
+                            sector.ticker === 'XLK' ? 'TECHNOLOGY' :
+                            sector.ticker === 'XLF' ? 'FINANCIALS' :
+                            sector.ticker === 'XLE' ? 'ENERGY' :
+                            sector.ticker === 'XLV' ? 'HEALTHCARE' :
+                            sector.ticker === 'XLY' ? 'CONSUMER_DISCRETIONARY' :
+                            sector.ticker === 'XLI' ? 'INDUSTRIALS' :
+                            sector.ticker === 'XLU' ? 'UTILITIES' :
+                            sector.ticker === 'XLRE' ? 'REAL_ESTATE' : null
+                        ];
 
-                        // SPY 리턴 (기준)
-                        const spyReturn3m = 5;
-                        const spyReturn6m = 10;
+                        // SPY 기준 데이터
+                        const spyPrice = marketData.US_MARKET?.SP500;
 
-                        // Relative Strength 계산
-                        const relativeStrength = return6m / spyReturn6m;
+                        // 현재 가격 기반 변화율 계산 (정확한 historic 데이터 없이)
+                        // TODO: historic price data API 추가 필요
+                        const return3m = sectorPrice?.changePercentage || null;
+                        const return6m = sectorPrice?.changePercentage || null;
+
+                        // SPY 리턴 (기준) - API 데이터 사용
+                        const spyReturn3m = spyPrice?.changePercentage || null;
+                        const spyReturn6m = spyPrice?.changePercentage || null;
+
+                        // null 체크: 데이터가 없으면 계산 불가
+                        const relativeStrength =
+                            return6m !== null && spyReturn6m !== null && spyReturn6m !== 0 ?
+                            return6m / spyReturn6m :
+                            null;
 
                         // Sector Score 계산
-                        const sectorScore = return6m + (relativeStrength * 10);
+                        const sectorScore =
+                            return6m !== null && relativeStrength !== null ?
+                            return6m + (relativeStrength * 10) :
+                            null;
 
                         return {
                             ticker: sector.ticker,
@@ -562,9 +634,14 @@
                             momentum3m: return3m,
                             momentum6m: return6m,
                             relativeStrength: relativeStrength,
-                            score: Math.round(sectorScore)
+                            score: sectorScore !== null ? Math.round(sectorScore) : 0
                         };
-                    }).sort((a, b) => b.score - a.score);
+                    }).sort((a, b) => {
+                        // null 값은 뒤로 정렬
+                        if (b.score === 0 && a.score !== 0) return -1;
+                        if (a.score === 0 && b.score !== 0) return 1;
+                        return b.score - a.score;
+                    });
 
                     setData(sectorData);
                 } catch (error) {
@@ -637,22 +714,22 @@
                                             <span style={{fontSize: '12px', color: '#718096'}}>{sector.name}</span>
                                         </div>
                                     </td>
-                                    <td className={sector.momentum3m > 0 ? 'value-positive' : 'value-negative'}>
-                                        {sector.momentum3m > 0 ? '+' : ''}{sector.momentum3m.toFixed(2)}%
+                                    <td className={sector.momentum3m !== null && sector.momentum3m > 0 ? 'value-positive' : 'value-negative'}>
+                                        {sector.momentum3m !== null ? (sector.momentum3m > 0 ? '+' : '') + sector.momentum3m.toFixed(2) + '%' : '-'}
                                     </td>
-                                    <td className={sector.momentum6m > 0 ? 'value-positive' : 'value-negative'}>
-                                        {sector.momentum6m > 0 ? '+' : ''}{sector.momentum6m.toFixed(2)}%
+                                    <td className={sector.momentum6m !== null && sector.momentum6m > 0 ? 'value-positive' : 'value-negative'}>
+                                        {sector.momentum6m !== null ? (sector.momentum6m > 0 ? '+' : '') + sector.momentum6m.toFixed(2) + '%' : '-'}
                                     </td>
                                     <td>
                                         <span style={{
-                                            background: sector.relativeStrength > 1 ? '#d1fae5' : '#fee2e2',
-                                            color: sector.relativeStrength > 1 ? '#065f46' : '#991b1b',
+                                            background: sector.relativeStrength !== null ? (sector.relativeStrength > 1 ? '#d1fae5' : '#fee2e2') : '#f3f4f6',
+                                            color: sector.relativeStrength !== null ? (sector.relativeStrength > 1 ? '#065f46' : '#991b1b') : '#718096',
                                             padding: '4px 8px',
                                             borderRadius: '4px',
                                             fontWeight: '600',
                                             fontSize: '12px'
                                         }}>
-                                            {sector.relativeStrength.toFixed(2)}x
+                                            {sector.relativeStrength !== null ? sector.relativeStrength.toFixed(2) + 'x' : '-'}
                                         </span>
                                     </td>
                                     <td>
@@ -755,46 +832,55 @@
                     const res = await fetch('/api/market');
                     const marketData = await res.json();
 
-                    // 필요한 데이터 추출
-                    const hyOAS = marketData.MARKET_RISK?.HY_OAS_SPREAD || 350; // 기본값
-                    const vix = marketData.US_MARKET?.VIX?.price || marketData.MARKET_RISK?.VIX_FRED || 15;
-                    const us10y = marketData.RATES?.US10Y || 4.5;
-                    const us2y = marketData.RATES?.US2Y || 4.0;
+                    // 필요한 데이터 추출 (API 데이터만 사용, 기본값 제거)
+                    // 출처: FMP API (고수익채권 스프레드), FRED API (금리)
+                    const hyOAS = marketData.CREDIT?.HYG?.spread;
+                    const vix = marketData.US_MARKET?.VIX?.price;
+                    const us10y = marketData.RATES?.US10Y;
+                    const us2y = marketData.RATES?.US2Y;
 
-                    // Yield Curve 계산
-                    const yieldCurve = parseFloat((us10y - us2y).toFixed(2));
+                    // null 체크: 필수 데이터가 모두 있을 때만 계산
+                    let creditStressScore = null;
+                    let yieldCurve = null;
+                    let riskRegime = null;
+                    let riskColor = null;
+                    let riskEmoji = null;
 
-                    // Credit Stress Score 계산
-                    // 스코어 = HY OAS + VIX - (Yield Curve × 10)
-                    // YieldCurve가 음수면 (역곡선) 더 위험
-                    const creditStressScore = parseFloat((hyOAS + vix - (yieldCurve * 10)).toFixed(1));
+                    if (hyOAS !== null && vix !== null && us10y !== null && us2y !== null) {
+                        // Yield Curve 계산
+                        yieldCurve = parseFloat((us10y - us2y).toFixed(2));
 
-                    // Risk Regime 결정
-                    let riskRegime, riskColor, riskEmoji;
-                    if (creditStressScore < 300) {
-                        riskRegime = 'Low Risk';
-                        riskColor = '#10b981';
-                        riskEmoji = '🟢';
-                    } else if (creditStressScore < 450) {
-                        riskRegime = 'Moderate Risk';
-                        riskColor = '#f59e0b';
-                        riskEmoji = '🟡';
-                    } else {
-                        riskRegime = 'High Risk';
-                        riskColor = '#ef4444';
-                        riskEmoji = '🔴';
+                        // Credit Stress Score 계산
+                        // 스코어 = HY OAS + VIX - (Yield Curve × 10)
+                        // YieldCurve가 음수면 (역곡선) 더 위험
+                        creditStressScore = parseFloat((hyOAS + vix - (yieldCurve * 10)).toFixed(1));
+
+                        // Risk Regime 결정 (판단 기준)
+                        if (creditStressScore < 300) {
+                            riskRegime = 'Low Risk';
+                            riskColor = '#10b981';
+                            riskEmoji = '🟢';
+                        } else if (creditStressScore < 450) {
+                            riskRegime = 'Moderate Risk';
+                            riskColor = '#f59e0b';
+                            riskEmoji = '🟡';
+                        } else {
+                            riskRegime = 'High Risk';
+                            riskColor = '#ef4444';
+                            riskEmoji = '🔴';
+                        }
                     }
 
                     setData({
-                        hyOAS: parseFloat(hyOAS.toFixed(1)),
-                        vix: parseFloat(vix.toFixed(2)),
-                        us10y: parseFloat(us10y.toFixed(2)),
-                        us2y: parseFloat(us2y.toFixed(2)),
+                        hyOAS: hyOAS ? parseFloat(hyOAS.toFixed(1)) : '-',
+                        vix: vix ? parseFloat(vix.toFixed(2)) : '-',
+                        us10y: us10y ? parseFloat(us10y.toFixed(2)) : '-',
+                        us2y: us2y ? parseFloat(us2y.toFixed(2)) : '-',
                         yieldCurve: yieldCurve,
                         creditStressScore: creditStressScore,
                         riskRegime: riskRegime,
-                        riskColor: riskColor,
-                        riskEmoji: riskEmoji
+                        riskColor: riskColor || '#667eea',
+                        riskEmoji: riskEmoji || '❓'
                     });
                 } catch (error) {
                     console.error('Error:', error);
@@ -833,7 +919,7 @@
                         textAlign: 'center'
                     }}>
                         <div style={{fontSize: '32px', marginBottom: '8px'}}>
-                            {data.riskEmoji}
+                            {data.riskEmoji || '❓'}
                         </div>
                         <div style={{
                             fontSize: '28px',
@@ -841,7 +927,7 @@
                             color: data.riskColor,
                             marginBottom: '8px'
                         }}>
-                            {data.riskRegime}
+                            {data.riskRegime || '데이터 부족'}
                         </div>
                         <div style={{
                             fontSize: '20px',
@@ -849,7 +935,7 @@
                             color: data.riskColor,
                             marginBottom: '4px'
                         }}>
-                            {data.creditStressScore}
+                            {typeof data.creditStressScore === 'number' ? data.creditStressScore : '-'}
                         </div>
                         <div style={{color: '#718096', fontSize: '12px'}}>
                             신용 스트레스 지수
@@ -863,7 +949,7 @@
                             background: '#f7fafc',
                             padding: '16px',
                             borderRadius: '8px',
-                            borderLeft: `4px solid ${data.hyOAS > 400 ? '#ef4444' : data.hyOAS > 300 ? '#f59e0b' : '#10b981'}`
+                            borderLeft: `4px solid ${typeof data.hyOAS === 'number' ? (data.hyOAS > 400 ? '#ef4444' : data.hyOAS > 300 ? '#f59e0b' : '#10b981') : '#a0aec0'}`
                         }}>
                             <div style={{fontSize: '12px', color: '#718096', marginBottom: '8px', fontWeight: '600'}}>
                                 고수익채권 스프레드
@@ -878,11 +964,11 @@
                                 marginTop: '8px',
                                 fontSize: '11px',
                                 padding: '6px',
-                                background: data.hyOAS > 400 ? '#fee2e2' : data.hyOAS > 300 ? '#fef3c7' : '#d1fae5',
-                                color: data.hyOAS > 400 ? '#991b1b' : data.hyOAS > 300 ? '#78350f' : '#065f46',
+                                background: typeof data.hyOAS === 'number' ? (data.hyOAS > 400 ? '#fee2e2' : data.hyOAS > 300 ? '#fef3c7' : '#d1fae5') : '#f3f4f6',
+                                color: typeof data.hyOAS === 'number' ? (data.hyOAS > 400 ? '#991b1b' : data.hyOAS > 300 ? '#78350f' : '#065f46') : '#718096',
                                 borderRadius: '4px'
                             }}>
-                                {data.hyOAS > 400 ? '⬆️ 높음 (신용위험 증가)' : data.hyOAS > 300 ? '⚠️ 중간' : '✅ 낮음'}
+                                {typeof data.hyOAS === 'number' ? (data.hyOAS > 400 ? '⬆️ 높음 (신용위험 증가)' : data.hyOAS > 300 ? '⚠️ 중간' : '✅ 낮음') : 'ℹ️ 데이터 없음'}
                             </div>
                         </div>
 
@@ -891,7 +977,7 @@
                             background: '#f7fafc',
                             padding: '16px',
                             borderRadius: '8px',
-                            borderLeft: `4px solid ${data.vix > 25 ? '#ef4444' : data.vix > 15 ? '#f59e0b' : '#10b981'}`
+                            borderLeft: `4px solid ${typeof data.vix === 'number' ? (data.vix > 25 ? '#ef4444' : data.vix > 15 ? '#f59e0b' : '#10b981') : '#a0aec0'}`
                         }}>
                             <div style={{fontSize: '12px', color: '#718096', marginBottom: '8px', fontWeight: '600'}}>
                                 변동성 지수 (VIX)
@@ -906,11 +992,11 @@
                                 marginTop: '8px',
                                 fontSize: '11px',
                                 padding: '6px',
-                                background: data.vix > 25 ? '#fee2e2' : data.vix > 15 ? '#fef3c7' : '#d1fae5',
-                                color: data.vix > 25 ? '#991b1b' : data.vix > 15 ? '#78350f' : '#065f46',
+                                background: typeof data.vix === 'number' ? (data.vix > 25 ? '#fee2e2' : data.vix > 15 ? '#fef3c7' : '#d1fae5') : '#f3f4f6',
+                                color: typeof data.vix === 'number' ? (data.vix > 25 ? '#991b1b' : data.vix > 15 ? '#78350f' : '#065f46') : '#718096',
                                 borderRadius: '4px'
                             }}>
-                                {data.vix > 25 ? '⬆️ 높은 공포' : data.vix > 15 ? '⚠️ 중간' : '✅ 평온'}
+                                {typeof data.vix === 'number' ? (data.vix > 25 ? '⬆️ 높은 공포' : data.vix > 15 ? '⚠️ 중간' : '✅ 평온') : 'ℹ️ 데이터 없음'}
                             </div>
                         </div>
 
@@ -919,13 +1005,13 @@
                             background: '#f7fafc',
                             padding: '16px',
                             borderRadius: '8px',
-                            borderLeft: `4px solid ${data.yieldCurve < 0 ? '#ef4444' : data.yieldCurve < 0.5 ? '#f59e0b' : '#10b981'}`
+                            borderLeft: `4px solid ${typeof data.yieldCurve === 'number' ? (data.yieldCurve < 0 ? '#ef4444' : data.yieldCurve < 0.5 ? '#f59e0b' : '#10b981') : '#a0aec0'}`
                         }}>
                             <div style={{fontSize: '12px', color: '#718096', marginBottom: '8px', fontWeight: '600'}}>
                                 수익률 곡선 (10Y - 2Y)
                             </div>
                             <div style={{fontSize: '24px', fontWeight: '700', color: '#2d3748', marginBottom: '4px'}}>
-                                {data.yieldCurve > 0 ? '+' : ''}{data.yieldCurve}%
+                                {typeof data.yieldCurve === 'number' ? (data.yieldCurve > 0 ? '+' : '') + data.yieldCurve + '%' : '-'}
                             </div>
                             <div style={{fontSize: '11px', color: '#a0aec0'}}>
                                 Yield Curve Steepness
@@ -934,11 +1020,11 @@
                                 marginTop: '8px',
                                 fontSize: '11px',
                                 padding: '6px',
-                                background: data.yieldCurve < 0 ? '#fee2e2' : data.yieldCurve < 0.5 ? '#fef3c7' : '#d1fae5',
-                                color: data.yieldCurve < 0 ? '#991b1b' : data.yieldCurve < 0.5 ? '#78350f' : '#065f46',
+                                background: typeof data.yieldCurve === 'number' ? (data.yieldCurve < 0 ? '#fee2e2' : data.yieldCurve < 0.5 ? '#fef3c7' : '#d1fae5') : '#f3f4f6',
+                                color: typeof data.yieldCurve === 'number' ? (data.yieldCurve < 0 ? '#991b1b' : data.yieldCurve < 0.5 ? '#78350f' : '#065f46') : '#718096',
                                 borderRadius: '4px'
                             }}>
-                                {data.yieldCurve < 0 ? '⬇️ 역곡선 (경고!)' : data.yieldCurve < 0.5 ? '⚠️ 플랫' : '✅ 정상 곡선'}
+                                {typeof data.yieldCurve === 'number' ? (data.yieldCurve < 0 ? '⬇️ 역곡선 (경고!)' : data.yieldCurve < 0.5 ? '⚠️ 플랫' : '✅ 정상 곡선') : 'ℹ️ 데이터 없음'}
                             </div>
                         </div>
 
@@ -1025,31 +1111,40 @@
             const [data, setData] = useState(null);
             const [loading, setLoading] = useState(true);
 
-            // 예시 종목 (실제로는 API에서 필터링된 종목 호출)
-            const dummyStocks = [
-                { symbol: 'NVDA', name: '엔비디아', revenue: 45.2, eps: 52.3, roe: 28.5, peg: 1.2, explosive: 125.9 },
-                { symbol: 'TSLA', name: '테슬라', revenue: 38.5, eps: 42.1, roe: 24.3, peg: 1.4, explosive: 104.9 },
-                { symbol: 'MSTR', name: 'MicroStrategy', revenue: 32.1, eps: 48.2, roe: 31.2, peg: 0.9, explosive: 111.5 },
-                { symbol: 'AVGO', name: 'Broadcom', revenue: 35.8, eps: 41.5, roe: 26.7, peg: 1.1, explosive: 103.9 },
-                { symbol: 'ANET', name: 'Arista', revenue: 33.2, eps: 45.9, roe: 29.1, peg: 1.3, explosive: 108.2 },
-                { symbol: 'PLTR', name: 'Palantir', revenue: 31.5, eps: 42.8, roe: 22.4, peg: 1.4, explosive: 96.7 },
-                { symbol: 'CRM', name: 'Salesforce', revenue: 30.2, eps: 39.5, roe: 20.8, peg: 1.5, explosive: 90.5 },
-                { symbol: 'SNPS', name: 'Synopsys', revenue: 32.9, eps: 44.2, roe: 27.3, peg: 1.1, explosive: 104.4 }
-            ];
-
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
-                    // 실제로는 여기서 API 호출
+
+                    // API에서 펀더멘탈 데이터 호출
+                    // TODO: /api/explosive-stocks 엔드포인트 구현 필요
                     // const res = await fetch('/api/explosive-stocks');
                     // const stocks = await res.json();
 
-                    // 지금은 더미 데이터 사용 (정렬됨)
-                    const sortedStocks = dummyStocks.sort((a, b) => b.explosive - a.explosive);
-                    setData(sortedStocks);
+                    // 현재는 API 응답 없음 - 빈 배열 처리
+                    const stocks = [];
+
+                    // 종목 필터링 및 스코어 계산 (판단 기준)
+                    const filteredStocks = stocks
+                        .filter(stock =>
+                            stock.revenue !== null && stock.revenue > 30 &&
+                            stock.eps !== null && stock.eps > 40 &&
+                            stock.roe !== null && stock.roe > 20 &&
+                            stock.peg !== null && stock.peg < 1.5
+                        )
+                        .map((stock) => {
+                            // Explosive Score 계산: EPS성장 + 매출성장 + ROE
+                            const explosiveScore = stock.eps + stock.revenue + stock.roe;
+                            return {
+                                ...stock,
+                                explosive: explosiveScore
+                            };
+                        })
+                        .sort((a, b) => b.explosive - a.explosive);
+
+                    setData(filteredStocks);
                 } catch (error) {
                     console.error('Error:', error);
-                    setData(dummyStocks);
+                    setData([]);
                 } finally {
                     setLoading(false);
                 }
