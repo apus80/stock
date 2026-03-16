@@ -1444,6 +1444,365 @@
             );
         }
 
+        // ===== WIDGET 4: Liquidity Driven Stock Radar =====
+        function LiquidityDrivenStockRadar() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [liquidityMetrics, setLiquidityMetrics] = useState(null);
+
+            // 정규화 함수: 값을 0~100 범위로 변환
+            const normalize = (value, min = 0, max = 100) => {
+                if (value === null || value === undefined) return 0;
+                if (max === min) return 0;
+                return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+            };
+
+            // 역정규화: 낮을수록 높은 점수
+            const inverseNormalize = (value, min = 10, max = 50) => {
+                if (value === null || value === undefined) return 0;
+                if (value <= min) return 100;
+                if (value >= max) return 0;
+                return Math.max(0, ((max - value) / (max - min)) * 100));
+            };
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+
+                    // 1️⃣ 시장 & 거시 데이터 호출
+                    // 출처: /market endpoint
+                    const marketRes = await fetch('/market');
+                    const marketData = await marketRes.json();
+
+                    // 유동성 지수 계산
+                    const fedBalance = marketData.LIQUIDITY?.FED_BALANCE || 7000000; // raw millions
+                    const m2 = marketData.MACRO_BASE?.M2 || 21500000; // millions
+                    const reverseRepo = marketData.LIQUIDITY?.REVERSE_REPO || 100000; // billions
+                    const vix = marketData.MARKET_RISK?.VIX_FRED || 18;
+                    const hyOas = marketData.MARKET_RISK?.HY_OAS_SPREAD || 350;
+
+                    // 유동성 지수 (각 요소별로 정규화)
+                    const fedBalanceScore = normalize(fedBalance / 1000000, 6, 8); // 6T ~ 8T range
+                    const m2Score = normalize(m2 / 1000000, 19, 23); // 19T ~ 23T range
+                    const reverseRepoScore = normalize(reverseRepo / 1000, 0, 2000); // 0B ~ 2000B range
+                    const liquidityIndex = (fedBalanceScore + m2Score + reverseRepoScore) / 3;
+
+                    // 리스크 점수 (역정규화)
+                    const vixScore = inverseNormalize(vix, 10, 30); // VIX 10~30
+                    const hyOasScore = inverseNormalize(hyOas, 200, 600); // HY OAS 200~600 bps
+                    const riskScore = (vixScore + hyOasScore) / 2;
+
+                    setLiquidityMetrics({
+                        fedBalance: parseFloat((fedBalance / 1000000).toFixed(1)),
+                        m2: parseFloat((m2 / 1000000).toFixed(1)),
+                        reverseRepo: parseFloat((reverseRepo / 1000).toFixed(0)),
+                        vix: parseFloat(vix.toFixed(1)),
+                        hyOas: parseFloat(hyOas.toFixed(0)),
+                        liquidityIndex: Math.round(liquidityIndex),
+                        riskScore: Math.round(riskScore)
+                    });
+
+                    // 2️⃣ Alpha Discovery 호출: top 20 종목
+                    // 출처: /alpha/discovery endpoint
+                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaData = await alphaRes.json();
+
+                    if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
+                        setData([]);
+                        return;
+                    }
+
+                    const topStocks = alphaData.top_20.slice(0, 20);
+
+                    // 3️⃣ 각 종목의 성장 데이터 병렬 호출
+                    const stockDetails = await Promise.allSettled(
+                        topStocks.map(async (stock) => {
+                            const growthRes = await fetch(`/fundamentals/growth?symbol=${stock.symbol}`);
+                            const growth = await growthRes.json();
+
+                            return {
+                                symbol: stock.symbol,
+                                revenueGrowth: growth?.data?.revenueGrowth ? growth.data.revenueGrowth * 100 : 0,
+                                epsGrowth: growth?.data?.epsGrowth ? growth.data.epsGrowth * 100 : 0
+                            };
+                        })
+                    );
+
+                    // 4️⃣ 성공한 데이터만 필터링
+                    const validStocks = stockDetails
+                        .filter(result => result.status === 'fulfilled')
+                        .map(result => result.value)
+                        .filter(stock =>
+                            stock.revenueGrowth !== null &&
+                            stock.epsGrowth !== null
+                        );
+
+                    // 5️⃣ 점수 계산
+                    const scoredStocks = validStocks.map(stock => {
+                        const revenueGrowthScore = normalize(stock.revenueGrowth, 0, 100);
+
+                        // Liquidity Driven Score
+                        const liquidityDrivenScore = Math.round(
+                            0.40 * liquidityIndex +
+                            0.30 * riskScore +
+                            0.30 * revenueGrowthScore
+                        );
+
+                        return {
+                            ...stock,
+                            liquidityIndex: Math.round(liquidityIndex),
+                            riskScore: Math.round(riskScore),
+                            liquidityDrivenScore: liquidityDrivenScore
+                        };
+                    });
+
+                    // 6️⃣ 점수순 정렬 및 상위 10개 선택
+                    const topLiquidity = scoredStocks
+                        .sort((a, b) => b.liquidityDrivenScore - a.liquidityDrivenScore)
+                        .slice(0, 10);
+
+                    setData(topLiquidity);
+                } catch (error) {
+                    console.error('Error:', error);
+                    setData([]);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 300000); // 5분마다
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+            if (!data || data.length === 0) return <div className="widget"><div className="loading">데이터 없음</div></div>;
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">💧 유동성 장세 종목 (Liquidity Driven Stocks)</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">
+                        글로벌 유동성 확대로 수혜 받는 종목
+                    </div>
+
+                    {/* 유동성 지수 정보 */}
+                    <div style={{marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(147,197,253,0.1))', borderRadius: '8px'}}>
+                        <div style={{fontSize: '13px', fontWeight: '700', color: '#1e40af', marginBottom: '12px'}}>
+                            📊 글로벌 유동성 지표
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '11px'}}>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>연방준비 잔액</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: '#1e40af'}}>
+                                    {liquidityMetrics?.fedBalance || '-'}T
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>M2 통화량</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: '#1e40af'}}>
+                                    {liquidityMetrics?.m2 || '-'}T
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>역레포</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: '#1e40af'}}>
+                                    {liquidityMetrics?.reverseRepo || '-'}B
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>VIX</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: '#dc2626'}}>
+                                    {liquidityMetrics?.vix || '-'}
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>HY OAS</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: '#dc2626'}}>
+                                    {liquidityMetrics?.hyOas || '-'} bps
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>유동성 지수</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: liquidityMetrics?.liquidityIndex > 60 ? '#16a34a' : '#f59e0b'}}>
+                                    {liquidityMetrics?.liquidityIndex || '-'}/100
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 상위 3개 스팟라이트 */}
+                    <div style={{marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, rgba(37,99,235,0.1), rgba(96,165,250,0.1))', borderRadius: '8px'}}>
+                        <div style={{fontSize: '13px', fontWeight: '700', color: '#1e3a8a', marginBottom: '12px'}}>
+                            🎯 유동성 수혜 TOP 3
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px'}}>
+                            {data.slice(0, 3).map((stock, idx) => (
+                                <div key={stock.symbol} style={{
+                                    background: '#ffffff',
+                                    padding: '12px',
+                                    borderRadius: '6px',
+                                    borderLeft: `4px solid ${['#1e40af', '#2563eb', '#3b82f6'][idx]}`,
+                                    fontSize: '12px'
+                                }}>
+                                    <div style={{fontWeight: '700', color: '#2d3748', marginBottom: '4px'}}>
+                                        {idx + 1}. {stock.symbol}
+                                    </div>
+                                    <div style={{color: '#718096', fontSize: '11px', marginBottom: '8px'}}>
+                                        Revenue {stock.revenueGrowth.toFixed(1)}% / EPS {stock.epsGrowth.toFixed(1)}%
+                                    </div>
+                                    <div style={{
+                                        fontSize: '18px',
+                                        fontWeight: '700',
+                                        color: '#1e40af',
+                                        marginBottom: '4px'
+                                    }}>
+                                        {stock.liquidityDrivenScore}
+                                    </div>
+                                    <div style={{color: '#a0aec0', fontSize: '10px'}}>
+                                        Liquidity Score
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 상세 테이블 */}
+                    <table className="scanner-table">
+                        <thead>
+                            <tr>
+                                <th style={{width: '8%'}}>순위</th>
+                                <th style={{width: '12%'}}>종목</th>
+                                <th style={{width: '14%'}}>매출성장</th>
+                                <th style={{width: '14%'}}>EPS성장</th>
+                                <th style={{width: '12%'}}>유동성</th>
+                                <th style={{width: '12%'}}>리스크</th>
+                                <th style={{width: '14%'}}>점수</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((stock, idx) => (
+                                <tr key={stock.symbol}>
+                                    <td style={{textAlign: 'center', fontWeight: '700', color: '#1e40af'}}>
+                                        {idx + 1}
+                                    </td>
+                                    <td style={{fontWeight: '700', color: '#2d3748'}}>
+                                        {stock.symbol}
+                                    </td>
+                                    <td>
+                                        <span className={stock.revenueGrowth > 20 ? 'value-positive' : 'value-negative'}>
+                                            {stock.revenueGrowth > 0 ? '+' : ''}{stock.revenueGrowth.toFixed(1)}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={stock.epsGrowth > 20 ? 'value-positive' : 'value-negative'}>
+                                            {stock.epsGrowth > 0 ? '+' : ''}{stock.epsGrowth.toFixed(1)}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            background: stock.liquidityIndex > 60 ? '#d1fae5' : '#fef3c7',
+                                            color: stock.liquidityIndex > 60 ? '#065f46' : '#92400e',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            fontWeight: '600',
+                                            fontSize: '12px'
+                                        }}>
+                                            {stock.liquidityIndex}/100
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            background: stock.riskScore > 60 ? '#d1fae5' : '#fee2e2',
+                                            color: stock.riskScore > 60 ? '#065f46' : '#991b1b',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            fontWeight: '600',
+                                            fontSize: '12px'
+                                        }}>
+                                            {stock.riskScore}/100
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`score-badge ${stock.liquidityDrivenScore > 80 ? 'score-strong' : stock.liquidityDrivenScore > 60 ? 'score-moderate' : 'score-weak'}`}>
+                                            {stock.liquidityDrivenScore}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* 필터 조건 요약 */}
+                    <div style={{marginTop: '20px', padding: '16px', background: '#f7fafc', borderRadius: '8px'}}>
+                        <div style={{fontSize: '12px', fontWeight: '700', color: '#2d3748', marginBottom: '12px'}}>
+                            📋 Liquidity Driven Score 구성
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '12px'}}>
+                            <div style={{padding: '8px', background: '#dbeafe', borderRadius: '4px', color: '#1e40af', fontWeight: '600'}}>
+                                💧 40% 유동성 지수
+                            </div>
+                            <div style={{padding: '8px', background: '#dbeafe', borderRadius: '4px', color: '#1e40af', fontWeight: '600'}}>
+                                ⚠️ 30% 리스크 점수
+                            </div>
+                            <div style={{padding: '8px', background: '#dbeafe', borderRadius: '4px', color: '#1e40af', fontWeight: '600'}}>
+                                📈 30% 매출성장률
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 설명 패널 */}
+                    <div className="explanation-panel">
+                        <div className="explanation-title">📚 유동성 장세와 종목 선정</div>
+
+                        <div className="explanation-section">
+                            <strong>목표:</strong> 글로벌 유동성이 확대될 때 수혜를 받는 종목을 식별합니다.
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>유동성 지수 구성:</strong><br/>
+                            • <strong>Fed Balance Sheet (WALCL)</strong>: 연방준비의 자산 규모 (높을수록 시장 유동성 풍부)<br/>
+                            • <strong>M2 Money Supply</strong>: 통화량 증가 (금리 인하/QE 신호)<br/>
+                            • <strong>Reverse Repo (RRP)</strong>: 역레포 거래량 (시스템 유동성 상태)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>리스크 점수 구성:</strong><br/>
+                            • <strong>VIX (역정규화)</strong>: 변동성 지수 낮을수록 리스크 낮음 (시장 안정)<br/>
+                            • <strong>HY OAS (역정규화)</strong>: 하이일드 스프레드 낮을수록 신용 리스크 낮음
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>유동성 장세의 특징:</strong><br/>
+                            1️⃣ <strong>Fed Balance ↑</strong>: 중앙은행 자산 확대 (QE 정책)<br/>
+                            2️⃣ <strong>M2 ↑</strong>: 통화량 증가 (시장 유동성 풍부)<br/>
+                            3️⃣ <strong>RRP ↓</strong>: 역레포 감소 (은행 자금 부족 완화)<br/>
+                            4️⃣ <strong>VIX ↓</strong>: 변동성 감소 (시장 심리 개선)<br/>
+                            5️⃣ <strong>HY OAS ↓</strong>: 스프레드 축소 (신용 리스크 경감)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>유동성 수혜 종목의 조건:</strong><br/>
+                            • <strong>높은 매출 성장</strong>: 자본이 저렴할 때 확장 가능한 사업모델<br/>
+                            • <strong>높은 EPS 성장</strong>: 저금리로 차입비용 절감<br/>
+                            • <strong>유동성 민감성</strong>: M&A, 사업 확장이 활발한 업종
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>⚠️ 투자 시 주의사항:</strong><br/>
+                            • 유동성 장세는 통상 6-12개월 지속<br/>
+                            • 중앙은행 정책 변화에 매우 민감<br/>
+                            • Fed 수축(QT) 신호 시 즉시 회피 필요<br/>
+                            • Widget 2 (기관 매집)와 함께 검토하여 확증 매매 권장
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         // ===== WIDGET 3: Sector Rotation Stock Leader =====
         function SectorRotationLeaderFinder() {
             const [data, setData] = useState(null);
@@ -2317,6 +2676,7 @@
                     <UltimateStockDiscoveryEngine />
                     <SmartMoneyAccumulationFinder />
                     <SectorRotationLeaderFinder />
+                    <LiquidityDrivenStockRadar />
 
                     <div style={{textAlign: 'center', color: '#718096', fontSize: '13px', marginTop: '40px'}}>
                         <p>위젯은 5분마다 자동 갱신됩니다</p>
