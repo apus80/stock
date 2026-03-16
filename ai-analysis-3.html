@@ -744,6 +744,282 @@
             );
         }
 
+        // ===== WIDGET 3: Credit Stress Monitor =====
+        function CreditStressMonitor() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    const res = await fetch('/api/market');
+                    const marketData = await res.json();
+
+                    // 필요한 데이터 추출
+                    const hyOAS = marketData.MARKET_RISK?.HY_OAS_SPREAD || 350; // 기본값
+                    const vix = marketData.US_MARKET?.VIX?.price || marketData.MARKET_RISK?.VIX_FRED || 15;
+                    const us10y = marketData.RATES?.US10Y || 4.5;
+                    const us2y = marketData.RATES?.US2Y || 4.0;
+
+                    // Yield Curve 계산
+                    const yieldCurve = parseFloat((us10y - us2y).toFixed(2));
+
+                    // Credit Stress Score 계산
+                    // 스코어 = HY OAS + VIX - (Yield Curve × 10)
+                    // YieldCurve가 음수면 (역곡선) 더 위험
+                    const creditStressScore = parseFloat((hyOAS + vix - (yieldCurve * 10)).toFixed(1));
+
+                    // Risk Regime 결정
+                    let riskRegime, riskColor, riskEmoji;
+                    if (creditStressScore < 300) {
+                        riskRegime = 'Low Risk';
+                        riskColor = '#10b981';
+                        riskEmoji = '🟢';
+                    } else if (creditStressScore < 450) {
+                        riskRegime = 'Moderate Risk';
+                        riskColor = '#f59e0b';
+                        riskEmoji = '🟡';
+                    } else {
+                        riskRegime = 'High Risk';
+                        riskColor = '#ef4444';
+                        riskEmoji = '🔴';
+                    }
+
+                    setData({
+                        hyOAS: parseFloat(hyOAS.toFixed(1)),
+                        vix: parseFloat(vix.toFixed(2)),
+                        us10y: parseFloat(us10y.toFixed(2)),
+                        us2y: parseFloat(us2y.toFixed(2)),
+                        yieldCurve: yieldCurve,
+                        creditStressScore: creditStressScore,
+                        riskRegime: riskRegime,
+                        riskColor: riskColor,
+                        riskEmoji: riskEmoji
+                    });
+                } catch (error) {
+                    console.error('Error:', error);
+                    setData(null);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 300000); // 5분마다
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+            if (!data) return <div className="widget"><div className="loading">데이터 없음</div></div>;
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">⚠️ 신용 스트레스 모니터</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">
+                        신용시장 조기 경보 신호 감시 → 폭락 전조 탐지
+                    </div>
+
+                    {/* 위험 레짐 - 대형 강조 박스 */}
+                    <div style={{
+                        background: `linear-gradient(135deg, ${data.riskColor}15, ${data.riskColor}05)`,
+                        border: `2px solid ${data.riskColor}`,
+                        borderRadius: '12px',
+                        padding: '24px',
+                        marginBottom: '20px',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{fontSize: '32px', marginBottom: '8px'}}>
+                            {data.riskEmoji}
+                        </div>
+                        <div style={{
+                            fontSize: '28px',
+                            fontWeight: '700',
+                            color: data.riskColor,
+                            marginBottom: '8px'
+                        }}>
+                            {data.riskRegime}
+                        </div>
+                        <div style={{
+                            fontSize: '20px',
+                            fontWeight: '600',
+                            color: data.riskColor,
+                            marginBottom: '4px'
+                        }}>
+                            {data.creditStressScore}
+                        </div>
+                        <div style={{color: '#718096', fontSize: '12px'}}>
+                            신용 스트레스 지수
+                        </div>
+                    </div>
+
+                    {/* 상세 지표 */}
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '20px'}}>
+                        {/* HY OAS */}
+                        <div style={{
+                            background: '#f7fafc',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            borderLeft: `4px solid ${data.hyOAS > 400 ? '#ef4444' : data.hyOAS > 300 ? '#f59e0b' : '#10b981'}`
+                        }}>
+                            <div style={{fontSize: '12px', color: '#718096', marginBottom: '8px', fontWeight: '600'}}>
+                                고수익채권 스프레드
+                            </div>
+                            <div style={{fontSize: '24px', fontWeight: '700', color: '#2d3748', marginBottom: '4px'}}>
+                                {data.hyOAS}
+                            </div>
+                            <div style={{fontSize: '11px', color: '#a0aec0'}}>
+                                High Yield OAS (기준점, bp)
+                            </div>
+                            <div style={{
+                                marginTop: '8px',
+                                fontSize: '11px',
+                                padding: '6px',
+                                background: data.hyOAS > 400 ? '#fee2e2' : data.hyOAS > 300 ? '#fef3c7' : '#d1fae5',
+                                color: data.hyOAS > 400 ? '#991b1b' : data.hyOAS > 300 ? '#78350f' : '#065f46',
+                                borderRadius: '4px'
+                            }}>
+                                {data.hyOAS > 400 ? '⬆️ 높음 (신용위험 증가)' : data.hyOAS > 300 ? '⚠️ 중간' : '✅ 낮음'}
+                            </div>
+                        </div>
+
+                        {/* VIX */}
+                        <div style={{
+                            background: '#f7fafc',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            borderLeft: `4px solid ${data.vix > 25 ? '#ef4444' : data.vix > 15 ? '#f59e0b' : '#10b981'}`
+                        }}>
+                            <div style={{fontSize: '12px', color: '#718096', marginBottom: '8px', fontWeight: '600'}}>
+                                변동성 지수 (VIX)
+                            </div>
+                            <div style={{fontSize: '24px', fontWeight: '700', color: '#2d3748', marginBottom: '4px'}}>
+                                {data.vix}
+                            </div>
+                            <div style={{fontSize: '11px', color: '#a0aec0'}}>
+                                공포 지수
+                            </div>
+                            <div style={{
+                                marginTop: '8px',
+                                fontSize: '11px',
+                                padding: '6px',
+                                background: data.vix > 25 ? '#fee2e2' : data.vix > 15 ? '#fef3c7' : '#d1fae5',
+                                color: data.vix > 25 ? '#991b1b' : data.vix > 15 ? '#78350f' : '#065f46',
+                                borderRadius: '4px'
+                            }}>
+                                {data.vix > 25 ? '⬆️ 높은 공포' : data.vix > 15 ? '⚠️ 중간' : '✅ 평온'}
+                            </div>
+                        </div>
+
+                        {/* Yield Curve */}
+                        <div style={{
+                            background: '#f7fafc',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            borderLeft: `4px solid ${data.yieldCurve < 0 ? '#ef4444' : data.yieldCurve < 0.5 ? '#f59e0b' : '#10b981'}`
+                        }}>
+                            <div style={{fontSize: '12px', color: '#718096', marginBottom: '8px', fontWeight: '600'}}>
+                                수익률 곡선 (10Y - 2Y)
+                            </div>
+                            <div style={{fontSize: '24px', fontWeight: '700', color: '#2d3748', marginBottom: '4px'}}>
+                                {data.yieldCurve > 0 ? '+' : ''}{data.yieldCurve}%
+                            </div>
+                            <div style={{fontSize: '11px', color: '#a0aec0'}}>
+                                Yield Curve Steepness
+                            </div>
+                            <div style={{
+                                marginTop: '8px',
+                                fontSize: '11px',
+                                padding: '6px',
+                                background: data.yieldCurve < 0 ? '#fee2e2' : data.yieldCurve < 0.5 ? '#fef3c7' : '#d1fae5',
+                                color: data.yieldCurve < 0 ? '#991b1b' : data.yieldCurve < 0.5 ? '#78350f' : '#065f46',
+                                borderRadius: '4px'
+                            }}>
+                                {data.yieldCurve < 0 ? '⬇️ 역곡선 (경고!)' : data.yieldCurve < 0.5 ? '⚠️ 플랫' : '✅ 정상 곡선'}
+                            </div>
+                        </div>
+
+                        {/* 금리 레벨 */}
+                        <div style={{
+                            background: '#f7fafc',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            borderLeft: `4px solid #667eea`
+                        }}>
+                            <div style={{fontSize: '12px', color: '#718096', marginBottom: '8px', fontWeight: '600'}}>
+                                금리 레벨
+                            </div>
+                            <div style={{fontSize: '14px', color: '#2d3748', marginBottom: '12px'}}>
+                                <div style={{marginBottom: '6px'}}>
+                                    <span style={{fontWeight: '600'}}>10Y Treasury:</span>
+                                    <span style={{float: 'right', fontWeight: '700'}}>{data.us10y}%</span>
+                                </div>
+                                <div>
+                                    <span style={{fontWeight: '600'}}>2Y Treasury:</span>
+                                    <span style={{float: 'right', fontWeight: '700'}}>{data.us2y}%</span>
+                                </div>
+                            </div>
+                            <div style={{fontSize: '11px', color: '#a0aec0'}}>
+                                미국 재무부 수익률
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 설명 패널 */}
+                    <div className="explanation-panel">
+                        <div className="explanation-title">📚 신용 시장 조기 경보 설명</div>
+
+                        <div className="explanation-section">
+                            <strong>목표:</strong> 신용시장의 스트레스 신호를 감시하여 주식시장 폭락 전의 조기 경고 신호를 포착합니다.
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>왜 신용시장이 먼저 반응할까?</strong><br/>
+                            • 신용시장은 주식시장보다 <strong>1-3주 먼저</strong> 경기 변화를 반영<br/>
+                            • 기업 부도 위험 → 채권 스프레드 확대 (HY OAS 상승)<br/>
+                            • 투자자 위험회피 → VIX 상승, 안전자산 선호 (수익률 곡선 역전)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>Credit Stress Score 계산:</strong><br/>
+                            점수 = HY OAS + VIX - (Yield Curve × 10)<br/>
+                            <br/>
+                            • <strong>HY OAS</strong> (고수익채권 스프레드): 신용 위험도<br/>
+                            &nbsp;&nbsp;- 300bp 이상: 신용시장 스트레스<br/>
+                            &nbsp;&nbsp;- 400bp 이상: 높은 신용위험 (경고!)<br/>
+                            <br/>
+                            • <strong>VIX</strong> (변동성 지수): 시장 공포도<br/>
+                            &nbsp;&nbsp;- 15 이상: 시장 불안<br/>
+                            &nbsp;&nbsp;- 25 이상: 높은 공포 (매우 위험)<br/>
+                            <br/>
+                            • <strong>Yield Curve</strong> (10Y - 2Y): 경기 신호<br/>
+                            &nbsp;&nbsp;- 양수: 정상 곡선 (낙관적)<br/>
+                            &nbsp;&nbsp;- 0~0.5%: 플랫화 (불안)<br/>
+                            &nbsp;&nbsp;- 음수: 역곡선 (경기 둔화 신호!)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>위험 레짐 해석:</strong><br/>
+                            • <strong>🟢 Low Risk (&lt;300)</strong>: 신용시장 안정, 투자 우호적<br/>
+                            • <strong>🟡 Moderate Risk (300-450)</strong>: 주의 필요, 포지션 축소 검토<br/>
+                            • <strong>🔴 High Risk (&gt;450)</strong>: 높은 폭락 위험, 방어 필수
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>투자자 활용:</strong><br/>
+                            1️⃣ 신용 스트레스 증가 감시 (HY OAS ↑ or Curve ↓)<br/>
+                            2️⃣ VIX > 25 && HY OAS > 350 = 이중 신호 (매우 위험!)<br/>
+                            3️⃣ 현물 포지션 축소 or 헤지 추가<br/>
+                            4️⃣ 저PER, 고배당 안전주로 전환
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         // ===== Main App Component =====
         function App() {
             return (
@@ -755,6 +1031,7 @@
 
                     <MacroLiquidityStockScanner />
                     <SectorMomentumRotation />
+                    <CreditStressMonitor />
 
                     <div style={{textAlign: 'center', color: '#718096', fontSize: '13px', marginTop: '40px'}}>
                         <p>위젯은 5분마다 자동 갱신됩니다</p>
