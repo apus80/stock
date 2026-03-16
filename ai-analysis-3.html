@@ -440,23 +440,23 @@
                         break;
 
                     case 5:
-                        // 궁극의 주식 발굴 엔진 (Engine Discovery)
-                        const engineData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/engine/discovery').then(r => r.json()).catch(() => null);
-                        if (engineData && engineData.discoveries && engineData.discoveries.stocks && engineData.discoveries.stocks.length > 0) {
-                            const stocks = engineData.discoveries.stocks.slice(0, 10); // 상위 10개 표시
-                            html = '<table><thead><tr><th>종목</th><th>최종점수</th><th>가격</th><th>PE</th><th>ROE</th></tr></thead><tbody>';
+                        // 궁극의 주식 발굴 엔진 (Alpha Discovery)
+                        const ultimateData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/discovery').then(r => r.json()).catch(() => null);
+                        if (ultimateData && ultimateData.top_20 && ultimateData.top_20.length > 0) {
+                            const stocks = ultimateData.top_20.slice(0, 10); // 상위 10개 표시
+                            html = '<table><thead><tr><th>종목</th><th>최종점수</th><th>가격</th><th>PE</th><th>수익률</th></tr></thead><tbody>';
                             stocks.forEach(stock => {
-                                const scoreColor = stock.ultimateScore >= 75 ? '#10b981' : stock.ultimateScore >= 50 ? '#f59e0b' : '#ef4444';
+                                const scoreColor = stock.score >= 75 ? '#10b981' : stock.score >= 50 ? '#f59e0b' : '#ef4444';
                                 html += `<tr>
                                     <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.ultimateScore.toFixed(2)}</td>
+                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.score.toFixed(2)}</td>
                                     <td>$${stock.price.toFixed(2)}</td>
                                     <td>${stock.pe > 0 ? stock.pe.toFixed(2) : 'N/A'}</td>
-                                    <td style="color: ${stock.roe >= 0 ? '#10b981' : '#ef4444'}">${stock.roe >= 0 ? '+' : ''}${stock.roe.toFixed(2)}%</td>
+                                    <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${stock.revenueGrowth >= 0 ? '+' : ''}${stock.revenueGrowth.toFixed(2)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status">발굴된 종목: ${engineData.discoveries.total}개</div>`;
+                            html += `<div class="status">발굴된 종목: ${ultimateData.analyzed}개</div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
                         }
