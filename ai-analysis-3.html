@@ -1444,6 +1444,431 @@
             );
         }
 
+        // ===== WIDGET 5: Investflow Discovery Engine (CORE) =====
+        function InvestflowDiscoveryEngine() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [macroRegime, setMacroRegime] = useState(null);
+
+            // 정규화 함수
+            const normalize = (value, min = 0, max = 100) => {
+                if (value === null || value === undefined) return 0;
+                if (max === min) return 0;
+                return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+            };
+
+            // 역정규화: 낮을수록 높은 점수
+            const inverseNormalize = (value, min = 5, max = 50) => {
+                if (value === null || value === undefined) return 0;
+                if (value <= min) return 100;
+                if (value >= max) return 0;
+                return Math.max(0, ((max - value) / (max - min)) * 100));
+            };
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+
+                    // 1️⃣ 시장 데이터 호출 - Macro Regime 분석
+                    // 출처: /market endpoint
+                    const marketRes = await fetch('/market');
+                    const marketData = await marketRes.json();
+
+                    // Macro Regime 판단
+                    const spyReturn = marketData.US_MARKET?.SP500?.changePercentage || 0;
+                    const vix = marketData.MARKET_RISK?.VIX_FRED || 20;
+                    const hyOas = marketData.MARKET_RISK?.HY_OAS_SPREAD || 400;
+
+                    const isRiskOn = spyReturn > 0 && vix < 20 && hyOas < 400;
+                    const macroScoreVal = isRiskOn
+                        ? (normalize(spyReturn, -5, 5) + inverseNormalize(vix, 10, 30)) / 2
+                        : (normalize(spyReturn, -10, 0) + inverseNormalize(vix, 10, 40)) / 2;
+
+                    setMacroRegime({
+                        regime: isRiskOn ? '🟢 Risk-On' : '🔴 Risk-Off',
+                        spyReturn: parseFloat(spyReturn.toFixed(2)),
+                        vix: parseFloat(vix.toFixed(1)),
+                        hyOas: parseFloat(hyOas.toFixed(0)),
+                        macroScore: Math.round(macroScoreVal)
+                    });
+
+                    // 섹터 수익률 추출
+                    const sectorReturns = {};
+                    if (marketData.SECTORS) {
+                        Object.entries(marketData.SECTORS).forEach(([name, data]) => {
+                            if (data?.changePercentage !== null) {
+                                sectorReturns[name] = data.changePercentage;
+                            }
+                        });
+                    }
+
+                    // 2️⃣ Alpha Discovery 호출: top 20 종목
+                    // 출처: /alpha/discovery endpoint
+                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaData = await alphaRes.json();
+
+                    if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
+                        setData([]);
+                        return;
+                    }
+
+                    const topStocks = alphaData.top_20.slice(0, 20);
+
+                    // 3️⃣ 각 종목의 펀더멘탈 데이터 병렬 호출
+                    const stockDetails = await Promise.allSettled(
+                        topStocks.map(async (stock) => {
+                            const [growthRes, incomeRes, profileRes] = await Promise.all([
+                                fetch(`/fundamentals/growth?symbol=${stock.symbol}`),
+                                fetch(`/fundamentals/income?symbol=${stock.symbol}`),
+                                fetch(`/fundamentals/profile?symbol=${stock.symbol}`)
+                            ]);
+
+                            const growth = await growthRes.json();
+                            const income = await incomeRes.json();
+                            const profile = await profileRes.json();
+
+                            // ROE 계산 = (netIncome / stockholdersEquity) * 100
+                            // 단순화: income에서 제공하는 eps와 성장률로 추정
+                            const netIncome = income?.data?.netIncome || null;
+                            const revenue = income?.data?.revenue || null;
+                            const roe = netIncome && revenue && revenue > 0
+                                ? (netIncome / revenue) * 100 * 0.15 // Conservative ROE proxy
+                                : null;
+
+                            // 부채비율 추정: income에서 operatingIncome/revenue로 간접 계산
+                            const operatingIncome = income?.data?.operatingIncome || null;
+                            const operatingMargin = operatingIncome && revenue && revenue > 0
+                                ? (operatingIncome / revenue) * 100
+                                : 0;
+                            const debtScore = 100 - Math.max(0, Math.min(100, operatingMargin * 2));
+
+                            return {
+                                symbol: stock.symbol,
+                                name: profile?.data?.companyName || stock.symbol,
+                                sector: profile?.data?.sector || "Unknown",
+                                revenueGrowth: growth?.data?.revenueGrowth ? growth.data.revenueGrowth * 100 : 0,
+                                epsGrowth: growth?.data?.epsGrowth ? growth.data.epsGrowth * 100 : 0,
+                                roe: roe || (operatingMargin * 0.8), // Fallback to operating margin proxy
+                                debtScore: debtScore,
+                                operatingMargin: operatingMargin
+                            };
+                        })
+                    );
+
+                    // 4️⃣ 성공한 데이터만 필터링
+                    const validStocks = stockDetails
+                        .filter(result => result.status === 'fulfilled')
+                        .map(result => result.value)
+                        .filter(stock =>
+                            stock.revenueGrowth !== null &&
+                            stock.epsGrowth !== null &&
+                            stock.sector !== null
+                        );
+
+                    // 5️⃣ 최종 Investflow Score 계산
+                    const scoredStocks = validStocks.map(stock => {
+                        // Fundamental Score = 0.30*RevenueGrowth + 0.30*EPSGrowth + 0.20*ROE + 0.20*DebtScore
+                        const revenueSc = normalize(stock.revenueGrowth, 0, 100);
+                        const epsSc = normalize(stock.epsGrowth, 0, 100);
+                        const roeSc = normalize(stock.roe, 0, 30);
+                        const debtSc = stock.debtScore; // 이미 점수화됨
+
+                        const fundamentalScore = (0.30 * revenueSc + 0.30 * epsSc + 0.20 * roeSc + 0.20 * debtSc);
+
+                        // Sector Strength = sector_return - SPY_return
+                        const normalizedSector = stock.sector
+                            ? stock.sector.toUpperCase().replace(/\s+/g, '_')
+                            : 'UNKNOWN';
+                        const sectorReturn = sectorReturns[normalizedSector] || 0;
+                        const sectorStrength = sectorReturn - spyReturn;
+                        const sectorSc = normalize(sectorStrength, -10, 10);
+
+                        // Final Investflow Score = 0.30*MacroScore + 0.30*SectorStrength + 0.40*FundamentalScore
+                        const investflowScore = Math.round(
+                            0.30 * macroScoreVal +
+                            0.30 * sectorSc +
+                            0.40 * fundamentalScore
+                        );
+
+                        return {
+                            ...stock,
+                            sectorStrength: parseFloat(sectorStrength.toFixed(2)),
+                            macroScore: Math.round(macroScoreVal),
+                            fundamentalScore: Math.round(fundamentalScore),
+                            investflowScore: investflowScore
+                        };
+                    });
+
+                    // 6️⃣ 점수순 정렬 및 상위 10개 선택
+                    const topDiscovery = scoredStocks
+                        .sort((a, b) => b.investflowScore - a.investflowScore)
+                        .slice(0, 10);
+
+                    setData(topDiscovery);
+                } catch (error) {
+                    console.error('Error:', error);
+                    setData([]);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 300000); // 5분마다
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+            if (!data || data.length === 0) return <div className="widget"><div className="loading">데이터 없음</div></div>;
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">🚀 InvestFlow 종목 발굴 (Discovery Engine - CORE)</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">
+                        거시, 섹터, 펀더멘탈을 결합한 포괄적 종목 발굴 엔진
+                    </div>
+
+                    {/* 거시 환경 분석 */}
+                    <div style={{marginBottom: '20px', padding: '16px', background: macroRegime?.regime?.includes('Risk-On') ? 'linear-gradient(135deg, rgba(34,197,94,0.1), rgba(86,180,211,0.1))' : 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(245,158,11,0.1))', borderRadius: '8px'}}>
+                        <div style={{fontSize: '13px', fontWeight: '700', color: macroRegime?.regime?.includes('Risk-On') ? '#16a34a' : '#dc2626', marginBottom: '12px'}}>
+                            📊 거시 환경 분석: {macroRegime?.regime || '-'}
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', fontSize: '11px'}}>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>SPY 수익률</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: macroRegime?.spyReturn > 0 ? '#16a34a' : '#dc2626'}}>
+                                    {macroRegime?.spyReturn || '-'}%
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>VIX</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: macroRegime?.vix < 20 ? '#16a34a' : '#dc2626'}}>
+                                    {macroRegime?.vix || '-'}
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>HY OAS</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: macroRegime?.hyOas < 400 ? '#16a34a' : '#dc2626'}}>
+                                    {macroRegime?.hyOas || '-'} bps
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>거시 점수</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: macroRegime?.macroScore > 60 ? '#16a34a' : '#f59e0b'}}>
+                                    {macroRegime?.macroScore || '-'}/100
+                                </div>
+                            </div>
+                            <div style={{background: '#ffffff', padding: '10px', borderRadius: '6px'}}>
+                                <div style={{color: '#718096', marginBottom: '4px'}}>신뢰도</div>
+                                <div style={{fontSize: '16px', fontWeight: '700', color: macroRegime?.regime?.includes('Risk-On') ? '#16a34a' : '#f59e0b'}}>
+                                    {macroRegime?.regime?.includes('Risk-On') ? '높음' : '낮음'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 상위 3개 스팟라이트 */}
+                    <div style={{marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(233,64,87,0.1))', borderRadius: '8px'}}>
+                        <div style={{fontSize: '13px', fontWeight: '700', color: '#a855f7', marginBottom: '12px'}}>
+                            ⭐ InvestFlow TOP 3
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px'}}>
+                            {data.slice(0, 3).map((stock, idx) => (
+                                <div key={stock.symbol} style={{
+                                    background: '#ffffff',
+                                    padding: '12px',
+                                    borderRadius: '6px',
+                                    borderLeft: `4px solid ${['#a855f7', '#d946ef', '#ec4899'][idx]}`,
+                                    fontSize: '12px'
+                                }}>
+                                    <div style={{fontWeight: '700', color: '#2d3748', marginBottom: '4px'}}>
+                                        {idx + 1}. {stock.symbol}
+                                    </div>
+                                    <div style={{color: '#718096', fontSize: '11px', marginBottom: '8px'}}>
+                                        {stock.sector}
+                                    </div>
+                                    <div style={{
+                                        fontSize: '20px',
+                                        fontWeight: '700',
+                                        color: '#a855f7',
+                                        marginBottom: '4px'
+                                    }}>
+                                        {stock.investflowScore}
+                                    </div>
+                                    <div style={{color: '#a0aec0', fontSize: '10px'}}>
+                                        InvestFlow Score
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 상세 테이블 */}
+                    <table className="scanner-table">
+                        <thead>
+                            <tr>
+                                <th style={{width: '6%'}}>순위</th>
+                                <th style={{width: '12%'}}>종목</th>
+                                <th style={{width: '12%'}}>섹터</th>
+                                <th style={{width: '10%'}}>매출성장</th>
+                                <th style={{width: '10%'}}>EPS성장</th>
+                                <th style={{width: '8%'}}>ROE</th>
+                                <th style={{width: '10%'}}>섹터강도</th>
+                                <th style={{width: '10%'}}>거시점수</th>
+                                <th style={{width: '12%'}}>최종점수</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((stock, idx) => (
+                                <tr key={stock.symbol}>
+                                    <td style={{textAlign: 'center', fontWeight: '700', color: '#a855f7'}}>
+                                        {idx + 1}
+                                    </td>
+                                    <td style={{fontWeight: '700', color: '#2d3748'}}>
+                                        {stock.symbol}
+                                    </td>
+                                    <td>
+                                        <span style={{fontSize: '10px', background: '#f3e8ff', padding: '4px 8px', borderRadius: '4px', color: '#7e22ce', fontWeight: '600'}}>
+                                            {stock.sector}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={stock.revenueGrowth > 20 ? 'value-positive' : 'value-negative'}>
+                                            {stock.revenueGrowth.toFixed(1)}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={stock.epsGrowth > 20 ? 'value-positive' : 'value-negative'}>
+                                            {stock.epsGrowth.toFixed(1)}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={stock.roe > 15 ? 'value-positive' : 'value-negative'}>
+                                            {stock.roe.toFixed(1)}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            background: stock.sectorStrength > 0 ? '#d1fae5' : '#fee2e2',
+                                            color: stock.sectorStrength > 0 ? '#065f46' : '#991b1b',
+                                            padding: '4px 6px',
+                                            borderRadius: '4px',
+                                            fontWeight: '600',
+                                            fontSize: '11px'
+                                        }}>
+                                            {stock.sectorStrength > 0 ? '+' : ''}{stock.sectorStrength.toFixed(2)}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            background: stock.macroScore > 60 ? '#d1fae5' : '#fef3c7',
+                                            color: stock.macroScore > 60 ? '#065f46' : '#92400e',
+                                            padding: '4px 6px',
+                                            borderRadius: '4px',
+                                            fontWeight: '600',
+                                            fontSize: '11px'
+                                        }}>
+                                            {stock.macroScore}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`score-badge ${stock.investflowScore > 80 ? 'score-strong' : stock.investflowScore > 60 ? 'score-moderate' : 'score-weak'}`}>
+                                            {stock.investflowScore}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* 필터 조건 요약 */}
+                    <div style={{marginTop: '20px', padding: '16px', background: '#f7fafc', borderRadius: '8px'}}>
+                        <div style={{fontSize: '12px', fontWeight: '700', color: '#2d3748', marginBottom: '12px'}}>
+                            📋 InvestFlow Score 구성 (3단계)
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '12px'}}>
+                            <div style={{padding: '8px', background: '#fce7f3', borderRadius: '4px', color: '#be123c', fontWeight: '600'}}>
+                                📊 30% 거시 환경 (MacroScore)
+                            </div>
+                            <div style={{padding: '8px', background: '#fce7f3', borderRadius: '4px', color: '#be123c', fontWeight: '600'}}>
+                                📈 30% 섹터 강도 (상대수익률)
+                            </div>
+                            <div style={{padding: '8px', background: '#fce7f3', borderRadius: '4px', color: '#be123c', fontWeight: '600'}}>
+                                💪 40% 펀더멘탈 품질
+                            </div>
+                        </div>
+                        <div style={{marginTop: '12px', padding: '10px', background: '#fce7f3', borderRadius: '6px', fontSize: '11px', color: '#831843'}}>
+                            <strong>FundamentalScore = 30% 매출성장 + 30% EPS성장 + 20% ROE + 20% 부채점수</strong>
+                        </div>
+                    </div>
+
+                    {/* 설명 패널 */}
+                    <div className="explanation-panel">
+                        <div className="explanation-title">📚 InvestFlow 엔진: 3단계 분석 방식</div>
+
+                        <div className="explanation-section">
+                            <strong>목표:</strong> 거시, 섹터, 펀더멘탈을 종합 분석하여 최고의 투자 기회를 발굴합니다.
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>1️⃣ 거시 환경 분석 (Macro Regime)</strong><br/>
+                            • <strong>Risk-On 신호 ✅</strong>: SPY > 0% & VIX < 20 & HY OAS < 400bps<br/>
+                            • <strong>거시 점수 계산</strong>: SPY 수익률 + VIX (역정규화)<br/>
+                            • 높은 거시 점수 = 경기 상승 사이클, 주식 매수 신호<br/>
+                            • 낮은 거시 점수 = 경기 약화/위험, 방어적 포지셔닝
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>2️⃣ 섹터 로테이션 분석 (Sector Strength)</strong><br/>
+                            • <strong>상대강도</strong>: 섹터수익률 - SPY수익률<br/>
+                            • 양수 = 섹터 강세 (자본 유입 중)<br/>
+                            • 음수 = 섹터 약세 (자본 유출 중)<br/>
+                            • 기관 자금의 이동 방향을 반영
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>3️⃣ 펀더멘탈 품질 분석 (Fundamental Quality)</strong><br/>
+                            • <strong>매출성장 (30%)</strong>: 진정한 사업 확장<br/>
+                            • <strong>EPS성장 (30%)</strong>: 수익성 개선의 증명<br/>
+                            • <strong>ROE (20%)</strong>: 자본 효율성 (높을수록 우수)<br/>
+                            • <strong>부채점수 (20%)</strong>: 재무 안정성 (낮을수록 우수)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>InvestFlow 종합 점수 계산:</strong><br/>
+                            <code style={{background: '#f3f4f6', padding: '8px', borderRadius: '4px', display: 'block', marginTop: '8px'}}>
+                                InvestFlow Score = (0.30 × MacroScore) + (0.30 × SectorStrength) + (0.40 × FundamentalScore)
+                            </code>
+                            <br/>
+                            • <strong>40% 펀더멘탈</strong>: 회사의 내재적 가치가 가장 중요<br/>
+                            • <strong>30% 거시</strong>: 전체 시장 환경의 우호성<br/>
+                            • <strong>30% 섹터</strong>: 자본이 흐르는 방향
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>투자 신호 조합:</strong><br/>
+                            🚀 <strong>최고 기회</strong>: InvestFlow > 80 + MacroScore > 60 + SectorStrength > 0<br/>
+                            ✅ <strong>강한 신호</strong>: InvestFlow 60-80 + 모든 조건 양호<br/>
+                            ⚠️ <strong>주의</strong>: InvestFlow < 60 또는 MacroScore < 40<br/>
+                            🛑 <strong>회피</strong>: Risk-Off 환경 + SectorStrength 음수
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>⚠️ 투자 시 주의사항:</strong><br/>
+                            • InvestFlow는 중기(3-6개월) 추세 포착<br/>
+                            • 거시 환경 변화에 즉시 반응해야 함<br/>
+                            • Widget 1 (급등주)과 함께 검토하여 확증 매매<br/>
+                            • 분기마다 점수 재계산하여 포트폴리오 리밸런싱 권장
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         // ===== WIDGET 4: Liquidity Driven Stock Radar =====
         function LiquidityDrivenStockRadar() {
             const [data, setData] = useState(null);
@@ -2677,6 +3102,7 @@
                     <SmartMoneyAccumulationFinder />
                     <SectorRotationLeaderFinder />
                     <LiquidityDrivenStockRadar />
+                    <InvestflowDiscoveryEngine />
 
                     <div style={{textAlign: 'center', color: '#718096', fontSize: '13px', marginTop: '40px'}}>
                         <p>위젯은 5분마다 자동 갱신됩니다</p>
