@@ -2068,23 +2068,20 @@ export default {
           }
         }
       }
-      // /feargreed endpoint - CNN Fear & Greed Index (서버사이드 호출, CORS 없음)
+      // /feargreed endpoint - Alternative.me Fear & Greed Index
       else if (pathname === "/feargreed") {
         try {
-          // 출처: CNN Fear & Greed Index 공식 API
-          const r = await fetch('https://production.dataviz.cnn.io/index/fearandgreed/graphdata', {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-          })
-          if (!r.ok) throw new Error(`CNN HTTP ${r.status}`)
+          // 출처: Alternative.me Fear & Greed Index API (무료, 안정적)
+          const r = await fetch('https://api.alternative.me/fng/?limit=1')
+          if (!r.ok) throw new Error(`Alternative.me HTTP ${r.status}`)
           const d = await r.json()
-          const fg = d?.fear_and_greed
-          if (!fg || fg.score === undefined) throw new Error('CNN structure mismatch')
+          const data = d?.data?.[0]
+          if (!data || data.value === undefined) throw new Error('Alternative.me structure mismatch')
           response = {
-            score: Math.round(fg.score),
-            rating: fg.rating || null,
-            previousClose: fg.previous_close ? Math.round(fg.previous_close) : null,
+            score: Math.round(parseInt(data.value)),
+            rating: data.value_classification || null,
             timestamp: new Date().toISOString(),
-            source: 'CNN'
+            source: 'Alternative.me'
           }
           return new Response(JSON.stringify(response), {
             headers: {
