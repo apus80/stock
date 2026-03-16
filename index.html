@@ -2005,6 +2005,45 @@
                             </div>
                         </div>
 
+                        <div class="card">
+                            <div class="title-area"><span class="title">15. Macro Risk Radar</span><button class="card-rfbtn" id="rfbtn-15" onclick="imdRefreshCard(15)" title="새로고침">↻</button></div>
+                            <div style="margin-top: 12px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div style="padding: 12px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 8px; border-left: 3px solid #667eea;">
+                                        <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Inflation Risk</div>
+                                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                                            <div id="macro-risk-inflation" style="font-size: 1.8rem; font-weight: 800; color: #1e293b; font-family: 'Courier New', monospace;">-</div>
+                                            <div id="macro-risk-inflation-label" style="font-size: 0.65rem; color: #64748b; font-weight: 500;">-</div>
+                                        </div>
+                                    </div>
+                                    <div style="padding: 12px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 8px; border-left: 3px solid #667eea;">
+                                        <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Liquidity Risk</div>
+                                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                                            <div id="macro-risk-liquidity" style="font-size: 1.8rem; font-weight: 800; color: #1e293b; font-family: 'Courier New', monospace;">-</div>
+                                            <div id="macro-risk-liquidity-label" style="font-size: 0.65rem; color: #64748b; font-weight: 500;">-</div>
+                                        </div>
+                                    </div>
+                                    <div style="padding: 12px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 8px; border-left: 3px solid #667eea;">
+                                        <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Recession Risk</div>
+                                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                                            <div id="macro-risk-recession" style="font-size: 1.8rem; font-weight: 800; color: #1e293b; font-family: 'Courier New', monospace;">-</div>
+                                            <div id="macro-risk-recession-label" style="font-size: 0.65rem; color: #64748b; font-weight: 500;">-</div>
+                                        </div>
+                                    </div>
+                                    <div style="padding: 12px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 8px; border-left: 3px solid #667eea;">
+                                        <div style="font-size: 0.7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Market Risk</div>
+                                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                                            <div id="macro-risk-market" style="font-size: 1.8rem; font-weight: 800; color: #1e293b; font-family: 'Courier New', monospace;">-</div>
+                                            <div id="macro-risk-market-label" style="font-size: 0.65rem; color: #64748b; font-weight: 500;">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 12px; font-size: 0.7rem; color: #94a3b8; text-align: right;">
+                                    Updated: <span id="macro-risk-time">--:--</span> KST
+                                </div>
+                            </div>
+                        </div>
+
                     </div><!-- /.grid -->
                 </div><!-- /.imd-wrap -->
 
@@ -6276,6 +6315,202 @@ var ECON_DATA = {
         }
 
         /* ══════════════════════════════════════════════════════
+         * 카드 15 – Macro Risk Radar
+         * Worker API → 거시 위험 지표 계산
+         * ══════════════════════════════════════════════════════ */
+        var macroRiskCache = {
+            inflation: null,
+            liquidity: null,
+            recession: null,
+            market: null,
+            timestamp: 0
+        };
+
+        function imdLoadMacroRiskRadar() {
+            // 30초 캐시 체크
+            var now = Date.now();
+            if (macroRiskCache.timestamp && (now - macroRiskCache.timestamp) < 30000) {
+                imdDisplayMacroRiskRadar(macroRiskCache);
+                return;
+            }
+
+            workerFetchMarket().then(function(data) {
+                if (!data) throw new Error('No data returned');
+
+                // 필요한 데이터 필드 추출 및 유효성 검증
+                var us10y = data.RATES?.US10Y;
+                var yieldCurve = data.RATES?.YIELD_CURVE;
+                var sp500Change = data.US_MARKET?.SP500?.changePercentage;
+                var nasdaqChange = data.US_MARKET?.NASDAQ?.changePercentage;
+                var vixLevel = data.US_MARKET?.VIX?.price;
+                var dxyChange = data.FX?.DXY?.changePercentage;
+                var oilChange = data.COMMODITIES?.OIL?.changePercentage;
+                var fedBalance = data.LIQUIDITY?.FED_BALANCE;
+                var rrp = data.LIQUIDITY?.REVERSE_REPO;
+                var tga = data.LIQUIDITY?.TGA;
+
+                // 데이터 유효성 검증
+                var missingFields = [];
+                if (us10y === undefined || us10y === null) missingFields.push('US10Y');
+                if (yieldCurve === undefined || yieldCurve === null) missingFields.push('YIELD_CURVE');
+                if (sp500Change === undefined || sp500Change === null) missingFields.push('SP500_CHANGE');
+                if (nasdaqChange === undefined || nasdaqChange === null) missingFields.push('NASDAQ_CHANGE');
+                if (vixLevel === undefined || vixLevel === null) missingFields.push('VIX_LEVEL');
+                if (dxyChange === undefined || dxyChange === null) missingFields.push('DXY_CHANGE');
+                if (oilChange === undefined || oilChange === null) missingFields.push('OIL_CHANGE');
+                if (fedBalance === undefined || fedBalance === null) missingFields.push('FED_BALANCE');
+                if (rrp === undefined || rrp === null) missingFields.push('RRP');
+                if (tga === undefined || tga === null) missingFields.push('TGA');
+
+                if (missingFields.length > 0) {
+                    console.warn('[WARNING] imdLoadMacroRiskRadar: Missing fields:', missingFields);
+                }
+
+                // 안전한 숫자 변환 (기본값 0)
+                us10y = us10y !== null && us10y !== undefined ? us10y : 0;
+                yieldCurve = yieldCurve !== null && yieldCurve !== undefined ? yieldCurve : 0;
+                sp500Change = sp500Change !== null && sp500Change !== undefined ? sp500Change : 0;
+                nasdaqChange = nasdaqChange !== null && nasdaqChange !== undefined ? nasdaqChange : 0;
+                vixLevel = vixLevel !== null && vixLevel !== undefined ? vixLevel : 0;
+                dxyChange = dxyChange !== null && dxyChange !== undefined ? dxyChange : 0;
+                oilChange = oilChange !== null && oilChange !== undefined ? oilChange : 0;
+                fedBalance = fedBalance !== null && fedBalance !== undefined ? fedBalance : 0;
+                rrp = rrp !== null && rrp !== undefined ? rrp : 0;
+                tga = tga !== null && tga !== undefined ? tga : 0;
+
+                // 순 유동성 계산
+                var netLiquidity = fedBalance - rrp - tga;
+
+                // ===== INFLATION RISK (0-100) =====
+                var inflationScore = 40;
+                if (us10y > 4.5) {
+                    inflationScore += 20;
+                } else if (us10y < 3.5) {
+                    inflationScore -= 10;
+                }
+                if (oilChange > 3) {
+                    inflationScore += 20;
+                } else if (oilChange < -3) {
+                    inflationScore -= 10;
+                }
+                if (dxyChange < -0.5) {
+                    inflationScore += 5;
+                }
+                inflationScore = Math.max(0, Math.min(100, inflationScore));
+
+                // ===== LIQUIDITY RISK (0-100) =====
+                var liquidityScore = 40;
+                var prevLiquidity = localStorage.getItem('macroRiskPrevLiquidity');
+                if (prevLiquidity) {
+                    prevLiquidity = parseFloat(prevLiquidity);
+                    if (netLiquidity < prevLiquidity) {
+                        liquidityScore += 25; // 유동성 감소 = 위험 증가
+                    } else if (netLiquidity > prevLiquidity) {
+                        liquidityScore -= 20; // 유동성 증가 = 위험 감소
+                    }
+                }
+                if (dxyChange > 0.5) {
+                    liquidityScore += 10;
+                }
+                liquidityScore = Math.max(0, Math.min(100, liquidityScore));
+                localStorage.setItem('macroRiskPrevLiquidity', netLiquidity.toString());
+
+                // ===== RECESSION RISK (0-100) =====
+                var recessionScore = 30;
+                if (yieldCurve < -0.75) {
+                    recessionScore += 35;
+                } else if (yieldCurve < -0.25) {
+                    recessionScore += 20;
+                }
+                if (sp500Change < 0) {
+                    recessionScore += 10;
+                }
+                recessionScore = Math.max(0, Math.min(100, recessionScore));
+
+                // ===== MARKET RISK (0-100) =====
+                var marketScore = 35;
+                if (vixLevel > 25) {
+                    marketScore += 40;
+                } else if (vixLevel > 18) {
+                    marketScore += 20;
+                }
+                if (sp500Change < 0) {
+                    marketScore += 10;
+                }
+                if (nasdaqChange < 0) {
+                    marketScore += 10;
+                }
+                marketScore = Math.max(0, Math.min(100, marketScore));
+
+                // 캐시 업데이트
+                macroRiskCache = {
+                    inflation: inflationScore,
+                    liquidity: liquidityScore,
+                    recession: recessionScore,
+                    market: marketScore,
+                    timestamp: now
+                };
+
+                imdDisplayMacroRiskRadar(macroRiskCache);
+            }).catch(function(err) {
+                console.error('[ERROR] imdLoadMacroRiskRadar:', err);
+                document.getElementById('macro-risk-inflation').textContent = '-';
+                document.getElementById('macro-risk-liquidity').textContent = '-';
+                document.getElementById('macro-risk-recession').textContent = '-';
+                document.getElementById('macro-risk-market').textContent = '-';
+            });
+        }
+
+        function imdDisplayMacroRiskRadar(cache) {
+            // 위험 수준별 색상 및 레이블 정의
+            function getRiskColor(score) {
+                if (score >= 80) return '#ef4444'; // 극도 (빨강)
+                if (score >= 60) return '#f59e0b'; // 높음 (주황)
+                if (score >= 30) return '#f59e0b'; // 중간 (주황)
+                return '#28a745'; // 낮음 (초록)
+            }
+
+            function getRiskLabel(score) {
+                if (score >= 80) return 'Extreme';
+                if (score >= 60) return 'High';
+                if (score >= 30) return 'Moderate';
+                return 'Low';
+            }
+
+            // 각 위험 지표 표시
+            var risks = [
+                { id: 'inflation', score: cache.inflation },
+                { id: 'liquidity', score: cache.liquidity },
+                { id: 'recession', score: cache.recession },
+                { id: 'market', score: cache.market }
+            ];
+
+            risks.forEach(function(risk) {
+                var scoreElem = document.getElementById('macro-risk-' + risk.id);
+                var labelElem = document.getElementById('macro-risk-' + risk.id + '-label');
+                if (scoreElem && risk.score !== null && risk.score !== undefined) {
+                    scoreElem.textContent = Math.round(risk.score);
+                    scoreElem.style.color = getRiskColor(risk.score);
+                    if (labelElem) {
+                        labelElem.textContent = getRiskLabel(risk.score);
+                    }
+                } else {
+                    if (scoreElem) scoreElem.textContent = '-';
+                    if (labelElem) labelElem.textContent = '-';
+                }
+            });
+
+            // 시간 표시
+            var timeElem = document.getElementById('macro-risk-time');
+            if (timeElem) {
+                var now = new Date();
+                var hours = String(now.getHours()).padStart(2, '0');
+                var minutes = String(now.getMinutes()).padStart(2, '0');
+                timeElem.textContent = hours + ':' + minutes;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════════
          * 카드 14 – 미국 시장 확장 (US Market Extended)
          * Worker API → FMP
          * ══════════════════════════════════════════════════════ */
@@ -6334,6 +6569,7 @@ var ECON_DATA = {
                 imdLoadMacroBase();
                 imdLoadMacroIndicators();
                 imdLoadAIMarketScore();
+                imdLoadMacroRiskRadar();
                 imdLoadUSExtended();
             });
         }
@@ -6353,7 +6589,8 @@ var ECON_DATA = {
             11: { fn: imdLoadCreditBreadth,   ids: ['hyg','lqd','vti','tlt'] },
             12: { fn: imdLoadMacroBase,       ids: ['cpi','inflation_exp','unemployment','m2_macro','real_rates'] },
             13: { fn: imdLoadMacroIndicators, ids: ['sentiment','gdp','indpro','payems','pce_inf'] },
-            14: { fn: imdLoadAIMarketScore,   ids: ['ai-score-value','ai-market-state','ai-score-signals','ai-score-time'] }
+            14: { fn: imdLoadAIMarketScore,   ids: ['ai-score-value','ai-market-state','ai-score-signals','ai-score-time'] },
+            15: { fn: imdLoadMacroRiskRadar,  ids: ['macro-risk-inflation','macro-risk-liquidity','macro-risk-recession','macro-risk-market','macro-risk-time'] }
         };
 
         window.imdRefreshCard = function(n) {
