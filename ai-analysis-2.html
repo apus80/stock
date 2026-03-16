@@ -593,7 +593,7 @@
 
         .metric-label {
             font-size: 11px;
-            color: var(--text-light);
+            color: var(--text-main);
             margin-bottom: 4px;
         }
 
@@ -803,7 +803,9 @@
                 <div className="widget grid-full">
                     <div className="widget-header">
                         <div>
-                            <div className="widget-title">🔍 Alpha Discovery Scanner</div>
+                            <div className="widget-title">🔍 Alpha Discovery Scanner
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>모멘텀 + 수익률 성장 + 거래량 기반 종목 발굴</span>
+                            </div>
                             <div className="widget-subtitle">전체 시장 유니버스에서 explosiveScore 상위 종목 자동 발굴</div>
                         </div>
                         <button
@@ -986,7 +988,9 @@
             return (
                 <div className="widget">
                     <div className="widget-header">
-                        <div className="widget-title">🚪 Market Entry Gate</div>
+                        <div className="widget-title">🚪 Market Entry Gate
+                            <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>공포탐욕 + 시장체제로 진입신호 판정</span>
+                        </div>
                         <button className="btn-refresh" onClick={fetchGates} disabled={loading}>↻</button>
                     </div>
 
@@ -1086,7 +1090,9 @@
             if (!symbol) {
                 return (
                     <div className="widget">
-                        <div className="widget-title">💰 종목 깊이 분석</div>
+                        <div className="widget-title">💰 종목 깊이 분석
+                            <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>재무 + PE/PBR + 매수 판정</span>
+                        </div>
                         <form onSubmit={handleSubmit} className="input-group" style={{ marginBottom: '16px' }}>
                             <input
                                 type="text"
@@ -1118,7 +1124,9 @@
             return (
                 <div className="widget">
                     <div className="widget-header">
-                        <div className="widget-title">💰 종목 깊이 분석</div>
+                        <div className="widget-title">💰 종목 깊이 분석
+                            <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>재무 + PE/PBR + 매수 판정</span>
+                        </div>
                         <button className="btn-refresh" onClick={handleSubmit} disabled={loading}>↻</button>
                     </div>
 
@@ -1292,7 +1300,9 @@
                 <div className="widget grid-full">
                     <div className="widget-header">
                         <div>
-                            <div className="widget-title">📊 Sector Rotation Drill Down</div>
+                            <div className="widget-title">📊 Sector Rotation Drill Down
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>섹터별 강세 분석 및 종목 발굴</span>
+                            </div>
                             <div className="widget-subtitle">강한 섹터 내 Alpha Score 비교</div>
                         </div>
                         <button className="btn-refresh" onClick={fetchSectorData} disabled={loading}>↻</button>
