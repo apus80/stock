@@ -123,7 +123,7 @@
         }
 
         .tooltip {
-            visibility: hidden;
+            visibility: visible !important;
             position: absolute;
             bottom: 125%;
             left: 50%;
@@ -139,13 +139,14 @@
             white-space: pre-wrap;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
             border: 1px solid #475569;
-            opacity: 0;
+            opacity: 1 !important;
             transition: opacity 0.3s ease, visibility 0.3s ease;
             pointer-events: auto;
             max-width: 350px;
             word-break: break-word;
             min-height: auto;
             margin-bottom: 8px;
+            display: block !important;
         }
 
         .help-icon:hover .tooltip {
@@ -1781,6 +1782,8 @@
             font-weight: bold;
             display: flex;
             align-items: center;
+            overflow: visible;
+            z-index: 1001;
         }
         .imd-wrap .item {
             display: flex !important;
