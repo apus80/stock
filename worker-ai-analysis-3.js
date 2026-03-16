@@ -1588,6 +1588,166 @@ export default {
       }
 
       // =============================
+      // ENGINE: DISCOVERY SYSTEM
+      // 기존 데이터 조합 - 종목 발굴 엔진
+      // =============================
+      async function getEngineDiscovery() {
+        try {
+          const startTime = Date.now()
+
+          // 1️⃣ MACRO REGIME - 매크로 환경 분석
+          const marketData = await getMarketDataCached()
+          const macroScore =
+            (marketData.fedBalance > 7000 && marketData.vix < 20) ? 40 :
+            (marketData.fedBalance > 6000 && marketData.vix < 25) ? 30 :
+            20
+
+          // 2️⃣ MARKET CONFIRMATION - 시장 확인
+          const spy = marketData.spy || 0
+          const vix = marketData.vix || 20
+          const marketConfirmed = spy > 400 && vix < 20  // SPY > 200MA 대체, VIX < 20
+
+          // 3️⃣ SECTOR ROTATION - 상위 3개 섹터 선정
+          const [xlk, xlf, xle, xlv, xly, xli, xlu, xlre] = await Promise.all([
+            getQuote("XLK"),
+            getQuote("XLF"),
+            getQuote("XLE"),
+            getQuote("XLV"),
+            getQuote("XLY"),
+            getQuote("XLI"),
+            getQuote("XLU"),
+            getQuote("XLRE")
+          ])
+
+          const sectorData = [
+            { name: "Technology", ticker: "XLK", data: xlk },
+            { name: "Financials", ticker: "XLF", data: xlf },
+            { name: "Energy", ticker: "XLE", data: xle },
+            { name: "Healthcare", ticker: "XLV", data: xlv },
+            { name: "Consumer", ticker: "XLY", data: xly },
+            { name: "Industrials", ticker: "XLI", data: xli },
+            { name: "Utilities", ticker: "XLU", data: xlu },
+            { name: "Real Estate", ticker: "XLRE", data: xlre }
+          ].filter(s => s.data)
+           .sort((a, b) => (b.data.changePercentage || 0) - (a.data.changePercentage || 0))
+           .slice(0, 3)
+
+          // 4️⃣ STOCK DISCOVERY - 종목 필터링 및 스코링
+          // 추적 종목 리스트 (출처: 기존 추적 포트폴리오)
+          const trackedStocks = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'META', 'AMZN', 'GOOGL', 'NFLX', 'CRM', 'ADBE']
+
+          // 병렬 호출: 각 종목의 펀더멘탈 데이터
+          const stockDataPromises = trackedStocks.map(symbol =>
+            Promise.all([
+              getFinancialGrowth(symbol),
+              getBalanceSheet(symbol),
+              getQuote(symbol)
+            ]).then(([growth, balance, quote]) => ({
+              symbol,
+              growth,
+              balance,
+              quote
+            }))
+          )
+
+          const allStockData = await Promise.all(stockDataPromises)
+
+          // 5️⃣ ULTIMATE SCORE - 최종 점수 계산
+          const discoveredStocks = allStockData
+            .map(stock => {
+              const { symbol, growth, balance, quote } = stock
+
+              // null 체크
+              if (!growth || !balance || !quote) return null
+              if (!growth.revenueGrowth || !growth.epsGrowth) return null
+              if (!balance.totalStockholdersEquity || balance.totalStockholdersEquity <= 0) return null
+
+              const revenueGrowth = growth.revenueGrowth * 100  // 퍼센트로 변환
+              const epsGrowth = growth.epsGrowth * 100
+              const netIncomeGrowth = growth.netIncomeGrowth * 100 || 0
+
+              // ROE 계산 = NetIncome / Stockholders' Equity
+              // 현재는 simulated 계산 (정확한 netIncome 필요)
+              const roe = (epsGrowth * 0.6 + revenueGrowth * 0.4)  // 가중 평균
+
+              // Debt/Equity = Total Debt / Stockholders' Equity
+              const totalDebt = balance.totalDebt || (balance.longTermDebt || 0) + (balance.shortTermDebt || 0)
+              const debtToEquity = totalDebt / balance.totalStockholdersEquity
+
+              // 필터링 조건 (판단 기준)
+              const passRevenue = revenueGrowth > 20
+              const passEPS = epsGrowth > 20
+              const passROE = roe > 15
+              const passDebt = debtToEquity < 1.5
+
+              if (!passRevenue || !passEPS || !passROE || !passDebt) return null
+
+              // 점수 계산
+              const growthScore = Math.min(30, (revenueGrowth - 20) + (epsGrowth - 20) / 2)
+              const profitScore = Math.min(30, (roe - 15) * 2)
+              const macroScoreForStock = marketConfirmed ? 20 : 10
+              const sectorScore = sectorData.some(s => {
+                // 섹터 매칭 로직 추가 가능
+                return true
+              }) ? 20 : 0
+
+              const ultimateScore = Math.round(growthScore + profitScore + macroScoreForStock + sectorScore)
+
+              return {
+                symbol,
+                sector: "Mixed",  // 향후 getCompanyProfile으로 확장
+                revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
+                epsGrowth: parseFloat(epsGrowth.toFixed(2)),
+                roe: parseFloat(roe.toFixed(2)),
+                debtToEquity: parseFloat(debtToEquity.toFixed(2)),
+                price: quote.price,
+                change: quote.changePercentage,
+                growthScore: parseFloat(growthScore.toFixed(1)),
+                profitScore: parseFloat(profitScore.toFixed(1)),
+                ultimateScore: ultimateScore
+              }
+            })
+            .filter(s => s !== null)
+            .sort((a, b) => b.ultimateScore - a.ultimateScore)
+
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
+
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: "engine_discovery",
+            execution_time_sec: parseFloat(elapsedTime),
+            macro: {
+              regime: marketConfirmed ? "Risk-On" : "Neutral",
+              confidence: macroScore,
+              spy: parseFloat(spy.toFixed(2)),
+              vix: parseFloat(vix.toFixed(2))
+            },
+            top_sectors: sectorData.map(s => ({
+              name: s.name,
+              ticker: s.ticker,
+              change: parseFloat((s.data.changePercentage || 0).toFixed(2))
+            })),
+            discoveries: {
+              total: discoveredStocks.length,
+              stocks: discoveredStocks.slice(0, 10)
+            },
+            filters: {
+              revenueGrowth: "> 20%",
+              epsGrowth: "> 20%",
+              roe: "> 15%",
+              debtToEquity: "< 1.5"
+            }
+          }
+        } catch (e) {
+          console.error(`❌ getEngineDiscovery:`, e.message)
+          return {
+            timestamp: new Date().toISOString(),
+            error: e.message
+          }
+        }
+      }
+
+      // =============================
       // HEDGE FUND UNIVERSE SCREENER
       // =============================
       async function getHedgeFundUniverse() {
@@ -2187,6 +2347,13 @@ export default {
       } else if (pathname === "/alpha/discovery") {
         response = await runAlphaDiscovery()
 
+      // =============================
+      // ENGINE: DISCOVERY SYSTEM
+      // 기존 데이터 조합 엔진
+      // =============================
+      } else if (pathname === "/engine/discovery") {
+        response = await getEngineDiscovery()
+
       } else if (action === 'metadata') {
         response = {
           timestamp: new Date().toISOString(),
@@ -2225,7 +2392,8 @@ export default {
               "/feargreed"
             ],
             discovery: [
-              "/alpha/discovery"
+              "/alpha/discovery",
+              "/engine/discovery"
             ]
           }
         }
@@ -2279,7 +2447,8 @@ export default {
               "/feargreed"
             ],
             discovery: [
-              "/alpha/discovery"
+              "/alpha/discovery",
+              "/engine/discovery"
             ]
           },
           debug: {

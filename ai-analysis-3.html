@@ -1348,6 +1348,202 @@
             );
         }
 
+        // ===== WIDGET 5: Ultimate Stock Discovery Engine =====
+        function UltimateStockDiscoveryEngine() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    // 출처: Worker /engine/discovery 엔드포인트
+                    // 기존 데이터 조합: Macro + Market + Sector + Fundamentals (5단계)
+                    const res = await fetch('/engine/discovery');
+                    const response = await res.json();
+
+                    if (response && response.discoveries) {
+                        setData(response);
+                    } else {
+                        setData(null);
+                    }
+                } catch (error) {
+                    console.error('Error fetching engine discovery:', error);
+                    setData(null);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 300000); // 5분마다
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">🎯 궁극의 종목 발굴 엔진 (Ultimate Discovery)</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">
+                        매크로 → 시장 → 섹터 → 종목 필터 → 점수 계산 (5단계 톱다운 접근법)
+                    </div>
+
+                    {data ? (
+                        <>
+                            {/* 매크로 레짐 */}
+                            <div style={{marginBottom: '20px', padding: '16px', background: '#f7fafc', borderRadius: '8px'}}>
+                                <div style={{fontSize: '12px', fontWeight: '700', color: '#667eea', marginBottom: '12px'}}>
+                                    1️⃣ MACRO REGIME 분석
+                                </div>
+                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px'}}>
+                                    <div style={{background: '#ffffff', padding: '12px', borderRadius: '6px', borderLeft: '3px solid #667eea'}}>
+                                        <div style={{fontSize: '11px', color: '#718096', marginBottom: '4px'}}>
+                                            레짐
+                                        </div>
+                                        <div style={{fontSize: '18px', fontWeight: '700', color: '#2d3748'}}>
+                                            {data.macro?.regime || '-'}
+                                        </div>
+                                    </div>
+                                    <div style={{background: '#ffffff', padding: '12px', borderRadius: '6px', borderLeft: '3px solid #667eea'}}>
+                                        <div style={{fontSize: '11px', color: '#718096', marginBottom: '4px'}}>
+                                            SPY
+                                        </div>
+                                        <div style={{fontSize: '18px', fontWeight: '700', color: '#2d3748'}}>
+                                            {typeof data.macro?.spy === 'number' ? data.macro.spy : '-'}
+                                        </div>
+                                    </div>
+                                    <div style={{background: '#ffffff', padding: '12px', borderRadius: '6px', borderLeft: '3px solid #667eea'}}>
+                                        <div style={{fontSize: '11px', color: '#718096', marginBottom: '4px'}}>
+                                            VIX
+                                        </div>
+                                        <div style={{fontSize: '18px', fontWeight: '700', color: '#2d3748'}}>
+                                            {typeof data.macro?.vix === 'number' ? data.macro.vix : '-'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 상위 섹터 */}
+                            {data.top_sectors && data.top_sectors.length > 0 && (
+                                <div style={{marginBottom: '20px', padding: '16px', background: '#f0fdf4', borderRadius: '8px'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '700', color: '#10b981', marginBottom: '12px'}}>
+                                        2️⃣ SECTOR ROTATION 상위 3개
+                                    </div>
+                                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px'}}>
+                                        {data.top_sectors.map((sector, idx) => (
+                                            <div key={sector.ticker} style={{background: '#ffffff', padding: '12px', borderRadius: '6px', borderLeft: '3px solid #10b981'}}>
+                                                <div style={{fontSize: '11px', color: '#718096', marginBottom: '4px'}}>
+                                                    {idx + 1}. {sector.name}
+                                                </div>
+                                                <div style={{fontSize: '16px', fontWeight: '700', color: sector.change > 0 ? '#10b981' : '#ef4444'}}>
+                                                    {sector.change > 0 ? '+' : ''}{sector.change}%
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 발굴된 종목 테이블 */}
+                            {data.discoveries && data.discoveries.stocks && data.discoveries.stocks.length > 0 ? (
+                                <div style={{marginBottom: '20px'}}>
+                                    <div style={{fontSize: '12px', fontWeight: '700', color: '#2d3748', marginBottom: '12px'}}>
+                                        3️⃣ STOCK DISCOVERY 결과 ({data.discoveries.total}개 발굴)
+                                    </div>
+                                    <table className="scanner-table">
+                                        <thead>
+                                            <tr>
+                                                <th style={{width: '8%'}}>Rank</th>
+                                                <th style={{width: '12%'}}>종목</th>
+                                                <th style={{width: '12%'}}>매출성장</th>
+                                                <th style={{width: '12%'}}>EPS성장</th>
+                                                <th style={{width: '10%'}}>ROE</th>
+                                                <th style={{width: '12%'}}>부채비율</th>
+                                                <th style={{width: '12%'}}>가격</th>
+                                                <th style={{width: '12%'}}>최종점수</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.discoveries.stocks.map((stock, idx) => (
+                                                <tr key={stock.symbol}>
+                                                    <td style={{textAlign: 'center', fontWeight: '700'}}>{idx + 1}</td>
+                                                    <td className="stock-ticker">{stock.symbol}</td>
+                                                    <td className="value-positive">{stock.revenueGrowth}%</td>
+                                                    <td className="value-positive">{stock.epsGrowth}%</td>
+                                                    <td className="value-positive">{stock.roe}%</td>
+                                                    <td className={stock.debtToEquity < 1.0 ? 'value-positive' : 'value-negative'}>
+                                                        {stock.debtToEquity}x
+                                                    </td>
+                                                    <td>${typeof stock.price === 'number' ? stock.price.toFixed(2) : '-'}</td>
+                                                    <td>
+                                                        <span className={`score-badge ${stock.ultimateScore >= 80 ? 'score-strong' : stock.ultimateScore >= 60 ? 'score-moderate' : 'score-weak'}`}>
+                                                            {stock.ultimateScore}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div style={{padding: '40px', textAlign: 'center', color: '#718096', fontSize: '14px'}}>
+                                    ℹ️ 필터 조건을 만족하는 종목이 없습니다.
+                                </div>
+                            )}
+
+                            {/* 필터 조건 요약 */}
+                            <div style={{marginTop: '20px', padding: '16px', background: '#f7fafc', borderRadius: '8px'}}>
+                                <div style={{fontSize: '12px', fontWeight: '700', color: '#2d3748', marginBottom: '12px'}}>
+                                    4️⃣ FILTERING CRITERIA (판단 기준)
+                                </div>
+                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', fontSize: '11px'}}>
+                                    <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
+                                        ✅ 매출성장 &gt; 20%
+                                    </div>
+                                    <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
+                                        ✅ EPS성장 &gt; 20%
+                                    </div>
+                                    <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
+                                        ✅ ROE &gt; 15%
+                                    </div>
+                                    <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
+                                        ✅ D/E &lt; 1.5
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 점수 구성 설명 */}
+                            <div className="explanation-panel">
+                                <div className="explanation-title">📊 점수 계산 로직</div>
+                                <div className="explanation-section">
+                                    <strong>5️⃣ Ultimate Score = 5개 요소의 합:</strong><br/>
+                                    • <strong>Growth Score (0-30)</strong>: 매출성장 + EPS성장 기반<br/>
+                                    • <strong>Profitability Score (0-30)</strong>: ROE (자기자본수익률) 기반<br/>
+                                    • <strong>Macro Score (0-20)</strong>: 현재 매크로 레짐 (Risk-On: 20, Neutral: 10)<br/>
+                                    • <strong>Sector Score (0-20)</strong>: 상위 섹터 포함 여부<br/>
+                                    • <strong>Total (0-100)</strong>: 종목의 최종 매력도 점수
+                                </div>
+                                <div className="explanation-section">
+                                    <strong>해석:</strong><br/>
+                                    • 80점 이상: 🟢 매우 강력한 매수 신호<br/>
+                                    • 60-79점: 🟡 매수 검토 권장<br/>
+                                    • 60점 미만: 🔴 신중한 접근 필요
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{padding: '40px', textAlign: 'center', color: '#718096', fontSize: '14px'}}>
+                            ℹ️ 엔진 데이터 로드 실패. 나중에 다시 시도해주세요.
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
         // ===== Main App Component =====
         function App() {
             return (
@@ -1361,6 +1557,7 @@
                     <SectorMomentumRotation />
                     <CreditStressMonitor />
                     <ExplosiveGrowthStockFinder />
+                    <UltimateStockDiscoveryEngine />
 
                     <div style={{textAlign: 'center', color: '#718096', fontSize: '13px', marginTop: '40px'}}>
                         <p>위젯은 5분마다 자동 갱신됩니다</p>
