@@ -338,7 +338,7 @@
                 switch (widgetId) {
                     case 1:
                         // 매크로 유동성 데이터
-                        const marketData = await fetch('/market').then(r => r.json()).catch(() => null);
+                        const marketData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/market').then(r => r.json()).catch(() => null);
                         if (marketData && marketData.LIQUIDITY) {
                             const fed = marketData.LIQUIDITY.FED_BALANCE || 0;
                             const rrp = marketData.LIQUIDITY.REVERSE_REPO || 0;
@@ -371,7 +371,7 @@
 
                     case 2:
                         // 섹터 데이터
-                        const sectorData = await fetch('/market').then(r => r.json()).catch(() => null);
+                        const sectorData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/market').then(r => r.json()).catch(() => null);
                         if (sectorData && sectorData.SECTORS) {
                             const sectors = sectorData.SECTORS;
                             html = '<table><thead><tr><th>섹터</th><th>가격</th><th>변화율</th></tr></thead><tbody>';
@@ -390,7 +390,7 @@
 
                     case 3:
                         // 신용 스트레스 (HYG, LQD)
-                        const creditData = await fetch('/market').then(r => r.json()).catch(() => null);
+                        const creditData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/market').then(r => r.json()).catch(() => null);
                         if (creditData && creditData.BONDS) {
                             const hyg = creditData.BONDS.HYG || {};
                             const lqd = creditData.BONDS.LQD || {};
@@ -418,7 +418,7 @@
 
                     case 4:
                         // 폭발적 성장 주식 탐색 (Alpha Discovery)
-                        const alphaData = await fetch('/alpha/discovery').then(r => r.json()).catch(() => null);
+                        const alphaData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/discovery').then(r => r.json()).catch(() => null);
                         if (alphaData && alphaData.top_20 && alphaData.top_20.length > 0) {
                             const stocks = alphaData.top_20.slice(0, 10); // 상위 10개 표시
                             html = '<table><thead><tr><th>종목</th><th>점수</th><th>가격</th><th>모멘텀</th><th>수익률</th></tr></thead><tbody>';
@@ -441,7 +441,7 @@
 
                     case 5:
                         // 궁극의 주식 발굴 엔진 (Engine Discovery)
-                        const engineData = await fetch('/engine/discovery').then(r => r.json()).catch(() => null);
+                        const engineData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/engine/discovery').then(r => r.json()).catch(() => null);
                         if (engineData && engineData.discoveries && engineData.discoveries.stocks && engineData.discoveries.stocks.length > 0) {
                             const stocks = engineData.discoveries.stocks.slice(0, 10); // 상위 10개 표시
                             html = '<table><thead><tr><th>종목</th><th>최종점수</th><th>가격</th><th>PE</th><th>ROE</th></tr></thead><tbody>';
