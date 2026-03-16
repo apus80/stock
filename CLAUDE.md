@@ -536,3 +536,253 @@ const pb = ratios?.priceToBookRatio
 ### HTML 변경사항:
 - **없음** ✅ (worker 변경으로 자동 반영됨)
 
+---
+
+## 🔗 FRED API 엔드포인트 및 필드 정보
+
+### **FRED API 호출 구조**
+```
+URL: https://api.stlouisfed.org/fred/series/observations
+메서드: GET
+쿼리 파라미터:
+  - series_id: FRED 시리즈 코드 (WALCL, UNRATE 등)
+  - api_key: FRED API 키
+  - file_type: json
+  - units: 선택사항 (pc1=전년동기대비%, lin=선형, etc.)
+
+응답 구조:
+{
+  "observations": [
+    { "date": "2026-03-16", "value": "7234567" },
+    { "date": "2026-03-15", "value": "7234512" },
+    ...
+  ]
+}
+```
+
+### **Worker에서 사용 중인 FRED 시리즈**
+
+| 코드 | 설명 | 단위 | 출처 | Divisor | 저장 단위 | index.html 변환 |
+|------|------|------|------|---------|----------|---------|
+| **WALCL** | Fed Balance Sheet | millions | FRED | 1,000,000 | **T** | /1,000,000 → T |
+| **RRPONTSYD** | Reverse Repo | millions | FRED | 1 | **B** | /1,000 → B (이미 Billions) |
+| **WTREGEN** | TGA (Treasury General Account) | millions | FRED | 1,000,000 | **T** | /1,000,000 → T |
+| **M2SL** | M2 Money Supply | billions | FRED | 1,000 | **T** | ×1000→millions, /1,000,000→T |
+| **DGS10** | 10Y Treasury Yield | % | FRED | 1 | **%** | 직접 사용 |
+| **DGS2** | 2Y Treasury Yield | % | FRED | 1 | **%** | 직접 사용 |
+| **T10YIE** | 10Y Inflation Expectation | % | FRED | 1 | **%** | 직접 사용 |
+| **CPIAUCSL** | CPI Index (All Items) | index | FRED | 1 | **idx** | 직접 사용 |
+| **CPILFESL** | Core CPI (YoY%) | % | FRED (units=pc1) | 1 | **%** | 직접 사용 |
+| **UNRATE** | Unemployment Rate | % | FRED | 1 | **%** | 직접 사용 |
+| **UMCSENT** | Consumer Sentiment | idx | FRED | 1 | **idx** | 직접 사용 |
+| **GDPC1** | Real GDP | billions | FRED | 1 | **B** | 직접 사용 |
+| **INDPRO** | Industrial Production | idx | FRED | 1 | **idx** | 직접 사용 |
+| **PAYEMS** | Nonfarm Payrolls | thousands | FRED | 1 | **K** | 직접 사용 |
+| **PCEPILFE** | PCE Inflation (ex food/energy) | % | FRED | 1 | **%** | 직접 사용 |
+| **FEDFUNDS** | Federal Funds Rate | % | FRED | 1 | **%** | 직접 사용 |
+| **PCEPI** | PCE Inflation Index | index | FRED | 1 | **idx** | 직접 사용 |
+| **VIXCLS** | VIX from FRED | index | FRED | 1 | **idx** | 직접 사용 |
+| **BAMLH0A0HYM2** | High Yield OAS Spread | % | FRED | 1 | **%** | 직접 사용 |
+
+### **FRED 데이터 처리 흐름 (worker.js)**
+
+```javascript
+// 1️⃣ FRED API 호출 (fredGet 함수)
+async function fredGet(series, units = null) {
+  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json${units ? `&units=${units}` : ''}`
+  return await fetch(url) // observations 배열 반환
+}
+
+// 2️⃣ 최신값 추출 (getLatestValue 함수)
+function getLatestValue(fredArray) {
+  // 배열 끝에서 시작해서 유효한 값 찾기 (역순 검색)
+  // '.' 또는 공백값 스킵
+  return parseFloat(array[array.length-1].value)
+}
+
+// 3️⃣ 단위 변환 (convertFredValue 함수)
+function convertFredValue(series, rawValue) {
+  const conversion = FRED_CONVERSIONS[series]
+  return rawValue / conversion.divisor // T, B, %, idx 등으로 변환
+}
+
+// 4️⃣ 최종 저장
+const fedVal = convertFredValue("WALCL", getLatestValue(fed)) // T 단위로 저장
+const m2Val = m2RawVal ? m2RawVal * 1000 : null  // billions → millions
+```
+
+### **Worker 응답에서 FRED 데이터 위치**
+
+```json
+{
+  "fed": 7.23,              // WALCL (T 단위) - 출처: FRED
+  "fedRaw": 7234567,        // raw value (millions)
+  "rp": 123.45,             // RRPONTSYD (B 단위) - 출처: FRED
+  "rpRaw": 123456,          // raw value
+  "us10y": 4.28,            // DGS10 (%) - 출처: FRED
+  "us2y": 4.15,             // DGS2 (%) - 출처: FRED
+  "yieldCurve": 0.13,       // 10Y - 2Y 계산값
+  "MACRO_BASE": {
+    "CPI": 314.12,          // CPIAUCSL (index)
+    "CPI_YOY": 3.2,         // CPIAUCSL YoY% (units=pc1)
+    "CORE_CPI_YOY": 2.8,    // CPILFESL YoY% (units=pc1)
+    "PCE_INFLATION": 2.6,   // PCEPI
+    "FED_RATE": 4.33,       // FEDFUNDS (%)
+    "INFLATION_EXPECTATION": 2.30, // T10YIE (%)
+    "UNEMPLOYMENT": 4.10,   // UNRATE (%)
+    "M2": 21500000,         // M2SL billions×1000→millions
+    "REAL_RATES": 1.98      // 10Y - 기대인플레이션
+  },
+  "MACRO_INDICATORS": {
+    "CONSUMER_SENTIMENT": 64.7,   // UMCSENT
+    "REAL_GDP": 23450.0,          // GDPC1
+    "INDUSTRIAL_PRODUCTION": 103.2, // INDPRO
+    "NONFARM_PAYROLLS": 158400,   // PAYEMS
+    "PCE_INFLATION": 2.6          // PCEPILFE
+  },
+  "MARKET_RISK": {
+    "VIX_FRED": 18.45,           // VIXCLS (from FRED)
+    "HY_OAS_SPREAD": 345.50      // BAMLH0A0HYM2 (%)
+  }
+}
+```
+
+---
+
+## 🌐 Yahoo Finance API 엔드포인트
+
+### **DXY (달러 인덱스) - Yahoo Finance**
+
+**URL:** `https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d`
+
+**필수 헤더:**
+```javascript
+headers: {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...'
+}
+```
+
+**응답 구조:**
+```json
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "regularMarketPrice": 104.32,
+          "regularMarketChange": 0.28,
+          "regularMarketChangePercent": 0.27,
+          "currency": "USD"
+        },
+        "timestamp": [1710662400],
+        "indicators": {...}
+      }
+    ]
+  }
+}
+```
+
+**Worker 처리:**
+```javascript
+async function yahooFinanceDXY() {
+  // 1. Yahoo 호출
+  const url = 'https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d'
+  const meta = response?.chart?.result?.[0]?.meta
+
+  // 2. 필드 추출
+  return {
+    price: meta.regularMarketPrice,           // 104.32
+    changePercentage: meta.regularMarketChangePercent  // 0.27
+  }
+}
+```
+
+**Worker 응답에서 위치:**
+```json
+{
+  "dxyPrice": 104.32,      // Yahoo DXY 현재가
+  "dxyChange": 0.27,       // Yahoo DXY 변화%
+  "FX": {
+    "DXY": {               // /market 엔드포인트에서 반환
+      "price": 104.32,
+      "changePercentage": 0.27
+    }
+  }
+}
+```
+
+**특징:**
+- 공개 API (인증 불필요, User-Agent만 필수)
+- 실시간 데이터 제공
+- 한국 지수(KOSPI) 대신 DXY 사용 (KOSPI는 FMP API로 대체)
+
+---
+
+## 📝 API 소스별 검증 체크리스트
+
+### ✅ FMP API (주식/ETF/지수)
+- [x] `/stable/quote` 엔드포인트 사용 (무료 플랜 검증)
+- [x] 배열 응답 정규화 처리 (Array/Object)
+- [x] price, changePercentage 필드 확인
+- [x] null/undefined 처리
+- [x] PE/PB: `/fundamentals/ratios` 우선 사용
+
+### ✅ FRED API (경제지표)
+- [x] `/fred/series/observations` 엔드포인트 정상
+- [x] 최신값 추출 (역순 검색) 정상
+- [x] FRED_CONVERSIONS 단위 변환 테이블 정상
+- [x] units 매개변수 지원 (pc1=YoY%)
+- [x] raw 값 저장 (index.html에서 변환)
+- [x] M2: billions × 1000 → millions 변환
+
+### ✅ Yahoo Finance API (DXY)
+- [x] `/v8/finance/chart/{symbol}` 엔드포인트 정상
+- [x] User-Agent 헤더 포함
+- [x] regularMarketPrice/regularMarketChangePercent 필드 확인
+- [x] null 처리 정상
+- [x] 공개 API (인증 불필요)
+
+---
+
+## 🔄 모든 데이터 소스별 의존성 맵
+
+```
+┌─────────────────────────────────────────────────────┐
+│  worker.js /market 엔드포인트                        │
+│  (getMarketData 함수 - Promise.allSettled)          │
+└────┬────────────────────────────────────────────────┘
+     │
+     ├─ FMP API (/stable/quote)
+     │  ├─ 주식: SPY, QQQ, DIA, SOXX, IWM, ^VIX
+     │  ├─ 채권: HYG, LQD, VTI, TLT
+     │  ├─ 섹터: XLK~XLRE (8개)
+     │  ├─ 원자재: GCUSD, SIUSD, BZUSD
+     │  ├─ FX: USDKRW, USDJPY, EURUSD
+     │  ├─ 한국: EWY
+     │  └─ 암호: BTCUSD, ETHUSD, SOLUSD
+     │
+     ├─ FRED API (/fred/series/observations)
+     │  ├─ 유동성: WALCL, RRPONTSYD, WTREGEN
+     │  ├─ 금리: DGS10, DGS2, FEDFUNDS, T10YIE
+     │  ├─ 인플레이션: CPIAUCSL, CPILFESL, PCEPI
+     │  ├─ 고용: UNRATE, PAYEMS, UMCSENT
+     │  ├─ GDP: GDPC1
+     │  ├─ 생산: INDPRO, PCEPILFE
+     │  ├─ VIX: VIXCLS
+     │  └─ 신용: BAMLH0A0HYM2
+     │
+     └─ Yahoo Finance (/v8/finance/chart)
+        └─ 달러인덱스: DX-Y.NYB (DXY)
+```
+
+---
+
+## 📊 최종 검증 결과
+
+| 데이터 소스 | 상태 | 검증 내용 |
+|-----------|------|---------|
+| FMP API | ✅ 정상 | `/stable/quote` 무료플랜 동작 확인, PE/PB ratios 추가 |
+| FRED API | ✅ 정상 | 19개 시리즈 호출, 단위 변환 정상, YoY% 지원 |
+| Yahoo Finance | ✅ 정상 | DXY 공개 API, User-Agent 헤더 포함, 실시간 데이터 |
+| 모든 HTML | ✅ 자동 반영 | worker 변경으로 데이터 자동 업데이트 |
+
