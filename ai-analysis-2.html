@@ -498,8 +498,9 @@
 
         .gate-label {
             font-size: 11px;
-            color: var(--text-light);
+            color: var(--text-muted);
             margin-bottom: 4px;
+            font-weight: 600;
         }
 
         .gate-value {
@@ -775,7 +776,10 @@
 
                     const discovery = results[0].status === 'fulfilled' ? results[0].value : null
                     const regime = results[1].status === 'fulfilled' ? results[1].value : null
-                    const fg = results[2].status === 'fulfilled' ? results[2].value : null
+                    const fgRaw = results[2].status === 'fulfilled' ? results[2].value : null
+
+                    // 공포탐욕 데이터 검증
+                    const fg = fgRaw && fgRaw.score !== undefined ? fgRaw : null
 
                     if (discovery?.top_20) {
                         setData(discovery)
@@ -1083,8 +1087,29 @@
                 return (
                     <div className="widget">
                         <div className="widget-title">💰 종목 깊이 분석</div>
-                        <div style={{ padding: '40px 20px', textAlign: 'center', color: '#cbd5e1' }}>
-                            🔍 종목 코드를 입력하거나 Discovery 결과를 클릭하세요
+                        <form onSubmit={handleSubmit} className="input-group" style={{ marginBottom: '16px' }}>
+                            <input
+                                type="text"
+                                placeholder="종목 코드 입력 (예: AAPL, TSLA)"
+                                value={symbol}
+                                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                                style={{ fontWeight: '700' }}
+                                autoFocus
+                            />
+                            <button type="submit" disabled={loading}>검색</button>
+                        </form>
+                        <div style={{
+                            padding: '20px',
+                            textAlign: 'center',
+                            color: '#94a3b8',
+                            background: 'rgba(102, 126, 234, 0.08)',
+                            borderRadius: '8px',
+                            fontSize: '0.95em'
+                        }}>
+                            <div style={{ marginBottom: '8px' }}>🔍 분석할 종목을 입력하세요</div>
+                            <div style={{ fontSize: '0.85em', color: '#64748b' }}>
+                                Alpha Discovery 결과에서도 종목을 선택할 수 있습니다
+                            </div>
                         </div>
                     </div>
                 )
