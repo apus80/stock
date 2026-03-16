@@ -1869,116 +1869,8 @@
 
                     <h1>INVESTFLOW AI MARKET DASHBOARD</h1>
 
-                    <div class="grid">
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">1. 한국 시장</span><button class="card-rfbtn" id="rfbtn-1" onclick="imdRefreshCard(1)" title="새로고침">↻</button></div>
-                            <div class="item"><span>EWY (한국 ETF)</span><span class="item-right"><span id="ewy" class="value">-</span><span id="chg-ewy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-ewy"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">2. 미국 시장</span><button class="card-rfbtn" id="rfbtn-2" onclick="imdRefreshCard(2)" title="새로고침">↻</button></div>
-                            <div class="item"><span>S&amp;P500 (SPY)</span><span class="item-right"><span id="sp500" class="value">-</span><span id="chg-sp500" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sp500"></span></span></div>
-                            <div class="item"><span>NASDAQ (QQQ)</span><span class="item-right"><span id="nasdaq" class="value">-</span><span id="chg-nasdaq" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-nasdaq"></span></span></div>
-                            <div class="item"><span>DOW (DIA)</span><span class="item-right"><span id="dow" class="value">-</span><span id="chg-dow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-dow"></span></span></div>
-                            <div class="item"><span>Russell 2000 (IWM)</span><span class="item-right"><span id="russell" class="value">-</span><span id="chg-russell" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-russell"></span></span></div>
-                            <div class="item"><span>VIX</span><span class="item-right"><span id="vix" class="value">-</span><span id="chg-vix" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-vix"></span></span></div>
-                            <div class="item"><span>SOX (SOXX)</span><span class="item-right"><span id="sox" class="value">-</span><span id="chg-sox" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sox"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">3. 미국 선물</span><button class="card-rfbtn" id="rfbtn-3" onclick="imdRefreshCard(3)" title="새로고침">↻</button></div>
-                            <div class="item"><span>S&amp;P500 Fut</span><span class="item-right"><span id="spfuture" class="value">-</span><span id="chg-spfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-spfuture"></span></span></div>
-                            <div class="item"><span>Nasdaq Fut</span><span class="item-right"><span id="nasfuture" class="value">-</span><span id="chg-nasfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-nasfuture"></span></span></div>
-                            <div class="item"><span>Russell Fut</span><span class="item-right"><span id="rtyfuture" class="value">-</span><span id="chg-rtyfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-rtyfuture"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">4. Crypto</span><button class="card-rfbtn" id="rfbtn-4" onclick="imdRefreshCard(4)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Bitcoin</span><span class="item-right"><span id="btc" class="value">-</span><span id="chg-btc" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-btc"></span></span></div>
-                            <div class="item"><span>Ethereum</span><span class="item-right"><span id="eth" class="value">-</span><span id="chg-eth" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-eth"></span></span></div>
-                            <div class="item"><span>Solana</span><span class="item-right"><span id="sol" class="value">-</span><span id="chg-sol" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sol"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">5. Commodities</span><button class="card-rfbtn" id="rfbtn-5" onclick="imdRefreshCard(5)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Gold</span><span class="item-right"><span id="gold" class="value">-</span><span id="chg-gold" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-gold"></span></span></div>
-                            <div class="item"><span>Silver</span><span class="item-right"><span id="silver" class="value">-</span><span id="chg-silver" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-silver"></span></span></div>
-                            <div class="item"><span>브렌트유</span><span class="item-right"><span id="oil" class="value">-</span><span id="chg-oil" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-oil"></span></span></div>
-                            <div class="item"><span>DXY</span><span class="item-right"><span id="dxy" class="value">-</span><span id="chg-dxy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-dxy"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">6. FX</span><button class="card-rfbtn" id="rfbtn-6" onclick="imdRefreshCard(6)" title="새로고침">↻</button></div>
-                            <div class="item"><span>USD/KRW</span><span class="item-right"><span id="uskrw" class="value">-</span><span id="chg-uskrw" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-uskrw"></span></span></div>
-                            <div class="item"><span>USD/JPY</span><span class="item-right"><span id="usjpy" class="value">-</span><span id="chg-usjpy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-usjpy"></span></span></div>
-                            <div class="item"><span>EUR/USD</span><span class="item-right"><span id="eurusd" class="value">-</span><span id="chg-eurusd" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-eurusd"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">7. Market Liquidity</span><button class="card-rfbtn" id="rfbtn-7" onclick="imdRefreshCard(7)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Fed Balance</span><span class="item-right"><span id="fedbal" class="value">-</span><span id="chg-fedbal" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-fedbal"></span></span></div>
-                            <div class="item"><span>Reverse Repo</span><span class="item-right"><span id="repo" class="value">-</span><span id="chg-repo" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-repo"></span></span></div>
-                            <div class="item"><span>TGA</span><span class="item-right"><span id="tga" class="value">-</span><span id="chg-tga" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-tga"></span></span></div>
-                            <div class="item"><span>M2</span><span class="item-right"><span id="m2" class="value">-</span><span id="chg-m2" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-m2"></span></span></div>
-                            <div class="item"><span>10Y Yield</span><span class="item-right"><span id="us10y" class="value">-</span><span id="chg-us10y" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-us10y"></span></span></div>
-                            <div class="item"><span>2Y Yield</span><span class="item-right"><span id="us2y" class="value">-</span><span id="chg-us2y" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-us2y"></span></span></div>
-                            <div class="item"><span>Yield Curve</span><span class="item-right"><span id="yieldcurve" class="value">-</span><span id="chg-yieldcurve" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-yieldcurve"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">8. ETF Smart Money</span><button class="card-rfbtn" id="rfbtn-8" onclick="imdRefreshCard(8)" title="새로고침">↻</button></div>
-                            <div class="item"><span>SPY Vol Flow</span><span class="item-right"><span id="spyflow" class="value">-</span><span id="chg-spyflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-spyflow"></span></span></div>
-                            <div class="item"><span>QQQ Vol Flow</span><span class="item-right"><span id="qqqflow" class="value">-</span><span id="chg-qqqflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-qqqflow"></span></span></div>
-                            <div class="item"><span>IWM Vol Flow</span><span class="item-right"><span id="iwmflow" class="value">-</span><span id="chg-iwmflow" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-iwmflow"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">9. Sentiment &amp; Options</span><button class="card-rfbtn" id="rfbtn-9" onclick="imdRefreshCard(9)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Fear &amp; Greed</span><span class="item-right"><span id="fear" class="value">-</span><span id="chg-fear" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-fear"></span></span></div>
-                            <div class="item"><span>Put/Call Ratio</span><span class="item-right"><span id="putcall" class="value">-</span><span id="chg-putcall" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-putcall"></span></span></div>
-                            <div class="item"><span>SPY Gamma Wall</span><span class="item-right"><span id="gamma" class="value">-</span><span id="chg-gamma" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-gamma"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">10. Sectors</span><button class="card-rfbtn" id="rfbtn-10" onclick="imdRefreshCard(10)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Technology (XLK)</span><span class="item-right"><span id="xlk" class="value">-</span><span id="chg-xlk" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xlk"></span></span></div>
-                            <div class="item"><span>Financials (XLF)</span><span class="item-right"><span id="xlf" class="value">-</span><span id="chg-xlf" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xlf"></span></span></div>
-                            <div class="item"><span>Energy (XLE)</span><span class="item-right"><span id="xle" class="value">-</span><span id="chg-xle" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xle"></span></span></div>
-                            <div class="item"><span>Healthcare (XLV)</span><span class="item-right"><span id="xlv" class="value">-</span><span id="chg-xlv" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xlv"></span></span></div>
-                            <div class="item"><span>Consumer Disc (XLY)</span><span class="item-right"><span id="xly" class="value">-</span><span id="chg-xly" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xly"></span></span></div>
-                            <div class="item"><span>Industrials (XLI)</span><span class="item-right"><span id="xli" class="value">-</span><span id="chg-xli" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xli"></span></span></div>
-                            <div class="item"><span>Utilities (XLU)</span><span class="item-right"><span id="xlu" class="value">-</span><span id="chg-xlu" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xlu"></span></span></div>
-                            <div class="item"><span>Real Estate (XLRE)</span><span class="item-right"><span id="xlre" class="value">-</span><span id="chg-xlre" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-xlre"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">11. Credit &amp; Breadth</span><button class="card-rfbtn" id="rfbtn-11" onclick="imdRefreshCard(11)" title="새로고침">↻</button></div>
-                            <div class="item"><span>High Yield (HYG)</span><span class="item-right"><span id="hyg" class="value">-</span><span id="chg-hyg" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-hyg"></span></span></div>
-                            <div class="item"><span>Investment Grade (LQD)</span><span class="item-right"><span id="lqd" class="value">-</span><span id="chg-lqd" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-lqd"></span></span></div>
-                            <div class="item"><span>Total Market (VTI)</span><span class="item-right"><span id="vti" class="value">-</span><span id="chg-vti" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-vti"></span></span></div>
-                            <div class="item"><span>Long Treasury (TLT)</span><span class="item-right"><span id="tlt" class="value">-</span><span id="chg-tlt" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-tlt"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">12. Macro Base</span><button class="card-rfbtn" id="rfbtn-12" onclick="imdRefreshCard(12)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Fed 금리</span><span class="item-right"><span id="fed_rate" class="value">-</span><span id="chg-fed_rate" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-fed_rate"></span></span></div>
-                            <div class="item"><span>CPI YoY</span><span class="item-right"><span id="cpi" class="value">-</span><span id="chg-cpi" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-cpi"></span></span></div>
-                            <div class="item"><span>Core CPI YoY</span><span class="item-right"><span id="core_cpi_yoy" class="value">-</span><span id="chg-core_cpi_yoy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-core_cpi_yoy"></span></span></div>
-                            <div class="item"><span>실업률</span><span class="item-right"><span id="unemployment" class="value">-</span><span id="chg-unemployment" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-unemployment"></span></span></div>
-                            <div class="item"><span>Inflation Exp</span><span class="item-right"><span id="inflation_exp" class="value">-</span><span id="chg-inflation_exp" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-inflation_exp"></span></span></div>
-                            <div class="item"><span>Real Rates</span><span class="item-right"><span id="real_rates" class="value">-</span><span id="chg-real_rates" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-real_rates"></span></span></div>
-                        </div>
-
-                        <div class="card">
-                            <div class="title-area"><span class="title">13. Macro Indicators</span><button class="card-rfbtn" id="rfbtn-13" onclick="imdRefreshCard(13)" title="새로고침">↻</button></div>
-                            <div class="item"><span>Consumer Sentiment</span><span class="item-right"><span id="sentiment" class="value">-</span><span id="chg-sentiment" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-sentiment"></span></span></div>
-                            <div class="item"><span>Real GDP</span><span class="item-right"><span id="gdp" class="value">-</span><span id="chg-gdp" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-gdp"></span></span></div>
-                            <div class="item"><span>Industrial Production</span><span class="item-right"><span id="indpro" class="value">-</span><span id="chg-indpro" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-indpro"></span></span></div>
-                            <div class="item"><span>Nonfarm Payrolls</span><span class="item-right"><span id="payems" class="value">-</span><span id="chg-payems" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-payems"></span></span></div>
-                            <div class="item"><span>PCE Inflation</span><span class="item-right"><span id="pce_inf" class="value">-</span><span id="chg-pce_inf" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-pce_inf"></span></span></div>
-                        </div>
-
+                    <div class="grid" id="dashboardGrid">
+                        <!-- 대시보드 카드들이 여기에 동적으로 렌더링됨 -->
 
                     </div><!-- /.grid -->
                 </div><!-- /.imd-wrap -->
@@ -5211,6 +5103,535 @@ var ECON_DATA = {
             });
             return chain;
         }
+
+        /* ══════════════════════════════════════════════════════
+         * 대시보드 카드 정의 및 렌더링 (0~34번)
+         * ══════════════════════════════════════════════════════ */
+
+        // 카드 정의 데이터
+        var cardDefinitions = [
+            // Card 0: Market Regime AI (계산식)
+            { id: 0, title: 'Market Regime AI', type: 'calculated', endpoint: '/market',
+              fields: ['US_MARKET.SP500.changePercentage', 'US_MARKET.NASDAQ.changePercentage', 'RATES.YIELD_CURVE', 'FX.DXY.changePercentage', 'LIQUIDITY.REVERSE_REPO', 'COMMODITIES.OIL.changePercentage'] },
+
+            // Card 1: Korea Market ETF
+            { id: 1, title: 'Korea Market ETF', type: 'data', endpoint: '/market',
+              fields: ['KOREA_ETF.KODEX200.price', 'KOREA_ETF.KODEX200.changePercentage', 'KOREA_ETF.KODEXNASDAQ.price', 'KOREA_ETF.KODEXNASDAQ.changePercentage'] },
+
+            // Card 2: US Equity Indices
+            { id: 2, title: 'US Equity Indices', type: 'data', endpoint: '/market',
+              fields: ['US_MARKET.SP500.price', 'US_MARKET.SP500.changePercentage', 'US_MARKET.NASDAQ.price', 'US_MARKET.NASDAQ.changePercentage', 'US_MARKET.DOW.price', 'US_MARKET.DOW.changePercentage'] },
+
+            // Card 3: US Futures
+            { id: 3, title: 'US Futures', type: 'data', endpoint: '/market',
+              fields: ['US_FUTURES.SP500_FUTURES.price', 'US_FUTURES.NASDAQ_FUTURES.price', 'US_FUTURES.DOW_FUTURES.price'] },
+
+            // Card 4: Crypto Market
+            { id: 4, title: 'Crypto Market', type: 'data', endpoint: '/market',
+              fields: ['CRYPTO.BTC.price', 'CRYPTO.BTC.changePercentage', 'CRYPTO.ETH.price', 'CRYPTO.ETH.changePercentage'] },
+
+            // Card 5: Major FX
+            { id: 5, title: 'Major FX', type: 'data', endpoint: '/market',
+              fields: ['FX.DXY.price', 'FX.DXY.changePercentage', 'FX.USDJPY.price', 'FX.USDJPY.changePercentage', 'FX.EURUSD.price', 'FX.EURUSD.changePercentage'] },
+
+            // Card 6: Commodity Macro
+            { id: 6, title: 'Commodity Macro', type: 'data', endpoint: '/market',
+              fields: ['COMMODITIES.GOLD.price', 'COMMODITIES.SILVER.price', 'COMMODITIES.OIL.price'] },
+
+            // Card 7: Asia FX
+            { id: 7, title: 'Asia FX', type: 'data', endpoint: '/market',
+              fields: ['FX.USDKRW.price', 'FX.USDKRW.changePercentage'] },
+
+            // Card 8: Global Risk Monitor
+            { id: 8, title: 'Global Risk Monitor', type: 'data', endpoint: '/market',
+              fields: ['US_MARKET.VIX.price', 'US_MARKET.VIX.changePercentage', 'US_MARKET.SP500.changePercentage', 'US_MARKET.NASDAQ.changePercentage', 'US_MARKET.RUSSELL2000.changePercentage'] },
+
+            // Card 9: Growth vs Value
+            { id: 9, title: 'Growth vs Value', type: 'data', endpoint: '/market',
+              fields: ['US_MARKET.NASDAQ.changePercentage', 'US_MARKET.DOW.changePercentage', 'US_MARKET.RUSSELL2000.changePercentage'] },
+
+            // Card 10: Semiconductor Cycle
+            { id: 10, title: 'Semiconductor Cycle', type: 'data', endpoint: '/market',
+              fields: ['US_MARKET.SOX.price', 'US_MARKET.SOX.changePercentage'] },
+
+            // Card 11: Interest Rate Structure
+            { id: 11, title: 'Interest Rate Structure', type: 'data', endpoint: '/market',
+              fields: ['RATES.US10Y', 'RATES.US2Y'] },
+
+            // Card 12: Yield Curve
+            { id: 12, title: 'Yield Curve', type: 'data', endpoint: '/market',
+              fields: ['RATES.YIELD_CURVE', 'RATES.US10Y', 'RATES.US2Y'] },
+
+            // Card 13: Dollar Strength
+            { id: 13, title: 'Dollar Strength', type: 'data', endpoint: '/market',
+              fields: ['FX.DXY.price', 'FX.DXY.changePercentage'] },
+
+            // Card 14: Energy Market
+            { id: 14, title: 'Energy Market', type: 'data', endpoint: '/market',
+              fields: ['COMMODITIES.OIL.price', 'COMMODITIES.OIL.changePercentage'] },
+
+            // Card 15: Precious Metals
+            { id: 15, title: 'Precious Metals', type: 'data', endpoint: '/market',
+              fields: ['COMMODITIES.GOLD.price', 'COMMODITIES.GOLD.changePercentage', 'COMMODITIES.SILVER.price', 'COMMODITIES.SILVER.changePercentage'] },
+
+            // Card 16: Alt Layer1
+            { id: 16, title: 'Alt Layer1', type: 'data', endpoint: '/market',
+              fields: ['CRYPTO.SOL.price', 'CRYPTO.SOL.changePercentage'] },
+
+            // Card 17: Liquidity Engine
+            { id: 17, title: 'Liquidity Engine', type: 'data', endpoint: '/market',
+              fields: ['LIQUIDITY.FED_BALANCE', 'LIQUIDITY.REVERSE_REPO', 'LIQUIDITY.TGA'] },
+
+            // Card 18: Money Supply
+            { id: 18, title: 'Money Supply', type: 'data', endpoint: '/market',
+              fields: ['MACRO_BASE.M2'] },
+
+            // Card 19: Credit Market
+            { id: 19, title: 'Credit Market', type: 'data', endpoint: '/market',
+              fields: ['BONDS.HYG.price', 'BONDS.HYG.change', 'BONDS.LQD.price', 'BONDS.LQD.change'] },
+
+            // Card 20: High Yield Risk
+            { id: 20, title: 'High Yield Risk', type: 'data', endpoint: '/market',
+              fields: ['BONDS.HYG.price', 'BONDS.HYG.change'] },
+
+            // Card 21: Investment Grade
+            { id: 21, title: 'Investment Grade', type: 'data', endpoint: '/market',
+              fields: ['BONDS.LQD.price', 'BONDS.LQD.change'] },
+
+            // Card 22: Market Breadth Score
+            { id: 22, title: 'Market Breadth Score', type: 'special', endpoint: '/market-breadth' },
+
+            // Card 23-25: Sectors
+            { id: 23, title: 'Sector Rotation', type: 'data', endpoint: '/market',
+              fields: ['SECTORS.TECHNOLOGY', 'SECTORS.FINANCIALS', 'SECTORS.ENERGY', 'SECTORS.HEALTHCARE', 'SECTORS.CONSUMER_DISCRETIONARY'] },
+
+            { id: 24, title: 'Defensive Sectors', type: 'data', endpoint: '/market',
+              fields: ['SECTORS.UTILITIES', 'SECTORS.REAL_ESTATE', 'SECTORS.CONSUMER_STAPLES'] },
+
+            { id: 25, title: 'Cyclical Sectors', type: 'data', endpoint: '/market',
+              fields: ['SECTORS.INDUSTRIALS', 'SECTORS.ENERGY', 'SECTORS.FINANCIALS'] },
+
+            // Card 26-28: Macro
+            { id: 26, title: 'Macro Growth', type: 'data', endpoint: '/market',
+              fields: ['MACRO_INDICATORS.REAL_GDP', 'MACRO_INDICATORS.INDUSTRIAL_PRODUCTION'] },
+
+            { id: 27, title: 'Labor Market', type: 'data', endpoint: '/market',
+              fields: ['MACRO_INDICATORS.NONFARM_PAYROLLS'] },
+
+            { id: 28, title: 'Inflation Monitor', type: 'data', endpoint: '/market',
+              fields: ['MACRO_INDICATORS.PCE_INFLATION'] },
+
+            // Card 29-31: Special endpoints
+            { id: 29, title: 'Smart Money Flow', type: 'special', endpoint: '/smart-money' },
+
+            { id: 30, title: 'Institutional Volume', type: 'special', endpoint: '/smart-money' },
+
+            { id: 31, title: 'Fear & Greed', type: 'special', endpoint: '/feargreed' },
+
+            // Card 32: Macro Risk Composite
+            { id: 32, title: 'Macro Risk Composite', type: 'data', endpoint: '/market',
+              fields: ['RATES.YIELD_CURVE', 'LIQUIDITY.REVERSE_REPO', 'FX.DXY.price', 'COMMODITIES.OIL.price'] },
+
+            // Card 33: AI Market Score (계산식)
+            { id: 33, title: 'AI Market Score', type: 'calculated', endpoint: '/market' },
+
+            // Card 34: Macro Risk Radar (계산식)
+            { id: 34, title: 'Macro Risk Radar', type: 'calculated', endpoint: '/market' }
+        ];
+
+        // 대시보드 초기화 함수
+        function initDashboard() {
+            console.log('[Dashboard] Initializing with', cardDefinitions.length, 'cards');
+            renderDashboard();
+            // 데이터 로드
+            loadAllCards();
+        }
+
+        // 카드 렌더링
+        function renderDashboard() {
+            var grid = document.getElementById('dashboardGrid');
+            if (!grid) return;
+
+            grid.innerHTML = '';
+            cardDefinitions.forEach(function(card) {
+                var cardHTML = '<div class="card" id="card-' + card.id + '"><div class="title-area"><span class="title">' + card.id + '. ' + card.title + '</span><button class="card-rfbtn" onclick="imdRefreshCard(' + card.id + ')" title="새로고침">↻</button></div><div class="card-content" id="card-content-' + card.id + '">로딩중...</div></div>';
+                var cardEl = document.createElement('div');
+                cardEl.innerHTML = cardHTML;
+                grid.appendChild(cardEl.firstElementChild);
+            });
+        }
+
+        // 모든 카드 데이터 로드
+        function loadAllCards() {
+            console.log('[Dashboard] Loading all card data');
+            cardDefinitions.forEach(function(card) {
+                loadCard(card.id);
+            });
+        }
+
+        // 개별 카드 로드
+        function loadCard(cardId) {
+            var card = cardDefinitions.find(function(c) { return c.id === cardId; });
+            if (!card) return;
+
+            console.log('[Card' + cardId + '] Loading:', card.title);
+
+            // 엔드포인트별로 데이터 가져오기
+            if (card.endpoint === '/market') {
+                workerFetchMarket().then(function(data) {
+                    renderCard(cardId, data, card);
+                }).catch(function(err) {
+                    console.error('[Card' + cardId + '] Error:', err);
+                    setCardContent(cardId, '<div style="color:#888;">데이터 로드 실패</div>');
+                });
+            } else if (card.endpoint === '/market-breadth') {
+                fetch('/market-breadth').then(r => r.json()).then(function(data) {
+                    renderCard(cardId, data, card);
+                }).catch(err => setCardContent(cardId, '<div style="color:#888;">데이터 로드 실패</div>'));
+            } else if (card.endpoint === '/smart-money') {
+                fetch('/smart-money').then(r => r.json()).then(function(data) {
+                    renderCard(cardId, data, card);
+                }).catch(err => setCardContent(cardId, '<div style="color:#888;">데이터 로드 실패</div>'));
+            } else if (card.endpoint === '/feargreed') {
+                fetch('/feargreed').then(r => r.json()).then(function(data) {
+                    renderCard(cardId, data, card);
+                }).catch(err => setCardContent(cardId, '<div style="color:#888;">데이터 로드 실패</div>'));
+            }
+        }
+
+        // 카드 내용 렌더링
+        function renderCard(cardId, data, cardDef) {
+            var content = '';
+
+            // 카드 타입별 렌더링
+            if (cardDef.type === 'data') {
+                content = renderDataCard(cardId, data, cardDef);
+            } else if (cardDef.type === 'calculated') {
+                content = renderCalculatedCard(cardId, data, cardDef);
+            } else if (cardDef.type === 'special') {
+                content = renderSpecialCard(cardId, data, cardDef);
+            }
+
+            setCardContent(cardId, content);
+        }
+
+        // 일반 데이터 카드 렌더링
+        function renderDataCard(cardId, data, cardDef) {
+            var content = '<div class="card-items">';
+
+            if (cardDef.fields && cardDef.fields.length > 0) {
+                cardDef.fields.forEach(function(fieldPath) {
+                    var value = getNestedValue(data, fieldPath);
+                    var formattedValue = formatValue(value);
+                    var label = fieldPath.split('.').pop();
+                    content += '<div class="item"><span>' + label + '</span><span class="item-right"><span class="value">' + formattedValue + '</span></span></div>';
+                });
+            } else {
+                content += '<div style="color:#888;">데이터 없음</div>';
+            }
+
+            content += '</div>';
+            return content;
+        }
+
+        // 계산식 카드 렌더링
+        function renderCalculatedCard(cardId, data, cardDef) {
+            if (cardId === 0) {
+                return renderMarketRegimeCard(data);
+            } else if (cardId === 33) {
+                return renderAIMarketScoreCard(data);
+            } else if (cardId === 34) {
+                return renderMacroRiskRadarCard(data);
+            }
+            return '<div style="color:#888;">계산 중...</div>';
+        }
+
+        // 특수 카드 렌더링
+        function renderSpecialCard(cardId, data, cardDef) {
+            if (cardId === 22) {
+                // Market Breadth Score
+                var html = '<div class="card-items">';
+                if (data && data.score !== undefined) {
+                    html += '<div class="item"><span>Score</span><span class="item-right"><span class="value">' + data.score + '</span></span></div>';
+                    html += '<div class="item"><span>Signal</span><span class="item-right"><span class="value">' + (data.signal || '-') + '</span></span></div>';
+                }
+                html += '</div>';
+                return html;
+            } else if (cardId === 29 || cardId === 30) {
+                // Smart Money Flow / Institutional Volume
+                var html = '<div class="card-items">';
+                if (data && data.signal) {
+                    html += '<div class="item"><span>Signal</span><span class="item-right"><span class="value">' + data.signal + '</span></span></div>';
+                    html += '<div class="item"><span>Confidence</span><span class="item-right"><span class="value">' + (data.confidence || '-') + '%</span></span></div>';
+                    if (cardId === 30 && data.details) {
+                        html += '<div class="item"><span>SPY Volume</span><span class="item-right"><span class="value">' + formatValue(data.details.spy_volume) + '</span></span></div>';
+                        html += '<div class="item"><span>QQQ Volume</span><span class="item-right"><span class="value">' + formatValue(data.details.qqq_volume) + '</span></span></div>';
+                    }
+                }
+                html += '</div>';
+                return html;
+            } else if (cardId === 31) {
+                // Fear & Greed
+                var html = '<div class="card-items">';
+                if (data && data.score !== undefined) {
+                    html += '<div class="item"><span>Score</span><span class="item-right"><span class="value">' + data.score + '</span></span></div>';
+                    html += '<div class="item"><span>Rating</span><span class="item-right"><span class="value">' + (data.rating || '-') + '</span></span></div>';
+                }
+                html += '</div>';
+                return html;
+            }
+            return '<div style="color:#888;">데이터 없음</div>';
+        }
+
+        // 시장 레짐 카드 렌더링
+        function renderMarketRegimeCard(data) {
+            if (!data) return '<div style="color:#888;">데이터 없음</div>';
+            var regime = calculateMarketRegime(data);
+            var html = '<div style="padding:15px; text-align:center;">';
+            html += '<div style="font-size:0.9em; color:#666;">Current Regime</div>';
+            html += '<div style="font-size:1.8em; font-weight:bold; color:#0ea5e9; margin:10px 0;">' + regime.name + '</div>';
+            html += '<div style="font-size:0.9em; color:#666;">Confidence: ' + regime.confidence + '%</div>';
+            if (regime.signals && regime.signals.length > 0) {
+                html += '<div style="margin-top:15px; font-size:0.85em; text-align:left; color:#475569;">';
+                html += '<strong>Signals</strong><br>';
+                regime.signals.forEach(function(sig) {
+                    html += '· ' + sig + '<br>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // AI Market Score 카드 렌더링
+        function renderAIMarketScoreCard(data) {
+            if (!data) return '<div style="color:#888;">데이터 없음</div>';
+            var result = calculateAIMarketScore(data);
+            var html = '<div style="padding:15px; text-align:center;">';
+            html += '<div style="font-size:1.5em; font-weight:bold; color:#3b82f6;">' + result.score + '</div>';
+            html += '<div style="font-size:0.9em; color:#666;">Market State: ' + result.state + '</div>';
+            if (result.signals && result.signals.length > 0) {
+                html += '<div style="margin-top:15px; font-size:0.85em; text-align:left; color:#475569;">';
+                html += '<strong>Signals</strong><br>';
+                result.signals.forEach(function(sig) {
+                    html += '· ' + sig + '<br>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // Macro Risk Radar 카드 렌더링
+        function renderMacroRiskRadarCard(data) {
+            if (!data) return '<div style="color:#888;">데이터 없음</div>';
+            var result = calculateMacroRiskRadar(data);
+            var html = '<div style="padding:15px;">';
+            html += '<div style="font-weight:bold; margin-bottom:10px;">Macro Risk Radar</div>';
+            ['INFLATION', 'LIQUIDITY', 'RECESSION', 'MARKET'].forEach(function(risk) {
+                var key = risk + '_Risk';
+                var value = result[key] || 0;
+                html += '<div style="margin-bottom:8px;">';
+                html += '<div style="display:flex; justify-content:space-between; font-size:0.85em; margin-bottom:3px;">';
+                html += '<span>' + risk + ' Risk</span><span style="font-weight:bold;">' + value + '</span>';
+                html += '</div>';
+                html += '<div style="background:#eee; border-radius:3px; height:6px; overflow:hidden;">';
+                html += '<div style="background:#3b82f6; height:100%; width:' + value + '%;"></div>';
+                html += '</div></div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        // 유틸리티 함수들
+        function setCardContent(cardId, html) {
+            var el = document.getElementById('card-content-' + cardId);
+            if (el) el.innerHTML = html;
+        }
+
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce(function(current, prop) {
+                return current ? current[prop] : undefined;
+            }, obj);
+        }
+
+        function formatValue(value) {
+            if (value === null || value === undefined) return '-';
+            if (typeof value === 'number') return value.toFixed(2);
+            if (typeof value === 'string') return value;
+            return JSON.stringify(value);
+        }
+
+        function imdRefreshCard(cardId) {
+            console.log('[Refresh] Card', cardId);
+            loadCard(cardId);
+        }
+
+        // 계산 함수들
+        function calculateMarketRegime(data) {
+            if (!data) return { name: 'N/A', confidence: 0, signals: [] };
+
+            var sp500Change = getNestedValue(data, 'US_MARKET.SP500.changePercentage') || 0;
+            var nasdaqChange = getNestedValue(data, 'US_MARKET.NASDAQ.changePercentage') || 0;
+            var yieldCurve = getNestedValue(data, 'RATES.YIELD_CURVE') || 0;
+            var dxyChange = getNestedValue(data, 'FX.DXY.changePercentage') || 0;
+            var rrp = getNestedValue(data, 'LIQUIDITY.REVERSE_REPO') || 0;
+            var oilChange = getNestedValue(data, 'COMMODITIES.OIL.changePercentage') || 0;
+
+            var regime = 'NEUTRAL';
+            var confidence = 50;
+            var signals = [];
+
+            // RISK ON
+            if (sp500Change > 0 && nasdaqChange > 0 && yieldCurve > -0.5 && dxyChange <= 0) {
+                regime = 'RISK ON';
+                confidence = 75;
+                signals = ['Equity Momentum Up', 'Yield Curve Positive', 'Dollar Weak'];
+            }
+            // RISK OFF
+            else if (sp500Change < 0 && nasdaqChange < 0 && dxyChange > 0) {
+                regime = 'RISK OFF';
+                confidence = 70;
+                signals = ['Equity Weakness', 'Dollar Strength', 'Defensive Mode'];
+            }
+            // LIQUIDITY STRESS
+            else if (oilChange < -2 && sp500Change < 0) {
+                regime = 'LIQUIDITY STRESS';
+                confidence = 65;
+                signals = ['RRP Rising', 'Equity Weakness', 'Risk-off Pressure'];
+            }
+            // RECESSION RISK
+            else if (yieldCurve < -0.75 && oilChange < -2) {
+                regime = 'RECESSION RISK';
+                confidence = 60;
+                signals = ['Yield Curve Inversion', 'Energy Decline', 'Economic Slowdown'];
+            }
+
+            return { name: regime, confidence: confidence, signals: signals };
+        }
+
+        function calculateAIMarketScore(data) {
+            if (!data) return { score: 50, state: 'NEUTRAL', signals: [] };
+
+            var sp500Change = getNestedValue(data, 'US_MARKET.SP500.changePercentage') || 0;
+            var nasdaqChange = getNestedValue(data, 'US_MARKET.NASDAQ.changePercentage') || 0;
+            var vixLevel = getNestedValue(data, 'US_MARKET.VIX.price') || 20;
+            var yieldCurve = getNestedValue(data, 'RATES.YIELD_CURVE') || 0;
+            var us10y = getNestedValue(data, 'RATES.US10Y') || 4.0;
+            var dxyChange = getNestedValue(data, 'FX.DXY.changePercentage') || 0;
+            var oilChange = getNestedValue(data, 'COMMODITIES.OIL.changePercentage') || 0;
+            var fedBalance = getNestedValue(data, 'LIQUIDITY.FED_BALANCE') || 0;
+            var rrp = getNestedValue(data, 'LIQUIDITY.REVERSE_REPO') || 0;
+            var tga = getNestedValue(data, 'LIQUIDITY.TGA') || 0;
+
+            var score = 50;
+            var signals = [];
+
+            // Equity Momentum
+            if (sp500Change > 0) { score += 10; signals.push('SP500 Up'); }
+            else if (sp500Change < 0) { score -= 10; signals.push('SP500 Down'); }
+
+            if (nasdaqChange > 0) { score += 8; signals.push('NASDAQ Up'); }
+            else if (nasdaqChange < 0) { score -= 8; signals.push('NASDAQ Down'); }
+
+            // Volatility Risk
+            if (vixLevel > 25) { score -= 15; signals.push('VIX High'); }
+            else if (vixLevel < 18) { score += 5; signals.push('VIX Low'); }
+
+            // Yield Curve
+            if (yieldCurve > 0) { score += 10; signals.push('Yield Curve Positive'); }
+            else if (yieldCurve < -0.5) { score -= 10; signals.push('Yield Curve Inverted'); }
+
+            // Dollar
+            if (dxyChange > 0.5) { score -= 8; signals.push('Dollar Strong'); }
+            else if (dxyChange < -0.5) { score += 8; signals.push('Dollar Weak'); }
+
+            // Interest Rates
+            if (us10y > 4.5) { score -= 5; signals.push('Rates High'); }
+            else if (us10y < 3.5) { score += 5; signals.push('Rates Low'); }
+
+            // Energy
+            if (oilChange > 3) { score -= 5; signals.push('Oil Spike'); }
+            else if (oilChange < -3) { score += 3; signals.push('Oil Decline'); }
+
+            // Net Liquidity
+            var netLiq = fedBalance - rrp - tga;
+            // Simplified: assume netLiq is increasing if positive
+            if (netLiq > 0) { score += 10; signals.push('Liquidity Positive'); }
+            else { score -= 10; signals.push('Liquidity Negative'); }
+
+            score = Math.max(0, Math.min(100, score));
+
+            var state = 'NEUTRAL';
+            if (score < 20) state = 'Market Crisis';
+            else if (score < 40) state = 'Risk Off';
+            else if (score < 60) state = 'Neutral';
+            else if (score < 80) state = 'Risk On';
+            else state = 'Euphoria';
+
+            return { score: Math.round(score), state: state, signals: signals.slice(0, 3) };
+        }
+
+        function calculateMacroRiskRadar(data) {
+            if (!data) return { INFLATION_Risk: 50, LIQUIDITY_Risk: 50, RECESSION_Risk: 50, MARKET_Risk: 50 };
+
+            var us10y = getNestedValue(data, 'RATES.US10Y') || 4.0;
+            var yieldCurve = getNestedValue(data, 'RATES.YIELD_CURVE') || 0;
+            var sp500Change = getNestedValue(data, 'US_MARKET.SP500.changePercentage') || 0;
+            var nasdaqChange = getNestedValue(data, 'US_MARKET.NASDAQ.changePercentage') || 0;
+            var vixLevel = getNestedValue(data, 'US_MARKET.VIX.price') || 20;
+            var dxyChange = getNestedValue(data, 'FX.DXY.changePercentage') || 0;
+            var oilChange = getNestedValue(data, 'COMMODITIES.OIL.changePercentage') || 0;
+            var fedBalance = getNestedValue(data, 'LIQUIDITY.FED_BALANCE') || 0;
+            var rrp = getNestedValue(data, 'LIQUIDITY.REVERSE_REPO') || 0;
+            var tga = getNestedValue(data, 'LIQUIDITY.TGA') || 0;
+
+            // Inflation Risk
+            var inflationRisk = 40;
+            if (us10y > 4.5) inflationRisk += 20;
+            if (us10y < 3.5) inflationRisk -= 10;
+            if (oilChange > 3) inflationRisk += 20;
+            if (oilChange < -3) inflationRisk -= 10;
+            if (dxyChange < -0.5) inflationRisk += 5;
+            inflationRisk = Math.max(0, Math.min(100, inflationRisk));
+
+            // Liquidity Risk
+            var netLiq = fedBalance - rrp - tga;
+            var liquidityRisk = 40;
+            if (netLiq < 0) liquidityRisk += 25;
+            if (netLiq > 0) liquidityRisk -= 20;
+            if (dxyChange > 0.5) liquidityRisk += 10;
+            liquidityRisk = Math.max(0, Math.min(100, liquidityRisk));
+
+            // Recession Risk
+            var recessionRisk = 30;
+            if (yieldCurve < -0.75) recessionRisk += 35;
+            if (yieldCurve < -0.25) recessionRisk += 20;
+            if (sp500Change < 0) recessionRisk += 10;
+            recessionRisk = Math.max(0, Math.min(100, recessionRisk));
+
+            // Market Risk
+            var marketRisk = 35;
+            if (vixLevel > 25) marketRisk += 40;
+            if (vixLevel > 18) marketRisk += 20;
+            if (sp500Change < 0) marketRisk += 10;
+            if (nasdaqChange < 0) marketRisk += 10;
+            marketRisk = Math.max(0, Math.min(100, marketRisk));
+
+            return {
+                INFLATION_Risk: Math.round(inflationRisk),
+                LIQUIDITY_Risk: Math.round(liquidityRisk),
+                RECESSION_Risk: Math.round(recessionRisk),
+                MARKET_Risk: Math.round(marketRisk)
+            };
+        }
+
+        // 페이지 로드 시 대시보드 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('dashboardGrid')) {
+                initDashboard();
+            }
+        });
 
         /* ══════════════════════════════════════════════════════
          * 카드 1 – 한국 시장
