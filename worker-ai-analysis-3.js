@@ -1632,21 +1632,36 @@ export default {
            .sort((a, b) => (b.data.changePercentage || 0) - (a.data.changePercentage || 0))
            .slice(0, 3)
 
-          // 4️⃣ STOCK DISCOVERY - 종목 필터링 및 스코링
-          // 추적 종목 리스트 (출처: 기존 추적 포트폴리오)
-          const trackedStocks = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'META', 'AMZN', 'GOOGL', 'NFLX', 'CRM', 'ADBE']
+          // 4️⃣ STOCK DISCOVERY - Alpha Discovery 결과에서 동적으로 종목 선택
+          // 출처: /alpha/discovery endpoint (상위 20개 종목 자동 선택)
+          const alphaDiscovery = await runAlphaDiscovery()
+          if (!alphaDiscovery?.top_20 || alphaDiscovery.top_20.length === 0) {
+            return {
+              timestamp: new Date().toISOString(),
+              dataType: "engine_discovery",
+              message: "Alpha Discovery 데이터 없음",
+              discoveries: { total: 0, stocks: [] },
+              error: "알파 스캔 결과 없음"
+            }
+          }
+
+          const trackedStocks = alphaDiscovery.top_20.map(s => s.symbol)  // ✅ 동적 추출
 
           // 병렬 호출: 각 종목의 펀더멘탈 데이터
           const stockDataPromises = trackedStocks.map(symbol =>
             Promise.all([
               getFinancialGrowth(symbol),
+              getIncomeStatement(symbol),  // ✅ 정확한 netIncome 추출
               getBalanceSheet(symbol),
-              getQuote(symbol)
-            ]).then(([growth, balance, quote]) => ({
+              getQuote(symbol),
+              getCompanyProfile(symbol)
+            ]).then(([growth, income, balance, quote, profile]) => ({
               symbol,
               growth,
+              income,
               balance,
-              quote
+              quote,
+              profile
             }))
           )
 
@@ -1655,7 +1670,7 @@ export default {
           // 5️⃣ ULTIMATE SCORE - 최종 점수 계산
           const discoveredStocks = allStockData
             .map(stock => {
-              const { symbol, growth, balance, quote } = stock
+              const { symbol, growth, income, balance, quote, profile } = stock
 
               // null 체크
               if (!growth || !balance || !quote) return null
@@ -1664,11 +1679,13 @@ export default {
 
               const revenueGrowth = growth.revenueGrowth * 100  // 퍼센트로 변환
               const epsGrowth = growth.epsGrowth * 100
-              const netIncomeGrowth = growth.netIncomeGrowth * 100 || 0
 
-              // ROE 계산 = NetIncome / Stockholders' Equity
-              // 현재는 simulated 계산 (정확한 netIncome 필요)
-              const roe = (epsGrowth * 0.6 + revenueGrowth * 0.4)  // 가중 평균
+              // ✅ 정확한 ROE 계산 = Net Income / Stockholders' Equity
+              const netIncome = income?.data?.netIncome || null
+              const stockholdersEquity = balance.totalStockholdersEquity
+              const roe = netIncome && stockholdersEquity > 0
+                ? (netIncome / stockholdersEquity) * 100
+                : (epsGrowth * 0.6 + revenueGrowth * 0.4)  // 폴백: 성장률 기반
 
               // Debt/Equity = Total Debt / Stockholders' Equity
               const totalDebt = balance.totalDebt || (balance.longTermDebt || 0) + (balance.shortTermDebt || 0)
@@ -1686,16 +1703,18 @@ export default {
               const growthScore = Math.min(30, (revenueGrowth - 20) + (epsGrowth - 20) / 2)
               const profitScore = Math.min(30, (roe - 15) * 2)
               const macroScoreForStock = marketConfirmed ? 20 : 10
+
+              // ✅ 정확한 섹터 매칭
               const sectorScore = sectorData.some(s => {
-                // 섹터 매칭 로직 추가 가능
-                return true
+                const profileSector = profile?.data?.sector
+                return profileSector && s.name.toLowerCase().includes(profileSector.toLowerCase().split(' ')[0])
               }) ? 20 : 0
 
               const ultimateScore = Math.round(growthScore + profitScore + macroScoreForStock + sectorScore)
 
               return {
                 symbol,
-                sector: "Mixed",  // 향후 getCompanyProfile으로 확장
+                sector: profile?.data?.sector || "Unknown",  // ✅ API에서 동적 추출
                 revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
                 epsGrowth: parseFloat(epsGrowth.toFixed(2)),
                 roe: parseFloat(roe.toFixed(2)),
