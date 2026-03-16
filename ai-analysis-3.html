@@ -1103,37 +1103,111 @@
             const [data, setData] = useState(null);
             const [loading, setLoading] = useState(true);
 
+            // 정규화 함수: 값을 0~100 범위로 변환
+            const normalize = (value, min = 0, max = 100) => {
+                if (value === null || value === undefined) return 0;
+                if (max === min) return 0;
+                return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+            };
+
+            // 역정규화: 낮을수록 높은 점수
+            const inverseNormalize = (value, min = 5, max = 50) => {
+                if (value === null || value === undefined) return 0;
+                if (value <= min) return 100;
+                if (value >= max) return 0;
+                return Math.max(0, ((max - value) / (max - min)) * 100);
+            };
+
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
 
-                    // API에서 펀더멘탈 데이터 호출
-                    // TODO: /api/explosive-stocks 엔드포인트 구현 필요
-                    // const res = await fetch('/api/explosive-stocks');
-                    // const stocks = await res.json();
+                    // 1️⃣ /alpha/discovery에서 top 20 종목 가져오기
+                    // 출처: /alpha/discovery endpoint
+                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaData = await alphaRes.json();
 
-                    // 현재는 API 응답 없음 - 빈 배열 처리
-                    const stocks = [];
+                    if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
+                        setData([]);
+                        return;
+                    }
 
-                    // 종목 필터링 및 스코어 계산 (판단 기준)
-                    const filteredStocks = stocks
-                        .filter(stock =>
-                            stock.revenue !== null && stock.revenue > 30 &&
-                            stock.eps !== null && stock.eps > 40 &&
-                            stock.roe !== null && stock.roe > 20 &&
-                            stock.peg !== null && stock.peg < 1.5
-                        )
-                        .map((stock) => {
-                            // Explosive Score 계산: EPS성장 + 매출성장 + ROE
-                            const explosiveScore = stock.eps + stock.revenue + stock.roe;
+                    const topStocks = alphaData.top_20.slice(0, 20);
+
+                    // 2️⃣ 각 종목의 펀더멘탈 데이터 병렬 호출
+                    const stockDetails = await Promise.allSettled(
+                        topStocks.map(async (stock) => {
+                            const [growthRes, incomeRes, ratiosRes, profileRes] = await Promise.all([
+                                fetch(`/fundamentals/growth?symbol=${stock.symbol}`),
+                                fetch(`/fundamentals/income?symbol=${stock.symbol}`),
+                                fetch(`/fundamentals/ratios?symbol=${stock.symbol}`),
+                                fetch(`/fundamentals/profile?symbol=${stock.symbol}`)
+                            ]);
+
+                            const growth = await growthRes.json();
+                            const income = await incomeRes.json();
+                            const ratios = await ratiosRes.json();
+                            const profile = await profileRes.json();
+
                             return {
-                                ...stock,
-                                explosive: explosiveScore
+                                symbol: stock.symbol,
+                                name: profile?.data?.companyName || stock.symbol,
+                                sector: profile?.data?.sector || "Unknown",
+                                revenueGrowth: growth?.data?.revenueGrowth ? growth.data.revenueGrowth * 100 : 0,
+                                epsGrowth: growth?.data?.epsGrowth ? growth.data.epsGrowth * 100 : 0,
+                                netIncomeMargin: income?.data?.netIncomeMargin ? income.data.netIncomeMargin * 100 : 0,
+                                pe: ratios?.data?.priceEarningsRatio || 50,
+                                pb: ratios?.data?.priceToBookRatio || 5
                             };
                         })
-                        .sort((a, b) => b.explosive - a.explosive);
+                    );
 
-                    setData(filteredStocks);
+                    // 3️⃣ 성공한 데이터만 필터링
+                    const validStocks = stockDetails
+                        .filter(result => result.status === 'fulfilled')
+                        .map(result => result.value)
+                        .filter(stock =>
+                            stock.revenueGrowth !== null &&
+                            stock.epsGrowth !== null &&
+                            stock.netIncomeMargin !== null &&
+                            stock.pe !== null &&
+                            stock.pb !== null
+                        );
+
+                    // 4️⃣ 필터링 (판단 기준)
+                    const filteredStocks = validStocks.filter(stock =>
+                        stock.revenueGrowth > 20 &&
+                        stock.epsGrowth > 20 &&
+                        stock.netIncomeMargin > 10 &&
+                        stock.pe < 30
+                    );
+
+                    // 5️⃣ 점수 계산
+                    const scoredStocks = filteredStocks.map(stock => {
+                        const revenueGrowthScore = normalize(stock.revenueGrowth, 0, 100);
+                        const epsGrowthScore = normalize(stock.epsGrowth, 0, 100);
+                        const profitabilityScore = normalize(stock.netIncomeMargin, 0, 30);
+                        const valuationScore = inverseNormalize(stock.pe, 10, 40);
+
+                        const explosiveScore = Math.round(
+                            0.35 * revenueGrowthScore +
+                            0.35 * epsGrowthScore +
+                            0.20 * profitabilityScore +
+                            0.10 * valuationScore
+                        );
+
+                        return {
+                            ...stock,
+                            explosiveScore: explosiveScore
+                        };
+                    });
+
+                    // 6️⃣ 점수순 정렬 및 상위 10개 선택
+                    const topExplosive = scoredStocks
+                        .sort((a, b) => b.explosiveScore - a.explosiveScore)
+                        .slice(0, 10);
+
+                    setData(topExplosive);
                 } catch (error) {
                     console.error('Error:', error);
                     setData([]);
@@ -1187,7 +1261,7 @@
                                         color: '#dc2626',
                                         marginBottom: '4px'
                                     }}>
-                                        {stock.explosive.toFixed(1)}
+                                        {stock.explosiveScore}
                                     </div>
                                     <div style={{color: '#a0aec0', fontSize: '10px'}}>
                                         Explosive Score
@@ -1201,13 +1275,14 @@
                     <table className="scanner-table">
                         <thead>
                             <tr>
-                                <th style={{width: '8%'}}>순위</th>
-                                <th style={{width: '12%'}}>종목</th>
-                                <th style={{width: '14%'}}>매출성장</th>
-                                <th style={{width: '14%'}}>EPS성장</th>
-                                <th style={{width: '12%'}}>ROE</th>
-                                <th style={{width: '12%'}}>PEG</th>
-                                <th style={{width: '16%'}}>급등점수</th>
+                                <th style={{width: '6%'}}>순위</th>
+                                <th style={{width: '14%'}}>종목</th>
+                                <th style={{width: '12%'}}>매출성장</th>
+                                <th style={{width: '12%'}}>EPS성장</th>
+                                <th style={{width: '12%'}}>순이익마진</th>
+                                <th style={{width: '10%'}}>PE</th>
+                                <th style={{width: '10%'}}>PB</th>
+                                <th style={{width: '14%'}}>급등점수</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1227,47 +1302,56 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={stock.revenue > 30 ? 'value-positive' : 'value-negative'}>
-                                            {stock.revenue > 0 ? '+' : ''}{stock.revenue.toFixed(1)}%
+                                        <span className={stock.revenueGrowth > 20 ? 'value-positive' : 'value-negative'}>
+                                            {stock.revenueGrowth > 0 ? '+' : ''}{stock.revenueGrowth.toFixed(1)}%
                                         </span>
                                         <div style={{fontSize: '10px', color: '#a0aec0', marginTop: '2px'}}>
-                                            {stock.revenue > 30 ? '✅ 기준충족' : '⚠️ 미달'}
+                                            {stock.revenueGrowth > 20 ? '✅ 강' : '⚠️ 약'}
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={stock.eps > 40 ? 'value-positive' : 'value-negative'}>
-                                            {stock.eps > 0 ? '+' : ''}{stock.eps.toFixed(1)}%
+                                        <span className={stock.epsGrowth > 20 ? 'value-positive' : 'value-negative'}>
+                                            {stock.epsGrowth > 0 ? '+' : ''}{stock.epsGrowth.toFixed(1)}%
                                         </span>
                                         <div style={{fontSize: '10px', color: '#a0aec0', marginTop: '2px'}}>
-                                            {stock.eps > 40 ? '✅ 강' : '⚠️ 약'}
+                                            {stock.epsGrowth > 20 ? '✅ 강' : '⚠️ 약'}
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={stock.roe > 20 ? 'value-positive' : 'value-negative'}>
-                                            {stock.roe.toFixed(1)}%
+                                        <span className={stock.netIncomeMargin > 10 ? 'value-positive' : 'value-negative'}>
+                                            {stock.netIncomeMargin.toFixed(1)}%
                                         </span>
                                         <div style={{fontSize: '10px', color: '#a0aec0', marginTop: '2px'}}>
-                                            {stock.roe > 20 ? '✅ 우수' : '⚠️ 일반'}
+                                            {stock.netIncomeMargin > 10 ? '✅ 우수' : '⚠️ 일반'}
                                         </div>
                                     </td>
                                     <td>
                                         <span style={{
-                                            background: stock.peg < 1.5 ? '#d1fae5' : '#fee2e2',
-                                            color: stock.peg < 1.5 ? '#065f46' : '#991b1b',
+                                            background: stock.pe < 30 ? '#d1fae5' : '#fee2e2',
+                                            color: stock.pe < 30 ? '#065f46' : '#991b1b',
                                             padding: '4px 8px',
                                             borderRadius: '4px',
                                             fontWeight: '600',
                                             fontSize: '12px'
                                         }}>
-                                            {stock.peg.toFixed(2)}
+                                            {stock.pe.toFixed(1)}
                                         </span>
-                                        <div style={{fontSize: '10px', color: '#a0aec0', marginTop: '2px'}}>
-                                            {stock.peg < 1.5 ? '✅ 저평가' : '⚠️ 고평가'}
-                                        </div>
                                     </td>
                                     <td>
-                                        <span className={`score-badge ${stock.explosive > 100 ? 'score-strong' : stock.explosive > 80 ? 'score-moderate' : 'score-weak'}`}>
-                                            {stock.explosive.toFixed(1)}
+                                        <span style={{
+                                            background: stock.pb < 5 ? '#d1fae5' : '#fee2e2',
+                                            color: stock.pb < 5 ? '#065f46' : '#991b1b',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            fontWeight: '600',
+                                            fontSize: '12px'
+                                        }}>
+                                            {stock.pb.toFixed(2)}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`score-badge ${stock.explosiveScore > 80 ? 'score-strong' : stock.explosiveScore > 60 ? 'score-moderate' : 'score-weak'}`}>
+                                            {stock.explosiveScore}
                                         </span>
                                     </td>
                                 </tr>
@@ -1282,16 +1366,16 @@
                         </div>
                         <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '12px'}}>
                             <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
-                                ✅ 매출성장 > 30%
+                                ✅ 매출성장 > 20%
                             </div>
                             <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
-                                ✅ EPS성장 > 40%
+                                ✅ EPS성장 > 20%
                             </div>
                             <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
-                                ✅ PEG < 1.5 (저평가)
+                                ✅ 순이익마진 > 10%
                             </div>
                             <div style={{padding: '8px', background: '#d1fae5', borderRadius: '4px', color: '#065f46', fontWeight: '600'}}>
-                                ✅ ROE > 20% (효율성)
+                                ✅ PE < 30 (저평가)
                             </div>
                         </div>
                     </div>
@@ -1306,19 +1390,24 @@
 
                         <div className="explanation-section">
                             <strong>급등주 판별 기준:</strong><br/>
-                            • <strong>Revenue Growth > 30%</strong>: 매출이 폭발적으로 증가 중<br/>
-                            • <strong>EPS Growth > 40%</strong>: 순이익 성장이 매출 성장보다 빠름 (영업효율 개선)<br/>
-                            • <strong>ROE > 20%</strong>: 주주 자본 대비 높은 수익성<br/>
-                            • <strong>PEG < 1.5</strong>: 성장률 대비 저평가 (상승 여력 큼)
+                            • <strong>Revenue Growth > 20%</strong>: 매출이 가파르게 증가 중<br/>
+                            • <strong>EPS Growth > 20%</strong>: 순이익 성장이 매출 성장과 동반<br/>
+                            • <strong>Net Income Margin > 10%</strong>: 높은 수익성<br/>
+                            • <strong>PE < 30</strong>: 성장률 대비 저평가 (상승 여력 큼)
                         </div>
 
                         <div className="explanation-section">
-                            <strong>Explosive Score 계산:</strong><br/>
-                            점수 = EPS성장 + 매출성장 + ROE<br/>
+                            <strong>Explosive Score 계산 공식:</strong><br/>
+                            점수 = (0.35 × Revenue Growth Score) + (0.35 × EPS Growth Score) + (0.20 × Profitability Score) + (0.10 × Valuation Score)<br/>
                             <br/>
-                            • 스코어 > 100: 🔴 매우 높은 급등 포텐셜<br/>
-                            • 스코어 80-100: 🟠 높은 포텐셜<br/>
-                            • 스코어 < 80: 🟡 중간 포텐셜
+                            • <strong>Revenue Growth Score</strong>: 매출성장률을 0~100으로 정규화<br/>
+                            • <strong>EPS Growth Score</strong>: EPS성장률을 0~100으로 정규화<br/>
+                            • <strong>Profitability Score</strong>: 순이익마진을 0~100으로 정규화 (30% = 100점)<br/>
+                            • <strong>Valuation Score</strong>: PE를 역정규화 (낮을수록 높은 점수)<br/>
+                            <br/>
+                            • 스코어 > 80: 🔴 매우 높은 급등 포텐셜<br/>
+                            • 스코어 60-80: 🟠 높은 포텐셜<br/>
+                            • 스코어 < 60: 🟡 중간 포텐셜
                         </div>
 
                         <div className="explanation-section">
