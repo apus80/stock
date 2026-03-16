@@ -282,26 +282,19 @@ export default {
 
       async function getAlphaData(symbol) {
         try {
-          // console.log(`📍 Alpha 데이터 수집 시작: ${symbol}`)
-          // Promise.allSettled로 부분 실패 허용
+          // 📍 최적화: 필수 2개 API만 호출 (180 호출/일)
+          // quote: 가격, key-metrics: 성장률 및 지표
           const results = await Promise.allSettled([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
-            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=50`),
-            fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
-            // 주의: /stable/analyst-stock-recommendations는 FMP 무료 플랜에서 404 반환
-            // analyst 데이터 대신 insiderActivity로 신뢰도 판단
-            fetchFMP(`/stable/insider-trading/search?symbol=${symbol}`)
+            fetchFMP(`/stable/key-metrics?symbol=${symbol}`)
           ])
 
           const extract = (r) => r.status === 'fulfilled' ? r.value : null
-          const [quote, history, metrics, insider] = results.map(extract)
+          const [quote, metrics] = results.map(extract)
 
           return {
             quote: quote ? (Array.isArray(quote) ? quote[0] : quote) : null,
-            history: history || [],
-            metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null,
-            analyst: [], // FMP 무료 플랜에서 지원 안 함
-            insider: insider || []
+            metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -314,114 +307,82 @@ export default {
 
         const quote = data.quote
         const metrics = data.metrics
-        const history = data.history || []
 
-        // 🔍 DEBUG: metrics 전체 구조 확인
-        if (metrics) {
-          // console.log(`📊 metrics 객체 키: ${Object.keys(metrics).slice(0, 20).join(', ')}`)
-          // console.log(`📊 metrics 전체: ${JSON.stringify(metrics).substring(0, 300)}`)
+        // ✅ 기본 정보 (quote에서)
+        const price = quote?.price || 0
+        const symbol = quote?.symbol || 'N/A'
+        const dayLow = quote?.dayLow || price
+        const dayHigh = quote?.dayHigh || price
+
+        // ✅ 비율 지표 (metrics에서)
+        const pe = metrics?.peRatio || 50
+        const pb = metrics?.priceToBookRatio || 10
+        const roe = metrics?.returnOnEquity || 15
+        const debtToEquity = metrics?.debtToEquity || 0.5
+
+        // ✅ 성장률 지표 (metrics에서)
+        let revenueGrowth = metrics?.revenueGrowth || metrics?.revenue_growth || 0
+        let epsGrowth = metrics?.epsGrowth || metrics?.earningsGrowth || metrics?.earnings_growth || 0
+
+        // ✅ 수익성 지표 (metrics에서 근사)
+        // profitMargin = netIncome / revenue (보통 0-30%)
+        const netMargin = metrics?.netProfitMargin || metrics?.netMarginRatio || 10
+        const grossMargin = metrics?.grossProfitMargin || 40
+
+        // operatingMargin = operatingIncome / revenue
+        const operatingMargin = metrics?.operatingProfitMargin || metrics?.operatingMarginRatio || 15
+
+        // ✅ 섹터 정보 (metrics에서)
+        const sector = metrics?.sector || 'N/A'
+
+        // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
+        const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
+
+        return {
+          symbol,
+          price,
+          pe,
+          pb,
+          roe,
+          debtToEquity,
+          revenueGrowth,
+          epsGrowth,
+          profitMargin: netMargin,
+          operatingMargin,
+          sector,
+          momentum: dailyMomentum,
+          dayLow,
+          dayHigh
         }
-
-        // 기본 정보
-        const price = quote.price || 0
-        const pe = metrics?.peRatio || metrics?.pe || 50
-        const pb = metrics?.priceToBookRatio || metrics?.pb || 10
-        const float = metrics?.floatShares || metrics?.shares || 1000000000
-        const marketCap = metrics?.marketCap || metrics?.market_cap || 0
-
-        // 성장률 지표 (FMP key-metrics에서 직접 가져옴)
-        let revenueGrowth = 0
-        let earningsGrowth = 0
-
-        if (metrics) {
-          // FMP 필드명 다양성 대응
-          revenueGrowth =
-            metrics.revenueGrowth ||
-            metrics.revenue_growth ||
-            metrics.revenuePerShareGrowth ||
-            metrics.netIncomeGrowth || 0
-
-          earningsGrowth =
-            metrics.earningsGrowth ||
-            metrics.earnings_growth ||
-            metrics.epsGrowth ||
-            metrics.earnings_per_share_growth ||
-            metrics.earningsPerShareGrowth || 0
-
-          // console.log(`📊 성장률 필드 상세: revenueGrowth=${revenueGrowth}, earningsGrowth=${earningsGrowth}`)
-        }
-
-        // 성장률이 없으면 가격 데이터로 근사 계산
-        if (revenueGrowth === 0 && history.length >= 50) {
-          const current = history[0]?.close
-          const past50 = history[49]?.close
-          if (current && past50) {
-            const priceGrowth = (current - past50) / past50
-            revenueGrowth = priceGrowth * 0.7
-          }
-        }
-
-        if (earningsGrowth === 0 && history.length >= 50) {
-          const current = history[0]?.close
-          const past50 = history[49]?.close
-          if (current && past50) {
-            const priceGrowth = (current - past50) / past50
-            earningsGrowth = priceGrowth * 1.1
-          }
-        }
-
-        // 전문가 평가
-        const analystRecs = data.analyst || []
-        const buyCount = analystRecs.filter(a => a.ratingScore > 3).length
-        const analystScore = buyCount / Math.max(analystRecs.length, 1)
-
-        // 인사이더 거래
-        const insiderActivity = data.insider?.length || 0
-
-        return { price, pe, pb, float, marketCap, revenueGrowth, earningsGrowth, analystScore, insiderActivity }
       }
 
-      // Momentum Score (50일)
-      function momentumScore(history) {
-        if (!history || history.length < 50) return 0
-        const recent = history[0]?.close
-        const past = history[49]?.close
-        if (!recent || !past) return 0
-        return (recent - past) / past
-      }
-
-      // Volume Spike Detection
-      function volumeSpike(history) {
-        if (!history || history.length < 20) return 0
-        const today = history[0]?.volume
-        let avg = 0
-        for (let i = 1; i < 20; i++) {
-          avg += history[i]?.volume || 0
-        }
-        avg /= 19
-        if (avg === 0) return 0
-        return today / avg
-      }
-
-      // Explosive Score (9개 지표 가중합)
-      function explosiveScore(factors, momentum, volume) {
+      // Explosive Score (7개 지표 가중합)
+      function explosiveScore(factors) {
         if (!factors) return 0
 
-        // 성장률 정규화 (0~1 범위)
-        const normalizeGrowth = (g) => Math.max(0, Math.min(1, (g + 0.5) / 1.0))
+        // 성장률 정규화 (0~100%)
+        const normalizeGrowth = (g) => Math.max(0, Math.min(100, g * 100))
         const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
-        const earningsScore = normalizeGrowth(factors.earningsGrowth || 0)
+        const epsScore = normalizeGrowth(factors.epsGrowth || 0)
+        const profitScore = Math.min(100, (factors.profitMargin || 10) * 3)
+        const roiScore = Math.min(100, (factors.roe || 15) * 3)
 
+        // 밸류에이션 역정규화 (PE/PB 낮을수록 높음)
+        const peScore = Math.max(0, 100 - (factors.pe || 50) * 1.5)
+        const pbScore = Math.max(0, 100 - (factors.pb || 10) * 5)
+
+        // 모멘텀 (일일 가격 움직임)
+        const momentumScore = Math.min(100, (factors.momentum || 0) * 500)
+
+        // ✅ 최종 점수 (7개 지표 가중합)
         const score =
-          (1 / (factors.pe + 1)) * 1.5 +        // Value: PE 저평가 (1.5x)
-          (1 / (factors.pb + 1)) * 1.5 +        // Value: PB 저평가 (1.5x)
-          revenueScore * 1.2 +                  // Growth: 수익 성장률 (1.2x)
-          earningsScore * 1.2 +                 // Growth: 수익성 성장률 (1.2x)
-          factors.analystScore * 0.8 +          // Quality: 전문가 평가 (0.8x)
-          (factors.insiderActivity > 0 ? 1 : 0) * 0.4 +  // Quality: 내부자 거래 (0.4x)
-          (1 / (factors.float / 100000000 + 1)) * 0.8 +  // Technical: 유동성 (0.8x)
-          momentum * 2.5 +                      // Technical: 모멘텀 (2.5x)
-          volume * 2.0                          // Technical: 거래량 (2.0x)
+          revenueScore * 0.25 +        // 수익성장 (25%)
+          epsScore * 0.25 +            // EPS성장 (25%)
+          profitScore * 0.15 +         // 수익성 (15%)
+          roiScore * 0.15 +            // ROE (15%)
+          peScore * 0.10 +             // PE 가치 (10%)
+          pbScore * 0.05 +             // PB 가치 (5%)
+          momentumScore * 0.05         // 모멘텀 (5%)
 
         return Math.max(0, score)
       }
@@ -443,12 +404,8 @@ export default {
             return null
           }
 
-          // Momentum & Volume 계산
-          const momentum = momentumScore(data.history)
-          const volume = volumeSpike(data.history)
-
-          // Explosive Score (9개 지표 가중합)
-          const score = explosiveScore(factors, momentum, volume)
+          // ✅ Explosive Score 계산 (7개 지표 가중합)
+          const score = explosiveScore(factors)
 
           // console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${score.toFixed(4)}`)
 
@@ -1588,31 +1545,32 @@ export default {
       }
 
       // =============================
-      // HEDGE FUND UNIVERSE SCREENER
+      // S&P 500 TOP 90 UNIVERSE
       // =============================
       async function getHedgeFundUniverse() {
-        // 📍 FMP API Starter 플랜 최적화: 각 종목당 4개 API × 25종목 = 100호출/일
-        // 히스토리를 limit=50으로 제한하여 API 효율성 극대화
-        const presetUniverse = [
-          // 메가캡 테크
-          'AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA',
-          // 금융
-          'JPM', 'BAC', 'GS',
-          // 헬스케어
-          'JNJ', 'PFE', 'UNH',
-          // 에너지
-          'XOM', 'CVX',
-          // 소비재
-          'PG', 'KO', 'MCD',
-          // 산업재
-          'BA', 'CAT',
-          // 반도체/칩
-          'AMD', 'QUALCOMM',
-          // 클라우드/소프트웨어
-          'NFLX', 'CRM'
+        // 📍 S&P 500 상위 90개 종목 (시가총액 기준)
+        // API 최적화: 각 종목당 2개 API × 90종목 = 180호출/일 (제한: 250/일)
+
+        const sp500Top90 = [
+          // 🟦 Top 10 (메가캡)
+          'AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA', 'BRK.B', 'JNJ', 'JPM',
+
+          // 🟦 11-30 (대형주)
+          'V', 'PG', 'MA', 'VISA', 'WMT', 'HD', 'MCD', 'ADBE', 'CRM', 'NFLX',
+          'PYPL', 'INTC', 'AMD', 'AVGO', 'TXN', 'QCOM', 'CSCO', 'IBM', 'ORCL', 'SAP',
+
+          // 🟦 31-60 (중형주 상위)
+          'UNH', 'AXP', 'AMGN', 'TMO', 'ABT', 'ISRG', 'CAT', 'BA', 'GE', 'HON',
+          'RTX', 'MMM', 'EATON', 'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'MU', 'COST',
+          'TJX', 'NKE', 'VZ', 'T', 'CMCSA', 'CHTR', 'TMUS', 'PLD', 'SPG', 'DLR',
+
+          // 🟦 61-90 (성장주/대표)
+          'EQIX', 'AVB', 'NEE', 'DUK', 'SO', 'D', 'LIN', 'APD', 'NEM', 'FCX',
+          'SCCO', 'CTVA', 'SBUX', 'INTU', 'ASML', 'AMAT', 'LRCX', 'CDNS', 'SNPS', 'GOOGL',
+          'TSEM', 'MSTR', 'COIN', 'SQ', 'BILL', 'OKTA', 'ZOOM', 'TEAM', 'CCI', 'TROW'
         ]
 
-        return presetUniverse
+        return sp500Top90
       }
 
       // =============================
@@ -1638,8 +1596,8 @@ export default {
           const results = []
           const startTime = Date.now()
 
-          // Starter 플랜 최적화: 25개 종목 × 4개 API = 100 요청/일 (limit=50으로 최소화)
-          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 25); i++) {
+          // ✅ API 최적화: 90개 종목 × 2개 API = 180 요청/일 (제한: 250/일)
+          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 90); i++) {
             const symbol = universe[i]
             try {
               const data = await getAlphaData(symbol)
@@ -1648,21 +1606,23 @@ export default {
               const factors = calculateFactors(data)
               if (!factors) continue
 
-              const momentum = momentumScore(data.history)
-              const volume = volumeSpike(data.history)
-              const score = explosiveScore(factors, momentum, volume)
+              // ✅ 최적화: momentum/volume 계산 제거
+              const score = explosiveScore(factors)
 
               results.push({
                 symbol,
-                score: parseFloat(score.toFixed(4)),
+                score: parseFloat(score.toFixed(2)),
                 price: parseFloat(factors.price.toFixed(2)),
                 pe: parseFloat(factors.pe.toFixed(2)),
-                momentum: parseFloat(momentum.toFixed(4)),
-                volume: parseFloat(volume.toFixed(2)),
+                pb: parseFloat(factors.pb.toFixed(2)),
+                roe: parseFloat(factors.roe.toFixed(2)),
+                debtToEquity: parseFloat(factors.debtToEquity.toFixed(2)),
+                sector: factors.sector,
                 revenueGrowth: parseFloat(factors.revenueGrowth.toFixed(4)),
-                earningsGrowth: parseFloat(factors.earningsGrowth.toFixed(4)),
-                analystScore: parseFloat(factors.analystScore.toFixed(2)),
-                insiderActivity: factors.insiderActivity
+                epsGrowth: parseFloat(factors.epsGrowth.toFixed(4)),
+                profitMargin: parseFloat(factors.profitMargin.toFixed(2)),
+                operatingMargin: parseFloat(factors.operatingMargin.toFixed(2)),
+                momentum: parseFloat((factors.momentum * 100).toFixed(2))
               })
             } catch (e) {
               console.error(`❌ ${symbol}: ${e.message}`)
