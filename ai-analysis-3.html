@@ -28,23 +28,24 @@
 
         html, body {
             width: 100%;
-            height: 100%;
+            min-height: 100%;
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             background: var(--light-bg);
             color: var(--text-main);
+            font-size: 16px;
         }
 
         .back-btn {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            padding: 10px 20px;
+            top: 12px;
+            left: 12px;
+            padding: 8px 16px;
             background: var(--primary);
             border: none;
             color: white;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.9em;
+            font-size: 0.85em;
             z-index: 100;
             transition: all 0.3s;
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
@@ -58,46 +59,64 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 80px 20px 40px;
+            padding: 70px 16px 40px;
+            width: 100%;
         }
 
         .header {
             background: var(--bg-gradient);
             color: white;
-            padding: 40px 20px;
-            margin: -80px -20px 40px;
+            padding: 32px 16px;
+            margin: -70px -16px 32px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
+            font-size: 1.8em;
+            margin-bottom: 8px;
             font-weight: 700;
         }
 
         .header p {
             opacity: 0.9;
-            font-size: 1em;
+            font-size: 0.95em;
         }
 
         .widget {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 24px;
+            padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             border-left: 4px solid var(--primary);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
+            overflow: hidden;
         }
 
         .widget-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             padding-bottom: 12px;
             border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .widget-title > div:first-child {
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .widget-title span {
+            flex: 1;
+            min-width: 0;
+            font-size: 11px !important;
+            font-weight: normal !important;
+            color: #718096 !important;
         }
 
         .widget-refresh {
@@ -107,6 +126,8 @@
             font-size: 16px;
             color: var(--text-muted);
             transition: color 0.3s;
+            flex-shrink: 0;
+            padding: 4px;
         }
 
         .widget-refresh:hover {
@@ -115,13 +136,16 @@
 
         .loading {
             text-align: center;
-            padding: 40px 20px;
+            padding: 30px 16px;
             color: var(--text-muted);
+            font-size: 14px;
         }
 
         .content {
             display: grid;
-            gap: 20px;
+            gap: 16px;
+            width: 100%;
+            overflow-x: auto;
         }
 
         .data-row {
@@ -134,11 +158,12 @@
         }
 
         .data-item {
-            padding: 10px;
+            padding: 8px 0;
+            min-width: 0;
         }
 
         .data-label {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
             font-weight: 600;
             text-transform: uppercase;
@@ -146,16 +171,17 @@
         }
 
         .data-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--text-main);
+            word-break: break-word;
         }
 
         .score-badge {
             display: inline-block;
             padding: 4px 12px;
             border-radius: 12px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
         }
 
@@ -174,25 +200,31 @@
             color: #991b1b;
         }
 
+        /* 테이블 스타일 - 모바일 대응 */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 12px;
+            font-size: 13px;
+            table-layout: auto;
         }
 
         th {
             background: #f3f4f6;
-            padding: 12px;
+            padding: 10px 8px;
             text-align: left;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
             border-bottom: 2px solid #e5e7eb;
+            word-break: keep-all;
         }
 
         td {
-            padding: 12px;
+            padding: 10px 8px;
             border-bottom: 1px solid #e5e7eb;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         tr:hover {
@@ -204,15 +236,17 @@
             color: var(--text-muted);
             margin-top: 12px;
             text-align: center;
+            line-height: 1.5;
         }
 
         .info-box {
             background: #eff6ff;
-            border-left: 4px solid var(--info);
-            padding: 16px;
+            border-left: 4px solid var(--primary);
+            padding: 12px;
             border-radius: 8px;
-            margin-top: 20px;
-            font-size: 14px;
+            margin-top: 16px;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
         .footer {
@@ -224,9 +258,187 @@
             border-top: 1px solid #e5e7eb;
         }
 
+        /* 테이블 수평 스크롤 처리 */
+        .content {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            min-width: 100%;
+        }
+
+        /* 모바일 전용 스타일 */
         @media (max-width: 768px) {
+            html, body {
+                font-size: 14px;
+            }
+
+            .container {
+                padding: 60px 12px 30px;
+            }
+
+            .header {
+                padding: 24px 12px;
+                margin: -60px -12px 24px;
+            }
+
+            .header h1 {
+                font-size: 1.4em;
+                margin-bottom: 6px;
+            }
+
+            .header p {
+                font-size: 0.9em;
+            }
+
+            .widget {
+                padding: 16px;
+                margin-bottom: 16px;
+                border-radius: 10px;
+            }
+
+            .widget-title {
+                font-size: 15px;
+                margin-bottom: 12px;
+                padding-bottom: 10px;
+                gap: 4px;
+            }
+
             .data-row {
                 grid-template-columns: 1fr;
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .data-item {
+                padding: 6px 0;
+            }
+
+            .data-label {
+                font-size: 10px;
+                margin-bottom: 3px;
+            }
+
+            .data-value {
+                font-size: 15px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th {
+                padding: 8px 6px;
+                font-size: 10px;
+            }
+
+            td {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+
+            .loading {
+                padding: 24px 12px;
+                font-size: 13px;
+            }
+
+            .status {
+                font-size: 11px;
+                margin-top: 10px;
+            }
+
+            .info-box {
+                padding: 10px;
+                font-size: 11px;
+                margin-top: 12px;
+            }
+
+            .back-btn {
+                top: 10px;
+                left: 10px;
+                padding: 6px 12px;
+                font-size: 0.8em;
+            }
+
+            .score-badge {
+                padding: 3px 10px;
+                font-size: 10px;
+            }
+        }
+
+        /* 초소형 모바일 (320px 이상) */
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.2em;
+                margin-bottom: 4px;
+            }
+
+            .header p {
+                font-size: 0.85em;
+            }
+
+            .widget-title {
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .widget-title span {
+                margin-top: 4px;
+            }
+
+            table {
+                font-size: 11px;
+            }
+
+            th, td {
+                padding: 6px 4px;
+            }
+
+            .data-value {
+                font-size: 14px;
+            }
+        }
+
+        /* 태블릿 크기 (769px 이상) */
+        @media (min-width: 769px) {
+            .back-btn {
+                padding: 10px 20px;
+                font-size: 0.9em;
+            }
+
+            .container {
+                padding: 80px 20px 40px;
+            }
+
+            .header {
+                padding: 40px 20px;
+                margin: -80px -20px 40px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .widget {
+                padding: 24px;
+            }
+
+            .widget-title {
+                font-size: 18px;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            th {
+                padding: 12px;
+                font-size: 12px;
+            }
+
+            td {
+                padding: 12px;
             }
         }
     </style>
@@ -243,8 +455,8 @@
         <!-- 위젯 1: 매크로 유동성 스캔 -->
         <div class="widget">
             <div class="widget-title">
-                1️⃣ 매크로 유동성 스캔
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">Fed잔액 + 역레포 + 순유동성 분석</span>
+                <div>1️⃣ 매크로 유동성 스캔</div>
+                <span>Fed잔액 + 역레포 + 순유동성 분석</span>
                 <button class="widget-refresh" onclick="refreshWidget(1)">🔄</button>
             </div>
             <div id="widget-1" class="content">
@@ -255,8 +467,8 @@
         <!-- 위젯 2: 섹터 모멘텀 -->
         <div class="widget">
             <div class="widget-title">
-                2️⃣ 섹터 모멘텀 로테이션
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">섹터별 가격 + 변화율 실시간 추적</span>
+                <div>2️⃣ 섹터 모멘텀 로테이션</div>
+                <span>섹터별 가격 + 변화율 실시간 추적</span>
                 <button class="widget-refresh" onclick="refreshWidget(2)">🔄</button>
             </div>
             <div id="widget-2" class="content">
@@ -267,8 +479,8 @@
         <!-- 위젯 3: 신용 스트레스 모니터 -->
         <div class="widget">
             <div class="widget-title">
-                3️⃣ 신용 스트레스 모니터
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">HYG + LQD 채권 신용스프레드 감시</span>
+                <div>3️⃣ 신용 스트레스 모니터</div>
+                <span>HYG + LQD 채권 신용스프레드 감시</span>
                 <button class="widget-refresh" onclick="refreshWidget(3)">🔄</button>
             </div>
             <div id="widget-3" class="content">
@@ -279,8 +491,8 @@
         <!-- 위젯 4: 폭발적 성장 주식 탐색 -->
         <div class="widget">
             <div class="widget-title">
-                4️⃣ 폭발적 성장 주식 탐색
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">모멘텀 + 수익률 성장 + 거래량 기반</span>
+                <div>4️⃣ 폭발적 성장 주식 탐색</div>
+                <span>모멘텀 + 수익률 성장 + 거래량 기반</span>
                 <button class="widget-refresh" onclick="refreshWidget(4)">🔄</button>
             </div>
             <div id="widget-4" class="content">
@@ -291,8 +503,8 @@
         <!-- 위젯 5: 궁극의 주식 발굴 엔진 -->
         <div class="widget">
             <div class="widget-title">
-                5️⃣ 궁극의 주식 발굴 엔진
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">최종 점수 + PE + 수익률 기반 발굴</span>
+                <div>5️⃣ 궁극의 주식 발굴 엔진</div>
+                <span>최종 점수 + PE + 수익률 기반 발굴</span>
                 <button class="widget-refresh" onclick="refreshWidget(5)">🔄</button>
             </div>
             <div id="widget-5" class="content">
@@ -307,8 +519,8 @@
         <!-- 위젯 6: 초고성장 기업 발굴 -->
         <div class="widget">
             <div class="widget-title">
-                6️⃣ 초고성장 기업 발굴
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">수익+EPS 성장 + 수익성 + 밸류에이션</span>
+                <div>6️⃣ 초고성장 기업 발굴</div>
+                <span>수익+EPS 성장 + 수익성 + 밸류에이션</span>
                 <button class="widget-refresh" onclick="refreshWidget(6)">🔄</button>
             </div>
             <div id="widget-6" class="content">
@@ -319,8 +531,8 @@
         <!-- 위젯 7: 기관 매집 종목 -->
         <div class="widget">
             <div class="widget-title">
-                7️⃣ 기관 매집 종목
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">섹터모멘텀 + 수익성장 + EPS성장 + 영업이익률</span>
+                <div>7️⃣ 기관 매집 종목</div>
+                <span>섹터모멘텀 + 수익성장 + EPS성장 + 영업이익률</span>
                 <button class="widget-refresh" onclick="refreshWidget(7)">🔄</button>
             </div>
             <div id="widget-7" class="content">
@@ -331,8 +543,8 @@
         <!-- 위젯 8: 섹터 로테이션 리더 -->
         <div class="widget">
             <div class="widget-title">
-                8️⃣ 섹터 로테이션 리더
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">섹터강도 + 수익성장 + EPS성장</span>
+                <div>8️⃣ 섹터 로테이션 리더</div>
+                <span>섹터강도 + 수익성장 + EPS성장</span>
                 <button class="widget-refresh" onclick="refreshWidget(8)">🔄</button>
             </div>
             <div id="widget-8" class="content">
@@ -343,8 +555,8 @@
         <!-- 위젯 9: 유동성 수혜 종목 -->
         <div class="widget">
             <div class="widget-title">
-                9️⃣ 유동성 수혜 종목
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">유동성지수 + 리스크점수 + 수익성장</span>
+                <div>9️⃣ 유동성 수혜 종목</div>
+                <span>유동성지수 + 리스크점수 + 수익성장</span>
                 <button class="widget-refresh" onclick="refreshWidget(9)">🔄</button>
             </div>
             <div id="widget-9" class="content">
@@ -355,8 +567,8 @@
         <!-- 위젯 10: 통합 발굴 엔진 -->
         <div class="widget">
             <div class="widget-title">
-                🔟 통합 발굴 엔진
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">거시점수 + 섹터강도 + 기본가치 (ROE/성장)</span>
+                <div>🔟 통합 발굴 엔진</div>
+                <span>거시점수 + 섹터강도 + 기본가치 (ROE/성장)</span>
                 <button class="widget-refresh" onclick="refreshWidget(10)">🔄</button>
             </div>
             <div id="widget-10" class="content">
