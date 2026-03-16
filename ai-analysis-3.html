@@ -358,15 +358,16 @@
                                     </div>
                                     <div class="data-item">
                                         <div class="data-label">RRP</div>
-                                        <div class="data-value">${(rrp / 1000).toFixed(1)}B</div>
+                                        <div class="data-value">${(rrp).toFixed(1)}B</div>
                                     </div>
                                     <div class="data-item">
                                         <div class="data-label">순 유동성</div>
-                                        <div class="data-value">${(netLiq / 1e6).toFixed(2)}T</div>
+                                        <div class="data-value">${((fed - rrp * 1e6 - tga) / 1e6).toFixed(2)}T</div>
                                     </div>
                                 </div>
                                 <div class="info-box">
-                                    <strong>유동성 분석:</strong> 순 유동성은 Federal Reserve의 자산에서 Reverse Repo와 Treasury 계정을 뺀 값입니다.
+                                    <strong>📊 유동성 분석:</strong> 순 유동성 = Fed 잔액(T) - 역레포(B→T 변환) - 운용성(T)<br>
+                                    <strong>의미:</strong> 시장에 공급되는 실질 유동성. 높을수록 유동성 풍부 → 주가 상승 신호 📈
                                 </div>
                             `;
                         } else {
