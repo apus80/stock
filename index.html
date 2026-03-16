@@ -1872,6 +1872,27 @@
                     <div class="grid">
 
                         <div class="card">
+                            <div class="title-area"><span class="title">0. Market Regime AI</span><button class="card-rfbtn" id="rfbtn-0" onclick="imdRefreshCard(0)" title="새로고침">↻</button></div>
+                            <div style="margin-top: 12px; padding: 14px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 10px; border-left: 3px solid #667eea;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Current Regime</span>
+                                    <span style="font-size: 0.72rem; color: #94a3b8;">Confidence</span>
+                                </div>
+                                <div id="regime-label" style="font-size: 1.8rem; font-weight: 800; color: #1e293b; font-family: 'Courier New', monospace; min-height: 2.4rem; line-height: 1.2;">-</div>
+                                <div id="regime-confidence" style="font-size: 1.5rem; font-weight: 700; color: #667eea; font-family: 'Courier New', monospace;">-</div>
+                                <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(102,126,234,0.15);">
+                                    <div style="font-size: 0.78rem; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">Supporting Signals</div>
+                                    <div id="regime-signals" style="display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; color: #475569;">
+                                        <span>-</span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 0.72rem; color: #94a3b8; text-align: right;">
+                                    Updated: <span id="regime-time">--:--</span> KST
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
                             <div class="title-area"><span class="title">1. 한국 시장</span><button class="card-rfbtn" id="rfbtn-1" onclick="imdRefreshCard(1)" title="새로고침">↻</button></div>
                             <div class="item"><span>EWY (한국 ETF)</span><span class="item-right"><span id="ewy" class="value">-</span><span id="chg-ewy" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-ewy"></span></span></div>
                         </div>
@@ -6315,6 +6336,154 @@ var ECON_DATA = {
         }
 
         /* ══════════════════════════════════════════════════════
+         * 카드 0 – Market Regime AI
+         * Worker API → 시장 레짐 감지 및 신뢰도 계산
+         * ══════════════════════════════════════════════════════ */
+        var regimeCache = { regime: null, confidence: null, signals: [], timestamp: 0 };
+
+        function imdLoadMarketRegime() {
+            // 30초 캐시 체크
+            var now = Date.now();
+            if (regimeCache.timestamp && (now - regimeCache.timestamp) < 30000) {
+                imdDisplayRegime(regimeCache);
+                return;
+            }
+
+            workerFetchMarket().then(function(data) {
+                if (!data) throw new Error('No data returned');
+
+                // 필요한 데이터 필드 추출
+                var sp500Change = data.US_MARKET?.SP500?.changePercentage;
+                var nasdaqChange = data.US_MARKET?.NASDAQ?.changePercentage;
+                var yieldCurve = data.RATES?.YIELD_CURVE;
+                var dxyChange = data.FX?.DXY?.changePercentage;
+                var rrp = data.LIQUIDITY?.REVERSE_REPO;
+                var oilChange = data.COMMODITIES?.OIL?.changePercentage;
+                var vixLevel = data.US_MARKET?.VIX?.price;
+
+                // 안전한 값 설정
+                sp500Change = sp500Change !== null && sp500Change !== undefined ? sp500Change : 0;
+                nasdaqChange = nasdaqChange !== null && nasdaqChange !== undefined ? nasdaqChange : 0;
+                yieldCurve = yieldCurve !== null && yieldCurve !== undefined ? yieldCurve : 0;
+                dxyChange = dxyChange !== null && dxyChange !== undefined ? dxyChange : 0;
+                rrp = rrp !== null && rrp !== undefined ? rrp : 0;
+                oilChange = oilChange !== null && oilChange !== undefined ? oilChange : 0;
+                vixLevel = vixLevel !== null && vixLevel !== undefined ? vixLevel : 0;
+
+                var regime = '';
+                var confidence = 0;
+                var signals = [];
+
+                // RISK ON: SP500 > 0 AND NASDAQ > 0 AND YieldCurve > -0.5 AND DXY <= 0
+                if (sp500Change > 0 && nasdaqChange > 0 && yieldCurve > -0.5 && dxyChange <= 0) {
+                    regime = 'RISK ON';
+                    confidence = 60 + (Math.abs(sp500Change) + Math.abs(nasdaqChange)) * 2;
+                    confidence = Math.min(95, confidence);
+                    signals.push('Strong Equity Momentum');
+                    signals.push('Positive Yield Curve');
+                    if (dxyChange <= 0) signals.push('Weak Dollar');
+                }
+                // RISK OFF: SP500 < 0 AND NASDAQ < 0 AND DXY > 0
+                else if (sp500Change < 0 && nasdaqChange < 0 && dxyChange > 0) {
+                    regime = 'RISK OFF';
+                    confidence = 55 + (Math.abs(sp500Change) + Math.abs(nasdaqChange));
+                    confidence = Math.min(95, confidence);
+                    signals.push('Equity Weakness');
+                    signals.push('Strong Dollar');
+                }
+                // LIQUIDITY STRESS: RRP > 120B AND SP500 < 0 AND VIX > 20
+                else if (rrp > 120000 && sp500Change < 0 && vixLevel > 20) {
+                    regime = 'LIQUIDITY STRESS';
+                    confidence = 85;
+                    signals.push('High Reverse Repo');
+                    signals.push('Market Weakness');
+                    signals.push('Elevated VIX');
+                }
+                // RECESSION RISK: YieldCurve < -0.75 AND OIL < 0
+                else if (yieldCurve < -0.75 && oilChange < 0) {
+                    regime = 'RECESSION RISK';
+                    confidence = 80;
+                    signals.push('Inverted Curve');
+                    signals.push('Oil Weakness');
+                }
+                // NEUTRAL (default)
+                else {
+                    regime = 'NEUTRAL';
+                    confidence = 45;
+                    signals.push('No Clear Signals');
+                }
+
+                // 캐시 업데이트
+                regimeCache = {
+                    regime: regime,
+                    confidence: Math.round(confidence),
+                    signals: signals.slice(0, 3),
+                    timestamp: now
+                };
+
+                imdDisplayRegime(regimeCache);
+            }).catch(function(err) {
+                console.error('[ERROR] imdLoadMarketRegime:', err);
+                document.getElementById('regime-label').textContent = '-';
+                document.getElementById('regime-confidence').textContent = '-';
+                document.getElementById('regime-signals').innerHTML = '<span>-</span>';
+            });
+        }
+
+        function imdDisplayRegime(cache) {
+            // 레짐 라벨 표시 (색상)
+            var labelElem = document.getElementById('regime-label');
+            if (labelElem) {
+                labelElem.textContent = cache.regime;
+                if (cache.regime === 'RISK ON') {
+                    labelElem.style.color = '#28a745';
+                } else if (cache.regime === 'RISK OFF') {
+                    labelElem.style.color = '#ef4444';
+                } else if (cache.regime === 'LIQUIDITY STRESS') {
+                    labelElem.style.color = '#f59e0b';
+                } else if (cache.regime === 'RECESSION RISK') {
+                    labelElem.style.color = '#ef4444';
+                } else {
+                    labelElem.style.color = '#667eea';
+                }
+            }
+
+            // 신뢰도 표시
+            var confElem = document.getElementById('regime-confidence');
+            if (confElem) {
+                confElem.textContent = cache.confidence + '%';
+                if (cache.confidence >= 80) {
+                    confElem.style.color = '#28a745';
+                } else if (cache.confidence >= 60) {
+                    confElem.style.color = '#667eea';
+                } else {
+                    confElem.style.color = '#f59e0b';
+                }
+            }
+
+            // 신호 표시
+            var signalsElem = document.getElementById('regime-signals');
+            if (signalsElem) {
+                if (cache.signals && cache.signals.length > 0) {
+                    signalsElem.innerHTML = cache.signals.map(function(s) {
+                        return '<span>• ' + s + '</span>';
+                    }).join('');
+                } else {
+                    signalsElem.innerHTML = '<span>-</span>';
+                }
+            }
+
+            // 시간 표시
+            var timeElem = document.getElementById('regime-time');
+            if (timeElem) {
+                var now = new Date();
+                var hours = String(now.getHours()).padStart(2, '0');
+                var minutes = String(now.getMinutes()).padStart(2, '0');
+                timeElem.textContent = hours + ':' + minutes;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════════
          * 카드 15 – Macro Risk Radar
          * Worker API → 거시 위험 지표 계산
          * ══════════════════════════════════════════════════════ */
@@ -6555,6 +6724,7 @@ var ECON_DATA = {
                 return null;
             }).then(function() {
                 console.log('📊 [imdLoadAll] 메타데이터 처리 완료, 데이터 로드 시작');
+                imdLoadMarketRegime();
                 imdLoadKorea();
                 imdLoadUS();
                 imdLoadFutures();
@@ -6576,6 +6746,7 @@ var ECON_DATA = {
 
         /* ── 카드별 새로고침 ─────────────────────────────────── */
         var CARD_LOADERS = {
+            0: { fn: imdLoadMarketRegime,     ids: ['regime-label','regime-confidence','regime-signals','regime-time'] },
             1: { fn: imdLoadKorea,            ids: ['ewy'] },
             2: { fn: function(){ imdLoadUS(); imdLoadUSExtended(); }, ids: ['sp500','nasdaq','dow','russell','vix','sox'] },
             3: { fn: imdLoadFutures,          ids: ['spfuture','nasfuture','rtyfuture'] },
