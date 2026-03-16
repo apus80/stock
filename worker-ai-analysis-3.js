@@ -858,9 +858,16 @@ export default {
           getQuote("XLY"),  // CONSUMER_DISCRETIONARY
           getQuote("XLI"),  // INDUSTRIALS
           getQuote("XLU"),  // UTILITIES
+          getQuote("XLC"),  // COMMUNICATION / CONSUMER_STAPLES
           getQuote("XLRE"), // REAL_ESTATE
           // 한국 시장 (FMP API)
           getQuote("EWY"),  // iShares MSCI South Korea ETF
+          getQuote("KODEX200"),  // KODEX200 (한국 ETF)
+          getQuote("KODEXNASDAQ"),  // KODEXNASDAQ (한국 NASDAQ ETF)
+          // 미국 선물
+          getQuote("ES=F"),  // S&P 500 Futures
+          getQuote("NQ=F"),  // Nasdaq 100 Futures
+          getQuote("YM=F"),  // Dow Jones Futures
           // 암호화폐 (FMP API)
           getQuote("BTCUSD"), // Bitcoin
           getQuote("ETHUSD"), // Ethereum
@@ -900,7 +907,7 @@ export default {
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlc, xlre, ewy, kodex200, kodexnasdaq, es, nq, ym, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ] = results.map(extract)
 
         // 데이터 로깅
         console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -973,6 +980,32 @@ export default {
           iwmVolume: iwm?.volume,
           ewy: ewyPrice,
           ewyChange: ewyChange,
+          // 한국 ETF (카드 1)
+          KOREA_ETF: {
+            KODEX200: kodex200 ? {
+              price: parseFloat(kodex200.price.toFixed(2)),
+              changePercentage: kodex200.changePercentage ? parseFloat(kodex200.changePercentage.toFixed(2)) : null
+            } : null,
+            KODEXNASDAQ: kodexnasdaq ? {
+              price: parseFloat(kodexnasdaq.price.toFixed(2)),
+              changePercentage: kodexnasdaq.changePercentage ? parseFloat(kodexnasdaq.changePercentage.toFixed(2)) : null
+            } : null
+          },
+          // 미국 선물 (카드 3)
+          US_FUTURES: {
+            SP500_FUTURES: es ? {
+              price: parseFloat(es.price.toFixed(2)),
+              changePercentage: es.changePercentage ? parseFloat(es.changePercentage.toFixed(2)) : null
+            } : null,
+            NASDAQ_FUTURES: nq ? {
+              price: parseFloat(nq.price.toFixed(2)),
+              changePercentage: nq.changePercentage ? parseFloat(nq.changePercentage.toFixed(2)) : null
+            } : null,
+            DOW_FUTURES: ym ? {
+              price: parseFloat(ym.price.toFixed(2)),
+              changePercentage: ym.changePercentage ? parseFloat(ym.changePercentage.toFixed(2)) : null
+            } : null
+          },
           hyg: hyg?.price,
           lqd: lqd?.price,
           hygChange: hyg?.changePercentage,
@@ -1022,6 +1055,7 @@ export default {
             CONSUMER_DISCRETIONARY: xly ? {price: xly.price, changePercentage: xly.changePercentage} : null,
             INDUSTRIALS: xli ? {price: xli.price, changePercentage: xli.changePercentage} : null,
             UTILITIES: xlu ? {price: xlu.price, changePercentage: xlu.changePercentage} : null,
+            CONSUMER_STAPLES: xlc ? {price: xlc.price, changePercentage: xlc.changePercentage} : null,
             REAL_ESTATE: xlre ? {price: xlre.price, changePercentage: xlre.changePercentage} : null
           },
           // 카드 11: Credit & Breadth
@@ -1886,6 +1920,8 @@ export default {
               changePercentage: marketData.ewyChange ? parseFloat(marketData.ewyChange.toFixed(2)) : null
             }
           },
+          KOREA_ETF: marketData.KOREA_ETF || {},
+          US_FUTURES: marketData.US_FUTURES || {},
           US_MARKET: {
             SP500: {
               price: marketData.spy ? parseFloat(marketData.spy.toFixed(2)) : null,
@@ -2238,6 +2274,14 @@ export default {
             error: "symbol parameter required"
           }
         }
+      }
+      // /market-breadth endpoint - Market Breadth Score
+      else if (pathname === "/market-breadth") {
+        response = await getMarketBreadth()
+      }
+      // /smart-money endpoint - Smart Money Flow
+      else if (pathname === "/smart-money") {
+        response = await getSmartMoney()
       }
       // /feargreed endpoint - CNN Fear & Greed Index (서버사이드 호출, CORS 없음)
       else if (pathname === "/feargreed") {
