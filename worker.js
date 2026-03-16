@@ -251,24 +251,26 @@ export default {
 
           // 🔍 DEBUG: 각 API별 응답 확인
           if (endpoint.includes('quote')) {
-          // console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            console.log(`   📦 quote 응답 형식: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
             if (Array.isArray(data) && data[0]) {
               const quote = data[0]
-          // console.log(`   📋 quote 필드: ${Object.keys(quote).slice(0, 30).join(', ')}`)
-          // console.log(`   💰 주요값: price=${quote.price}, pe=${quote.pe}, pb=${quote.priceToBook}, epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
-          // console.log(`   📊 전체: ${JSON.stringify(quote).substring(0, 200)}`)
+              const keys = Object.keys(quote)
+              console.log(`   📋 quote 필드 수: ${keys.length}`)
+              console.log(`   📋 모든 필드: ${keys.join(', ')}`)
+              console.log(`   💰 주요값:`)
+              console.log(`      price=${quote.price}`)
+              console.log(`      pe=${quote.pe}, peRatio=${quote.peRatio}`)
+              console.log(`      pb=${quote.pb}, priceToBook=${quote.priceToBook}`)
+              console.log(`      dayLow=${quote.dayLow}, dayHigh=${quote.dayHigh}`)
+              console.log(`      epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
+              console.log(`      sector=${quote.sector}, industry=${quote.industry}`)
             }
           } else if (endpoint.includes('key-metrics')) {
-          // console.log(`   📦 key-metrics 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
-            if (Array.isArray(data) && data[0]) {
-              const fields = Object.keys(data[0]).filter(k => k.includes('Ratio') || k.includes('Growth') || k.includes('Cap') || k.includes('Shares'))
-          // console.log(`   📋 필드: peRatio=${data[0].peRatio}, priceToBookRatio=${data[0].priceToBookRatio}, floatShares=${data[0].floatShares}`)
-          // console.log(`   📈 성장률: revenueGrowth=${data[0].revenueGrowth}, earningsGrowth=${data[0].earningsGrowth}`)
-            }
+            console.log(`   ⚠️  key-metrics 응답 수신 (유료 엔드포인트)`)
           } else if (endpoint.includes('historical')) {
-          // console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - 최근 3개: ${data.substring ? data : JSON.stringify(data).substring(0, 100)}`)
+            console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
           } else if (endpoint.includes('insider')) {
-          // console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
           }
 
           return data
