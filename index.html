@@ -112,6 +112,7 @@
             cursor: help;
             position: relative;
             transition: background-color 0.2s;
+            z-index: 10;
         }
 
         .help-icon:hover {
@@ -130,7 +131,7 @@
             text-align: left;
             border-radius: 6px;
             padding: 12px 14px;
-            z-index: 1000;
+            z-index: 10000;
             font-size: 0.75rem;
             line-height: 1.6;
             white-space: normal;
@@ -138,7 +139,7 @@
             border: 1px solid #475569;
             opacity: 0;
             transition: opacity 0.3s ease, visibility 0.3s ease;
-            pointer-events: none;
+            pointer-events: auto;
             max-width: 320px;
             word-break: break-word;
             min-height: auto;
@@ -1746,6 +1747,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 12px;
+            overflow: visible !important;
         }
         .imd-wrap .card {
             background: var(--imd-card) !important;
@@ -1756,6 +1758,8 @@
             margin-bottom: 0 !important;
             transform: none !important;
             transition: none !important;
+            overflow: visible !important;
+            position: relative;
         }
         .imd-wrap .card:hover { transform: none !important; }
         .imd-wrap .title-area {
@@ -1766,11 +1770,14 @@
             border-left: none !important;
             padding: 0 0 8px !important;
             margin-bottom: 10px !important;
+            overflow: visible !important;
         }
         .imd-wrap .title {
             font-size: 14px;
             color: var(--imd-primary);
             font-weight: bold;
+            display: flex;
+            align-items: center;
         }
         .imd-wrap .item {
             display: flex !important;
