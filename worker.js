@@ -290,11 +290,17 @@ export default {
           const quoteData = await fetchFMP(`/stable/quote?symbol=${symbol}`)
           const quote = quoteData ? (Array.isArray(quoteData) ? quoteData[0] : quoteData) : null
 
+          // ✅ PE/PB는 /fundamentals/ratios에서 가져옴
+          const ratiosData = await getRatios(symbol)
+          const ratios = ratiosData?.data || null
+
           console.log(`\n📍 [${symbol}] getAlphaData 결과:`)
           console.log(`   Quote 응답:`, quote ? `✅ 받음 (${Object.keys(quote).length}개 필드)` : `❌ null`)
+          console.log(`   Ratios 응답:`, ratios ? `✅ PE=${ratios.priceToEarningsRatio}, PB=${ratios.priceToBookRatio}` : `❌ null`)
 
           return {
             quote: quote,
+            ratios: ratios,  // ✅ ratios 데이터 추가
             metrics: null  // /stable/key-metrics는 유료 플랜이므로 null로 설정
           }
         } catch (e) {
@@ -307,18 +313,22 @@ export default {
         if (!data || !data.quote) return null
 
         const quote = data.quote
+        const ratios = data.ratios
         const metrics = data.metrics
 
         // 🔍 DEBUG: 실제 API 응답 데이터 확인
         console.log(`\n📊 [${quote?.symbol}] === API 응답 데이터 ===`)
         console.log(`Quote 필드:`, Object.keys(quote).slice(0, 20))
+        console.log(`Ratios 필드:`, Object.keys(ratios || {}).slice(0, 20))
         console.log(`Metrics 필드:`, Object.keys(metrics || {}).slice(0, 20))
         console.log(`Quote 데이터:`, {
           price: quote?.price,
           dayLow: quote?.dayLow,
-          dayHigh: quote?.dayHigh,
-          pe: quote?.pe,
-          pb: quote?.priceToBook || quote?.pb
+          dayHigh: quote?.dayHigh
+        })
+        console.log(`Ratios 데이터:`, {
+          priceToEarningsRatio: ratios?.priceToEarningsRatio,
+          priceToBookRatio: ratios?.priceToBookRatio
         })
         console.log(`Metrics 데이터:`, {
           peRatio: metrics?.peRatio,
@@ -338,10 +348,10 @@ export default {
 
         console.log(`   ✅ 기본정보: price=${price}, dayLow=${dayLow}, dayHigh=${dayHigh}`)
 
-        // ✅ 비율 지표 (quote에서 우선, metrics에서 대체)
-        // FMP /stable/quote 응답에 포함: pe, priceToBook (또는 pb)
-        const pe = quote?.pe || metrics?.peRatio || 50
-        const pb = quote?.priceToBook || quote?.pb || metrics?.priceToBookRatio || 10
+        // ✅ 비율 지표
+        // 우선순위: ratios (/fundamentals/ratios) > quote > metrics > 기본값
+        const pe = ratios?.priceToEarningsRatio || quote?.pe || metrics?.peRatio || 50
+        const pb = ratios?.priceToBookRatio || quote?.priceToBook || quote?.pb || metrics?.priceToBookRatio || 10
         const roe = metrics?.returnOnEquity || 15  // quote에는 보통 없음
         const debtToEquity = metrics?.debtToEquity || 0.5
 
@@ -653,7 +663,7 @@ export default {
             longTermDebt: balance.longTermDebt || null,
             shortTermDebt: balance.shortTermDebt || null,
             inventory: balance.inventory || null,
-            accountsPayable: balance.accountPayables || null,
+            accountPayables: balance.accountPayables || null,
             netDebt: balance.netDebt || null,
             totalDebt: balance.totalDebt || null,
             timestamp: new Date().toISOString()
