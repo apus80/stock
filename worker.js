@@ -282,19 +282,18 @@ export default {
 
       async function getAlphaData(symbol) {
         try {
-          // 📍 최적화: 필수 2개 API만 호출 (180 호출/일)
-          // quote: 가격, key-metrics: 성장률 및 지표
-          const results = await Promise.allSettled([
-            fetchFMP(`/stable/quote?symbol=${symbol}`),
-            fetchFMP(`/stable/key-metrics?symbol=${symbol}`)
-          ])
+          // 📍 주의: /stable/key-metrics는 유료 플랜 엔드포인트
+          // 무료 플랜은 /stable/quote만 사용 가능
+          // quote 응답에서 최대한 많은 정보 추출
+          const quoteData = await fetchFMP(`/stable/quote?symbol=${symbol}`)
+          const quote = quoteData ? (Array.isArray(quoteData) ? quoteData[0] : quoteData) : null
 
-          const extract = (r) => r.status === 'fulfilled' ? r.value : null
-          const [quote, metrics] = results.map(extract)
+          console.log(`\n📍 [${symbol}] getAlphaData 결과:`)
+          console.log(`   Quote 응답:`, quote ? `✅ 받음 (${Object.keys(quote).length}개 필드)` : `❌ null`)
 
           return {
-            quote: quote ? (Array.isArray(quote) ? quote[0] : quote) : null,
-            metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null
+            quote: quote,
+            metrics: null  // /stable/key-metrics는 유료 플랜이므로 null로 설정
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -332,29 +331,39 @@ export default {
         // ✅ 기본 정보 (quote에서)
         const price = quote?.price || 0
         const symbol = quote?.symbol || 'N/A'
-        const dayLow = quote?.dayLow || price
-        const dayHigh = quote?.dayHigh || price
+        const dayLow = quote?.dayLow || quote?.dayLow || price
+        const dayHigh = quote?.dayHigh || quote?.dayHigh || price
 
-        // ✅ 비율 지표 (metrics에서)
-        const pe = metrics?.peRatio || 50
-        const pb = metrics?.priceToBookRatio || 10
-        const roe = metrics?.returnOnEquity || 15
+        console.log(`   ✅ 기본정보: price=${price}, dayLow=${dayLow}, dayHigh=${dayHigh}`)
+
+        // ✅ 비율 지표 (quote에서 우선, metrics에서 대체)
+        // FMP /stable/quote 응답에 포함: pe, priceToBook (또는 pb)
+        const pe = quote?.pe || metrics?.peRatio || 50
+        const pb = quote?.priceToBook || quote?.pb || metrics?.priceToBookRatio || 10
+        const roe = metrics?.returnOnEquity || 15  // quote에는 보통 없음
         const debtToEquity = metrics?.debtToEquity || 0.5
 
-        // ✅ 성장률 지표 (metrics에서)
-        let revenueGrowth = metrics?.revenueGrowth || metrics?.revenue_growth || 0
-        let epsGrowth = metrics?.epsGrowth || metrics?.earningsGrowth || metrics?.earnings_growth || 0
+        console.log(`   ✅ 비율지표: pe=${pe}, pb=${pb}, roe=${roe}`)
 
-        // ✅ 수익성 지표 (metrics에서 근사)
+        // ✅ 성장률 지표 (quote에 있는지 확인, 없으면 0으로 설정)
+        // /stable/quote에는 보통 성장률이 없음 → 모두 0으로 초기화
+        let revenueGrowth = quote?.revenueGrowth || metrics?.revenueGrowth || 0
+        let epsGrowth = quote?.epsGrowth || metrics?.epsGrowth || 0
+
+        console.log(`   ⚠️  성장률: revenueGrowth=${revenueGrowth}, epsGrowth=${epsGrowth}`)
+
+        // ✅ 수익성 지표 (quote에 없으면 기본값)
         // profitMargin = netIncome / revenue (보통 0-30%)
-        const netMargin = metrics?.netProfitMargin || metrics?.netMarginRatio || 10
+        const netMargin = metrics?.netProfitMargin || 10
         const grossMargin = metrics?.grossProfitMargin || 40
 
         // operatingMargin = operatingIncome / revenue
-        const operatingMargin = metrics?.operatingProfitMargin || metrics?.operatingMarginRatio || 15
+        const operatingMargin = metrics?.operatingProfitMargin || 15
 
-        // ✅ 섹터 정보 (metrics에서)
-        const sector = metrics?.sector || 'N/A'
+        // ✅ 섹터 정보 (quote에 있는지 확인)
+        const sector = quote?.sector || metrics?.sector || 'N/A'
+
+        console.log(`   ℹ️  섹터: ${sector}, netMargin=${netMargin}`)
 
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
         const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
