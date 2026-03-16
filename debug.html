@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -295,9 +296,6 @@
       <div class="sec-label">💰 Bonds · HYG / LQD (FMP)</div>
       <div class="data-grid" id="g-bonds"></div>
 
-      <div class="sec-label">⚠️ Market Risk · VIX / HY OAS Spread (FRED)</div>
-      <div class="data-grid" id="g-risk"></div>
-
       <div class="sec-label">📊 Credit · High Yield / Investment Grade (FMP)</div>
       <div class="data-grid" id="g-credit"></div>
 
@@ -307,7 +305,7 @@
       <div class="sec-label">🏭 Sectors ETF · XLK~XLRE (FMP)</div>
       <div class="data-grid" id="g-sec"></div>
 
-      <div class="sec-label">📊 Macro Base · CPI / PCE / UNRATE / M2 / T10YIE (FRED)</div>
+      <div class="sec-label">📊 Macro Base · CPI / UNRATE / M2 / T10YIE (FRED)</div>
       <div class="data-grid" id="g-mb"></div>
 
       <div class="sec-label">📉 Macro Indicators · GDP / INDPRO / PAYEMS … (FRED)</div>
@@ -585,7 +583,7 @@ function runAll() {
   okN = 0; failN = 0;
 
   // 로딩 표시
-  ['g-us','g-kr','g-crypto','g-bonds','g-risk','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
+  ['g-us','g-kr','g-crypto','g-bonds','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
     setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
   });
   document.getElementById('marketMs').textContent = '...';
@@ -729,7 +727,6 @@ function renderMarketData(data) {
   var m2T = mb.M2 ? (mb.M2 / 1e6).toFixed(2) + ' T' : null;
   setGrid('g-mb',
     di('CPIAUCSL (CPI)',    mb.CPI,                   fmtNum(mb.CPI, 2)) +
-    di('PCEPI (PCE)',       mb.PCE_INFLATION,         fmtNum(mb.PCE_INFLATION, 2)) +
     di('T10YIE (Infl Exp)',mb.INFLATION_EXPECTATION,  fmtNum(mb.INFLATION_EXPECTATION, 2) + '%') +
     di('UNRATE (Unemp)',   mb.UNEMPLOYMENT,            fmtNum(mb.UNEMPLOYMENT, 1) + '%') +
     di('M2SL (M2)',        mb.M2,                     m2T) +
