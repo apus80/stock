@@ -308,6 +308,27 @@ export default {
         const quote = data.quote
         const metrics = data.metrics
 
+        // 🔍 DEBUG: 실제 API 응답 데이터 확인
+        console.log(`\n📊 [${quote?.symbol}] === API 응답 데이터 ===`)
+        console.log(`Quote 필드:`, Object.keys(quote).slice(0, 20))
+        console.log(`Metrics 필드:`, Object.keys(metrics || {}).slice(0, 20))
+        console.log(`Quote 데이터:`, {
+          price: quote?.price,
+          dayLow: quote?.dayLow,
+          dayHigh: quote?.dayHigh,
+          pe: quote?.pe,
+          pb: quote?.priceToBook || quote?.pb
+        })
+        console.log(`Metrics 데이터:`, {
+          peRatio: metrics?.peRatio,
+          priceToBookRatio: metrics?.priceToBookRatio,
+          revenueGrowth: metrics?.revenueGrowth,
+          earningsGrowth: metrics?.earningsGrowth,
+          epsGrowth: metrics?.epsGrowth,
+          netProfitMargin: metrics?.netProfitMargin,
+          returnOnEquity: metrics?.returnOnEquity
+        })
+
         // ✅ 기본 정보 (quote에서)
         const price = quote?.price || 0
         const symbol = quote?.symbol || 'N/A'
