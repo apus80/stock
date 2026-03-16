@@ -2185,15 +2185,23 @@ export default {
       // EARNINGS & ALPHA DISCOVERY
       // =============================
       } else if (pathname === "/earnings") {
-        const symbol = url.searchParams.get('symbol')
-        if (symbol) {
-          response = await runAlphaDiscovery(symbol)
-        } else {
-          response = await runAlphaDiscovery()
+        try {
+          const symbol = url.searchParams.get('symbol')
+          if (symbol) {
+            response = await runAlphaDiscovery(symbol)
+          } else {
+            response = await runAlphaDiscovery()
+          }
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
         }
 
       } else if (pathname === "/alpha/discovery") {
-        response = await runAlphaDiscovery()
+        try {
+          response = await runAlphaDiscovery()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
 
       } else if (action === 'metadata') {
         response = {
