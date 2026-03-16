@@ -6,10 +6,10 @@ export default {
       const ITICK = env.ITICK_TOKEN
 
       // 환경 변수 검증
-      console.log(`🔑 환경변수 확인:`)
-      console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
-      console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
-      console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
+          // console.log(`🔑 환경변수 확인:`)
+          // console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
+          // console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
+          // console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
 
       // URL 파싱
       const url = new URL(request.url)
@@ -18,7 +18,7 @@ export default {
       const symbol = url.searchParams.get('symbol')
       const series = url.searchParams.get('series')
 
-      console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
+          // console.log(`📊 요청: pathname="${pathname}", action="${action}", url="${request.url}"`)
 
       /* ================================
          API 함수들
@@ -30,13 +30,13 @@ export default {
           // 📍 출처: FMP API (financialmodelingprep.com)
           // /stable/quote: 무료 플랜에서 동작 확인 (batch-quote는 유료 전용)
           const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
-          console.log(`📍 FMP API 호출: ${sym}`)
-          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
-          console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
+          // console.log(`📍 FMP API 호출: ${sym}`)
+          // console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
+          // console.log(`   🔑 API Key: ${FMP ? 'SET' : 'NOT SET'}`)
 
           const r = await fetch(url, { signal: controller.signal })
-          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
-          console.log(`   Headers: Content-Type=${r.headers.get('content-type')}`)
+          // console.log(`   📊 Status: ${r.status} ${r.statusText}`)
+          // console.log(`   Headers: Content-Type=${r.headers.get('content-type')}`)
 
           if (!r.ok) {
             console.error(`❌ FMP ${sym}: HTTP ${r.status} ${r.statusText}`)
@@ -48,14 +48,14 @@ export default {
           }
 
           const j = await r.json()
-          console.log(`📦 FMP ${sym} 응답:`)
-          console.log(`   Type: ${Array.isArray(j) ? 'Array' : typeof j}`)
-          console.log(`   Length: ${Array.isArray(j) ? j.length : 'N/A'}`)
+          // console.log(`📦 FMP ${sym} 응답:`)
+          // console.log(`   Type: ${Array.isArray(j) ? 'Array' : typeof j}`)
+          // console.log(`   Length: ${Array.isArray(j) ? j.length : 'N/A'}`)
           if (typeof j === 'object') {
             const keys = Object.keys(j || {})
-            console.log(`   Keys: ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`)
+          // console.log(`   Keys: ${keys.slice(0, 10).join(', ')}${keys.length > 10 ? '...' : ''}`)
           }
-          console.log(`   Full Response: ${JSON.stringify(j).substring(0, 200)}`)
+          // console.log(`   Full Response: ${JSON.stringify(j).substring(0, 200)}`)
 
           // FMP v3/quote는 Array 반환
           if (!j || (Array.isArray(j) && j.length === 0)) {
@@ -65,8 +65,8 @@ export default {
 
           // 응답을 정규화 (Array 또는 Object 모두 처리)
           const quote = Array.isArray(j) ? j[0] : j
-          console.log(`   Quote object keys: ${Object.keys(quote || {}).join(', ')}`)
-          console.log(`   Price value: ${quote?.price}`)
+          // console.log(`   Quote object keys: ${Object.keys(quote || {}).join(', ')}`)
+          // console.log(`   Price value: ${quote?.price}`)
 
           if (!quote || !quote.price) {
             console.warn(`⚠️ ${sym}: price 필드 없음 또는 null`)
@@ -86,7 +86,7 @@ export default {
             timestamp: quote.timestamp
           }
 
-          console.log(`✅ ${sym}: price=${normalized.price}, change=${normalized.changePercentage}%`)
+          // console.log(`✅ ${sym}: price=${normalized.price}, change=${normalized.changePercentage}%`)
           return normalized
 
         } catch (e) {
@@ -107,11 +107,11 @@ export default {
         try {
           const fmpSymbol = symbol === 'KS11' ? '^KS11' : symbol === 'KQ11' ? '^KQ11' : symbol
           const url = `https://financialmodelingprep.com/stable/quote?symbol=${fmpSymbol}&apikey=${FMP}`
-          console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
-          console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
+          // console.log(`📍 FMP API 호출 (한국): ${fmpSymbol}`)
+          // console.log(`   🔗 URL: ${url.substring(0, url.lastIndexOf('?'))}`)
 
           const r = await fetch(url, { signal: controller.signal })
-          console.log(`   📊 Status: ${r.status} ${r.statusText}`)
+          // console.log(`   📊 Status: ${r.status} ${r.statusText}`)
 
           if (!r.ok) {
             console.error(`❌ FMP 한국 ${fmpSymbol}: HTTP ${r.status} ${r.statusText}`)
@@ -137,7 +137,7 @@ export default {
             change: quote.change,
             volume: quote.volume
           }
-          console.log(`✅ FMP 한국 ${fmpSymbol}: price=${result.price}, change=${result.changePercentage}%`)
+          // console.log(`✅ FMP 한국 ${fmpSymbol}: price=${result.price}, change=${result.changePercentage}%`)
           return result
         } catch (e) {
           console.error(`❌ FMP 한국 ${symbol}:`, e.message)
@@ -168,7 +168,7 @@ export default {
           }
           const obs = j.observations || []
           if (obs.length > 0) {
-            console.log(`✅ FRED ${series}: ${obs.length} obs, latest=${obs[obs.length-1].value}`)
+          // console.log(`✅ FRED ${series}: ${obs.length} obs, latest=${obs[obs.length-1].value}`)
           }
           return obs
         } catch (e) {
@@ -190,7 +190,7 @@ export default {
           const j = await r.json()
           const meta = j?.chart?.result?.[0]?.meta
           if (!meta || meta.regularMarketPrice === undefined) throw new Error('no price in response')
-          console.log(`✅ Yahoo DXY: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
+          // console.log(`✅ Yahoo DXY: price=${meta.regularMarketPrice}, change%=${meta.regularMarketChangePercent}`)
           return {
             price: parseFloat(meta.regularMarketPrice.toFixed(2)),
             changePercentage: meta.regularMarketChangePercent !== undefined
@@ -238,9 +238,9 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com${endpoint}&apikey=${FMP}`
-          console.log(`📍 FMP API 호출: ${endpoint}`)
+          // console.log(`📍 FMP API 호출: ${endpoint}`)
           const r = await fetch(url, { signal: controller.signal })
-          console.log(`   📊 Status: ${r.status}`)
+          // console.log(`   📊 Status: ${r.status}`)
 
           if (!r.ok) {
             console.error(`❌ FMP ${endpoint}: HTTP ${r.status}`)
@@ -251,24 +251,24 @@ export default {
 
           // 🔍 DEBUG: 각 API별 응답 확인
           if (endpoint.includes('quote')) {
-            console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+          // console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
             if (Array.isArray(data) && data[0]) {
               const quote = data[0]
-              console.log(`   📋 quote 필드: ${Object.keys(quote).slice(0, 30).join(', ')}`)
-              console.log(`   💰 주요값: price=${quote.price}, pe=${quote.pe}, pb=${quote.priceToBook}, epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
-              console.log(`   📊 전체: ${JSON.stringify(quote).substring(0, 200)}`)
+          // console.log(`   📋 quote 필드: ${Object.keys(quote).slice(0, 30).join(', ')}`)
+          // console.log(`   💰 주요값: price=${quote.price}, pe=${quote.pe}, pb=${quote.priceToBook}, epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
+          // console.log(`   📊 전체: ${JSON.stringify(quote).substring(0, 200)}`)
             }
           } else if (endpoint.includes('key-metrics')) {
-            console.log(`   📦 key-metrics 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+          // console.log(`   📦 key-metrics 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
             if (Array.isArray(data) && data[0]) {
               const fields = Object.keys(data[0]).filter(k => k.includes('Ratio') || k.includes('Growth') || k.includes('Cap') || k.includes('Shares'))
-              console.log(`   📋 필드: peRatio=${data[0].peRatio}, priceToBookRatio=${data[0].priceToBookRatio}, floatShares=${data[0].floatShares}`)
-              console.log(`   📈 성장률: revenueGrowth=${data[0].revenueGrowth}, earningsGrowth=${data[0].earningsGrowth}`)
+          // console.log(`   📋 필드: peRatio=${data[0].peRatio}, priceToBookRatio=${data[0].priceToBookRatio}, floatShares=${data[0].floatShares}`)
+          // console.log(`   📈 성장률: revenueGrowth=${data[0].revenueGrowth}, earningsGrowth=${data[0].earningsGrowth}`)
             }
           } else if (endpoint.includes('historical')) {
-            console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - 최근 3개: ${data.substring ? data : JSON.stringify(data).substring(0, 100)}`)
+          // console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - 최근 3개: ${data.substring ? data : JSON.stringify(data).substring(0, 100)}`)
           } else if (endpoint.includes('insider')) {
-            console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+          // console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
           }
 
           return data
@@ -282,11 +282,11 @@ export default {
 
       async function getAlphaData(symbol) {
         try {
-          console.log(`📍 Alpha 데이터 수집 시작: ${symbol}`)
+          // console.log(`📍 Alpha 데이터 수집 시작: ${symbol}`)
           // Promise.allSettled로 부분 실패 허용
           const results = await Promise.allSettled([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
-            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
+            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=50`),
             fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
             // 주의: /stable/analyst-stock-recommendations는 FMP 무료 플랜에서 404 반환
             // analyst 데이터 대신 insiderActivity로 신뢰도 판단
@@ -318,8 +318,8 @@ export default {
 
         // 🔍 DEBUG: metrics 전체 구조 확인
         if (metrics) {
-          console.log(`📊 metrics 객체 키: ${Object.keys(metrics).slice(0, 20).join(', ')}`)
-          console.log(`📊 metrics 전체: ${JSON.stringify(metrics).substring(0, 300)}`)
+          // console.log(`📊 metrics 객체 키: ${Object.keys(metrics).slice(0, 20).join(', ')}`)
+          // console.log(`📊 metrics 전체: ${JSON.stringify(metrics).substring(0, 300)}`)
         }
 
         // 기본 정보
@@ -348,7 +348,7 @@ export default {
             metrics.earnings_per_share_growth ||
             metrics.earningsPerShareGrowth || 0
 
-          console.log(`📊 성장률 필드 상세: revenueGrowth=${revenueGrowth}, earningsGrowth=${earningsGrowth}`)
+          // console.log(`📊 성장률 필드 상세: revenueGrowth=${revenueGrowth}, earningsGrowth=${earningsGrowth}`)
         }
 
         // 성장률이 없으면 가격 데이터로 근사 계산
@@ -429,7 +429,7 @@ export default {
       // 9개 인디케이터 기반 Explosive Score 계산 (가중합)
       async function getAlphaScore(symbol) {
         try {
-          console.log(`🔍 Alpha Score 계산 시작: ${symbol}`)
+          // console.log(`🔍 Alpha Score 계산 시작: ${symbol}`)
 
           const data = await getAlphaData(symbol)
           if (!data) {
@@ -450,7 +450,7 @@ export default {
           // Explosive Score (9개 지표 가중합)
           const score = explosiveScore(factors, momentum, volume)
 
-          console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${score.toFixed(4)}`)
+          // console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${score.toFixed(4)}`)
 
           return {
             symbol,
@@ -493,7 +493,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/earnings?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Earnings 호출: ${symbol}`)
+          // console.log(`📍 FMP Earnings 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -538,7 +538,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/financial-growth?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Financial Growth 호출: ${symbol}`)
+          // console.log(`📍 FMP Financial Growth 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -574,7 +574,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/income-statement?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Income Statement 호출: ${symbol}`)
+          // console.log(`📍 FMP Income Statement 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -617,7 +617,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/balance-sheet-statement?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Balance Sheet 호출: ${symbol}`)
+          // console.log(`📍 FMP Balance Sheet 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -662,7 +662,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/cash-flow-statement?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Cash Flow 호출: ${symbol}`)
+          // console.log(`📍 FMP Cash Flow 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -705,7 +705,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/ratios?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Ratios 호출: ${symbol}`)
+          // console.log(`📍 FMP Ratios 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -740,7 +740,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/profile?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Company Profile 호출: ${symbol}`)
+          // console.log(`📍 FMP Company Profile 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -778,7 +778,7 @@ export default {
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
           const url = `https://financialmodelingprep.com/stable/shares-float?symbol=${symbol}&apikey=${FMP}`
-          console.log(`📍 FMP Shares Float 호출: ${symbol}`)
+          // console.log(`📍 FMP Shares Float 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
           if (!r.ok) {
@@ -821,19 +821,19 @@ export default {
       async function getMarketDataCached() {
         const now = Date.now()
         if (cachedMarketData && (now - cacheTimestamp) < CACHE_TTL) {
-          console.log("📦 캐시 사용 (경과: " + (now - cacheTimestamp) + "ms)")
+          // console.log("📦 캐시 사용 (경과: " + (now - cacheTimestamp) + "ms)")
           return cachedMarketData
         }
 
-        console.log("🔄 신규 API 호출")
+          // console.log("🔄 신규 API 호출")
         cachedMarketData = await getMarketData()
         cacheTimestamp = now
         return cachedMarketData
       }
 
       async function getMarketData() {
-        console.log("🔄 모든 시장 데이터 API 호출 시작...")
-        console.log(`📍 환경: FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
+          // console.log("🔄 모든 시장 데이터 API 호출 시작...")
+          // console.log(`📍 환경: FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
 
         // Promise.allSettled()를 사용해서 한 개 실패해도 다른 데이터는 정상 반환
         const results = await Promise.allSettled([
@@ -903,23 +903,23 @@ export default {
         const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ] = results.map(extract)
 
         // 데이터 로깅
-        console.log(`\n📊 ===== API 호출 결과 요약 =====`)
-        console.log(`📈 미국 주식:`)
-        console.log(`   SPY: ${spy?.price || '⚠️ 실패'} (change: ${spy?.changePercentage || '⚠️'}%)`)
-        console.log(`   QQQ: ${qqq?.price || '⚠️ 실패'} (change: ${qqq?.changePercentage || '⚠️'}%)`)
-        console.log(`   DIA: ${dia?.price || '⚠️ 실패'} (change: ${dia?.changePercentage || '⚠️'}%)`)
-        console.log(`📊 섹터:`)
-        console.log(`   XLK: ${xlk?.price || '⚠️ 실패'}, XLF: ${xlf?.price || '⚠️'}, XLE: ${xle?.price || '⚠️'}, XLV: ${xlv?.price || '⚠️'}`)
-        console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
-        console.log(`💰 채권 & 광범위:`)
-        console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
-        console.log(`🇰🇷 한국 시장 (FMP):`)
-        console.log(`   EWY: ${ewy?.price || '⚠️ 실패'} (change: ${ewy?.changePercentage || '⚠️'}%)`)
-        console.log(`🪙 암호화폐 (Binance):`)
-        console.log(`   BTC: ${btc?.price || '⚠️ 실패'}, ETH: ${eth?.price || '⚠️'}, SOL: ${sol?.price || '⚠️'}`)
-        console.log(`📊 FRED 경제지표:`)
-        console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
-        console.log(`================================\n`)
+          // console.log(`\n📊 ===== API 호출 결과 요약 =====`)
+          // console.log(`📈 미국 주식:`)
+          // console.log(`   SPY: ${spy?.price || '⚠️ 실패'} (change: ${spy?.changePercentage || '⚠️'}%)`)
+          // console.log(`   QQQ: ${qqq?.price || '⚠️ 실패'} (change: ${qqq?.changePercentage || '⚠️'}%)`)
+          // console.log(`   DIA: ${dia?.price || '⚠️ 실패'} (change: ${dia?.changePercentage || '⚠️'}%)`)
+          // console.log(`📊 섹터:`)
+          // console.log(`   XLK: ${xlk?.price || '⚠️ 실패'}, XLF: ${xlf?.price || '⚠️'}, XLE: ${xle?.price || '⚠️'}, XLV: ${xlv?.price || '⚠️'}`)
+          // console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
+          // console.log(`💰 채권 & 광범위:`)
+          // console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
+          // console.log(`🇰🇷 한국 시장 (FMP):`)
+          // console.log(`   EWY: ${ewy?.price || '⚠️ 실패'} (change: ${ewy?.changePercentage || '⚠️'}%)`)
+          // console.log(`🪙 암호화폐 (Binance):`)
+          // console.log(`   BTC: ${btc?.price || '⚠️ 실패'}, ETH: ${eth?.price || '⚠️'}, SOL: ${sol?.price || '⚠️'}`)
+          // console.log(`📊 FRED 경제지표:`)
+          // console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
+          // console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
@@ -1591,20 +1591,28 @@ export default {
       // HEDGE FUND UNIVERSE SCREENER
       // =============================
       async function getHedgeFundUniverse() {
-        try {
-          // 📍 출처: FMP API stock-screener
-          const url = `https://financialmodelingprep.com/stable/search-company-screener?marketCapMoreThan=1000000000&volumeMoreThan=1000000&priceMoreThan=10&limit=1000&apikey=${FMP}`
-          const r = await fetch(url)
-          if (!r.ok) {
-            console.error(`❌ Stock Screener: HTTP ${r.status}`)
-            return []
-          }
-          const data = await r.json()
-          return (data || []).map(s => s.symbol).slice(0, 100) // 최대 100개로 제한
-        } catch (e) {
-          console.error(`❌ getHedgeFundUniverse:`, e.message)
-          return []
-        }
+        // 📍 FMP API Starter 플랜 최적화: 각 종목당 4개 API × 25종목 = 100호출/일
+        // 히스토리를 limit=50으로 제한하여 API 효율성 극대화
+        const presetUniverse = [
+          // 메가캡 테크
+          'AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA',
+          // 금융
+          'JPM', 'BAC', 'GS',
+          // 헬스케어
+          'JNJ', 'PFE', 'UNH',
+          // 에너지
+          'XOM', 'CVX',
+          // 소비재
+          'PG', 'KO', 'MCD',
+          // 산업재
+          'BA', 'CAT',
+          // 반도체/칩
+          'AMD', 'QUALCOMM',
+          // 클라우드/소프트웨어
+          'NFLX', 'CRM'
+        ]
+
+        return presetUniverse
       }
 
       // =============================
@@ -1625,13 +1633,13 @@ export default {
         try {
           // 단일 종목 또는 전체 universe 분석
           const universe = singleSymbol ? [singleSymbol] : await getHedgeFundUniverse()
-          console.log(`📊 Alpha Discovery: ${universe.length}개 종목 분석 시작`)
+          // console.log(`📊 Alpha Discovery: ${universe.length}개 종목 분석 시작`)
 
           const results = []
           const startTime = Date.now()
 
-          // Rate Limit: 20개 종목 × 5개 API = 100 요청 (250/day 내)
-          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 20); i++) {
+          // Starter 플랜 최적화: 25개 종목 × 4개 API = 100 요청/일 (limit=50으로 최소화)
+          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 25); i++) {
             const symbol = universe[i]
             try {
               const data = await getAlphaData(symbol)
@@ -1669,7 +1677,7 @@ export default {
           results.sort((a, b) => b.score - a.score)
 
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
-          console.log(`✅ Alpha Discovery 완료: ${results.length}개 종목, ${elapsedTime}초`)
+          // console.log(`✅ Alpha Discovery 완료: ${results.length}개 종목, ${elapsedTime}초`)
 
           return {
             timestamp: new Date().toISOString(),
