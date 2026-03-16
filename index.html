@@ -5967,24 +5967,18 @@ var ECON_DATA = {
                 })
                 .catch(function() { imdSetStatus('fear', 'error'); });
 
-            // Put/Call Ratio – CBOE total options EOD CSV
-            imdGetProxyText('https://www.cboe.com/publish/scheduledtask/mktdata/datahouse/totaloptionsvolume.csv')
-                .then(function(text) {
-                    if (!text || typeof text !== 'string') throw new Error('no text');
-                    var lines = text.trim().split('\n').filter(function(l){ return l.trim().length > 0; });
-                    // 마지막 데이터 행에서 P/C ratio 파싱 (컬럼: Date,Calls,Puts,Total,PC_Ratio)
-                    var last = lines[lines.length - 1].split(',');
-                    var pc = parseFloat(last[last.length - 1]);
-                    if (!isNaN(pc) && pc > 0 && pc < 10) {
-                        imdSetValue('putcall', pc, 2);
-                    } else {
-                        throw new Error('parse fail: ' + last[last.length - 1]);
-                    }
-                })
-                .catch(function(err) {
-                    console.warn('Put/Call Ratio 로드 실패:', err);
+            // Put/Call Ratio – Worker /market 엔드포인트에서 로드
+            workerFetchMarket().then(function(data) {
+                if (data && data.OPTIONS && data.OPTIONS.PUT_CALL_RATIO !== null && !isNaN(data.OPTIONS.PUT_CALL_RATIO)) {
+                    imdSetValue('putcall', data.OPTIONS.PUT_CALL_RATIO, 2);
+                } else {
+                    console.warn('Put/Call Ratio: 데이터 없음');
                     imdSetStatus('putcall', 'error');
-                });
+                }
+            }).catch(function(err) {
+                console.warn('Put/Call Ratio 로드 실패:', err);
+                imdSetStatus('putcall', 'error');
+            });
         }
 
         /* ══════════════════════════════════════════════════════

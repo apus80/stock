@@ -1706,6 +1706,25 @@ export default {
       // /market endpoint - 시장 데이터
       if (pathname === "/market") {
         const marketData = await getMarketData()
+
+        // Put/Call Ratio 로드 (CBOE CSV)
+        let putCallRatio = null
+        try {
+          const csvText = await fetch('https://www.cboe.com/publish/scheduledtask/mktdata/datahouse/totaloptionsvolume.csv')
+            .then(r => r.text())
+            .catch(() => null)
+          if (csvText) {
+            const lines = csvText.trim().split('\n').filter(l => l.trim().length > 0)
+            const lastLine = lines[lines.length - 1].split(',')
+            const pc = parseFloat(lastLine[lastLine.length - 1])
+            if (!isNaN(pc) && pc > 0 && pc < 10) {
+              putCallRatio = parseFloat(pc.toFixed(2))
+            }
+          }
+        } catch (e) {
+          // Put/Call Ratio 로드 실패 시 null 유지
+        }
+
         response = {
           timestamp: new Date().toISOString(),
           dataType: "market",
@@ -1816,6 +1835,10 @@ export default {
             US10Y: marketData.us10y ? parseFloat(marketData.us10y.toFixed(2)) : null,
             US2Y: marketData.us2y ? parseFloat(marketData.us2y.toFixed(2)) : null,
             YIELD_CURVE: marketData.yieldCurve ? parseFloat(marketData.yieldCurve.toFixed(3)) : null
+          },
+          // 카드 9: 옵션 지표
+          OPTIONS: {
+            PUT_CALL_RATIO: putCallRatio  // CBOE CSV에서 로드
           },
           // 카드 10-14: Sectors, Credit, Breadth, Macro
           SECTORS: marketData.SECTORS || {},
