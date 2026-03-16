@@ -1979,6 +1979,31 @@
                             <div class="item"><span>PCE Inflation</span><span class="item-right"><span id="pce_inf" class="value">-</span><span id="chg-pce_inf" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-pce_inf"></span></span></div>
                         </div>
 
+                        <div class="card">
+                            <div class="title-area"><span class="title">14. AI Market Score</span><button class="card-rfbtn" id="rfbtn-14" onclick="imdRefreshCard(14)" title="새로고침">↻</button></div>
+                            <div style="margin-top: 12px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <div style="padding: 14px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 10px; border-left: 3px solid #667eea;">
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Score</div>
+                                        <div id="ai-score-value" style="font-size: 2.2rem; font-weight: 800; color: #1e293b; font-family: 'Courier New', monospace;">-</div>
+                                        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">0 — 100</div>
+                                    </div>
+                                    <div style="padding: 14px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 10px; border-left: 3px solid #667eea;">
+                                        <div style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Market State</div>
+                                        <div id="ai-market-state" style="font-size: 1.4rem; font-weight: 700; color: #667eea; font-family: 'Courier New', monospace;">-</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 14px; padding: 12px; background: rgba(102,126,234,0.04); border-radius: 8px; border-left: 3px solid #667eea;">
+                                    <div style="font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Supporting Signals</div>
+                                    <div id="ai-score-signals" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; color: #475569;">
+                                        <span>-</span>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 0.7rem; color: #94a3b8; text-align: right;">
+                                    Updated: <span id="ai-score-time">--:--</span> KST
+                                </div>
+                            </div>
+                        </div>
 
                     </div><!-- /.grid -->
                 </div><!-- /.imd-wrap -->
@@ -6050,6 +6075,207 @@ var ECON_DATA = {
         }
 
         /* ══════════════════════════════════════════════════════
+         * 카드 14 – AI Market Score
+         * Worker API → 종합 시장 점수 및 레짐 분류
+         * ══════════════════════════════════════════════════════ */
+        var aiScoreCache = { score: null, state: null, signals: [], timestamp: 0 };
+
+        function imdLoadAIMarketScore() {
+            // 30초 캐시 체크
+            var now = Date.now();
+            if (aiScoreCache.timestamp && (now - aiScoreCache.timestamp) < 30000) {
+                imdDisplayAIMarketScore(aiScoreCache);
+                return;
+            }
+
+            workerFetchMarket().then(function(data) {
+                if (!data) throw new Error('No data returned');
+
+                // 필요한 데이터 필드 추출
+                var sp500Change = data.US_MARKET?.SP500?.changePercentage || 0;
+                var nasdaqChange = data.US_MARKET?.NASDAQ?.changePercentage || 0;
+                var vixLevel = data.US_MARKET?.VIX?.price || 0;
+                var yieldCurve = data.RATES?.YIELD_CURVE || 0;
+                var us10y = data.RATES?.US10Y || 0;
+                var dxyChange = data.FX?.DXY?.changePercentage || 0;
+                var oilChange = data.COMMODITIES?.OIL?.changePercentage || 0;
+                var fedBalance = data.LIQUIDITY?.FED_BALANCE || 0;
+                var rrp = data.LIQUIDITY?.REVERSE_REPO || 0;
+                var tga = data.LIQUIDITY?.TGA || 0;
+
+                // 순 유동성 계산
+                var netLiquidity = fedBalance - rrp - tga;
+
+                // 초기 점수 설정
+                var score = 50;
+                var signals = [];
+
+                // 주식 모멘텀
+                if (sp500Change > 0) {
+                    score += 10;
+                    signals.push('Equity Momentum Strong');
+                } else if (sp500Change < 0) {
+                    score -= 10;
+                    signals.push('Equity Weakness');
+                }
+
+                if (nasdaqChange > 0) {
+                    score += 8;
+                } else if (nasdaqChange < 0) {
+                    score -= 8;
+                }
+
+                // 변동성 위험
+                if (vixLevel > 25) {
+                    score -= 15;
+                    signals.push('VIX Elevated');
+                } else if (vixLevel < 18) {
+                    score += 5;
+                    signals.push('VIX Calm');
+                }
+
+                // 수익률 곡선
+                if (yieldCurve > 0) {
+                    score += 10;
+                    signals.push('Stable Yield Curve');
+                } else if (yieldCurve < -0.5) {
+                    score -= 10;
+                    signals.push('Inverted Curve Risk');
+                }
+
+                // 달러 압력
+                if (dxyChange > 0.5) {
+                    score -= 8;
+                    signals.push('Dollar Strong');
+                } else if (dxyChange < -0.5) {
+                    score += 8;
+                    signals.push('Dollar Weak');
+                }
+
+                // 금리 압력
+                if (us10y > 4.5) {
+                    score -= 5;
+                    signals.push('Rates Elevated');
+                } else if (us10y < 3.5) {
+                    score += 5;
+                    signals.push('Rates Benign');
+                }
+
+                // 에너지 충격
+                if (oilChange > 3) {
+                    score -= 5;
+                    signals.push('Oil Rally Risk');
+                } else if (oilChange < -3) {
+                    score += 3;
+                    signals.push('Oil Weakness');
+                }
+
+                // 유동성 영향 (이전 데이터와 비교)
+                var prevLiquidity = localStorage.getItem('aiScorePrevLiquidity');
+                if (prevLiquidity) {
+                    prevLiquidity = parseFloat(prevLiquidity);
+                    if (netLiquidity > prevLiquidity) {
+                        score += 10;
+                        signals.push('Liquidity Positive');
+                    } else if (netLiquidity < prevLiquidity) {
+                        score -= 10;
+                        signals.push('Liquidity Stress');
+                    }
+                }
+                localStorage.setItem('aiScorePrevLiquidity', netLiquidity.toString());
+
+                // 최종 점수 범위 제한 (0-100)
+                score = Math.max(0, Math.min(100, score));
+
+                // 시장 상태 분류
+                var marketState;
+                if (score < 20) {
+                    marketState = 'Market Crisis';
+                } else if (score >= 20 && score < 40) {
+                    marketState = 'Risk Off';
+                } else if (score >= 40 && score < 60) {
+                    marketState = 'Neutral';
+                } else if (score >= 60 && score < 80) {
+                    marketState = 'Risk On';
+                } else {
+                    marketState = 'Euphoria';
+                }
+
+                // 신호가 없으면 상태를 반영
+                if (signals.length === 0) {
+                    signals.push('No Clear Signals');
+                }
+
+                // 캐시 업데이트
+                aiScoreCache = {
+                    score: score,
+                    state: marketState,
+                    signals: signals.slice(0, 4), // 최대 4개 신호만 표시
+                    timestamp: now
+                };
+
+                imdDisplayAIMarketScore(aiScoreCache);
+            }).catch(function(err) {
+                console.error('[ERROR] imdLoadAIMarketScore:', err);
+                imdSetValue('ai-score-value', '-', 0);
+                document.getElementById('ai-market-state').textContent = '-';
+                document.getElementById('ai-score-signals').innerHTML = '<span>-</span>';
+            });
+        }
+
+        function imdDisplayAIMarketScore(cache) {
+            // 점수 표시 (색상 변화)
+            var scoreElem = document.getElementById('ai-score-value');
+            if (scoreElem) {
+                scoreElem.textContent = Math.round(cache.score);
+                // 점수에 따른 색상 변화
+                if (cache.score >= 70) {
+                    scoreElem.style.color = '#28a745'; // 초록색 (위험 감소)
+                } else if (cache.score >= 55) {
+                    scoreElem.style.color = '#667eea'; // 파란색 (중립)
+                } else if (cache.score >= 40) {
+                    scoreElem.style.color = '#f59e0b'; // 주황색 (주의)
+                } else {
+                    scoreElem.style.color = '#ef4444'; // 빨간색 (위험)
+                }
+            }
+
+            // 시장 상태 표시 (색상)
+            var stateElem = document.getElementById('ai-market-state');
+            if (stateElem) {
+                stateElem.textContent = cache.state;
+                if (cache.state === 'Euphoria' || cache.state === 'Risk On') {
+                    stateElem.style.color = '#28a745';
+                } else if (cache.state === 'Neutral') {
+                    stateElem.style.color = '#667eea';
+                } else {
+                    stateElem.style.color = '#ef4444';
+                }
+            }
+
+            // 신호 표시
+            var signalsElem = document.getElementById('ai-score-signals');
+            if (signalsElem) {
+                if (cache.signals && cache.signals.length > 0) {
+                    signalsElem.innerHTML = cache.signals.map(function(s) {
+                        return '<span>' + s + '</span>';
+                    }).join('');
+                } else {
+                    signalsElem.innerHTML = '<span>-</span>';
+                }
+            }
+
+            // 시간 표시
+            var timeElem = document.getElementById('ai-score-time');
+            if (timeElem) {
+                var now = new Date();
+                var hours = String(now.getHours()).padStart(2, '0');
+                var minutes = String(now.getMinutes()).padStart(2, '0');
+                timeElem.textContent = hours + ':' + minutes;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════════
          * 카드 14 – 미국 시장 확장 (US Market Extended)
          * Worker API → FMP
          * ══════════════════════════════════════════════════════ */
@@ -6107,6 +6333,7 @@ var ECON_DATA = {
                 imdLoadCreditBreadth();
                 imdLoadMacroBase();
                 imdLoadMacroIndicators();
+                imdLoadAIMarketScore();
                 imdLoadUSExtended();
             });
         }
@@ -6125,7 +6352,8 @@ var ECON_DATA = {
             10: { fn: imdLoadSectors,         ids: ['xlk','xlf','xle','xlv','xly','xli','xlu','xlre'] },
             11: { fn: imdLoadCreditBreadth,   ids: ['hyg','lqd','vti','tlt'] },
             12: { fn: imdLoadMacroBase,       ids: ['cpi','inflation_exp','unemployment','m2_macro','real_rates'] },
-            13: { fn: imdLoadMacroIndicators, ids: ['sentiment','gdp','indpro','payems','pce_inf'] }
+            13: { fn: imdLoadMacroIndicators, ids: ['sentiment','gdp','indpro','payems','pce_inf'] },
+            14: { fn: imdLoadAIMarketScore,   ids: ['ai-score-value','ai-market-state','ai-score-signals','ai-score-time'] }
         };
 
         window.imdRefreshCard = function(n) {
