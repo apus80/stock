@@ -627,7 +627,10 @@
                                     ...stock,
                                     explosiveScore: explosiveScore
                                 };
-                            }).sort((a, b) => b.explosiveScore - a.explosiveScore).slice(0, 10);
+                            }).sort((a, b) => {
+                                if (b.explosiveScore !== a.explosiveScore) return b.explosiveScore - a.explosiveScore;
+                                return a.symbol.localeCompare(b.symbol);
+                            }).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>순이익마진</th><th>PE</th><th>점수</th></tr></thead><tbody>';
                             explosiveStocks.forEach(stock => {
@@ -676,7 +679,10 @@
                                     sectorMomentum: sectorMomentum,
                                     smartMoneyScore: Math.max(0, smartMoneyScore)
                                 };
-                            }).sort((a, b) => b.smartMoneyScore - a.smartMoneyScore).slice(0, 10);
+                            }).sort((a, b) => {
+                                if (b.smartMoneyScore !== a.smartMoneyScore) return b.smartMoneyScore - a.smartMoneyScore;
+                                return a.symbol.localeCompare(b.symbol);
+                            }).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>영업이익률</th><th>섹터모멘텀</th><th>점수</th></tr></thead><tbody>';
                             smartMoneyStocks.forEach(stock => {
@@ -725,7 +731,10 @@
                                     relativeStrength: relativeStrength,
                                     sectorLeaderScore: Math.max(0, sectorLeaderScore)
                                 };
-                            }).sort((a, b) => b.sectorLeaderScore - a.sectorLeaderScore).slice(0, 10);
+                            }).sort((a, b) => {
+                                if (b.sectorLeaderScore !== a.sectorLeaderScore) return b.sectorLeaderScore - a.sectorLeaderScore;
+                                return a.symbol.localeCompare(b.symbol);
+                            }).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>섹터</th><th>상대강도</th><th>수익증가</th><th>EPS증가</th><th>점수</th></tr></thead><tbody>';
                             sectorLeaderStocks.forEach(stock => {
@@ -773,7 +782,10 @@
                                     ...stock,
                                     liquidityBenefit: liquidityDrivenScore
                                 };
-                            }).sort((a, b) => b.liquidityBenefit - a.liquidityBenefit).slice(0, 10);
+                            }).sort((a, b) => {
+                                if (b.liquidityBenefit !== a.liquidityBenefit) return b.liquidityBenefit - a.liquidityBenefit;
+                                return a.symbol.localeCompare(b.symbol);
+                            }).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>수익증가</th><th>EPS증가</th><th>유동성지수</th><th>리스크점수</th><th>점수</th></tr></thead><tbody>';
                             liquidityStocks.forEach(stock => {
@@ -830,7 +842,10 @@
                                     macroScore: macroScore,
                                     investflowScore: Math.max(0, investflowScore)
                                 };
-                            }).sort((a, b) => b.investflowScore - a.investflowScore).slice(0, 10);
+                            }).sort((a, b) => {
+                                if (b.investflowScore !== a.investflowScore) return b.investflowScore - a.investflowScore;
+                                return a.symbol.localeCompare(b.symbol);
+                            }).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:11px;"><thead><tr><th>종목</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>ROE</th><th>섹터강도</th><th>거시점수</th><th>Investflow</th></tr></thead><tbody>';
                             investflowStocks.forEach(stock => {
