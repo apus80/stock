@@ -1149,14 +1149,21 @@
                             const ratios = await ratiosRes.json();
                             const profile = await profileRes.json();
 
+                            // 순이익마진 계산 = (netIncome / revenue) * 100
+                            const netIncome = income?.data?.netIncome || null;
+                            const revenue = income?.data?.revenue || null;
+                            const netIncomeMargin = (netIncome && revenue && revenue > 0)
+                                ? (netIncome / revenue) * 100
+                                : 0;
+
                             return {
                                 symbol: stock.symbol,
                                 name: profile?.data?.companyName || stock.symbol,
                                 sector: profile?.data?.sector || "Unknown",
                                 revenueGrowth: growth?.data?.revenueGrowth ? growth.data.revenueGrowth * 100 : 0,
                                 epsGrowth: growth?.data?.epsGrowth ? growth.data.epsGrowth * 100 : 0,
-                                netIncomeMargin: income?.data?.netIncomeMargin ? income.data.netIncomeMargin * 100 : 0,
-                                pe: ratios?.data?.priceEarningsRatio || 50,
+                                netIncomeMargin: netIncomeMargin,
+                                pe: ratios?.data?.priceToEarningsRatio || 50,
                                 pb: ratios?.data?.priceToBookRatio || 5
                             };
                         })
