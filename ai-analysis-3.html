@@ -337,7 +337,7 @@
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
-                    const res = await fetch('/api/market');
+                    const res = await fetch('/market');
                     const marketData = await res.json();
 
                     // 매크로 조건 계산 (API에서 실제 데이터 사용)
@@ -587,7 +587,7 @@
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
-                    const res = await fetch('/api/market');
+                    const res = await fetch('/market');
                     const marketData = await res.json();
 
                     // 출처: FMP API - 섹터별 가격 데이터 (SECTORS 객체)
@@ -821,7 +821,7 @@
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
-                    const res = await fetch('/api/market');
+                    const res = await fetch('/market');
                     const marketData = await res.json();
 
                     // 필요한 데이터 추출 (API 데이터만 사용, 기본값 제거)
