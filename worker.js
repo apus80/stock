@@ -286,7 +286,7 @@ export default {
           // Promise.allSettled로 부분 실패 허용
           const results = await Promise.allSettled([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
-            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=200`),
+            fetchFMP(`/stable/historical-price-eod/full?symbol=${symbol}&limit=50`),
             fetchFMP(`/stable/key-metrics?symbol=${symbol}`),
             // 주의: /stable/analyst-stock-recommendations는 FMP 무료 플랜에서 404 반환
             // analyst 데이터 대신 insiderActivity로 신뢰도 판단
@@ -1591,22 +1591,27 @@ export default {
       // HEDGE FUND UNIVERSE SCREENER
       // =============================
       async function getHedgeFundUniverse() {
-        // 📍 FMP API Starter 플랜 제약: /stable/quote만 가능 (batch-quote 불가)
-        // API 호출 최소화: 10개 우량주만 분석 (50개 API 호출 ≈ Starter 플랜 일일 한도 내)
+        // 📍 FMP API Starter 플랜 최적화: 각 종목당 4개 API × 25종목 = 100호출/일
+        // 히스토리를 limit=50으로 제한하여 API 효율성 극대화
         const presetUniverse = [
-          'AAPL',       // 테크
-          'MSFT',       // 클라우드
-          'NVDA',       // 반도체
-          'JPM',        // 금융
-          'JNJ',        // 헬스케어
-          'XOM',        // 에너지
-          'PG',         // 소비재
-          'TSLA',       // 성장주
-          'META',       // 광고/AI
-          'NFLX'        // 스트리밍
+          // 메가캡 테크
+          'AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA',
+          // 금융
+          'JPM', 'BAC', 'GS',
+          // 헬스케어
+          'JNJ', 'PFE', 'UNH',
+          // 에너지
+          'XOM', 'CVX',
+          // 소비재
+          'PG', 'KO', 'MCD',
+          // 산업재
+          'BA', 'CAT',
+          // 반도체/칩
+          'AMD', 'QUALCOMM',
+          // 클라우드/소프트웨어
+          'NFLX', 'CRM'
         ]
 
-        // Starter 플랜: 10개 종목 고정 (일일 한도 초과 방지)
         return presetUniverse
       }
 
@@ -1633,8 +1638,8 @@ export default {
           const results = []
           const startTime = Date.now()
 
-          // Starter 플랜 API 제약: 10개 종목 × 5개 API = 50 요청/일 (일일 한도 내)
-          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 10); i++) {
+          // Starter 플랜 최적화: 25개 종목 × 4개 API = 100 요청/일 (limit=50으로 최소화)
+          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 25); i++) {
             const symbol = universe[i]
             try {
               const data = await getAlphaData(symbol)
