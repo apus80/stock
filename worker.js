@@ -2145,55 +2145,63 @@ export default {
           }
         }
       } else if (pathname === "/analysis/institutional-score") {
-        response = await getInstitutionalScore()
+        try { response = await getInstitutionalScore() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/market-regime") {
-        response = await getMarketRegime()
+        try { response = await getMarketRegime() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/liquidity-pulse") {
-        response = await getLiquidityPulse()
+        try { response = await getLiquidityPulse() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/yield-curve-monitor") {
-        response = await getYieldCurveMonitor()
+        try { response = await getYieldCurveMonitor() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/inflation-pressure") {
-        response = await getInflationPressure()
+        try { response = await getInflationPressure() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/credit-stress") {
-        response = await getCreditStress()
+        try { response = await getCreditStress() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/market-breadth") {
-        response = await getMarketBreadth()
+        try { response = await getMarketBreadth() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/volatility-regime") {
-        response = await getVolatilityRegime()
+        try { response = await getVolatilityRegime() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/sector-rotation") {
-        response = await getSectorRotation()
+        try { response = await getSectorRotation() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/dollar-liquidity") {
-        response = await getDollarLiquidity()
+        try { response = await getDollarLiquidity() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/crypto-sentiment") {
-        response = await getCryptoSentiment()
+        try { response = await getCryptoSentiment() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/smart-money") {
-        response = await getSmartMoney()
+        try { response = await getSmartMoney() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/stock-ranking") {
-        response = await getStockRanking()
+        try { response = await getStockRanking() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/market-heatmap") {
-        response = await getMarketHeatmap()
+        try { response = await getMarketHeatmap() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/real-rate-monitor") {
-        response = await getRealRateMonitor()
+        try { response = await getRealRateMonitor() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/fed-policy-impact") {
-        response = await getFedPolicyImpact()
+        try { response = await getFedPolicyImpact() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/labor-market-health") {
-        response = await getLaborMarketHealth()
+        try { response = await getLaborMarketHealth() } catch(e) { response = {error: e.message, endpoint: pathname} }
       } else if (pathname === "/analysis/macro-momentum") {
-        response = await getMacroMomentum()
+        try { response = await getMacroMomentum() } catch(e) { response = {error: e.message, endpoint: pathname} }
 
       // =============================
       // EARNINGS & ALPHA DISCOVERY
       // =============================
       } else if (pathname === "/earnings") {
-        const symbol = url.searchParams.get('symbol')
-        if (symbol) {
-          response = await runAlphaDiscovery(symbol)
-        } else {
-          response = await runAlphaDiscovery()
+        try {
+          const symbol = url.searchParams.get('symbol')
+          if (symbol) {
+            response = await runAlphaDiscovery(symbol)
+          } else {
+            response = await runAlphaDiscovery()
+          }
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
         }
 
       } else if (pathname === "/alpha/discovery") {
-        response = await runAlphaDiscovery()
+        try {
+          response = await runAlphaDiscovery()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
 
       } else if (action === 'metadata') {
         response = {
@@ -2295,6 +2303,15 @@ export default {
             action: action,
             series: series
           }
+        }
+      }
+
+      // response 검증: 설정되지 않은 경우 에러 반환
+      if (!response) {
+        response = {
+          error: "No response generated",
+          pathname: pathname,
+          timestamp: new Date().toISOString()
         }
       }
 
