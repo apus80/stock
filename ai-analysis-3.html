@@ -300,6 +300,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useCallback } = React;
+        const API_BASE = 'https://fmp-proxy.05ba87763e81af6206c77d3bd3d79d84.workers.dev';
 
         // ===== WIDGET 1: Macro Liquidity Stock Scanner =====
         function MacroLiquidityStockScanner() {
@@ -337,7 +338,7 @@
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
-                    const res = await fetch('/api/market');
+                    const res = await fetch(API_BASE + '/market');
                     const marketData = await res.json();
 
                     // 매크로 조건 계산 (API에서 실제 데이터 사용)
@@ -363,7 +364,7 @@
                     });
 
                     // 종목별 펀더멘탈 데이터 동적 호출
-                    // 현재는 /api/market에서 제공하지 않으므로, 향후 /api/fundamentals 엔드포인트 필요
+                    // 현재는 /market에서 제공하지 않으므로, 향후 /api/fundamentals 엔드포인트 필요
                     const stockDetails = await Promise.all(
                         trackedStocks.map(async (stock) => {
                             try {
@@ -587,7 +588,7 @@
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
-                    const res = await fetch('/api/market');
+                    const res = await fetch(API_BASE + '/market');
                     const marketData = await res.json();
 
                     // 출처: FMP API - 섹터별 가격 데이터 (SECTORS 객체)
@@ -821,7 +822,7 @@
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
-                    const res = await fetch('/api/market');
+                    const res = await fetch(API_BASE + '/market');
                     const marketData = await res.json();
 
                     // 필요한 데이터 추출 (API 데이터만 사용, 기본값 제거)
@@ -1124,7 +1125,7 @@
 
                     // 1️⃣ /alpha/discovery에서 top 20 종목 가져오기
                     // 출처: /alpha/discovery endpoint
-                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaRes = await fetch(API_BASE + '/alpha/discovery');
                     const alphaData = await alphaRes.json();
 
                     if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
@@ -1138,10 +1139,10 @@
                     const stockDetails = await Promise.allSettled(
                         topStocks.map(async (stock) => {
                             const [growthRes, incomeRes, ratiosRes, profileRes] = await Promise.all([
-                                fetch(`/fundamentals/growth?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/income?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/ratios?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/profile?symbol=${stock.symbol}`)
+                                fetch(`${API_BASE}/fundamentals/growth?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/income?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/ratios?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/profile?symbol=${stock.symbol}`)
                             ]);
 
                             const growth = await growthRes.json();
@@ -1471,7 +1472,7 @@
 
                     // 1️⃣ 시장 데이터 호출 - Macro Regime 분석
                     // 출처: /market endpoint
-                    const marketRes = await fetch('/market');
+                    const marketRes = await fetch(API_BASE + '/market');
                     const marketData = await marketRes.json();
 
                     // Macro Regime 판단
@@ -1504,7 +1505,7 @@
 
                     // 2️⃣ Alpha Discovery 호출: top 20 종목
                     // 출처: /alpha/discovery endpoint
-                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaRes = await fetch(API_BASE + '/alpha/discovery');
                     const alphaData = await alphaRes.json();
 
                     if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
@@ -1518,9 +1519,9 @@
                     const stockDetails = await Promise.allSettled(
                         topStocks.map(async (stock) => {
                             const [growthRes, incomeRes, profileRes] = await Promise.all([
-                                fetch(`/fundamentals/growth?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/income?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/profile?symbol=${stock.symbol}`)
+                                fetch(`${API_BASE}/fundamentals/growth?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/income?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/profile?symbol=${stock.symbol}`)
                             ]);
 
                             const growth = await growthRes.json();
@@ -1896,7 +1897,7 @@
 
                     // 1️⃣ 시장 & 거시 데이터 호출
                     // 출처: /market endpoint
-                    const marketRes = await fetch('/market');
+                    const marketRes = await fetch(API_BASE + '/market');
                     const marketData = await marketRes.json();
 
                     // 유동성 지수 계산
@@ -1929,7 +1930,7 @@
 
                     // 2️⃣ Alpha Discovery 호출: top 20 종목
                     // 출처: /alpha/discovery endpoint
-                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaRes = await fetch(API_BASE + '/alpha/discovery');
                     const alphaData = await alphaRes.json();
 
                     if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
@@ -1942,7 +1943,7 @@
                     // 3️⃣ 각 종목의 성장 데이터 병렬 호출
                     const stockDetails = await Promise.allSettled(
                         topStocks.map(async (stock) => {
-                            const growthRes = await fetch(`/fundamentals/growth?symbol=${stock.symbol}`);
+                            const growthRes = await fetch(`${API_BASE}/fundamentals/growth?symbol=${stock.symbol}`);
                             const growth = await growthRes.json();
 
                             return {
@@ -2246,7 +2247,7 @@
 
                     // 1️⃣ 시장 데이터 호출: 섹터 ETF 수익률
                     // 출처: /market endpoint
-                    const marketRes = await fetch('/market');
+                    const marketRes = await fetch(API_BASE + '/market');
                     const marketData = await marketRes.json();
 
                     // SPY 수익률
@@ -2278,7 +2279,7 @@
 
                     // 2️⃣ Alpha Discovery 호출: top 20 종목
                     // 출처: /alpha/discovery endpoint
-                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaRes = await fetch(API_BASE + '/alpha/discovery');
                     const alphaData = await alphaRes.json();
 
                     if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
@@ -2292,8 +2293,8 @@
                     const stockDetails = await Promise.allSettled(
                         topStocks.map(async (stock) => {
                             const [growthRes, profileRes] = await Promise.all([
-                                fetch(`/fundamentals/growth?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/profile?symbol=${stock.symbol}`)
+                                fetch(`${API_BASE}/fundamentals/growth?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/profile?symbol=${stock.symbol}`)
                             ]);
 
                             const growth = await growthRes.json();
@@ -2576,7 +2577,7 @@
 
                     // 1️⃣ 시장 데이터 호출: 섹터 ETF 수익률 & SPY
                     // 출처: /market endpoint
-                    const marketRes = await fetch('/market');
+                    const marketRes = await fetch(API_BASE + '/market');
                     const marketData = await marketRes.json();
 
                     // 섹터별 수익률 추출
@@ -2594,7 +2595,7 @@
 
                     // 2️⃣ Alpha Discovery 호출: top 20 종목
                     // 출처: /alpha/discovery endpoint
-                    const alphaRes = await fetch('/alpha/discovery');
+                    const alphaRes = await fetch(API_BASE + '/alpha/discovery');
                     const alphaData = await alphaRes.json();
 
                     if (!alphaData?.top_20 || alphaData.top_20.length === 0) {
@@ -2608,9 +2609,9 @@
                     const stockDetails = await Promise.allSettled(
                         topStocks.map(async (stock) => {
                             const [growthRes, incomeRes, profileRes] = await Promise.all([
-                                fetch(`/fundamentals/growth?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/income?symbol=${stock.symbol}`),
-                                fetch(`/fundamentals/profile?symbol=${stock.symbol}`)
+                                fetch(`${API_BASE}/fundamentals/growth?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/income?symbol=${stock.symbol}`),
+                                fetch(`${API_BASE}/fundamentals/profile?symbol=${stock.symbol}`)
                             ]);
 
                             const growth = await growthRes.json();
@@ -2899,7 +2900,7 @@
                     setLoading(true);
                     // 출처: Worker /engine/discovery 엔드포인트
                     // 기존 데이터 조합: Macro + Market + Sector + Fundamentals (5단계)
-                    const res = await fetch('/engine/discovery');
+                    const res = await fetch(API_BASE + '/engine/discovery');
                     const response = await res.json();
 
                     if (response && response.discoveries) {
