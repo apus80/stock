@@ -356,25 +356,35 @@ export default {
         }
       }
 
-      // Explosive Score (7개 지표 가중합)
+      // Explosive Score (100점 만점 정규화)
       function explosiveScore(factors) {
         if (!factors) return 0
 
-        // 성장률 정규화 (0~100%)
-        const normalizeGrowth = (g) => Math.max(0, Math.min(100, g * 100))
-        const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
-        const epsScore = normalizeGrowth(factors.epsGrowth || 0)
-        const profitScore = Math.min(100, (factors.profitMargin || 10) * 3)
-        const roiScore = Math.min(100, (factors.roe || 15) * 3)
+        // ✅ 1. 성장률 정규화 (0~100, 상한선 적용)
+        // 데이터가 소수점 형태(0.1=10%)일 경우 * 100, 백분율 형태(10)일 경우 그대로 사용
+        const normalizeGrowth = (g) => {
+          const value = g || 0
+          // 소수점 형태 판별: 1보다 작으면 * 100
+          const normalized = value < 1 ? value * 100 : value
+          return Math.max(0, Math.min(100, normalized))
+        }
+        const revenueScore = normalizeGrowth(factors.revenueGrowth)
+        const epsScore = normalizeGrowth(factors.epsGrowth)
 
-        // 밸류에이션 역정규화 (PE/PB 낮을수록 높음)
-        const peScore = Math.max(0, 100 - (factors.pe || 50) * 1.5)
-        const pbScore = Math.max(0, 100 - (factors.pb || 10) * 5)
+        // ✅ 2. 수익성 정규화 (0~100, 20%를 100점으로)
+        const profitScore = Math.min(100, (factors.profitMargin || 10) * 5)
+        const roiScore = Math.min(100, (factors.roe || 15) * 5)
 
-        // 모멘텀 (일일 가격 움직임)
-        const momentumScore = Math.min(100, (factors.momentum || 0) * 500)
+        // ✅ 3. 밸류에이션 정규화 (PE/PB 낮을수록 높음, 범위 확장)
+        // PE 정규화: PE 10을 100점, PE 50을 0점 (기울기 조정)
+        const peScore = Math.max(0, Math.min(100, 100 - (factors.pe || 50) / 0.4))
+        // PB 정규화: PB 1을 100점, PB 10을 0점
+        const pbScore = Math.max(0, Math.min(100, 100 - (factors.pb || 10) / 0.1))
 
-        // ✅ 최종 점수 (7개 지표 가중합)
+        // ✅ 4. 모멘텀 정규화 (0~100, 10%를 100점)
+        const momentumScore = Math.min(100, Math.max(0, (factors.momentum || 0) * 1000))
+
+        // ✅ 최종 점수 (가중합 → 100점 만점)
         const score =
           revenueScore * 0.25 +        // 수익성장 (25%)
           epsScore * 0.25 +            // EPS성장 (25%)
@@ -384,7 +394,7 @@ export default {
           pbScore * 0.05 +             // PB 가치 (5%)
           momentumScore * 0.05         // 모멘텀 (5%)
 
-        return Math.max(0, score)
+        return Math.max(0, Math.min(100, score))
       }
 
       // 9개 인디케이터 기반 Explosive Score 계산 (가중합)
