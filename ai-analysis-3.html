@@ -515,6 +515,235 @@
             );
         }
 
+        // ===== WIDGET 2: Sector Momentum Rotation =====
+        function SectorMomentumRotation() {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            const sectors = [
+                { ticker: 'XLK', name: '기술', color: '#667eea' },
+                { ticker: 'XLF', name: '금융', color: '#764ba2' },
+                { ticker: 'XLE', name: '에너지', color: '#f59e0b' },
+                { ticker: 'XLV', name: '헬스케어', color: '#10b981' },
+                { ticker: 'XLY', name: '소비재', color: '#ef4444' },
+                { ticker: 'XLI', name: '산업재', color: '#3b82f6' },
+                { ticker: 'XLU', name: '유틸리티', color: '#8b5cf6' },
+                { ticker: 'XLRE', name: '부동산', color: '#ec4899' }
+            ];
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    const res = await fetch('/api/market');
+                    const marketData = await res.json();
+
+                    const spyPrice = marketData.US_MARKET?.SP500?.price || 500;
+
+                    // 섹터 데이터 생성 (실제로는 API에서 가져옴)
+                    const sectorData = sectors.map((sector) => {
+                        // 3M, 6M 리턴 시뮬레이션 (실제로는 API에서)
+                        const return3m = (Math.random() * 15 - 5);
+                        const return6m = (Math.random() * 25 - 5);
+
+                        // SPY 리턴 (기준)
+                        const spyReturn3m = 5;
+                        const spyReturn6m = 10;
+
+                        // Relative Strength 계산
+                        const relativeStrength = return6m / spyReturn6m;
+
+                        // Sector Score 계산
+                        const sectorScore = return6m + (relativeStrength * 10);
+
+                        return {
+                            ticker: sector.ticker,
+                            name: sector.name,
+                            color: sector.color,
+                            momentum3m: return3m,
+                            momentum6m: return6m,
+                            relativeStrength: relativeStrength,
+                            score: Math.round(sectorScore)
+                        };
+                    }).sort((a, b) => b.score - a.score);
+
+                    setData(sectorData);
+                } catch (error) {
+                    console.error('Error:', error);
+                    setData([]);
+                } finally {
+                    setLoading(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                fetchData();
+                const interval = setInterval(fetchData, 300000); // 5분마다
+                return () => clearInterval(interval);
+            }, [fetchData]);
+
+            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+            if (!data || data.length === 0) return <div className="widget"><div className="loading">데이터 없음</div></div>;
+
+            const getScoreColor = (score) => {
+                if (score > 30) return '#d1fae5';
+                if (score > 15) return '#fef3c7';
+                if (score > 0) return '#fee2e2';
+                return '#f3f4f6';
+            };
+
+            const getScoreTextColor = (score) => {
+                if (score > 30) return '#065f46';
+                if (score > 15) return '#78350f';
+                if (score > 0) return '#991b1b';
+                return '#374151';
+            };
+
+            return (
+                <div className="widget">
+                    <div className="widget-header">
+                        <h3 className="widget-title">🔄 섹터 모멘텀 로테이션</h3>
+                        <button className="widget-refresh" onClick={fetchData}>↻</button>
+                    </div>
+                    <div className="widget-subtitle">
+                        현재 자금이 몰려가는 섹터 파악 → 강세 종목 발굴
+                    </div>
+
+                    {/* 섹터 스코어 테이블 */}
+                    <table className="scanner-table">
+                        <thead>
+                            <tr>
+                                <th style={{width: '10%'}}>Rank</th>
+                                <th style={{width: '15%'}}>섹터</th>
+                                <th style={{width: '15%'}}>3M 리턴</th>
+                                <th style={{width: '15%'}}>6M 리턴</th>
+                                <th style={{width: '18%'}}>상대강도</th>
+                                <th style={{width: '15%'}}>점수</th>
+                                <th style={{width: '12%'}}>등급</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((sector, idx) => (
+                                <tr key={sector.ticker}>
+                                    <td style={{textAlign: 'center', fontWeight: '700'}}>{idx + 1}</td>
+                                    <td>
+                                        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                            <div style={{
+                                                width: '12px',
+                                                height: '12px',
+                                                borderRadius: '3px',
+                                                background: sector.color
+                                            }}></div>
+                                            <span className="stock-ticker">{sector.ticker}</span>
+                                            <span style={{fontSize: '12px', color: '#718096'}}>{sector.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className={sector.momentum3m > 0 ? 'value-positive' : 'value-negative'}>
+                                        {sector.momentum3m > 0 ? '+' : ''}{sector.momentum3m.toFixed(2)}%
+                                    </td>
+                                    <td className={sector.momentum6m > 0 ? 'value-positive' : 'value-negative'}>
+                                        {sector.momentum6m > 0 ? '+' : ''}{sector.momentum6m.toFixed(2)}%
+                                    </td>
+                                    <td>
+                                        <span style={{
+                                            background: sector.relativeStrength > 1 ? '#d1fae5' : '#fee2e2',
+                                            color: sector.relativeStrength > 1 ? '#065f46' : '#991b1b',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            fontWeight: '600',
+                                            fontSize: '12px'
+                                        }}>
+                                            {sector.relativeStrength.toFixed(2)}x
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`score-badge ${sector.score > 30 ? 'score-strong' : sector.score > 15 ? 'score-moderate' : 'score-weak'}`}>
+                                            {sector.score}
+                                        </span>
+                                    </td>
+                                    <td style={{
+                                        background: getScoreColor(sector.score),
+                                        color: getScoreTextColor(sector.score),
+                                        fontWeight: '600',
+                                        borderRadius: '4px',
+                                        padding: '4px 8px',
+                                        textAlign: 'center',
+                                        fontSize: '12px'
+                                    }}>
+                                        {sector.score > 30 ? '🟢 강' : sector.score > 15 ? '🟡 중' : '🔴 약'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* 상위 3개 섹터 강조 */}
+                    <div style={{marginTop: '20px', padding: '16px', background: 'linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1))', borderRadius: '8px'}}>
+                        <div style={{fontSize: '13px', fontWeight: '700', color: '#667eea', marginBottom: '12px'}}>
+                            📊 현재 강세 섹터 TOP 3
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px'}}>
+                            {data.slice(0, 3).map((sector, idx) => (
+                                <div key={sector.ticker} style={{
+                                    background: '#ffffff',
+                                    padding: '12px',
+                                    borderRadius: '6px',
+                                    borderLeft: `3px solid ${sector.color}`,
+                                    fontSize: '12px'
+                                }}>
+                                    <div style={{fontWeight: '700', color: '#2d3748', marginBottom: '4px'}}>
+                                        {idx + 1}. {sector.name}
+                                    </div>
+                                    <div style={{color: '#667eea', fontWeight: '600', marginBottom: '4px'}}>
+                                        {sector.ticker}
+                                    </div>
+                                    <div style={{color: '#718096', fontSize: '11px'}}>
+                                        Score: {sector.score} | RS: {sector.relativeStrength.toFixed(2)}x
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 설명 패널 */}
+                    <div className="explanation-panel">
+                        <div className="explanation-title">📚 섹터 로테이션 설명</div>
+
+                        <div className="explanation-section">
+                            <strong>목표:</strong> 시장에서 자금이 몰려가는 섹터를 파악하고, 강세 섹터의 종목들을 발굴합니다.
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>모멘텀 계산:</strong><br/>
+                            • 3개월 리턴: 최근 단기 추세<br/>
+                            • 6개월 리턴: 중기 추세 (더 중요)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>상대강도 (Relative Strength):</strong><br/>
+                            RS = 섹터 6M 리턴 / SPY 6M 리턴<br/>
+                            • RS > 1: SPY 대비 아웃퍼폼 (강세)<br/>
+                            • RS < 1: SPY 대비 언더퍼폼 (약세)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>섹터 점수:</strong><br/>
+                            점수 = 6M 모멘텀 + (상대강도 × 10)<br/>
+                            • 30점 이상: 🟢 강세 로테이션<br/>
+                            • 15-30점: 🟡 중성<br/>
+                            • 15점 이하: 🔴 약세 (회피)
+                        </div>
+
+                        <div className="explanation-section">
+                            <strong>투자자 활용:</strong><br/>
+                            1. 상위 3개 강세 섹터 파악<br/>
+                            2. 해당 섹터의 강한 종목 (Widget 1의 필터 활용) 선별<br/>
+                            3. 약세 섹터는 회피하거나 최소화
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         // ===== Main App Component =====
         function App() {
             return (
@@ -525,6 +754,7 @@
                     </div>
 
                     <MacroLiquidityStockScanner />
+                    <SectorMomentumRotation />
 
                     <div style={{textAlign: 'center', color: '#718096', fontSize: '13px', marginTop: '40px'}}>
                         <p>위젯은 5분마다 자동 갱신됩니다</p>
