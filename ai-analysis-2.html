@@ -3,30 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>AI분석_2 - 투자 분석</title>
+    <title>AI분석_2 - 개별 종목 발굴</title>
 
     <!-- React & Babel CDN -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Recharts CDN -->
-    <script src="https://unpkg.com/recharts@2.10.3/dist/Recharts.js"></script>
-
     <style>
         :root {
             --primary: #667eea;
             --primary-dark: #5a67d8;
             --secondary: #764ba2;
-            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --light-bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-main: #2d3748;
-            --text-muted: #718096;
-            --text-light: #ffffff;
+            --bg: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-main: #f1f5f9;
+            --text-muted: #cbd5e1;
+            --text-light: #94a3b8;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
+            --border: #475569;
         }
 
         * {
@@ -41,78 +39,54 @@
         }
 
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', sans-serif;
-            background: var(--light-bg);
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background: var(--bg);
             color: var(--text-main);
         }
 
-        .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--card-bg);
-            border: none;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            font-size: 20px;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-
-        .back-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-        }
-
-        .page-container {
-            max-width: 1400px;
+        .container {
+            max-width: 1600px;
             margin: 0 auto;
-            padding: 80px 20px 40px;
+            padding: 20px;
         }
 
-        .page-header {
+        .header {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .page-header h1 {
+        .header h1 {
             font-size: 32px;
             font-weight: 700;
-            margin-bottom: 10px;
-            background: var(--bg-gradient);
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .page-header p {
-            color: var(--text-muted);
-            font-size: 16px;
+        .header p {
+            color: var(--text-light);
+            font-size: 14px;
         }
 
-        .widgets-grid {
+        .grid-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
+            grid-template-columns: 1fr 2fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        @media (max-width: 768px) {
-            .widgets-grid {
-                grid-template-columns: 1fr;
-            }
+        .grid-full {
+            grid-column: 1 / -1;
         }
 
-        /* Widget Common Styles */
         .widget {
-            background: var(--card-bg);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid var(--primary);
+            overflow: hidden;
         }
 
         .widget-header {
@@ -120,288 +94,36 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #e5e7eb;
         }
 
         .widget-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .widget-refresh {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            color: var(--text-muted);
-            transition: color 0.3s;
-        }
-
-        .widget-refresh:hover {
-            color: var(--primary);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
         }
 
         .widget-subtitle {
             font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 8px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-
-        .error {
-            background: #fee2e2;
-            color: #dc2626;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        /* Badge Styles */
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .badge-bull { background: #d1fae5; color: #065f46; }
-        .badge-neutral { background: #fef3c7; color: #78350f; }
-        .badge-bear { background: #fee2e2; color: #991b1b; }
-
-        .badge-green { background: #d1fae5; color: #065f46; }
-        .badge-yellow { background: #fef3c7; color: #78350f; }
-        .badge-red { background: #fee2e2; color: #991b1b; }
-
-        /* Compass Widget */
-        .compass-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .compass-dial {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .compass-center {
-            width: 80%;
-            height: 80%;
-            border-radius: 50%;
-            background: var(--card-bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2;
-        }
-
-        .compass-score {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .compass-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        .score-breakdown {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .score-item {
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-
-        .score-item-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
-
-        .score-bar {
-            width: 100%;
-            height: 8px;
-            background: #e5e7eb;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .score-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            transition: width 0.3s ease;
-        }
-
-        /* Liquidity Widget */
-        .liquidity-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 12px 0;
-        }
-
-        .liquidity-change {
-            font-size: 14px;
+            color: var(--text-light);
             margin-bottom: 16px;
         }
 
-        .liquidity-signals {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .signal-box {
-            background: #f9fafb;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 13px;
-        }
-
-        .signal-icon {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-
-        /* Sector Matrix */
-        .sector-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .sector-cell {
-            padding: 12px 8px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .sector-cell:hover {
-            transform: translateY(-2px);
-        }
-
-        .sector-name {
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .sector-value {
-            font-size: 14px;
-            font-weight: 700;
-        }
-
-        .sector-change {
-            font-size: 11px;
-            margin-top: 2px;
-            opacity: 0.8;
-        }
-
-        /* Quant Engine */
-        .quant-input-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .quant-input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .quant-btn {
-            padding: 10px 16px;
-            background: var(--primary);
-            color: white;
+        .btn-refresh {
+            background: transparent;
             border: none;
-            border-radius: 8px;
+            color: var(--text-light);
             cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
         }
 
-        .quant-btn:hover {
-            background: var(--primary-dark);
+        .btn-refresh:hover {
+            color: var(--primary);
+            background: var(--bg-tertiary);
         }
 
-        .quant-result {
-            margin-top: 16px;
-        }
-
-        /* Cross Asset */
-        .signal-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .signal-card {
-            background: #f9fafb;
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 3px solid var(--primary);
-        }
-
-        .signal-label {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-        }
-
-        .signal-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 8px;
-        }
-
-        .signal-change {
-            font-size: 13px;
-        }
-
-        .risk-appetite {
-            margin-top: 12px;
-            padding: 12px;
-            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
-            border-radius: 8px;
-            text-align: center;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .spin {
+        .btn-refresh.loading {
             animation: spin 1s linear infinite;
         }
 
@@ -409,555 +131,999 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--danger);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .error-box button {
+            margin-top: 12px;
+            padding: 6px 12px;
+            border: 1px solid var(--danger);
+            background: transparent;
+            color: var(--danger);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        table thead {
+            border-bottom: 1px solid var(--border);
+        }
+
+        table th {
+            padding: 12px 8px;
+            text-align: left;
+            color: var(--text-light);
+            font-weight: 600;
+            background: var(--bg-tertiary);
+        }
+
+        table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        table tr:hover {
+            background: var(--bg-tertiary);
+            cursor: pointer;
+        }
+
+        .ticker {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .score-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .score-strong {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ff6b6b;
+        }
+
+        .score-moderate {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .score-weak {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }
+
+        .value-positive {
+            color: var(--success);
+        }
+
+        .value-negative {
+            color: var(--danger);
+        }
+
+        .value-neutral {
+            color: var(--text-light);
+        }
+
+        /* Gate Cards */
+        .gate-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .gate-card {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .gate-card.pass {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .gate-card.caution {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .gate-card.block {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .gate-label {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .gate-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .verdict-banner {
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .verdict-banner.block {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ff6b6b;
+        }
+
+        .verdict-banner.caution {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid #f59e0b;
+            color: #fbbf24;
+        }
+
+        .verdict-banner.pass {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #4ade80;
+        }
+
+        /* Input */
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-main);
+            font-size: 13px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        button {
+            padding: 8px 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .metric-item {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .sector-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .sector-item {
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid var(--border);
+        }
+
+        .sector-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: var(--primary);
+        }
+
+        .sector-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            border-left-color: var(--primary);
+        }
+
+        .sector-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .sector-change {
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .stock-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stock-bar:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .stock-bar-symbol {
+            font-weight: 700;
+            color: var(--primary);
+            min-width: 50px;
+        }
+
+        .stock-bar-fill {
+            flex: 1;
+            height: 6px;
+            background: var(--bg);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .stock-bar-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s;
+        }
+
+        .stock-bar-score {
+            font-weight: 700;
+            color: var(--text-light);
+            min-width: 40px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
-    <button class="back-btn" onclick="history.back()">←</button>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useCallback } = React;
+        const { useState, useEffect, useCallback, useMemo } = React;
 
-        // ===== WIDGET 1: Macro Regime Compass =====
-        function MacroRegimeCompass() {
-            const [data, setData] = useState(null);
-            const [loading, setLoading] = useState(true);
-            const [lastUpdated, setLastUpdated] = useState(null);
+        // =============================
+        // UTILITIES (하드코딩 0개)
+        // =============================
 
-            const fetchData = useCallback(async () => {
+        const API_BASE = ''
+
+        const fmt = {
+            pct: (v, d = 1) => v != null ? (v > 0 ? '+' : '') + Number(v).toFixed(d) + '%' : '-',
+            dollar: (v) => {
+                if (v == null) return '-'
+                const abs = Math.abs(v)
+                const sign = v < 0 ? '-' : ''
+                if (abs >= 1e12) return sign + '$' + (abs / 1e12).toFixed(2) + 'T'
+                if (abs >= 1e9) return sign + '$' + (abs / 1e9).toFixed(1) + 'B'
+                if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(0) + 'M'
+                return sign + '$' + abs.toFixed(0)
+            },
+            num: (v, d = 2) => v != null ? Number(v).toFixed(d) : '-',
+            mult: (v, d = 1) => v != null ? Number(v).toFixed(d) + 'x' : '-',
+        }
+
+        const scoreGrade = (score) => {
+            if (score == null) return { label: '-', icon: '', class: 'score-weak' }
+            if (score >= 6.0) return { label: 'STRONG BUY', icon: '🔥', class: 'score-strong' }
+            if (score >= 4.0) return { label: 'BUY', icon: '✅', class: 'score-moderate' }
+            if (score >= 2.0) return { label: 'WATCH', icon: '⚠️', class: 'score-weak' }
+            return { label: 'AVOID', icon: '❌', class: 'score-weak' }
+        }
+
+        const changeColor = (v) => {
+            if (v == null) return 'value-neutral'
+            return v > 0 ? 'value-positive' : 'value-negative'
+        }
+
+        const decomposeScore = (factors, momentum, volume) => {
+            if (!factors) return null
+            const norm = (g) => Math.max(0, Math.min(1, ((g ?? 0) + 0.5) / 1.0))
+            const pe = factors.pe ?? 50
+            const pb = factors.pb ?? 10
+            const fs = factors.floatShares ?? 1e9
+            return {
+                value: Math.min(100, ((1 / (pe + 1)) * 1.5 + (1 / (pb + 1)) * 1.5) / 3.0 * 100),
+                growth: Math.min(100, (norm(factors.revenueGrowth) * 1.2 + norm(factors.earningsGrowth) * 1.2) / 2.4 * 100),
+                quality: Math.min(100, ((factors.analystScore ?? 0) * 0.8 + ((factors.insiderActivity ?? 0) > 0 ? 1 : 0) * 0.4) / 1.2 * 100),
+                momentum: Math.min(100, Math.min((momentum ?? 0) * 2.5, 3.0) / 3.0 * 100),
+                volume: Math.min(100, Math.min((volume ?? 0) * 2.0, 4.0) / 4.0 * 100),
+                float: Math.min(100, (1 / (fs / 1e8 + 1)) * 0.8 / 0.8 * 100),
+            }
+        }
+
+        const matchSector = (profileSector, rotationName) => {
+            if (!profileSector || !rotationName) return false
+            const keyword = profileSector.toLowerCase().split(' ')[0]
+            return rotationName.toLowerCase().includes(keyword)
+        }
+
+        // =============================
+        // WIDGET 1: ALPHA DISCOVERY SCANNER
+        // =============================
+
+        function AlphaDiscoveryScanner({ onSelectSymbol }) {
+            const [data, setData] = useState(null)
+            const [loading, setLoading] = useState(false)
+            const [error, setError] = useState(null)
+            const [marketRegime, setMarketRegime] = useState(null)
+            const [fearGreed, setFearGreed] = useState(null)
+            const [elapsed, setElapsed] = useState(0)
+
+            const fetchDiscovery = useCallback(async () => {
                 try {
-                    setLoading(true);
-                    const res = await fetch('/api/market');
-                    const marketData = await res.json();
+                    setLoading(true)
+                    setError(null)
+                    setElapsed(0)
 
-                    // Calculate regime score
-                    let score = 0;
-                    let components = {};
+                    const counter = setInterval(() => setElapsed(e => e + 1), 1000)
 
-                    // Liquidity score (25점)
-                    const netLiq = marketData.LIQUIDITY?.NET_LIQUIDITY || 0;
-                    if (netLiq > 0) {
-                        components.liquidity = 25;
-                        score += 25;
+                    const results = await Promise.allSettled([
+                        fetch('/alpha/discovery').then(r => r.json()),
+                        fetch('/analysis/market-regime').then(r => r.json()),
+                        fetch('/feargreed').then(r => r.json())
+                    ])
+
+                    clearInterval(counter)
+
+                    const discovery = results[0].status === 'fulfilled' ? results[0].value : null
+                    const regime = results[1].status === 'fulfilled' ? results[1].value : null
+                    const fg = results[2].status === 'fulfilled' ? results[2].value : null
+
+                    if (discovery?.top_20) {
+                        setData(discovery)
                     } else {
-                        components.liquidity = 12;
-                        score += 12;
+                        setError('발굴 데이터 없음')
                     }
-
-                    // Credit score (25점)
-                    const vix = marketData.US_MARKET?.VIX?.price || 20;
-                    if (vix < 18) {
-                        components.credit = 25;
-                        score += 25;
-                    } else if (vix < 25) {
-                        components.credit = 12;
-                        score += 12;
-                    }
-
-                    // Yield Curve score (25점)
-                    const spread = (marketData.RATES?.US10Y || 4) - (marketData.RATES?.US2Y || 4);
-                    if (spread > 0) {
-                        components.yields = 25;
-                        score += 25;
-                    } else if (spread > -0.5) {
-                        components.yields = 12;
-                        score += 12;
-                    }
-
-                    // Volatility score (25점)
-                    if (vix < 18) {
-                        components.volatility = 25;
-                        score += 25;
-                    } else if (vix < 25) {
-                        components.volatility = 12;
-                        score += 12;
-                    }
-
-                    const regime = score >= 75 ? 'BULL' : score >= 40 ? 'NEUTRAL' : 'BEAR';
-
-                    setData({ score, regime, components, spread, vix });
-                    setLastUpdated(new Date());
-                } catch (error) {
-                    console.error('Error fetching data:', error);
+                    setMarketRegime(regime)
+                    setFearGreed(fg)
+                } catch (e) {
+                    setError(e.message)
                 } finally {
-                    setLoading(false);
+                    setLoading(false)
                 }
-            }, []);
+            }, [])
 
             useEffect(() => {
-                fetchData();
-                const interval = setInterval(fetchData, 60000);
-                return () => clearInterval(interval);
-            }, [fetchData]);
-
-            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
-
-            const regimeColor = data.regime === 'BULL' ? '#10b981' : data.regime === 'NEUTRAL' ? '#f59e0b' : '#ef4444';
-            const regimeBadge = data.regime === 'BULL' ? 'badge-bull' : data.regime === 'NEUTRAL' ? 'badge-neutral' : 'badge-bear';
+                fetchDiscovery()
+            }, [fetchDiscovery])
 
             return (
-                <div className="widget">
+                <div className="widget grid-full">
                     <div className="widget-header">
-                        <h3 className="widget-title">🧭 매크로 체제 나침반</h3>
-                        <button className="widget-refresh" onClick={fetchData}>↻</button>
-                    </div>
-                    <div className="widget-subtitle">현재 시장 환경: 투자 전략의 최상위 필터</div>
-
-                    <div className="compass-container">
-                        <div className="compass-dial" style={{ borderColor: regimeColor }}>
-                            <div className="compass-center">
-                                <div className="compass-score">{data.score}</div>
-                                <div className="compass-label">
-                                    <span className={`badge ${regimeBadge}`}>{data.regime}</span>
-                                </div>
-                            </div>
+                        <div>
+                            <div className="widget-title">🔍 Alpha Discovery Scanner</div>
+                            <div className="widget-subtitle">전체 시장 유니버스에서 explosiveScore 상위 종목 자동 발굴</div>
                         </div>
-
-                        <div className="score-breakdown">
-                            <div className="score-item">
-                                <div className="score-item-label">
-                                    <span>유동성</span>
-                                    <span>{data.components.liquidity}/25</span>
-                                </div>
-                                <div className="score-bar">
-                                    <div className="score-fill" style={{width: `${(data.components.liquidity/25)*100}%`}}></div>
-                                </div>
-                            </div>
-                            <div className="score-item">
-                                <div className="score-item-label">
-                                    <span>신용</span>
-                                    <span>{data.components.credit}/25</span>
-                                </div>
-                                <div className="score-bar">
-                                    <div className="score-fill" style={{width: `${(data.components.credit/25)*100}%`}}></div>
-                                </div>
-                            </div>
-                            <div className="score-item">
-                                <div className="score-item-label">
-                                    <span>수익률곡선</span>
-                                    <span>{data.components.yields}/25</span>
-                                </div>
-                                <div className="score-bar">
-                                    <div className="score-fill" style={{width: `${(data.components.yields/25)*100}%`}}></div>
-                                </div>
-                            </div>
-                            <div className="score-item">
-                                <div className="score-item-label">
-                                    <span>변동성</span>
-                                    <span>{data.components.volatility}/25</span>
-                                </div>
-                                <div className="score-bar">
-                                    <div className="score-fill" style={{width: `${(data.components.volatility/25)*100}%`}}></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{marginTop: '16px', padding: '12px', background: '#f3f4f6', borderRadius: '8px', fontSize: '13px', lineHeight: '1.5'}}>
-                        <strong>{data.regime === 'BULL' ? '🟢 공격적 매수 환경' : data.regime === 'NEUTRAL' ? '🟡 선택적 매수 환경' : '🔴 방어적 환경'}</strong>
-                        <div style={{marginTop: '6px', color: '#666'}}>
-                            Spread: {data.spread.toFixed(2)}% | VIX: {data.vix.toFixed(2)}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // ===== WIDGET 2: Net Liquidity Pulse =====
-        function NetLiquidityPulse() {
-            const [data, setData] = useState(null);
-            const [loading, setLoading] = useState(true);
-
-            const fetchData = useCallback(async () => {
-                try {
-                    setLoading(true);
-                    const res = await fetch('/api/market');
-                    const marketData = await res.json();
-
-                    const netLiq = marketData.LIQUIDITY?.NET_LIQUIDITY || 0;
-                    const fedBalance = marketData.LIQUIDITY?.FED_BALANCE || 0;
-                    const change = Math.random() * 100 - 50; // Placeholder
-
-                    let signal = 'NEUTRAL';
-                    if (change > 50) signal = 'EXPANDING';
-                    else if (change < -50) signal = 'CONTRACTING';
-
-                    setData({ netLiq: (netLiq / 1000000).toFixed(2), change, signal, fedBalance });
-                } catch (error) {
-                    console.error('Error:', error);
-                } finally {
-                    setLoading(false);
-                }
-            }, []);
-
-            useEffect(() => {
-                fetchData();
-                const interval = setInterval(fetchData, 60000);
-                return () => clearInterval(interval);
-            }, [fetchData]);
-
-            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
-
-            const signalIcon = data.signal === 'EXPANDING' ? '🟢' : data.signal === 'CONTRACTING' ? '🔴' : '🟡';
-
-            return (
-                <div className="widget">
-                    <div className="widget-header">
-                        <h3 className="widget-title">💧 순 유동성 펄스</h3>
-                        <button className="widget-refresh" onClick={fetchData}>↻</button>
-                    </div>
-                    <div className="widget-subtitle">Fed Balance - TGA - Reverse Repo = 시장 산소량</div>
-
-                    <div className="liquidity-value">${data.netLiq}T</div>
-                    <div className="liquidity-change">
-                        4주 변화: <strong style={{color: data.change > 0 ? '#10b981' : '#ef4444'}}>
-                            {data.change > 0 ? '+' : ''}{data.change.toFixed(1)}B
-                        </strong>
-                    </div>
-
-                    <div className="liquidity-signals">
-                        <div className="signal-box">
-                            <div className="signal-icon">{signalIcon}</div>
-                            <div style={{fontSize: '12px', fontWeight: '600'}}>{data.signal}</div>
-                        </div>
-                        <div className="signal-box">
-                            <div className="signal-icon">₿</div>
-                            <div style={{fontSize: '12px', fontWeight: '600'}}>BTC 교차검증</div>
-                        </div>
-                    </div>
-
-                    <div style={{marginTop: '12px', padding: '12px', background: '#eff6ff', borderRadius: '8px', fontSize: '13px', color: '#1e40af'}}>
-                        유동성 {data.signal === 'EXPANDING' ? '확장 중' : data.signal === 'CONTRACTING' ? '축소 중' : '안정'} - 주식 매수에 {data.signal === 'EXPANDING' ? '우호적' : data.signal === 'CONTRACTING' ? '부정적' : '중립'}
-                    </div>
-                </div>
-            );
-        }
-
-        // ===== WIDGET 3: Sector Rotation Matrix =====
-        function SectorRotationMatrix() {
-            const [data, setData] = useState(null);
-            const [loading, setLoading] = useState(true);
-
-            const sectors = {
-                'XLK': '기술',
-                'XLF': '금융',
-                'XLE': '에너지',
-                'XLV': '헬스',
-                'XLY': '소비재',
-                'XLI': '산업재',
-                'XLU': '유틸리티',
-                'XLRE': '부동산'
-            };
-
-            const fetchData = useCallback(async () => {
-                try {
-                    setLoading(true);
-                    const res = await fetch('/api/market');
-                    const marketData = await res.json();
-
-                    const sectorData = Object.entries(sectors).map(([ticker, name]) => {
-                        const price = Math.random() * 300;
-                        const change = Math.random() * 4 - 2;
-                        const score = Math.random() * 100;
-                        return { ticker, name, price, change, score };
-                    }).sort((a, b) => b.score - a.score);
-
-                    setData(sectorData);
-                } catch (error) {
-                    console.error('Error:', error);
-                } finally {
-                    setLoading(false);
-                }
-            }, []);
-
-            useEffect(() => {
-                fetchData();
-                const interval = setInterval(fetchData, 60000);
-                return () => clearInterval(interval);
-            }, [fetchData]);
-
-            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
-
-            const getColor = (score) => {
-                if (score > 75) return '#dcfce7';
-                if (score > 50) return '#fef3c7';
-                if (score > 25) return '#fee2e2';
-                return '#f3f4f6';
-            };
-
-            const getTextColor = (score) => {
-                if (score > 75) return '#065f46';
-                if (score > 50) return '#78350f';
-                if (score > 25) return '#991b1b';
-                return '#374151';
-            };
-
-            return (
-                <div className="widget">
-                    <div className="widget-header">
-                        <h3 className="widget-title">🔄 섹터 로테이션 매트릭스</h3>
-                        <button className="widget-refresh" onClick={fetchData}>↻</button>
-                    </div>
-                    <div className="widget-subtitle">8개 섹터 ETF의 모멘텀 추적</div>
-
-                    <div className="sector-grid">
-                        {data.map((s) => (
-                            <div key={s.ticker} className="sector-cell" style={{
-                                background: getColor(s.score),
-                                color: getTextColor(s.score)
-                            }}>
-                                <div className="sector-name">{s.ticker}</div>
-                                <div className="sector-value">{s.score.toFixed(0)}</div>
-                                <div className="sector-change">{s.change > 0 ? '+' : ''}{s.change.toFixed(2)}%</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div style={{marginTop: '12px', padding: '12px', background: '#f9fafb', borderRadius: '8px', fontSize: '13px'}}>
-                        <strong>📈 추천 섹터 TOP 3:</strong>
-                        <div style={{marginTop: '8px'}}>
-                            {data.slice(0, 3).map((s, i) => (
-                                <div key={s.ticker} style={{fontSize: '12px', marginBottom: '4px'}}>
-                                    {i+1}. {s.name} ({s.ticker}): {s.score.toFixed(0)}/100
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        // ===== WIDGET 4: Quant Stock Engine =====
-        function QuantStockEngine() {
-            const [ticker, setTicker] = useState('');
-            const [result, setResult] = useState(null);
-            const [loading, setLoading] = useState(false);
-
-            const analyze = async () => {
-                if (!ticker.trim()) return;
-
-                try {
-                    setLoading(true);
-                    const res = await fetch(`/api/fundamentals/ratios?ticker=${ticker.toUpperCase()}`);
-                    const ratios = await res.json();
-
-                    // Simple quant scoring
-                    let score = 0;
-                    if (ratios.peRatio && ratios.peRatio > 10 && ratios.peRatio < 20) score += 10;
-                    if (ratios.roe && ratios.roe > 15) score += 15;
-                    if (ratios.debtToEquity && ratios.debtToEquity < 0.5) score += 8;
-
-                    score = Math.min(100, score + 50);
-
-                    let grade = score >= 80 ? '🔥 STRONG BUY' : score >= 65 ? '✅ BUY' : score >= 50 ? '⚠️ WATCH' : '❌ AVOID';
-
-                    setResult({
-                        ticker: ticker.toUpperCase(),
-                        score: Math.round(score),
-                        grade,
-                        pe: ratios.peRatio ? ratios.peRatio.toFixed(2) : '-',
-                        roe: ratios.roe ? (ratios.roe * 100).toFixed(1) : '-',
-                        debt: ratios.debtToEquity ? ratios.debtToEquity.toFixed(2) : '-'
-                    });
-                } catch (error) {
-                    console.error('Error:', error);
-                    setResult({ error: '분석 실패' });
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            const handleKeyPress = (e) => {
-                if (e.key === 'Enter') analyze();
-            };
-
-            return (
-                <div className="widget">
-                    <div className="widget-header">
-                        <h3 className="widget-title">💎 퀀트 종목 엔진</h3>
-                    </div>
-                    <div className="widget-subtitle">재무 + 매크로 점수 산출 (1-100)</div>
-
-                    <div className="quant-input-group">
-                        <input
-                            type="text"
-                            className="quant-input"
-                            placeholder="티커 입력 (예: AAPL)"
-                            value={ticker}
-                            onChange={(e) => setTicker(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                        />
-                        <button className="quant-btn" onClick={analyze} disabled={loading}>
-                            {loading ? '분석중...' : '분석'}
+                        <button
+                            className={`btn-refresh ${loading ? 'loading' : ''}`}
+                            onClick={fetchDiscovery}
+                            disabled={loading}
+                        >
+                            ↻
                         </button>
                     </div>
 
-                    {result && (
-                        <div className="quant-result">
-                            {result.error ? (
-                                <div className="error">{result.error}</div>
-                            ) : (
-                                <>
-                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
-                                        <div>
-                                            <div style={{fontSize: '18px', fontWeight: '700', color: '#667eea'}}>{result.ticker}</div>
-                                            <div style={{fontSize: '24px', fontWeight: '700', marginTop: '4px'}}>{result.score}</div>
-                                        </div>
-                                        <div style={{fontSize: '16px', textAlign: 'right'}}>
-                                            <span className={`badge ${result.score >= 80 ? 'badge-green' : result.score >= 65 ? 'badge-yellow' : 'badge-red'}`}>
-                                                {result.grade}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div style={{background: '#f9fafb', padding: '12px', borderRadius: '8px', fontSize: '13px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px'}}>
-                                        <div>
-                                            <div style={{color: '#666', marginBottom: '2px'}}>P/E</div>
-                                            <div style={{fontWeight: '700'}}>{result.pe}</div>
-                                        </div>
-                                        <div>
-                                            <div style={{color: '#666', marginBottom: '2px'}}>ROE</div>
-                                            <div style={{fontWeight: '700'}}>{result.roe}%</div>
-                                        </div>
-                                        <div>
-                                            <div style={{color: '#666', marginBottom: '2px'}}>D/E</div>
-                                            <div style={{fontWeight: '700'}}>{result.debt}</div>
-                                        </div>
-                                    </div>
-                                </>
+                    {(marketRegime || fearGreed) && (
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                            {marketRegime && (
+                                <div style={{
+                                    background: 'rgba(102, 126, 234, 0.2)',
+                                    color: '#a7f3d0',
+                                    padding: '6px 12px',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                }}>
+                                    시장: {marketRegime.regime || '-'}
+                                </div>
+                            )}
+                            {fearGreed && (
+                                <div style={{
+                                    background: 'rgba(245, 158, 11, 0.2)',
+                                    color: '#fbbf24',
+                                    padding: '6px 12px',
+                                    borderRadius: '4px',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                }}>
+                                    공포탐욕: {fearGreed.score ?? '-'} {fearGreed.rating || ''}
+                                </div>
                             )}
                         </div>
                     )}
+
+                    {loading && (
+                        <div className="loading">
+                            🔍 Universe 스크리닝 중... ({elapsed}초)
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="error-box">
+                            {error}
+                            <button onClick={fetchDiscovery}>재시도</button>
+                        </div>
+                    )}
+
+                    {data && !loading && (
+                        <>
+                            <div style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '12px' }}>
+                                {data.execution_time_sec}초 소요 ({data.analyzed}/{data.universe_size})
+                            </div>
+
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Symbol</th>
+                                        <th>Score</th>
+                                        <th>Momentum%</th>
+                                        <th>Volume배수</th>
+                                        <th>PE</th>
+                                        <th>Revenue%</th>
+                                        <th>등급</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {data.top_20.map((stock, idx) => {
+                                        const grade = scoreGrade(stock.score)
+                                        return (
+                                            <tr key={stock.symbol} onClick={() => onSelectSymbol(stock.symbol)}>
+                                                <td>{idx + 1}</td>
+                                                <td><span className="ticker">{stock.symbol}</span></td>
+                                                <td>
+                                                    <span className={`score-badge ${grade.class}`}>
+                                                        {stock.score.toFixed(2)}
+                                                    </span>
+                                                </td>
+                                                <td className={changeColor(stock.momentum)}>
+                                                    {fmt.pct(stock.momentum * 100)}
+                                                </td>
+                                                <td>{fmt.mult(stock.volume)}</td>
+                                                <td>{fmt.num(stock.pe)}</td>
+                                                <td className="value-positive">{fmt.pct(stock.revenueGrowth * 100)}</td>
+                                                <td>{grade.icon} {grade.label}</td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </>
+                    )}
                 </div>
-            );
+            )
         }
 
-        // ===== WIDGET 5: Cross-Asset Signal =====
-        function CrossAssetSignal() {
-            const [data, setData] = useState(null);
-            const [loading, setLoading] = useState(true);
+        // =============================
+        // WIDGET 2: MARKET ENTRY GATE
+        // =============================
 
-            const fetchData = useCallback(async () => {
+        function MarketEntryGate() {
+            const [gates, setGates] = useState([])
+            const [loading, setLoading] = useState(true)
+            const [error, setError] = useState(null)
+
+            const fetchGates = useCallback(async () => {
                 try {
-                    setLoading(true);
-                    const res = await fetch('/api/market');
-                    const marketData = await res.json();
+                    setLoading(true)
+                    const results = await Promise.allSettled([
+                        fetch('/analysis/market-regime').then(r => r.json()),
+                        fetch('/analysis/volatility-regime').then(r => r.json()),
+                        fetch('/analysis/credit-stress').then(r => r.json()),
+                        fetch('/feargreed').then(r => r.json())
+                    ])
 
-                    const btcChange = Math.random() * 10 - 5;
-                    const nasdaqChange = Math.random() * 5 - 2.5;
-                    const dxyChange = Math.random() * 2 - 1;
-                    const spyChange = Math.random() * 3 - 1.5;
-                    const hyOAS = Math.random() * 300 + 200;
-                    const spread = Math.random() * 2 - 0.5;
+                    const regime = results[0].status === 'fulfilled' ? results[0].value : null
+                    const vol = results[1].status === 'fulfilled' ? results[1].value : null
+                    const credit = results[2].status === 'fulfilled' ? results[2].value : null
+                    const fg = results[3].status === 'fulfilled' ? results[3].value : null
 
-                    let signals = 0;
-                    if ((btcChange - nasdaqChange) > 5) signals++;
-                    if (dxyChange < 0 && spyChange > 0) signals++;
-                    if (hyOAS < 350) signals++;
-                    if (spread > 0) signals++;
+                    const gatesArray = [
+                        {
+                            name: '시장 레짐',
+                            status: regime?.regime?.includes('Risk-On') ? 'pass' : regime?.regime?.includes('Neutral') ? 'caution' : 'block',
+                            value: regime?.regime || '-',
+                            recommendation: regime?.recommendation
+                        },
+                        {
+                            name: '변동성 (VIX)',
+                            status: (vol?.vix ?? 20) < 20 ? 'pass' : (vol?.vix ?? 20) < 25 ? 'caution' : 'block',
+                            value: 'VIX ' + fmt.num(vol?.vix),
+                            recommendation: vol?.recommendation
+                        },
+                        {
+                            name: '신용 스트레스',
+                            status: credit?.stress_level === '낮음' ? 'pass' : credit?.stress_level === '중간' ? 'caution' : 'block',
+                            value: credit?.stress_level || '-',
+                            recommendation: credit?.recommendation
+                        },
+                        {
+                            name: '공포탐욕',
+                            status: (fg?.score >= 40 && fg?.score <= 75) ? 'pass' : (fg?.score > 75 || (fg?.score >= 30 && fg?.score < 40)) ? 'caution' : 'block',
+                            value: (fg?.score ?? '-') + ' ' + (fg?.rating || ''),
+                            recommendation: null
+                        }
+                    ]
 
-                    let riskAppetite = '';
-                    if (signals === 4) riskAppetite = '🔥 EXTREME RISK-ON';
-                    else if (signals === 3) riskAppetite = '🟢 RISK-ON';
-                    else if (signals === 2) riskAppetite = '🟡 MIXED';
-                    else if (signals === 1) riskAppetite = '🔴 RISK-OFF';
-                    else riskAppetite = '🔴🔴 EXTREME RISK-OFF';
-
-                    setData({
-                        btcOutperformance: (btcChange - nasdaqChange).toFixed(2),
-                        dxyCorrelation: dxyChange < 0 ? '정상' : '불안정',
-                        creditSpread: hyOAS.toFixed(0),
-                        yieldCurve: spread > 0 ? '정상' : '역전',
-                        signals,
-                        riskAppetite
-                    });
-                } catch (error) {
-                    console.error('Error:', error);
+                    setGates(gatesArray)
+                    setError(null)
+                } catch (e) {
+                    setError(e.message)
                 } finally {
-                    setLoading(false);
+                    setLoading(false)
                 }
-            }, []);
+            }, [])
 
             useEffect(() => {
-                fetchData();
-                const interval = setInterval(fetchData, 60000);
-                return () => clearInterval(interval);
-            }, [fetchData]);
+                fetchGates()
+                const timer = setInterval(fetchGates, 180000)
+                return () => clearInterval(timer)
+            }, [fetchGates])
 
-            if (loading) return <div className="widget"><div className="loading">로딩 중...</div></div>;
+            const verdict = useMemo(() => {
+                if (gates.length === 0) return null
+                const blockCount = gates.filter(g => g.status === 'block').length
+                const cautionCount = gates.filter(g => g.status === 'caution').length
+
+                if (blockCount >= 1) return { text: '🚫 신규 매수 자제', class: 'block' }
+                if (cautionCount >= 2) return { text: '⚠️ 선택적 매수', class: 'caution' }
+                if (cautionCount === 1) return { text: '✅ 매수 가능', class: 'pass' }
+                return { text: '✅ 적극 매수 환경', class: 'pass' }
+            }, [gates])
 
             return (
                 <div className="widget">
                     <div className="widget-header">
-                        <h3 className="widget-title">🎯 교차자산 신호</h3>
-                        <button className="widget-refresh" onClick={fetchData}>↻</button>
-                    </div>
-                    <div className="widget-subtitle">4프레임워크 교차 검증 (BTC-NASDAQ-DXY-HY)</div>
-
-                    <div className="signal-grid">
-                        <div className="signal-card" style={{borderLeftColor: data.btcOutperformance > 0 ? '#10b981' : '#ef4444'}}>
-                            <div className="signal-label">BTC-NASDAQ</div>
-                            <div className="signal-value">{data.btcOutperformance}%</div>
-                            <div className="signal-change">{data.btcOutperformance > 5 ? '🟢 선행유입' : data.btcOutperformance < -5 ? '🔴 유출경고' : '🟡 중립'}</div>
-                        </div>
-
-                        <div className="signal-card" style={{borderLeftColor: data.dxyCorrelation === '정상' ? '#10b981' : '#ef4444'}}>
-                            <div className="signal-label">DXY-주식 역상관</div>
-                            <div className="signal-value">{data.dxyCorrelation}</div>
-                            <div className="signal-change">{data.dxyCorrelation === '정상' ? '🟢 건강한 강세' : '🔴 불안정'}</div>
-                        </div>
-
-                        <div className="signal-card" style={{borderLeftColor: parseInt(data.creditSpread) < 350 ? '#10b981' : '#ef4444'}}>
-                            <div className="signal-label">HY OAS 스프레드</div>
-                            <div className="signal-value">{data.creditSpread}bp</div>
-                            <div className="signal-change">{parseInt(data.creditSpread) < 350 ? '🟢 신용완화' : '🔴 신용경색'}</div>
-                        </div>
-
-                        <div className="signal-card" style={{borderLeftColor: data.yieldCurve === '정상' ? '#10b981' : '#f59e0b'}}>
-                            <div className="signal-label">수익률곡선</div>
-                            <div className="signal-value">{data.yieldCurve}</div>
-                            <div className="signal-change">{data.yieldCurve === '정상' ? '🟢 경기확장' : '🟡 전환점'}</div>
-                        </div>
+                        <div className="widget-title">🚪 Market Entry Gate</div>
+                        <button className="btn-refresh" onClick={fetchGates} disabled={loading}>↻</button>
                     </div>
 
-                    <div style={{marginTop: '12px', padding: '12px', background: 'linear-gradient(90deg, rgba(239,68,68,0.1), rgba(245,158,11,0.1), rgba(16,185,129,0.1))', borderRadius: '8px'}}>
-                        <div style={{fontSize: '12px', color: '#666', marginBottom: '6px'}}>Risk Appetite Score: {data.signals}/4</div>
-                        <div style={{fontSize: '14px', fontWeight: '700', color: '#2d3748'}}>{data.riskAppetite}</div>
-                        <div style={{marginTop: '8px', fontSize: '12px', color: '#666', lineHeight: '1.4'}}>
-                            현재 {data.riskAppetite.includes('RISK-ON') ? '성장주 집중 탐색' : '방어주/현금 비중 확대'} 추천
-                        </div>
-                    </div>
+                    {loading && <div className="loading">로딩 중...</div>}
+                    {error && <div className="error-box">{error}</div>}
+
+                    {!loading && !error && (
+                        <>
+                            <div className="gate-grid">
+                                {gates.map(gate => (
+                                    <div key={gate.name} className={`gate-card ${gate.status}`}>
+                                        <div className="gate-label">{gate.name}</div>
+                                        <div className={`gate-value ${changeColor(gate.status)}`}>
+                                            {gate.value}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {verdict && (
+                                <div className={`verdict-banner ${verdict.class}`}>
+                                    {verdict.text}
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
-            );
+            )
         }
 
-        // ===== Main App Component =====
-        function App() {
+        // =============================
+        // WIDGET 3: SINGLE STOCK DEEP DIVE
+        // =============================
+
+        function SingleStockDeepDive({ symbol: initialSymbol }) {
+            const [symbol, setSymbol] = useState(initialSymbol || '')
+            const [data, setData] = useState(null)
+            const [loading, setLoading] = useState(false)
+            const [error, setError] = useState(null)
+
+            useEffect(() => {
+                setSymbol(initialSymbol || '')
+            }, [initialSymbol])
+
+            const handleSubmit = useCallback(async (e) => {
+                e.preventDefault()
+                if (!symbol.trim()) return
+
+                try {
+                    setLoading(true)
+                    setError(null)
+
+                    const results = await Promise.allSettled([
+                        fetch(`/alpha?symbol=${symbol}`).then(r => r.json()),
+                        fetch(`/fundamentals/growth?symbol=${symbol}`).then(r => r.json()),
+                        fetch(`/fundamentals/income?symbol=${symbol}`).then(r => r.json()),
+                        fetch(`/fundamentals/balance?symbol=${symbol}`).then(r => r.json()),
+                        fetch(`/fundamentals/cashflow?symbol=${symbol}`).then(r => r.json()),
+                        fetch(`/fundamentals/profile?symbol=${symbol}`).then(r => r.json())
+                    ])
+
+                    const alpha = results[0].status === 'fulfilled' ? results[0].value : null
+                    const growth = results[1].status === 'fulfilled' ? results[1].value : null
+                    const income = results[2].status === 'fulfilled' ? results[2].value : null
+                    const balance = results[3].status === 'fulfilled' ? results[3].value : null
+                    const cashflow = results[4].status === 'fulfilled' ? results[4].value : null
+                    const profile = results[5].status === 'fulfilled' ? results[5].value : null
+
+                    if (!alpha?.data) {
+                        setError('종목 데이터 없음')
+                        setData(null)
+                        return
+                    }
+
+                    setData({
+                        alpha, growth, income, balance, cashflow, profile
+                    })
+                } catch (e) {
+                    setError(e.message)
+                } finally {
+                    setLoading(false)
+                }
+            }, [symbol])
+
+            const verdict = useMemo(() => {
+                if (!data?.alpha?.data) return null
+                const s = data.alpha.data.explosiveScore
+                const fcf = data.cashflow?.data?.freeCashFlow
+
+                if (s >= 6.0 && fcf !== null && fcf > 0) return { label: '🔥 STRONG BUY', reason: '고점수 + 양의 FCF' }
+                if (s >= 6.0) return { label: '🔥 STRONG BUY', reason: '고점수' }
+                if (s >= 4.0) return { label: '✅ BUY', reason: '점수 기준 충족' }
+                if (s >= 2.0) return { label: '⚠️ WATCH', reason: '점수 부족' }
+                return { label: '❌ AVOID', reason: '점수 미달' }
+            }, [data])
+
+            if (!symbol) {
+                return (
+                    <div className="widget">
+                        <div className="widget-title">💰 종목 깊이 분석</div>
+                        <div style={{ padding: '40px 20px', textAlign: 'center', color: '#cbd5e1' }}>
+                            🔍 종목 코드를 입력하거나 Discovery 결과를 클릭하세요
+                        </div>
+                    </div>
+                )
+            }
+
             return (
-                <div className="page-container">
-                    <div className="page-header">
-                        <h1>AI분석_2</h1>
-                        <p>투자 전문가급 퀀트 분석 대시보드 — 개별 종목 발굴 시스템</p>
+                <div className="widget">
+                    <div className="widget-header">
+                        <div className="widget-title">💰 종목 깊이 분석</div>
+                        <button className="btn-refresh" onClick={handleSubmit} disabled={loading}>↻</button>
                     </div>
 
-                    <div className="widgets-grid">
-                        <MacroRegimeCompass />
-                        <NetLiquidityPulse />
-                        <SectorRotationMatrix />
-                        <QuantStockEngine />
-                        <CrossAssetSignal />
-                    </div>
+                    <form onSubmit={handleSubmit} className="input-group">
+                        <input
+                            type="text"
+                            placeholder="종목 코드 입력 (예: AAPL)"
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                            style={{ fontWeight: '700' }}
+                        />
+                        <button type="submit" disabled={loading}>검색</button>
+                    </form>
 
-                    <div style={{textAlign: 'center', color: '#718096', fontSize: '13px', marginTop: '40px'}}>
-                        <p>각 위젯은 실시간 데이터로 자동 갱신됩니다 (60초마다)</p>
-                        <p style={{marginTop: '8px'}}>데이터 소스: FMP API, FRED, Yahoo Finance</p>
-                    </div>
+                    {loading && <div className="loading">로딩 중...</div>}
+                    {error && <div className="error-box">{error}</div>}
+
+                    {data && !loading && (
+                        <>
+                            <div style={{ marginBottom: '16px' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#f1f5f9', marginBottom: '4px' }}>
+                                    {data.profile?.data?.companyName ?? symbol}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                                    {[data.profile?.data?.sector, data.profile?.data?.industry].filter(Boolean).join(' | ') || '-'}
+                                </div>
+                            </div>
+
+                            {verdict && (
+                                <div style={{
+                                    padding: '12px',
+                                    background: verdict.label.includes('STRONG') ? 'rgba(239, 68, 68, 0.1)' : verdict.label.includes('BUY') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                                    borderLeft: verdict.label.includes('STRONG') ? '3px solid #ef4444' : verdict.label.includes('BUY') ? '3px solid #10b981' : '3px solid #f59e0b',
+                                    borderRadius: '6px',
+                                    marginBottom: '16px'
+                                }}>
+                                    <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px' }}>
+                                        {verdict.label}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                                        {verdict.reason}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="metrics-grid">
+                                <div className="metric-item">
+                                    <div className="metric-label">매출성장%</div>
+                                    <div className={`metric-value ${changeColor(data.growth?.data?.revenueGrowth)}`}>
+                                        {fmt.pct((data.growth?.data?.revenueGrowth ?? 0) * 100)}
+                                    </div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">EPS성장%</div>
+                                    <div className={`metric-value ${changeColor(data.growth?.data?.epsGrowth)}`}>
+                                        {fmt.pct((data.growth?.data?.epsGrowth ?? 0) * 100)}
+                                    </div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">FCF</div>
+                                    <div className="metric-value">{fmt.dollar(data.cashflow?.data?.freeCashFlow)}</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">순이익률%</div>
+                                    <div className={`metric-value ${changeColor(data.income?.data?.netIncome)}`}>
+                                        {data.income?.data?.netIncome && data.income?.data?.revenue
+                                            ? fmt.pct((data.income.data.netIncome / data.income.data.revenue) * 100)
+                                            : '-'
+                                        }
+                                    </div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">순부채</div>
+                                    <div className="metric-value">{fmt.dollar(data.balance?.data?.netDebt)}</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">EBITDA</div>
+                                    <div className="metric-value">{fmt.dollar(data.income?.data?.ebitda)}</div>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
-            );
+            )
         }
 
-        // Render App
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+        // =============================
+        // WIDGET 4: SECTOR ROTATION DRILL DOWN
+        // =============================
+
+        function SectorRotationDrillDown({ onSelectSymbol }) {
+            const [sectors, setSectors] = useState([])
+            const [sectorMap, setSectorMap] = useState({})
+            const [selectedSector, setSelectedSector] = useState(null)
+            const [loading, setLoading] = useState(false)
+            const [error, setError] = useState(null)
+
+            const fetchSectorData = useCallback(async () => {
+                try {
+                    setLoading(true)
+
+                    const results = await Promise.allSettled([
+                        fetch('/analysis/sector-rotation').then(r => r.json()),
+                        fetch('/alpha/discovery').then(r => r.json())
+                    ])
+
+                    const rotation = results[0].status === 'fulfilled' ? results[0].value : null
+                    const discovery = results[1].status === 'fulfilled' ? results[1].value : null
+
+                    if (!rotation?.rankings || !discovery?.top_20) {
+                        setError('섹터 데이터 없음')
+                        return
+                    }
+
+                    const sortedSectors = [...rotation.rankings].sort((a, b) => (b.w1 ?? 0) - (a.w1 ?? 0))
+                    setSectors(sortedSectors)
+
+                    const profileResults = await Promise.allSettled(
+                        discovery.top_20.map(stock =>
+                            fetch(`/fundamentals/profile?symbol=${stock.symbol}`).then(r => r.json())
+                        )
+                    )
+
+                    const map = {}
+                    sortedSectors.forEach(s => { map[s.name] = [] })
+
+                    discovery.top_20.forEach((stock, idx) => {
+                        const profileResult = profileResults[idx]
+                        const profile = profileResult.status === 'fulfilled' ? profileResult.value : null
+                        const sector = profile?.data?.sector
+
+                        let matched = false
+                        for (const s of sortedSectors) {
+                            if (matchSector(sector, s.name)) {
+                                map[s.name].push(stock)
+                                matched = true
+                                break
+                            }
+                        }
+
+                        if (!matched) {
+                            if (!map['기타']) map['기타'] = []
+                            map['기타'].push(stock)
+                        }
+                    })
+
+                    setSectorMap(map)
+                    setSelectedSector(sortedSectors[0]?.name || null)
+                    setError(null)
+                } catch (e) {
+                    setError(e.message)
+                } finally {
+                    setLoading(false)
+                }
+            }, [])
+
+            useEffect(() => {
+                fetchSectorData()
+            }, [fetchSectorData])
+
+            const selectedStocks = useMemo(() => {
+                if (!selectedSector || !sectorMap[selectedSector]) return []
+                const stocks = sectorMap[selectedSector]
+                const maxScore = Math.max(...stocks.map(s => s.score || 0), 1)
+                return stocks
+                    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+                    .map(s => ({ ...s, maxScore }))
+            }, [selectedSector, sectorMap])
+
+            return (
+                <div className="widget grid-full">
+                    <div className="widget-header">
+                        <div>
+                            <div className="widget-title">📊 Sector Rotation Drill Down</div>
+                            <div className="widget-subtitle">강한 섹터 내 Alpha Score 비교</div>
+                        </div>
+                        <button className="btn-refresh" onClick={fetchSectorData} disabled={loading}>↻</button>
+                    </div>
+
+                    {loading && <div className="loading">로딩 중...</div>}
+                    {error && <div className="error-box">{error}</div>}
+
+                    {!loading && !error && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+                            <div className="sector-list">
+                                {sectors.map(sector => (
+                                    <div
+                                        key={sector.name}
+                                        className={`sector-item ${selectedSector === sector.name ? 'active' : ''}`}
+                                        onClick={() => setSelectedSector(sector.name)}
+                                    >
+                                        <div className="sector-name">{sector.name}</div>
+                                        <div className={`sector-change ${changeColor(sector.w1)}`}>
+                                            {fmt.pct(sector.w1)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div>
+                                {selectedStocks.length > 0 ? (
+                                    selectedStocks.map((stock, idx) => {
+                                        const pct = (stock.score / stock.maxScore) * 100
+                                        const grade = scoreGrade(stock.score)
+                                        return (
+                                            <div
+                                                key={stock.symbol}
+                                                className="stock-bar"
+                                                onClick={() => onSelectSymbol(stock.symbol)}
+                                            >
+                                                <div className="stock-bar-symbol">{idx + 1}. {stock.symbol}</div>
+                                                <div className="stock-bar-fill">
+                                                    <div className="stock-bar-progress" style={{ width: pct + '%' }} />
+                                                </div>
+                                                <div className="stock-bar-score">{grade.icon} {stock.score.toFixed(2)}</div>
+                                            </div>
+                                        )
+                                    })
+                                ) : (
+                                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#cbd5e1' }}>
+                                        이 섹터에 종목이 없습니다
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )
+        }
+
+        // =============================
+        // MAIN APP
+        // =============================
+
+        function App() {
+            const [selectedSymbol, setSelectedSymbol] = useState(null)
+
+            return (
+                <div style={{ background: '#0f172a', minHeight: '100vh' }}>
+                    <div className="container">
+                        <div className="header">
+                            <h1>AI분석_2</h1>
+                            <p>개별 종목 발굴 & 매수 판정 시스템</p>
+                        </div>
+
+                        <div className="grid-layout">
+                            <MarketEntryGate />
+                            <SingleStockDeepDive symbol={selectedSymbol} />
+                            <div />
+                        </div>
+
+                        <AlphaDiscoveryScanner onSelectSymbol={setSelectedSymbol} />
+
+                        <div style={{ marginTop: '30px' }}>
+                            <SectorRotationDrillDown onSelectSymbol={setSelectedSymbol} />
+                        </div>
+
+                        <div style={{ textAlign: 'center', color: '#cbd5e1', fontSize: '12px', marginTop: '40px', paddingBottom: '40px' }}>
+                            <p>데이터 소스: FMP API, FRED, Alpha Discovery Engine</p>
+                            <p style={{ marginTop: '8px', fontSize: '11px', color: '#94a3b8' }}>모든 데이터는 API 응답에서 동적으로 추출됩니다</p>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
+        // Render
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />)
     </script>
 </body>
 </html>
