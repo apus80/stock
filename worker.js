@@ -1591,20 +1591,29 @@ export default {
       // HEDGE FUND UNIVERSE SCREENER
       // =============================
       async function getHedgeFundUniverse() {
-        try {
-          // 📍 출처: FMP API stock-screener
-          const url = `https://financialmodelingprep.com/stable/search-company-screener?marketCapMoreThan=1000000000&volumeMoreThan=1000000&priceMoreThan=10&limit=1000&apikey=${FMP}`
-          const r = await fetch(url)
-          if (!r.ok) {
-            console.error(`❌ Stock Screener: HTTP ${r.status}`)
-            return []
-          }
-          const data = await r.json()
-          return (data || []).map(s => s.symbol).slice(0, 100) // 최대 100개로 제한
-        } catch (e) {
-          console.error(`❌ getHedgeFundUniverse:`, e.message)
-          return []
-        }
+        // 📍 FMP API stock-screener은 유료 플랜 전용이므로 프리셋 종목 사용
+        // 대형주 + 기술주 + 금융주 + 헬스케어 + 에너지 분야 균형 구성
+        const presetUniverse = [
+          // 거대 테크 (Mega Cap Tech)
+          'AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA',
+          // 금융
+          'JPM', 'BAC', 'WFC', 'GS', 'MS',
+          // 헬스케어
+          'JNJ', 'PFE', 'MRK', 'ABBV', 'UNH',
+          // 에너지
+          'XOM', 'CVX', 'COP', 'EOG',
+          // 소비재
+          'PG', 'KO', 'MCD', 'WMT',
+          // 산업재
+          'BA', 'GE', 'CAT', 'MMM',
+          // 반도체
+          'AMD', 'QUALCOMM', 'INTC', 'BROADCOM',
+          // 클라우드/소프트웨어
+          'NFLX', 'CRM', 'ADBE', 'SNOW', 'WORK'
+        ]
+
+        // 셔플해서 매번 다른 리스트 반환 (다양성)
+        return presetUniverse.sort(() => Math.random() - 0.5)
       }
 
       // =============================
