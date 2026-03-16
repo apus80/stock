@@ -304,63 +304,63 @@
              새로운 5개 위젯 (프롬프 기반 커스텀)
              ════════════════════════════════════════════════════ -->
 
-        <!-- 새 위젯 1 (프롬프 대기) -->
+        <!-- 위젯 6: 초고성장 기업 발굴 -->
         <div class="widget">
             <div class="widget-title">
-                ▶️ [신규 위젯 1 - 프롬프 대기중]
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                6️⃣ 초고성장 기업 발굴
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">수익+EPS 성장 + 수익성 + 밸류에이션</span>
                 <button class="widget-refresh" onclick="refreshWidget(6)">🔄</button>
             </div>
             <div id="widget-6" class="content">
-                <div class="loading">프롬프를 기다리는 중입니다...</div>
+                <div class="loading">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
-        <!-- 새 위젯 2 (프롬프 대기) -->
+        <!-- 위젯 7: 기관 매집 종목 -->
         <div class="widget">
             <div class="widget-title">
-                ▶️ [신규 위젯 2 - 프롬프 대기중]
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                7️⃣ 기관 매집 종목
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">섹터모멘텀 + 수익성장 + EPS성장 + 영업이익률</span>
                 <button class="widget-refresh" onclick="refreshWidget(7)">🔄</button>
             </div>
             <div id="widget-7" class="content">
-                <div class="loading">프롬프를 기다리는 중입니다...</div>
+                <div class="loading">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
-        <!-- 새 위젯 3 (프롬프 대기) -->
+        <!-- 위젯 8: 섹터 로테이션 리더 -->
         <div class="widget">
             <div class="widget-title">
-                ▶️ [신규 위젯 3 - 프롬프 대기중]
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                8️⃣ 섹터 로테이션 리더
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">섹터강도 + 수익성장 + EPS성장</span>
                 <button class="widget-refresh" onclick="refreshWidget(8)">🔄</button>
             </div>
             <div id="widget-8" class="content">
-                <div class="loading">프롬프를 기다리는 중입니다...</div>
+                <div class="loading">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
-        <!-- 새 위젯 4 (프롬프 대기) -->
+        <!-- 위젯 9: 유동성 수혜 종목 -->
         <div class="widget">
             <div class="widget-title">
-                ▶️ [신규 위젯 4 - 프롬프 대기중]
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                9️⃣ 유동성 수혜 종목
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">유동성지수 + 리스크점수 + 수익성장</span>
                 <button class="widget-refresh" onclick="refreshWidget(9)">🔄</button>
             </div>
             <div id="widget-9" class="content">
-                <div class="loading">프롬프를 기다리는 중입니다...</div>
+                <div class="loading">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
-        <!-- 새 위젯 5 (프롬프 대기) -->
+        <!-- 위젯 10: 통합 발굴 엔진 -->
         <div class="widget">
             <div class="widget-title">
-                ▶️ [신규 위젯 5 - 프롬프 대기중]
-                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                🔟 통합 발굴 엔진
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;">거시점수 + 섹터강도 + 기본가치 (ROE/성장)</span>
                 <button class="widget-refresh" onclick="refreshWidget(10)">🔄</button>
             </div>
             <div id="widget-10" class="content">
-                <div class="loading">프롬프를 기다리는 중입니다...</div>
+                <div class="loading">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
@@ -643,7 +643,11 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;"><strong>📊 설명:</strong> 매출/EPS 성장이 빠르면서도 수익성이 좋은 기업을 찾아냅니다. 높은 점수일수록 폭발적 성장 가능성 ⬆️</div>`;
+                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
+                                <strong>📊 초고성장 기업 발굴:</strong> 매출/EPS 성장이 빠르면서도 수익성이 좋은 기업을 찾아냅니다.<br>
+                                <strong>📐 계산:</strong> 0.35×수익성장 + 0.35×EPS성장 + 0.20×순이익마진 + 0.10×밸류에이션<br>
+                                높은 점수일수록 폭발적 성장 가능성 ⬆️
+                            </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
                         }
@@ -687,7 +691,11 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;"><strong>💰 설명:</strong> 기관투자가가 강세 섹터 내에서 성장성과 수익성이 우수한 종목에 매집할 가능성이 높습니다. 📈</div>`;
+                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
+                                <strong>💰 기관 매집 종목:</strong> 기관투자가가 강세 섹터 내에서 성장성과 수익성이 우수한 종목에 매집할 가능성이 높습니다.<br>
+                                <strong>📐 계산:</strong> 0.40×섹터모멘텀 + 0.30×수익성장 + 0.20×EPS성장 + 0.10×영업이익률<br>
+                                섹터 강세 구간의 핵심 매집 대상 📈
+                            </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
                         }
@@ -730,7 +738,11 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;"><strong>🎯 설명:</strong> 강세 섹터 내에서 성장성이 우수한 리더 종목을 찾아냅니다. 자본 로테이션 시 상승력이 강합니다. 📊</div>`;
+                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
+                                <strong>🎯 섹터 로테이션 리더:</strong> 강세 섹터 내에서 성장성이 우수한 리더 종목을 찾아냅니다.<br>
+                                <strong>📐 계산:</strong> 0.50×섹터강도 + 0.30×수익성장 + 0.20×EPS성장<br>
+                                자본 로테이션 시 상승력이 강한 리더주 📊
+                            </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
                         }
@@ -773,7 +785,11 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;"><strong>💧 설명:</strong> 연준 자산증가, M2 성장, 낮은 VIX 등 유동성이 풍부할 때 상승 가능성이 높은 종목들입니다. 🚀</div>`;
+                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
+                                <strong>💧 유동성 수혜 종목:</strong> 연준 자산증가, M2 성장, 낮은 VIX 등 유동성이 풍부할 때 상승 가능성이 높은 종목들입니다.<br>
+                                <strong>📐 계산:</strong> 0.40×유동성지수 + 0.30×리스크점수 + 0.30×수익성장<br>
+                                유동성 장세의 최대 수혜주 🚀
+                            </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
                         }
@@ -826,7 +842,11 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;"><strong>🚀 설명:</strong> Investflow의 최강 통합 엔진! 거시환경(매크로점수) + 섹터로테이션(강도) + 기본가치(ROE, 성장)을 종합평가합니다. ★★★★★</div>`;
+                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
+                                <strong>🚀 통합 발굴 엔진:</strong> Investflow의 최강 통합 엔진! 거시환경 + 섹터로테이션 + 기본가치를 종합평가합니다.<br>
+                                <strong>📐 계산:</strong> 0.30×거시점수 + 0.30×섹터강도 + 0.40×기본가치(ROE/성장)<br>
+                                모든 팩터를 아우른 최고 등급 발굴주 ★★★★★
+                            </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
                         }
