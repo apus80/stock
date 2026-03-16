@@ -404,12 +404,8 @@ export default {
             return null
           }
 
-          // Momentum & Volume 계산
-          const momentum = momentumScore(data.history)
-          const volume = volumeSpike(data.history)
-
-          // Explosive Score (9개 지표 가중합)
-          const score = explosiveScore(factors, momentum, volume)
+          // ✅ Explosive Score 계산 (7개 지표 가중합)
+          const score = explosiveScore(factors)
 
           // console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${score.toFixed(4)}`)
 
