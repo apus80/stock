@@ -300,6 +300,70 @@
             </div>
         </div>
 
+        <!-- ════════════════════════════════════════════════════
+             새로운 5개 위젯 (프롬프 기반 커스텀)
+             ════════════════════════════════════════════════════ -->
+
+        <!-- 새 위젯 1 (프롬프 대기) -->
+        <div class="widget">
+            <div class="widget-title">
+                ▶️ [신규 위젯 1 - 프롬프 대기중]
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                <button class="widget-refresh" onclick="refreshWidget(6)">🔄</button>
+            </div>
+            <div id="widget-6" class="content">
+                <div class="loading">프롬프를 기다리는 중입니다...</div>
+            </div>
+        </div>
+
+        <!-- 새 위젯 2 (프롬프 대기) -->
+        <div class="widget">
+            <div class="widget-title">
+                ▶️ [신규 위젯 2 - 프롬프 대기중]
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                <button class="widget-refresh" onclick="refreshWidget(7)">🔄</button>
+            </div>
+            <div id="widget-7" class="content">
+                <div class="loading">프롬프를 기다리는 중입니다...</div>
+            </div>
+        </div>
+
+        <!-- 새 위젯 3 (프롬프 대기) -->
+        <div class="widget">
+            <div class="widget-title">
+                ▶️ [신규 위젯 3 - 프롬프 대기중]
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                <button class="widget-refresh" onclick="refreshWidget(8)">🔄</button>
+            </div>
+            <div id="widget-8" class="content">
+                <div class="loading">프롬프를 기다리는 중입니다...</div>
+            </div>
+        </div>
+
+        <!-- 새 위젯 4 (프롬프 대기) -->
+        <div class="widget">
+            <div class="widget-title">
+                ▶️ [신규 위젯 4 - 프롬프 대기중]
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                <button class="widget-refresh" onclick="refreshWidget(9)">🔄</button>
+            </div>
+            <div id="widget-9" class="content">
+                <div class="loading">프롬프를 기다리는 중입니다...</div>
+            </div>
+        </div>
+
+        <!-- 새 위젯 5 (프롬프 대기) -->
+        <div class="widget">
+            <div class="widget-title">
+                ▶️ [신규 위젯 5 - 프롬프 대기중]
+                <span style="font-size: 11px; color: #718096; margin-left: 8px; font-weight: normal;"></span>
+                <button class="widget-refresh" onclick="refreshWidget(10)">🔄</button>
+            </div>
+            <div id="widget-10" class="content">
+                <div class="loading">프롬프를 기다리는 중입니다...</div>
+            </div>
+        </div>
+
         <div class="info-box">
             <strong>ℹ️ 정보:</strong> 각 위젯은 실시간 시장 데이터와 거시경제 지표를 기반으로 자동 계산됩니다.
             데이터 소스: FMP API, FRED, Yahoo Finance
@@ -326,7 +390,7 @@
         // 모든 위젯 데이터 로드
         async function loadAllWidgets() {
             console.log('📊 AI분석_3 위젯 로드 시작...');
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 10; i++) {
                 await loadWidgetData(i);
             }
             updateTimestamp();
@@ -467,6 +531,34 @@
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
                         }
                         break;
+
+                    case 6:
+                        // 신규 위젯 1 - 프롬프 대기중
+                        html = '<div class="loading">프롬프를 기다리는 중입니다...</div>';
+                        break;
+
+                    case 7:
+                        // 신규 위젯 2 - 프롬프 대기중
+                        html = '<div class="loading">프롬프를 기다리는 중입니다...</div>';
+                        break;
+
+                    case 8:
+                        // 신규 위젯 3 - 프롬프 대기중
+                        html = '<div class="loading">프롬프를 기다리는 중입니다...</div>';
+                        break;
+
+                    case 9:
+                        // 신규 위젯 4 - 프롬프 대기중
+                        html = '<div class="loading">프롬프를 기다리는 중입니다...</div>';
+                        break;
+
+                    case 10:
+                        // 신규 위젯 5 - 프롬프 대기중
+                        html = '<div class="loading">프롬프를 기다리는 중입니다...</div>';
+                        break;
+
+                    default:
+                        html = '<div class="loading">⚠️ 알 수 없는 위젯입니다</div>';
                 }
 
                 elem.innerHTML = html;
