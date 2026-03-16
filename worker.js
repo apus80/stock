@@ -1591,29 +1591,23 @@ export default {
       // HEDGE FUND UNIVERSE SCREENER
       // =============================
       async function getHedgeFundUniverse() {
-        // 📍 FMP API stock-screener은 유료 플랜 전용이므로 프리셋 종목 사용
-        // 대형주 + 기술주 + 금융주 + 헬스케어 + 에너지 분야 균형 구성
+        // 📍 FMP API Starter 플랜 제약: /stable/quote만 가능 (batch-quote 불가)
+        // API 호출 최소화: 10개 우량주만 분석 (50개 API 호출 ≈ Starter 플랜 일일 한도 내)
         const presetUniverse = [
-          // 거대 테크 (Mega Cap Tech)
-          'AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA',
-          // 금융
-          'JPM', 'BAC', 'WFC', 'GS', 'MS',
-          // 헬스케어
-          'JNJ', 'PFE', 'MRK', 'ABBV', 'UNH',
-          // 에너지
-          'XOM', 'CVX', 'COP', 'EOG',
-          // 소비재
-          'PG', 'KO', 'MCD', 'WMT',
-          // 산업재
-          'BA', 'GE', 'CAT', 'MMM',
-          // 반도체
-          'AMD', 'QUALCOMM', 'INTC', 'BROADCOM',
-          // 클라우드/소프트웨어
-          'NFLX', 'CRM', 'ADBE', 'SNOW', 'WORK'
+          'AAPL',       // 테크
+          'MSFT',       // 클라우드
+          'NVDA',       // 반도체
+          'JPM',        // 금융
+          'JNJ',        // 헬스케어
+          'XOM',        // 에너지
+          'PG',         // 소비재
+          'TSLA',       // 성장주
+          'META',       // 광고/AI
+          'NFLX'        // 스트리밍
         ]
 
-        // 셔플해서 매번 다른 리스트 반환 (다양성)
-        return presetUniverse.sort(() => Math.random() - 0.5)
+        // Starter 플랜: 10개 종목 고정 (일일 한도 초과 방지)
+        return presetUniverse
       }
 
       // =============================
@@ -1639,8 +1633,8 @@ export default {
           const results = []
           const startTime = Date.now()
 
-          // Rate Limit: 20개 종목 × 5개 API = 100 요청 (250/day 내)
-          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 20); i++) {
+          // Starter 플랜 API 제약: 10개 종목 × 5개 API = 50 요청/일 (일일 한도 내)
+          for (let i = 0; i < Math.min(universe.length, singleSymbol ? 1 : 10); i++) {
             const symbol = universe[i]
             try {
               const data = await getAlphaData(symbol)
