@@ -341,8 +341,9 @@
                     const marketData = await res.json();
 
                     // 매크로 조건 계산 (API에서 실제 데이터 사용)
+                    // 출처: FMP API (VIX), FRED API (HY OAS)
                     const vix = marketData.US_MARKET?.VIX?.price;
-                    const hyOAS = marketData.CREDIT?.HYG?.spread;
+                    const hyOAS = marketData.MARKET_RISK?.HY_OAS_SPREAD;
 
                     // Liquidity Score 동적 계산 (API 데이터 기반)
                     const liquidityScore = calculateLiquidityScore(marketData);
@@ -573,14 +574,14 @@
             const [loading, setLoading] = useState(true);
 
             const sectors = [
-                { ticker: 'XLK', name: '기술', color: '#667eea' },
-                { ticker: 'XLF', name: '금융', color: '#764ba2' },
-                { ticker: 'XLE', name: '에너지', color: '#f59e0b' },
-                { ticker: 'XLV', name: '헬스케어', color: '#10b981' },
-                { ticker: 'XLY', name: '소비재', color: '#ef4444' },
-                { ticker: 'XLI', name: '산업재', color: '#3b82f6' },
-                { ticker: 'XLU', name: '유틸리티', color: '#8b5cf6' },
-                { ticker: 'XLRE', name: '부동산', color: '#ec4899' }
+                { key: 'TECHNOLOGY', ticker: 'XLK', name: '기술', color: '#667eea' },
+                { key: 'FINANCIALS', ticker: 'XLF', name: '금융', color: '#764ba2' },
+                { key: 'ENERGY', ticker: 'XLE', name: '에너지', color: '#f59e0b' },
+                { key: 'HEALTHCARE', ticker: 'XLV', name: '헬스케어', color: '#10b981' },
+                { key: 'CONSUMER_DISCRETIONARY', ticker: 'XLY', name: '소비재', color: '#ef4444' },
+                { key: 'INDUSTRIALS', ticker: 'XLI', name: '산업재', color: '#3b82f6' },
+                { key: 'UTILITIES', ticker: 'XLU', name: '유틸리티', color: '#8b5cf6' },
+                { key: 'REAL_ESTATE', ticker: 'XLRE', name: '부동산', color: '#ec4899' }
             ];
 
             const fetchData = useCallback(async () => {
@@ -589,25 +590,16 @@
                     const res = await fetch('/api/market');
                     const marketData = await res.json();
 
-                    // 출처: FMP API - 섹터별 가격 데이터
+                    // 출처: FMP API - 섹터별 가격 데이터 (SECTORS 객체)
                     const sectorData = sectors.map((sector) => {
                         // API에서 섹터 가격 데이터 추출
-                        const sectorPrice = marketData.SECTORS?.[
-                            sector.ticker === 'XLK' ? 'TECHNOLOGY' :
-                            sector.ticker === 'XLF' ? 'FINANCIALS' :
-                            sector.ticker === 'XLE' ? 'ENERGY' :
-                            sector.ticker === 'XLV' ? 'HEALTHCARE' :
-                            sector.ticker === 'XLY' ? 'CONSUMER_DISCRETIONARY' :
-                            sector.ticker === 'XLI' ? 'INDUSTRIALS' :
-                            sector.ticker === 'XLU' ? 'UTILITIES' :
-                            sector.ticker === 'XLRE' ? 'REAL_ESTATE' : null
-                        ];
+                        const sectorPrice = marketData.SECTORS?.[sector.key];
 
                         // SPY 기준 데이터
                         const spyPrice = marketData.US_MARKET?.SP500;
 
-                        // 현재 가격 기반 변화율 계산 (정확한 historic 데이터 없이)
-                        // TODO: historic price data API 추가 필요
+                        // 현재 변화율 사용 (3M/6M 히스토릭 데이터 없음)
+                        // TODO: 3M/6M 모멘텀 계산을 위해 historic price API 확장 필요
                         const return3m = sectorPrice?.changePercentage || null;
                         const return6m = sectorPrice?.changePercentage || null;
 
@@ -833,9 +825,9 @@
                     const marketData = await res.json();
 
                     // 필요한 데이터 추출 (API 데이터만 사용, 기본값 제거)
-                    // 출처: FMP API (고수익채권 스프레드), FRED API (금리)
-                    const hyOAS = marketData.CREDIT?.HYG?.spread;
+                    // 출처: FMP API (VIX), FRED API (HY OAS, 금리)
                     const vix = marketData.US_MARKET?.VIX?.price;
+                    const hyOAS = marketData.MARKET_RISK?.HY_OAS_SPREAD;
                     const us10y = marketData.RATES?.US10Y;
                     const us2y = marketData.RATES?.US2Y;
 
