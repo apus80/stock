@@ -1456,18 +1456,6 @@
                 return Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
             };
 
-            // 섹터 심볼 매핑
-            const sectorMapping = {
-                'TECHNOLOGY': 'XLK',
-                'FINANCIALS': 'XLF',
-                'ENERGY': 'XLE',
-                'HEALTHCARE': 'XLV',
-                'CONSUMER DISCRETIONARY': 'XLY',
-                'INDUSTRIALS': 'XLI',
-                'UTILITIES': 'XLU',
-                'REAL ESTATE': 'XLRE'
-            };
-
             const fetchData = useCallback(async () => {
                 try {
                     setLoading(true);
@@ -1546,8 +1534,13 @@
 
                     // 5️⃣ 점수 계산
                     const scoredStocks = validStocks.map(stock => {
+                        // 섹터명 정규화: "Technology" → "TECHNOLOGY"
+                        const normalizedSector = stock.sector
+                            ? stock.sector.toUpperCase().replace(/\s+/g, '_')
+                            : 'UNKNOWN';
+
                         // 섹터 모멘텀 = 섹터 수익률 - SPY 수익률
-                        const sectorReturn = sectorReturns[stock.sector] || 0;
+                        const sectorReturn = sectorReturns[normalizedSector] || 0;
                         const sectorMomentum = sectorReturn - spyReturn;
                         const sectorMomentumScore = normalize(sectorMomentum, -10, 10);
 
