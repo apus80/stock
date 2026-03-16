@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InvestFlow Debug Panel</title>
+  <title>InvestFlow Worker Endpoint Monitor</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -27,969 +26,477 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
       font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.6;
+      padding: 20px;
     }
 
-    /* ─── Header ───────────────────────────────── */
-    .header {
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 18px;
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: var(--blue);
+      margin-bottom: 30px;
+      font-size: 20px;
+    }
+
+    .control-bar {
       display: flex;
-      align-items: center;
-      gap: 14px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      gap: 10px;
+      margin-bottom: 20px;
       flex-wrap: wrap;
     }
 
-    .header-title { font-size: 13px; color: var(--blue); font-weight: 700; white-space: nowrap; }
-
-    .header-meta {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex: 1;
-      font-size: 11px;
-      color: var(--muted);
-      min-width: 0;
-    }
-
-    .header-btns { display: flex; gap: 6px; align-items: center; }
-
-    .btn {
-      padding: 4px 12px;
-      border-radius: 5px;
+    button {
+      padding: 8px 16px;
       border: 1px solid var(--border);
       background: var(--bg4);
       color: var(--text);
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 11px;
       font-family: inherit;
-      white-space: nowrap;
+      font-size: 12px;
     }
-    .btn:hover { background: var(--border); }
-    .btn.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
 
-    /* ─── Summary chips ─────────────────────────── */
-    .chips { display: flex; gap: 6px; align-items: center; }
-    .chip {
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 700;
+    button:hover {
+      background: var(--border);
     }
-    .chip.ok   { background: rgba(63,185,80,.18);  color: var(--green); }
-    .chip.fail { background: rgba(248,81,73,.18);  color: var(--red); }
-    .chip.warn { background: rgba(210,153,34,.18); color: var(--yellow); }
 
-    /* ─── Layout ────────────────────────────────── */
-    .layout {
+    button.active {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: #fff;
+    }
+
+    .summary {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      padding: 14px 18px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-    }
-
-    .full { grid-column: 1 / -1; }
-
-    /* ─── Panel ─────────────────────────────────── */
-    .panel {
+    .summary-item {
       background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      padding: 12px;
+      border-radius: 5px;
+      text-align: center;
+    }
+
+    .summary-item .label {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .summary-item .value {
+      color: var(--blue);
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+
+    .endpoint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .endpoint-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
       overflow: hidden;
     }
 
-    .panel-head {
+    .endpoint-header {
       background: var(--bg3);
+      padding: 10px;
       border-bottom: 1px solid var(--border);
-      padding: 7px 13px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
     }
 
-    .panel-title { color: var(--text-bright); font-weight: 700; font-size: 12px; }
-    .panel-sub   { color: var(--text-muted);  font-size: 11px; }
-
-    .panel-body { padding: 11px 13px; }
-
-    /* ─── Section labels inside panels ──────────── */
-    .sec-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: #ffffff;
-      border-bottom: 1px solid var(--bg4);
-      margin: 10px 0 6px;
-      padding-bottom: 4px;
-    }
-    .sec-label:first-child { margin-top: 0; }
-
-    /* ─── Data grid ──────────────────────────────── */
-    .data-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
-      gap: 5px;
+    .endpoint-title {
+      font-weight: bold;
+      color: var(--text-bright);
+      font-size: 13px;
+      flex: 1;
+      word-break: break-all;
     }
 
-    .di {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--bg);
-      border-radius: 4px;
-      padding: 4px 8px;
-      min-width: 0;
-    }
-
-    .dot {
-      width: 7px; height: 7px;
+    .status-dot {
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .dot.ok   { background: var(--green); }
-    .dot.fail { background: var(--red); }
-    .dot.spin { background: var(--yellow); animation: spin-pulse 1s infinite; }
-
-    @keyframes spin-pulse {
-      0%,100% { opacity: 1; }
-      50%      { opacity: 0.35; }
+      background: var(--muted);
     }
 
-    .di-label { color: #ffffff; font-size: 10px; white-space: nowrap; flex-shrink: 0; }
-    .di-val   { color: var(--green);  font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .di-val.fail { color: var(--red); }
-    .di-val.load { color: var(--muted); }
+    .status-dot.ok {
+      background: var(--green);
+    }
 
-    /* ─── Log area ───────────────────────────────── */
-    .log-area {
-      height: 320px;
+    .status-dot.fail {
+      background: var(--red);
+    }
+
+    .status-dot.loading {
+      background: var(--yellow);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .endpoint-body {
+      padding: 10px;
+    }
+
+    .endpoint-input {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+
+    .endpoint-input input {
+      flex: 1;
+      padding: 4px 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: 11px;
+    }
+
+    .endpoint-input button {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .endpoint-result {
+      margin-top: 8px;
+      padding: 8px;
+      background: var(--bg);
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      max-height: 200px;
       overflow-y: auto;
-      scroll-behavior: smooth;
+    }
+
+    .result-ok {
+      color: var(--green);
+    }
+
+    .result-fail {
+      color: var(--red);
+    }
+
+    .result-info {
+      color: var(--blue);
+    }
+
+    .ms-badge {
+      color: var(--yellow);
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .category-title {
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .log-section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 30px;
+    }
+
+    .log-section h2 {
+      color: var(--text-bright);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .log-area {
+      background: var(--bg);
+      padding: 10px;
+      border-radius: 3px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 11px;
+      line-height: 1.4;
     }
 
     .log-line {
       padding: 2px 0;
-      border-bottom: 1px solid var(--bg);
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-    .log-line.ok   { color: var(--green); }
-    .log-line.fail { color: var(--red); }
-    .log-line.warn { color: var(--yellow); }
-    .log-line.info { color: var(--blue); }
-    .log-line.dim  { color: var(--muted); }
-
-    /* ─── JSON viewer ────────────────────────────── */
-    .json-viewer {
-      max-height: 420px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      font-size: 11px;
-      color: #a5d6ff;
-      line-height: 1.55;
+      border-bottom: 1px solid var(--bg3);
     }
 
-    /* ─── Worker source viewer ───────────────────── */
-    .worker-frame-wrap {
-      position: relative;
-    }
-    .worker-panel-body {
-      padding: 0;
-      overflow: hidden;
-    }
-    .worker-link {
-      display: block;
-      padding: 10px 13px;
-      color: var(--text-muted);
-      font-size: 11px;
-    }
-    .worker-link a { color: var(--blue); }
-
-    /* ─── Timing bar ─────────────────────────────── */
-    .timing-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 3px 0;
-    }
-    .timing-name { color: var(--text-muted); font-size: 11px; min-width: 100px; }
-    .timing-bar-bg {
-      flex: 1;
-      height: 4px;
-      background: var(--bg4);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .timing-bar-fill {
-      height: 100%;
-      background: var(--blue);
-      border-radius: 2px;
-      transition: width .4s;
-    }
-    .timing-ms { color: var(--text-bright); font-size: 11px; min-width: 50px; text-align: right; }
+    .log-ok { color: var(--green); }
+    .log-fail { color: var(--red); }
+    .log-info { color: var(--blue); }
+    .log-warn { color: var(--yellow); }
   </style>
 </head>
 <body>
 
-<!-- ═══════════════ HEADER ═══════════════ -->
-<div class="header">
-  <span class="header-title">🔍 InvestFlow Debug</span>
+<div class="container">
+  <h1>🔍 InvestFlow Worker Endpoint Monitor</h1>
 
-  <div class="header-meta">
-    <span id="hLastTime">-</span>
-    <span id="hCountdown"></span>
-    <div class="chips" id="hChips"></div>
+  <div class="control-bar">
+    <button onclick="testAllEndpoints()">🚀 모든 엔드포인트 테스트</button>
+    <button onclick="clearLogs()">🗑 로그 지우기</button>
+    <button id="autoBtn" onclick="toggleAuto()">자동갱신 OFF</button>
   </div>
 
-  <div class="header-btns">
-    <button class="btn" onclick="runAll()">⟳ /market</button>
-    <button class="btn" onclick="runAlpha()">🧬 /alpha</button>
-    <button class="btn" id="autoBtn" onclick="toggleAuto()">자동갱신 OFF</button>
-    <button class="btn" onclick="clearLog()">로그 지우기</button>
+  <div class="summary" id="summary">
+    <div class="summary-item">
+      <div class="label">총 엔드포인트</div>
+      <div class="value" id="totalCount">-</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">성공</div>
+      <div class="value" id="successCount" style="color: var(--green);">-</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">실패</div>
+      <div class="value" id="failCount" style="color: var(--red);">-</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">평균 응답시간</div>
+      <div class="value" id="avgTime">-</div>
+    </div>
+  </div>
+
+  <div id="endpointContainer"></div>
+
+  <div class="log-section">
+    <h2>📋 로그</h2>
+    <div class="log-area" id="logArea"></div>
   </div>
 </div>
 
-<!-- ═══════════════ MAIN LAYOUT ═══════════════ -->
-<div class="layout">
-
-  <!-- ── Panel 1: /market 응답 요약 ── -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">📊 /market 응답 필드 현황</span>
-      <span class="panel-sub" id="marketMs"></span>
-    </div>
-    <div class="panel-body">
-
-      <div class="sec-label">🇺🇸 US Market (FMP)</div>
-      <div class="data-grid" id="g-us"></div>
-
-      <div class="sec-label">🇰🇷 Korea Market (FMP)</div>
-      <div class="data-grid" id="g-kr"></div>
-
-      <div class="sec-label">🏅 Commodities · GCUSD / SIUSD / BZUSD (FMP)</div>
-      <div class="data-grid" id="g-comm"></div>
-
-      <div class="sec-label">💱 FX · USDKRW / USDJPY / EURUSD / DX (FMP)</div>
-      <div class="data-grid" id="g-fx"></div>
-
-      <div class="sec-label">💧 Liquidity · WALCL / RRPONTSYD / WTREGEN (FRED)</div>
-      <div class="data-grid" id="g-liq"></div>
-
-      <div class="sec-label">📈 Rates · DGS10 / DGS2 (FRED)</div>
-      <div class="data-grid" id="g-rates"></div>
-
-      <div class="sec-label">🪙 Crypto · BTCUSD / ETHUSD / SOLUSD (FMP)</div>
-      <div class="data-grid" id="g-crypto"></div>
-
-      <div class="sec-label">💰 Bonds · HYG / LQD (FMP)</div>
-      <div class="data-grid" id="g-bonds"></div>
-
-      <div class="sec-label">📊 Credit · High Yield / Investment Grade (FMP)</div>
-      <div class="data-grid" id="g-credit"></div>
-
-      <div class="sec-label">📈 Market Breadth · Total Market / Long Treasury (FMP)</div>
-      <div class="data-grid" id="g-breadth"></div>
-
-      <div class="sec-label">🏭 Sectors ETF · XLK~XLRE (FMP)</div>
-      <div class="data-grid" id="g-sec"></div>
-
-      <div class="sec-label">📊 Macro Base · CPI / UNRATE / M2 / T10YIE (FRED)</div>
-      <div class="data-grid" id="g-mb"></div>
-
-      <div class="sec-label">📉 Macro Indicators · GDP / INDPRO / PAYEMS … (FRED)</div>
-      <div class="data-grid" id="g-mi"></div>
-
-    </div>
-  </div>
-
-  <!-- ── Panel 1.5: Alpha Discovery ── -->
-  <div class="panel full">
-    <div class="panel-head">
-      <span class="panel-title">🧬 Alpha Discovery Engine (Top 20 Stocks)</span>
-      <span class="panel-sub" id="alphaMs"></span>
-    </div>
-    <div class="panel-body">
-      <div style="margin-bottom: 10px; font-size: 11px; color: var(--text-muted);">
-        📌 종목 발굴: 20개 종목 × 5개 API = ~100 요청 | Status: <span id="alphaStatus">-</span>
-      </div>
-      <div id="alphaResultTable" style="overflow-x: auto;">
-        <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
-          <thead style="background: var(--bg3); border-bottom: 1px solid var(--border);">
-            <tr>
-              <th style="padding: 6px; text-align: left; color: var(--text-muted);">Rank</th>
-              <th style="padding: 6px; text-align: left; color: var(--text-muted);">Symbol</th>
-              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Score</th>
-              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Price</th>
-              <th style="padding: 6px; text-align: right; color: var(--text-muted);">PE</th>
-              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Momentum</th>
-              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Volume</th>
-              <th style="padding: 6px; text-align: center; color: var(--text-muted);">Insider</th>
-              <th style="padding: 6px; text-align: right; color: var(--text-muted);">Analyst</th>
-            </tr>
-          </thead>
-          <tbody id="alphaTableBody" style="color: var(--green);">
-            <tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--muted);">⏳ 호출 중...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Panel 2: 로그 ── -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">📋 API 호출 로그</span>
-      <span class="panel-sub" id="logCount">0 lines</span>
-    </div>
-    <div class="panel-body">
-      <div class="log-area" id="logArea"></div>
-    </div>
-  </div>
-
-  <!-- ── Panel 3: 응답 시간 ── -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">⏱ 응답 시간</span>
-    </div>
-    <div class="panel-body" id="timingPanel">
-      <div style="color:var(--muted);">-</div>
-    </div>
-  </div>
-
-  <!-- ── Panel 4: Worker 엔드포인트 현황 ── -->
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">🔗 Worker 엔드포인트 테스트</span>
-      <button class="btn" onclick="testEndpoints()">테스트</button>
-    </div>
-    <div class="panel-body">
-      <div id="endpointGrid" class="data-grid">
-        <div style="color:var(--muted);">버튼 클릭 후 테스트</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Panel 5: 재무 데이터 검증 (NEW) ── -->
-  <div class="panel full">
-    <div class="panel-head">
-      <span class="panel-title">💰 재무 데이터 점검 (개별 종목)</span>
-      <div style="display:flex; gap:6px; align-items:center;">
-        <input type="text" id="symbolInput" value="AAPL" placeholder="Symbol" style="padding:4px 8px; border:1px solid var(--border); background:var(--bg); color:var(--text); border-radius:3px; width:80px; font-family:inherit; font-size:11px;" />
-        <button class="btn" onclick="testFundamentals()">점검 시작</button>
-      </div>
-    </div>
-    <div class="panel-body">
-      <div class="sec-label">📊 Fundamentals Data (8개 엔드포인트)</div>
-      <div class="data-grid" id="fundamentalsGrid">
-        <div style="color:var(--muted);">symbol 입력 후 "점검 시작" 클릭</div>
-      </div>
-
-      <div class="sec-label">📋 상세 데이터</div>
-      <div class="json-viewer" id="fundamentalsJson" style="max-height:300px;">-</div>
-    </div>
-  </div>
-
-  <!-- ── Raw JSON (full width) ── -->
-  <div class="panel full">
-    <div class="panel-head">
-      <span class="panel-title">🗂 Raw /market Response</span>
-      <button class="btn" onclick="copyJson()">📋 복사</button>
-    </div>
-    <div class="panel-body">
-      <div class="json-viewer" id="jsonViewer">새로고침을 누르면 응답이 여기에 표시됩니다.</div>
-    </div>
-  </div>
-
-</div><!-- /layout -->
-
 <script>
-/* ════════════════════════════════════════════════
-   설정
-════════════════════════════════════════════════ */
-var WORKER = 'https://fmp-proxy.05ba87763e81af6206c77d3bd3d79d84.workers.dev';
-var AUTO_SEC = 60;
+const WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev';
 
-/* ════════════════════════════════════════════════
-   상태
-════════════════════════════════════════════════ */
-var logs = [];
-var autoOn = false;
-var autoTimer = null;
-var cdTimer = null;
-var cdRemain = AUTO_SEC;
-var okN = 0, failN = 0;
-var timings = {};
+const ENDPOINTS = {
+  '시장 데이터': [
+    { path: '/market', params: null, desc: '모든 시장 데이터' },
+    { path: '/feargreed', params: null, desc: '공포탐욕 지수' },
+  ],
+  '개별 종목 분석': [
+    { path: '/stock', params: 'symbol=AAPL', desc: '종목 분석 (symbol 필수)' },
+    { path: '/alpha', params: 'symbol=AAPL', desc: 'Alpha 분석 (symbol 필수)' },
+    { path: '/alpha/discovery', params: null, desc: 'Alpha 발굴 엔진' },
+    { path: '/earnings', params: 'symbol=AAPL', desc: '실적 발표 (symbol 필수)' },
+  ],
+  '펀더멘탈 데이터': [
+    { path: '/fundamentals/earnings', params: 'symbol=AAPL', desc: '실적 (symbol 필수)' },
+    { path: '/fundamentals/growth', params: 'symbol=AAPL', desc: '성장률 (symbol 필수)' },
+    { path: '/fundamentals/income', params: 'symbol=AAPL', desc: '손익계산서 (symbol 필수)' },
+    { path: '/fundamentals/balance', params: 'symbol=AAPL', desc: '재무상태표 (symbol 필수)' },
+    { path: '/fundamentals/cashflow', params: 'symbol=AAPL', desc: '현금흐름표 (symbol 필수)' },
+    { path: '/fundamentals/ratios', params: 'symbol=AAPL', desc: '재무비율 (symbol 필수)' },
+    { path: '/fundamentals/profile', params: 'symbol=AAPL', desc: '회사정보 (symbol 필수)' },
+    { path: '/fundamentals/shares', params: 'symbol=AAPL', desc: '주식정보 (symbol 필수)' },
+  ],
+  '시장 분석': [
+    { path: '/analysis/institutional-score', params: null, desc: '기관투자자 점수' },
+    { path: '/analysis/market-regime', params: null, desc: '시장 체제' },
+    { path: '/analysis/liquidity-pulse', params: null, desc: '유동성 맥박' },
+    { path: '/analysis/yield-curve-monitor', params: null, desc: '수익률 곡선' },
+    { path: '/analysis/inflation-pressure', params: null, desc: '인플레이션 압력' },
+    { path: '/analysis/credit-stress', params: null, desc: '신용 스트레스' },
+    { path: '/analysis/market-breadth', params: null, desc: '시장 광범위' },
+    { path: '/analysis/volatility-regime', params: null, desc: '변동성 체제' },
+    { path: '/analysis/sector-rotation', params: null, desc: '섹터 회전' },
+    { path: '/analysis/dollar-liquidity', params: null, desc: '달러 유동성' },
+    { path: '/analysis/crypto-sentiment', params: null, desc: '암호화폐 심리' },
+    { path: '/analysis/smart-money', params: null, desc: '스마트머니' },
+    { path: '/analysis/stock-ranking', params: null, desc: '종목 순위' },
+    { path: '/analysis/market-heatmap', params: null, desc: '시장 히트맵' },
+    { path: '/analysis/real-rate-monitor', params: null, desc: '실질금리 모니터' },
+    { path: '/analysis/fed-policy-impact', params: null, desc: '연준 정책 영향' },
+    { path: '/analysis/labor-market-health', params: null, desc: '노동시장 건강도' },
+    { path: '/analysis/macro-momentum', params: null, desc: '매크로 모멘텀' },
+  ]
+};
 
-/* ════════════════════════════════════════════════
-   로그
-════════════════════════════════════════════════ */
-function lg(msg, cls) {
-  var ts = new Date().toLocaleTimeString('ko-KR', { hour12: false });
-  logs.push({ ts: ts, msg: String(msg), cls: cls || 'dim' });
-  renderLog();
+let logs = [];
+let results = {};
+let autoTest = false;
+
+function addLog(msg, type = 'info') {
+  const time = new Date().toLocaleTimeString('ko-KR');
+  logs.push({ time, msg, type });
+  renderLogs();
 }
 
-function renderLog() {
-  var el = document.getElementById('logArea');
-  var MAX = 300;
-  var start = Math.max(0, logs.length - MAX);
-  var html = '';
-  for (var i = logs.length - 1; i >= start; i--) {
-    var l = logs[i];
-    html += '<div class="log-line ' + l.cls + '">[' + l.ts + '] ' + esc(l.msg) + '</div>';
+function renderLogs() {
+  const logArea = document.getElementById('logArea');
+  logArea.innerHTML = logs.slice(-50).reverse().map(l =>
+    `<div class="log-line log-${l.type}">[${l.time}] ${l.msg}</div>`
+  ).join('');
+  logArea.scrollTop = 0;
+}
+
+function clearLogs() {
+  logs = [];
+  renderLogs();
+}
+
+function renderEndpoints() {
+  const container = document.getElementById('endpointContainer');
+  let html = '';
+
+  Object.entries(ENDPOINTS).forEach(([category, endpoints]) => {
+    html += `<div class="category-title">📌 ${category}</div>`;
+    html += '<div class="endpoint-grid">';
+
+    endpoints.forEach((ep, idx) => {
+      const id = `ep-${category}-${idx}`;
+      const hasParams = ep.params !== null;
+      html += `
+        <div class="endpoint-card">
+          <div class="endpoint-header">
+            <div class="endpoint-title">${ep.path}</div>
+            <div class="status-dot" id="${id}-dot"></div>
+          </div>
+          <div class="endpoint-body">
+            <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 8px;">${ep.desc}</div>
+            ${hasParams ? `
+              <div class="endpoint-input">
+                <input type="text" id="${id}-input" value="${ep.params}" placeholder="params">
+                <button onclick="testEndpoint('${ep.path}', '${id}')">테스트</button>
+              </div>
+            ` : `
+              <button style="width: 100%;" onclick="testEndpoint('${ep.path}', '${id}')">테스트</button>
+            `}
+            <div class="endpoint-result" id="${id}-result">대기중...</div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+  updateSummary();
+}
+
+async function testEndpoint(path, id) {
+  const dotEl = document.getElementById(`${id}-dot`);
+  const resultEl = document.getElementById(`${id}-result`);
+  const inputEl = document.getElementById(`${id}-input`);
+
+  const params = inputEl ? inputEl.value.trim() : null;
+  const url = params ? `${WORKER_URL}${path}?${params}` : `${WORKER_URL}${path}`;
+
+  dotEl.className = 'status-dot loading';
+  resultEl.innerHTML = '⏳ 호출 중...';
+
+  const t0 = Date.now();
+
+  try {
+    const res = await fetch(url);
+    const ms = Date.now() - t0;
+    const data = await res.json();
+
+    results[path] = { ok: res.ok, ms, data };
+
+    if (res.ok) {
+      dotEl.className = 'status-dot ok';
+      const keys = Object.keys(data).length;
+      resultEl.innerHTML = `<span class="result-ok">✅ 성공</span> <span class="ms-badge">${ms}ms</span><br/>필드: ${keys}개`;
+      addLog(`✅ ${path}: ${ms}ms (필드: ${keys})`, 'ok');
+    } else {
+      dotEl.className = 'status-dot fail';
+      resultEl.innerHTML = `<span class="result-fail">❌ HTTP ${res.status}</span>`;
+      addLog(`❌ ${path}: HTTP ${res.status}`, 'fail');
+    }
+  } catch (e) {
+    dotEl.className = 'status-dot fail';
+    resultEl.innerHTML = `<span class="result-fail">❌ ${e.message}</span>`;
+    addLog(`❌ ${path}: ${e.message}`, 'fail');
   }
-  el.innerHTML = html;
-  document.getElementById('logCount').textContent = logs.length + ' lines';
+
+  updateSummary();
 }
 
-function clearLog() { logs = []; renderLog(); }
+async function testAllEndpoints() {
+  addLog('═══ 모든 엔드포인트 테스트 시작 ═══', 'info');
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+  let count = 0;
+  for (const category of Object.values(ENDPOINTS)) {
+    for (const ep of category) {
+      const id = `ep-${count}`;
+      // ID 다시 구성
+      const categoryKey = Object.keys(ENDPOINTS).find(k => ENDPOINTS[k].includes(ep));
+      const idx = ENDPOINTS[categoryKey].indexOf(ep);
+      const realId = `ep-${categoryKey}-${idx}`;
 
-/* ════════════════════════════════════════════════
-   Data item HTML
-════════════════════════════════════════════════ */
-function di(label, val, extra) {
-  var has = val !== null && val !== undefined;
-  var display = has ? (extra || String(val)) : 'null';
-  return '<div class="di">' +
-    '<div class="dot ' + (has ? 'ok' : 'fail') + '"></div>' +
-    '<span class="di-label">' + esc(label) + '</span>' +
-    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(display) + '</span>' +
-    '</div>';
-}
-
-function diObj(label, obj) {
-  // obj = { price, changePercentage } or null
-  var has = obj && (obj.price !== null && obj.price !== undefined);
-  var display = '-';
-  if (has) {
-    display = fmtNum(obj.price, 2);
-    if (obj.changePercentage !== null && obj.changePercentage !== undefined) {
-      var cp = obj.changePercentage;
-      display += ' (' + (cp >= 0 ? '+' : '') + fmtNum(cp, 2) + '%)';
+      await testEndpoint(ep.path, realId);
+      await new Promise(r => setTimeout(r, 200)); // 요청 간격
+      count++;
     }
   }
-  return '<div class="di">' +
-    '<div class="dot ' + (has ? 'ok' : 'fail') + '"></div>' +
-    '<span class="di-label">' + esc(label) + '</span>' +
-    '<span class="di-val ' + (has ? '' : 'fail') + '">' + esc(has ? display : 'null') + '</span>' +
-    '</div>';
+
+  addLog('═══ 테스트 완료 ═══', 'info');
 }
 
-function diLoad(label) {
-  return '<div class="di"><div class="dot spin"></div><span class="di-label">' + esc(label) + '</span><span class="di-val load">…</span></div>';
+function updateSummary() {
+  const ok = Object.values(results).filter(r => r.ok).length;
+  const fail = Object.values(results).filter(r => !r.ok).length;
+  const total = Object.keys(ENDPOINTS).reduce((sum, cat) => sum + ENDPOINTS[cat].length, 0);
+  const times = Object.values(results).map(r => r.ms).filter(m => m);
+  const avg = times.length > 0 ? Math.round(times.reduce((a,b)=>a+b,0)/times.length) : 0;
+
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('successCount').textContent = ok;
+  document.getElementById('failCount').textContent = fail;
+  document.getElementById('avgTime').textContent = avg + 'ms';
 }
 
-function fmtNum(v, dec) {
-  if (v === null || v === undefined) return '-';
-  return typeof v === 'number' ? v.toFixed(dec) : String(v);
-}
-
-function setGrid(id, html) {
-  var el = document.getElementById(id);
-  if (el) el.innerHTML = html;
-}
-
-/* ════════════════════════════════════════════════
-   Alpha Discovery Test
-════════════════════════════════════════════════ */
-function runAlpha() {
-  lg('═══ /alpha/discovery 호출 시작 ═══', 'info');
-  document.getElementById('alphaStatus').textContent = '⏳ 호출 중...';
-  document.getElementById('alphaMs').textContent = '...';
-
-  var t0 = Date.now();
-  fetch(WORKER + '/alpha/discovery')
-    .then(function(r) {
-      var ms = Date.now() - t0;
-      timings['/alpha/discovery'] = ms;
-      renderTimings();
-      document.getElementById('alphaMs').textContent = ms + 'ms';
-      lg('/alpha/discovery → HTTP ' + r.status + ' (' + ms + 'ms)', r.ok ? 'ok' : 'fail');
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      renderAlphaData(data);
-      document.getElementById('alphaStatus').textContent = '✅ 완료';
-      lg('✅ Alpha Discovery: ' + (data.top_20 ? data.top_20.length : 0) + '개 종목 발견', 'ok');
-    })
-    .catch(function(e) {
-      lg('❌ /alpha/discovery 실패: ' + e.message, 'fail');
-      document.getElementById('alphaStatus').textContent = '❌ 실패: ' + e.message;
-      document.getElementById('alphaTableBody').innerHTML =
-        '<tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--red);">❌ ' + esc(e.message) + '</td></tr>';
-    });
-}
-
-function renderAlphaData(data) {
-  if (!data.top_20 || data.top_20.length === 0) {
-    document.getElementById('alphaTableBody').innerHTML =
-      '<tr><td colspan="9" style="padding: 20px; text-align: center; color: var(--muted);">데이터 없음</td></tr>';
-    return;
-  }
-
-  var html = '';
-  data.top_20.forEach(function(stock, idx) {
-    var score = stock.score || 0;
-    var momentum = stock.momentum || 0;
-    var volume = stock.volume || 1.0;
-    var analyst = stock.analystScore || 0;
-    var insider = stock.insiderActivity || 0;
-
-    // 색상 판정
-    var scoreColor = score > 10 ? '#3fb950' : score > 5 ? '#d29922' : '#f85149';
-    var momentumColor = momentum > 0 ? '#3fb950' : '#f85149';
-    var volumeColor = volume > 1.2 ? '#3fb950' : volume > 1.0 ? '#d29922' : '#f85149';
-    var analystColor = analyst > 0.5 ? '#3fb950' : analyst > 0.2 ? '#d29922' : '#f85149';
-
-    html += '<tr style="border-bottom: 1px solid var(--bg3);">' +
-      '<td style="padding: 6px; color: var(--text-muted);">#' + (idx + 1) + '</td>' +
-      '<td style="padding: 6px; color: var(--blue); font-weight: 700;">' + esc(stock.symbol) + '</td>' +
-      '<td style="padding: 6px; text-align: right; color: ' + scoreColor + '; font-weight: 700;">' + fmtNum(score, 2) + '</td>' +
-      '<td style="padding: 6px; text-align: right; color: var(--text);">$' + fmtNum(stock.price, 2) + '</td>' +
-      '<td style="padding: 6px; text-align: right; color: var(--text);">' + fmtNum(stock.pe, 1) + 'x</td>' +
-      '<td style="padding: 6px; text-align: right; color: ' + momentumColor + ';">' +
-        (momentum >= 0 ? '+' : '') + fmtNum(momentum * 100, 1) + '%</td>' +
-      '<td style="padding: 6px; text-align: right; color: ' + volumeColor + ';">' + fmtNum(volume, 2) + 'x</td>' +
-      '<td style="padding: 6px; text-align: center; color: var(--text);">' +
-        (insider > 0 ? '🔥 ' + insider : '-') + '</td>' +
-      '<td style="padding: 6px; text-align: right; color: ' + analystColor + ';">' + fmtNum(analyst, 2) + '</td>' +
-      '</tr>';
-  });
-
-  document.getElementById('alphaTableBody').innerHTML = html;
-}
-
-/* ════════════════════════════════════════════════
-   Main Test
-════════════════════════════════════════════════ */
-function runAll() {
-  okN = 0; failN = 0;
-
-  // 로딩 표시
-  ['g-us','g-kr','g-crypto','g-bonds','g-credit','g-breadth','g-comm','g-fx','g-liq','g-rates','g-sec','g-mb','g-mi'].forEach(function(id) {
-    setGrid(id, '<div style="color:var(--muted);font-size:11px;">⏳ 호출 중...</div>');
-  });
-  document.getElementById('marketMs').textContent = '...';
-  document.getElementById('jsonViewer').textContent = '...';
-
-  lg('═══ /market 호출 시작 ═══', 'info');
-
-  var t0 = Date.now();
-  fetch(WORKER + '/market')
-    .then(function(r) {
-      var ms = Date.now() - t0;
-      timings['/market'] = ms;
-      renderTimings();
-      document.getElementById('marketMs').textContent = ms + 'ms';
-      lg('/market → HTTP ' + r.status + ' (' + ms + 'ms)', r.ok ? 'ok' : 'fail');
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      renderMarketData(data);
-      document.getElementById('jsonViewer').textContent = JSON.stringify(data, null, 2);
-      document.getElementById('hLastTime').textContent = '최근: ' + new Date().toLocaleTimeString('ko-KR');
-      updateChips();
-    })
-    .catch(function(e) {
-      lg('❌ /market 실패: ' + e.message, 'fail');
-      document.getElementById('jsonViewer').textContent = 'Error: ' + e.message;
-      failN += 25;
-      updateChips();
-    });
-}
-
-function renderMarketData(data) {
-
-  // ── US Market
-  var us = data.US_MARKET || {};
-  var usSyms = [
-    ['SP500','SPY'],['NASDAQ','QQQ'],['DOW','DIA'],
-    ['VIX','^VIX'],['SOX','SOXX'],['RUSSELL2000','IWM']
-  ];
-  var usHtml = usSyms.map(function(p) { return diObj(p[1] + ' ' + p[0], us[p[0]]); }).join('');
-  setGrid('g-us', usHtml);
-  usSyms.forEach(function(p) { countObj(p[1], us[p[0]]); });
-
-  // ── Korea
-  var kr = data.KOREA_MARKET || {};
-  setGrid('g-kr', diObj('EWY (Korea ETF)', kr.EWY));
-  countObj('EWY', kr.EWY);
-
-  // ── Crypto
-  var crypto = data.CRYPTO || {};
-  setGrid('g-crypto',
-    diObj('BTC (Bitcoin)', crypto.BTC) +
-    diObj('ETH (Ethereum)', crypto.ETH) +
-    diObj('SOL (Solana)', crypto.SOL)
-  );
-  ['BTC','ETH','SOL'].forEach(function(k) { countObj(k, crypto[k]); });
-
-  // ── Bonds
-  var bonds = data.BONDS || {};
-  setGrid('g-bonds',
-    diObj('HYG (High Yield)', bonds.HYG) +
-    diObj('LQD (Invest Grade)', bonds.LQD)
-  );
-  ['HYG','LQD'].forEach(function(k) { countObj(k, bonds[k]); });
-
-  // ── Market Risk (VIX from US_MARKET)
-  var vix = data.US_MARKET?.VIX || null;
-  setGrid('g-risk',
-    diObj('VIX (Volatility)', vix)
-  );
-  countObj('VIX', vix);
-
-  // ── Credit
-  var credit = data.CREDIT || {};
-  setGrid('g-credit',
-    diObj('HIGH_YIELD', credit.HIGH_YIELD) +
-    diObj('INVESTMENT_GRADE', credit.INVESTMENT_GRADE)
-  );
-  ['HIGH_YIELD','INVESTMENT_GRADE'].forEach(function(k) { countObj(k, credit[k]); });
-
-  // ── Breadth
-  var breadth = data.BREADTH || {};
-  setGrid('g-breadth',
-    diObj('TOTAL_MARKET', breadth.TOTAL_MARKET) +
-    diObj('LONG_TREASURY', breadth.LONG_TREASURY)
-  );
-  ['TOTAL_MARKET','LONG_TREASURY'].forEach(function(k) { countObj(k, breadth[k]); });
-
-  // ── Commodities
-  var cm = data.COMMODITIES || {};
-  setGrid('g-comm',
-    diObj('GCUSD (Gold)', cm.GOLD) +
-    diObj('SIUSD (Silver)', cm.SILVER) +
-    diObj('BZUSD (Brent Oil)', cm.OIL)
-  );
-  ['GOLD','SILVER','OIL'].forEach(function(k) { countObj(k, cm[k]); });
-
-  // ── FX
-  var fx = data.FX || {};
-  setGrid('g-fx',
-    diObj('USDKRW', fx.USDKRW) +
-    diObj('USDJPY', fx.USDJPY) +
-    diObj('EURUSD', fx.EURUSD) +
-    diObj('DX (DXY)', fx.DXY)
-  );
-  ['USDKRW','USDJPY','EURUSD','DXY'].forEach(function(k) { countObj(k, fx[k]); });
-
-  // ── Liquidity (raw FRED → 변환 표시)
-  var liq = data.LIQUIDITY || {};
-  var fedT  = liq.FED_BALANCE   ? (liq.FED_BALANCE   / 1e6).toFixed(2) + ' T'  : null;
-  var rpB   = liq.REVERSE_REPO  ? (liq.REVERSE_REPO  / 1e3).toFixed(0) + ' B'  : null;
-  var tgaT  = liq.TGA           ? (liq.TGA           / 1e6).toFixed(2) + ' T'  : null;
-  setGrid('g-liq',
-    di('WALCL (Fed)', liq.FED_BALANCE, fedT) +
-    di('RRPONTSYD (RRP)', liq.REVERSE_REPO, rpB) +
-    di('WTREGEN (TGA)', liq.TGA, tgaT)
-  );
-  ['FED_BALANCE','REVERSE_REPO','TGA'].forEach(function(k) { countVal(k, liq[k]); });
-
-  // ── Rates
-  var rt = data.RATES || {};
-  setGrid('g-rates',
-    di('DGS10 (10Y)', rt.US10Y, fmtNum(rt.US10Y,2) + '%') +
-    di('DGS2 (2Y)',   rt.US2Y,  fmtNum(rt.US2Y,2)  + '%') +
-    di('Yield Curve', rt.YIELD_CURVE, fmtNum(rt.YIELD_CURVE,3))
-  );
-  ['US10Y','US2Y','YIELD_CURVE'].forEach(function(k) { countVal(k, rt[k]); });
-
-  // ── Sectors
-  var sec = data.SECTORS || {};
-  var sMap = [
-    ['XLK','TECHNOLOGY'],['XLF','FINANCIALS'],['XLE','ENERGY'],['XLV','HEALTHCARE'],
-    ['XLY','CONSUMER_DISCRETIONARY'],['XLI','INDUSTRIALS'],['XLU','UTILITIES'],['XLRE','REAL_ESTATE']
-  ];
-  setGrid('g-sec', sMap.map(function(p) { return diObj(p[0], sec[p[1]]); }).join(''));
-  sMap.forEach(function(p) { countObj(p[0], sec[p[1]]); });
-
-  // ── Macro Base
-  var mb = data.MACRO_BASE || {};
-  var m2T = mb.M2 ? (mb.M2 / 1e6).toFixed(2) + ' T' : null;
-  setGrid('g-mb',
-    di('CPIAUCSL (CPI)',    mb.CPI,                   fmtNum(mb.CPI, 2)) +
-    di('T10YIE (Infl Exp)',mb.INFLATION_EXPECTATION,  fmtNum(mb.INFLATION_EXPECTATION, 2) + '%') +
-    di('UNRATE (Unemp)',   mb.UNEMPLOYMENT,            fmtNum(mb.UNEMPLOYMENT, 1) + '%') +
-    di('M2SL (M2)',        mb.M2,                     m2T) +
-    di('Real Rates',       mb.REAL_RATES,              fmtNum(mb.REAL_RATES, 2) + '%')
-  );
-  ['CPI','INFLATION_EXPECTATION','UNEMPLOYMENT','M2','REAL_RATES'].forEach(function(k) { countVal(k, mb[k]); });
-
-  // ── Macro Indicators
-  var mi = data.MACRO_INDICATORS || {};
-  setGrid('g-mi',
-    di('UMCSENT (Consumer)', mi.CONSUMER_SENTIMENT,  fmtNum(mi.CONSUMER_SENTIMENT, 1)) +
-    di('GDPC1 (Real GDP)',   mi.REAL_GDP,             mi.REAL_GDP ? mi.REAL_GDP.toLocaleString() : null) +
-    di('INDPRO (Ind Prod)',  mi.INDUSTRIAL_PRODUCTION,fmtNum(mi.INDUSTRIAL_PRODUCTION, 1)) +
-    di('PAYEMS (Nonfarm)',   mi.NONFARM_PAYROLLS,      mi.NONFARM_PAYROLLS ? mi.NONFARM_PAYROLLS.toLocaleString() : null) +
-    di('PCEPILFE (PCE)',     mi.PCE_INFLATION,         fmtNum(mi.PCE_INFLATION, 2) + '%')
-  );
-  ['CONSUMER_SENTIMENT','REAL_GDP','INDUSTRIAL_PRODUCTION','NONFARM_PAYROLLS','PCE_INFLATION'].forEach(function(k) { countVal(k, mi[k]); });
-
-  lg('═══ 처리 완료: ✅ ' + okN + ' | ❌ ' + failN + ' ═══', okN > failN ? 'ok' : 'warn');
-}
-
-function countObj(label, obj) {
-  var has = obj && obj.price !== null && obj.price !== undefined;
-  if (has) { okN++; lg('  ✅ ' + label + ': ' + fmtNum(obj.price, 2) + (obj.changePercentage != null ? ' (' + (obj.changePercentage >= 0 ? '+' : '') + fmtNum(obj.changePercentage,2) + '%)' : ''), 'ok'); }
-  else      { failN++; lg('  ❌ ' + label + ': null', 'fail'); }
-}
-
-function countVal(label, val) {
-  if (val !== null && val !== undefined) { okN++; lg('  ✅ ' + label + ': ' + val, 'ok'); }
-  else { failN++; lg('  ❌ ' + label + ': null', 'fail'); }
-}
-
-/* ════════════════════════════════════════════════
-   Endpoint tests
-════════════════════════════════════════════════ */
-var ENDPOINTS = [
-  '/market',
-  '/analysis/institutional-score',
-  '/analysis/market-regime',
-  '/analysis/liquidity-pulse',
-  '/analysis/yield-curve-monitor',
-  '/analysis/sector-rotation',
-  '/analysis/volatility-regime'
-];
-
-/* ════════════════════════════════════════════════
-   Fundamentals Data Tests (NEW)
-════════════════════════════════════════════════ */
-var FUNDAMENTALS_ENDPOINTS = [
-  { path: '/fundamentals/earnings', fields: ['epsActual', 'epsEstimated', 'revenueActual', 'revenueEstimated'], label: '📊 Earnings' },
-  { path: '/fundamentals/growth', fields: ['revenueGrowth', 'netIncomeGrowth', 'epsGrowth'], label: '📈 Growth' },
-  { path: '/fundamentals/income', fields: ['revenue', 'grossProfit', 'operatingIncome', 'netIncome', 'eps', 'ebitda'], label: '💼 Income' },
-  { path: '/fundamentals/balance', fields: ['cashAndCashEquivalents', 'totalAssets', 'totalLiabilities', 'totalStockholdersEquity'], label: '⚖️ Balance' },
-  { path: '/fundamentals/cashflow', fields: ['operatingCashFlow', 'freeCashFlow', 'capitalExpenditure'], label: '💧 CashFlow' },
-  { path: '/fundamentals/ratios', fields: ['priceToEarningsRatio', 'priceToBookRatio'], label: '📊 Ratios' },
-  { path: '/fundamentals/profile', fields: ['sector', 'industry', 'companyName'], label: '🏢 Profile' },
-  { path: '/fundamentals/shares', fields: ['floatShares'], label: '📋 Shares' }
-];
-
-function testFundamentals() {
-  var symbol = (document.getElementById('symbolInput').value || 'AAPL').toUpperCase();
-  var grid = document.getElementById('fundamentalsGrid');
-  grid.innerHTML = FUNDAMENTALS_ENDPOINTS.map(function(ep) { return diLoad(ep.label); }).join('');
-
-  document.getElementById('fundamentalsJson').textContent = '⏳ 로딩 중...';
-  lg('═══ ' + symbol + ' 재무 데이터 검증 시작 ═══', 'info');
-
-  var results = {};
-  var completed = 0;
-
-  FUNDAMENTALS_ENDPOINTS.forEach(function(ep, i) {
-    var url = WORKER + ep.path + '?symbol=' + symbol;
-    var t0 = Date.now();
-
-    fetch(url)
-      .then(function(r) {
-        var ms = Date.now() - t0;
-        timings[ep.path] = ms;
-        renderTimings();
-        return r.json().then(function(d) { return { ok: r.ok, ms: ms, data: d }; });
-      })
-      .then(function(res) {
-        var ok = res.ok && res.data && res.data.data;
-        var status = '✅';
-        var detail = res.ms + 'ms';
-
-        if (!ok) {
-          status = '❌';
-          detail = res.data?.error || 'Error';
-        } else {
-          // 필드 검증
-          var data = res.data.data;
-          var fieldCheck = ep.fields.filter(function(f) { return data[f] !== null && data[f] !== undefined; });
-          detail = fieldCheck.length + '/' + ep.fields.length + ' fields';
-        }
-
-        results[ep.path] = {
-          ok: ok,
-          ms: res.ms,
-          data: res.data.data || res.data,
-          status: status,
-          detail: detail
-        };
-
-        updateFundamentalsItem(i, ep.label, ok, res.ms, detail);
-        lg(ep.label + ' ' + status + ' → ' + detail, ok ? 'ok' : 'fail');
-
-        completed++;
-        if (completed === FUNDAMENTALS_ENDPOINTS.length) {
-          renderFundamentalsJson(results);
-        }
-      })
-      .catch(function(e) {
-        results[ep.path] = { ok: false, error: e.message };
-        updateFundamentalsItem(i, ep.label, false, null, 'FAIL');
-        lg(ep.label + ' ❌ ' + e.message, 'fail');
-        completed++;
-        if (completed === FUNDAMENTALS_ENDPOINTS.length) {
-          renderFundamentalsJson(results);
-        }
-      });
-  });
-}
-
-function updateFundamentalsItem(idx, label, ok, ms, detail) {
-  var grid = document.getElementById('fundamentalsGrid');
-  var items = grid.querySelectorAll('.di');
-  if (!items[idx]) return;
-  var dot = items[idx].querySelector('.dot');
-  var val = items[idx].querySelector('.di-val');
-  dot.className = 'dot ' + (ok ? 'ok' : 'fail');
-  val.className = 'di-val ' + (ok ? '' : 'fail');
-  val.textContent = ok ? detail : 'FAIL';
-}
-
-function renderFundamentalsJson(results) {
-  var json = {};
-  Object.keys(results).forEach(function(k) {
-    json[k] = {
-      ok: results[k].ok,
-      ms: results[k].ms,
-      error: results[k].error || null,
-      data: results[k].data || null
-    };
-  });
-  document.getElementById('fundamentalsJson').textContent = JSON.stringify(json, null, 2);
-}
-
-function testEndpoints() {
-  var grid = document.getElementById('endpointGrid');
-  grid.innerHTML = ENDPOINTS.map(function(ep) { return diLoad(ep); }).join('');
-
-  ENDPOINTS.forEach(function(ep, i) {
-    var t0 = Date.now();
-    fetch(WORKER + ep)
-      .then(function(r) {
-        var ms = Date.now() - t0;
-        timings[ep] = ms;
-        renderTimings();
-        var ok = r.ok;
-        return r.json().then(function(d) { return { ok: ok, ms: ms, data: d }; });
-      })
-      .then(function(res) {
-        updateEndpointItem(i, ep, res.ok, res.ms, res.data);
-        lg(ep + ' → ' + (res.ok ? '✅' : '❌') + ' ' + res.ms + 'ms', res.ok ? 'ok' : 'fail');
-      })
-      .catch(function(e) {
-        updateEndpointItem(i, ep, false, null, null);
-        lg(ep + ' → ❌ ' + e.message, 'fail');
-      });
-  });
-}
-
-function updateEndpointItem(idx, ep, ok, ms, data) {
-  var grid = document.getElementById('endpointGrid');
-  var items = grid.querySelectorAll('.di');
-  if (!items[idx]) return;
-  var dot = items[idx].querySelector('.dot');
-  var val = items[idx].querySelector('.di-val');
-  dot.className = 'dot ' + (ok ? 'ok' : 'fail');
-  val.className = 'di-val ' + (ok ? '' : 'fail');
-  val.textContent = ok ? (ms + 'ms') : 'FAIL';
-}
-
-/* ════════════════════════════════════════════════
-   Timings panel
-════════════════════════════════════════════════ */
-function renderTimings() {
-  var keys = Object.keys(timings);
-  if (!keys.length) return;
-  var maxMs = Math.max.apply(null, keys.map(function(k) { return timings[k]; }));
-  var html = keys.map(function(k) {
-    var ms = timings[k];
-    var pct = maxMs > 0 ? Math.round(ms / maxMs * 100) : 100;
-    return '<div class="timing-row">' +
-      '<span class="timing-name">' + esc(k) + '</span>' +
-      '<div class="timing-bar-bg"><div class="timing-bar-fill" style="width:' + pct + '%"></div></div>' +
-      '<span class="timing-ms">' + ms + 'ms</span>' +
-      '</div>';
-  }).join('');
-  document.getElementById('timingPanel').innerHTML = html;
-}
-
-/* ════════════════════════════════════════════════
-   Summary chips
-════════════════════════════════════════════════ */
-function updateChips() {
-  var total = okN + failN;
-  var pct = total > 0 ? Math.round(okN / total * 100) : 0;
-  var cls = pct >= 80 ? 'ok' : pct >= 50 ? 'warn' : 'fail';
-  document.getElementById('hChips').innerHTML =
-    '<div class="chip ok">✅ ' + okN + '</div>' +
-    '<div class="chip fail">❌ ' + failN + '</div>' +
-    '<div class="chip ' + cls + '">' + pct + '%</div>';
-}
-
-/* ════════════════════════════════════════════════
-   Auto refresh
-════════════════════════════════════════════════ */
 function toggleAuto() {
-  autoOn = !autoOn;
-  var btn = document.getElementById('autoBtn');
-  if (autoOn) {
+  autoTest = !autoTest;
+  const btn = document.getElementById('autoBtn');
+  if (autoTest) {
     btn.classList.add('active');
     btn.textContent = '자동갱신 ON';
-    startCd();
+    const interval = setInterval(() => {
+      if (!autoTest) clearInterval(interval);
+      testAllEndpoints();
+    }, 300000); // 5분
   } else {
     btn.classList.remove('active');
     btn.textContent = '자동갱신 OFF';
-    clearInterval(autoTimer);
-    clearInterval(cdTimer);
-    document.getElementById('hCountdown').textContent = '';
   }
 }
 
-function startCd() {
-  cdRemain = AUTO_SEC;
-  clearInterval(autoTimer);
-  clearInterval(cdTimer);
-  autoTimer = setInterval(function() { runAll(); cdRemain = AUTO_SEC; }, AUTO_SEC * 1000);
-  cdTimer = setInterval(function() {
-    cdRemain--;
-    document.getElementById('hCountdown').textContent = '다음: ' + cdRemain + 's';
-  }, 1000);
-}
-
-/* ════════════════════════════════════════════════
-   Utils
-════════════════════════════════════════════════ */
-function copyJson() {
-  navigator.clipboard.writeText(document.getElementById('jsonViewer').textContent)
-    .then(function() { lg('JSON 클립보드 복사됨', 'ok'); })
-    .catch(function(e) { lg('복사 실패: ' + e.message, 'fail'); });
-}
-
-/* ════════════════════════════════════════════════
-   Init
-════════════════════════════════════════════════ */
-window.addEventListener('load', function() {
-  runAll();
-  // 자동으로 AAPL 재무 데이터 검증
-  setTimeout(function() { testFundamentals(); }, 800);
+// 초기화
+window.addEventListener('load', () => {
+  renderEndpoints();
+  addLog('페이지 로드 완료. 테스트를 시작하세요.', 'info');
 });
 </script>
+
 </body>
 </html>
