@@ -2028,7 +2028,6 @@
                             <div class="title-area"><span class="title">9. Sentiment &amp; Options</span><button class="card-rfbtn" id="rfbtn-9" onclick="imdRefreshCard(9)" title="새로고침">↻</button></div>
                             <div class="item"><span>Fear &amp; Greed</span><span class="item-right"><span id="fear" class="value">-</span><span id="chg-fear" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-fear"></span></span></div>
                             <div class="item"><span>Put/Call Ratio</span><span class="item-right"><span id="putcall" class="value">-</span><span id="chg-putcall" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-putcall"></span></span></div>
-                            <div class="item"><span>SPY Gamma Wall</span><span class="item-right"><span id="gamma" class="value">-</span><span id="chg-gamma" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-gamma"></span></span></div>
                         </div>
 
                         <div class="card">
@@ -5938,12 +5937,11 @@ var ECON_DATA = {
 
         /* ══════════════════════════════════════════════════════
          * 카드 9 – 심리지표 & 옵션
-         * Fear & Greed: CNN → Alternative.me
-         * Put/Call Ratio: CBOE CSV (프록시) → '-'
-         * Gamma Wall: 복잡한 옵션 계산 → '-'
+         * Fear & Greed: Alternative.me API
+         * Put/Call Ratio: CBOE CSV 파싱
          * ══════════════════════════════════════════════════════ */
         function imdLoadSentiment() {
-            // Fear & Greed – Worker 경유 CNN API 전용 (서버사이드, CORS 없음, 6h 캐시)
+            // Fear & Greed – Worker 경유 Alternative.me API (6h 캐시)
             var FEAR_CACHE_KEY = 'feargreed_cache';
             var FEAR_CACHE_TTL = 6 * 60 * 60 * 1000; // 6시간
 
@@ -5957,7 +5955,7 @@ var ECON_DATA = {
                 }
             } catch(e) {}
 
-            // 2. Worker /feargreed 호출 (CNN 서버사이드, CORS 없음)
+            // 2. Worker /feargreed 호출 (Alternative.me API)
             imdGet(WORKER_URL + 'feargreed')
                 .then(function(d) {
                     if (d && d.score !== null && !isNaN(d.score)) {
@@ -5970,7 +5968,6 @@ var ECON_DATA = {
                 .catch(function() { imdSetStatus('fear', 'error'); });
 
             // Put/Call Ratio – CBOE total options EOD CSV
-            // ※ CSV는 JSON이 아니므로 imdGetProxyText(r.text()) 사용
             imdGetProxyText('https://www.cboe.com/publish/scheduledtask/mktdata/datahouse/totaloptionsvolume.csv')
                 .then(function(text) {
                     if (!text || typeof text !== 'string') throw new Error('no text');
@@ -5978,13 +5975,16 @@ var ECON_DATA = {
                     // 마지막 데이터 행에서 P/C ratio 파싱 (컬럼: Date,Calls,Puts,Total,PC_Ratio)
                     var last = lines[lines.length - 1].split(',');
                     var pc = parseFloat(last[last.length - 1]);
-                    if (!isNaN(pc) && pc > 0 && pc < 10) return pc;
-                    throw new Error('parse fail: ' + last[last.length - 1]);
+                    if (!isNaN(pc) && pc > 0 && pc < 10) {
+                        imdSetValue('putcall', pc, 2);
+                    } else {
+                        throw new Error('parse fail: ' + last[last.length - 1]);
+                    }
                 })
-                .catch(function(){ return null; })
-                .then(function(v){ imdSetValue('putcall', v, 2); });
-
-            // Gamma Wall – 실시간 옵션 그릭 계산 필요 → '-' 유지
+                .catch(function(err) {
+                    console.warn('Put/Call Ratio 로드 실패:', err);
+                    imdSetStatus('putcall', 'error');
+                });
         }
 
         /* ══════════════════════════════════════════════════════
@@ -6750,7 +6750,7 @@ var ECON_DATA = {
             6: { fn: imdLoadFX,               ids: ['uskrw','usjpy','eurusd'] },
             7: { fn: imdLoadLiquidity,        ids: ['fedbal','repo','tga','m2','us10y','us2y','yieldcurve'] },
             8: { fn: imdLoadSmartMoney,       ids: ['spyflow','qqqflow','iwmflow'] },
-            9: { fn: imdLoadSentiment,        ids: ['fear','putcall','gamma'] },
+            9: { fn: imdLoadSentiment,        ids: ['fear','putcall'] },
             10: { fn: imdLoadSectors,         ids: ['xlk','xlf','xle','xlv','xly','xli','xlu','xlre'] },
             11: { fn: imdLoadCreditBreadth,   ids: ['hyg','lqd','vti','tlt'] },
             12: { fn: imdLoadMacroBase,       ids: ['cpi','inflation_exp','unemployment','m2_macro','real_rates'] },
