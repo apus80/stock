@@ -420,7 +420,7 @@
 /* ════════════════════════════════════════════════
    설정
 ════════════════════════════════════════════════ */
-var WORKER = 'https://fmp-proxy.aiinvestflow.workers.dev';
+var WORKER = 'https://fmp-proxy.05ba87763e81af6206c77d3bd3d79d84.workers.dev';
 var AUTO_SEC = 60;
 
 /* ════════════════════════════════════════════════
@@ -652,13 +652,12 @@ function renderMarketData(data) {
   );
   ['HYG','LQD'].forEach(function(k) { countObj(k, bonds[k]); });
 
-  // ── Market Risk (FRED)
-  var risk = data.MARKET_RISK || {};
+  // ── Market Risk (VIX from US_MARKET)
+  var vix = data.US_MARKET?.VIX || null;
   setGrid('g-risk',
-    diVal('VIX (FRED)', risk.VIX_FRED, 'idx') +
-    diVal('HY OAS Spread', risk.HY_OAS_SPREAD, '%')
+    diObj('VIX (Volatility)', vix)
   );
-  ['VIX_FRED','HY_OAS_SPREAD'].forEach(function(k) { countObj(k, risk[k]); });
+  countObj('VIX', vix);
 
   // ── Credit
   var credit = data.CREDIT || {};
