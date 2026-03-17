@@ -101,6 +101,40 @@ export default {
         }
       }
 
+      // 시가총액 전용 함수 (정확한 marketCap 가져오기)
+      async function getMarketCapData(sym, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          // 📍 출처: FMP API /profile (시가총액 정확 데이터)
+          const url = `https://financialmodelingprep.com/api/v3/profile/${sym}?apikey=${FMP}`
+          const r = await fetch(url, { signal: controller.signal })
+
+          if (!r.ok) {
+            console.warn(`⚠️ FMP profile ${sym}: HTTP ${r.status}`)
+            return null
+          }
+
+          const data = await r.json()
+          const profile = Array.isArray(data) ? data[0] : data
+
+          if (!profile || !profile.marketCap) {
+            console.warn(`⚠️ ${sym}: marketCap 필드 없음`)
+            return null
+          }
+
+          return {
+            symbol: sym,
+            marketCap: profile.marketCap  // 정확한 시가총액 (단위: USD)
+          }
+        } catch (e) {
+          console.warn(`⚠️ ${sym} marketCap fetch error: ${e.message}`)
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
       async function getKoreanQuote(symbol, timeoutMs = 10000) {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
@@ -2810,31 +2844,36 @@ export default {
           }
         }
       }
-      // /top7 endpoint - S&P500 시총 상위 7개 (동적 정렬)
+      // /top7 endpoint - S&P500 시총 상위 7개 (정확한 marketCap 기준)
       else if (pathname === "/top7") {
         try {
           // S&P500 주요 대형주 풀
           const candidateSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'BRK.B', 'JNJ', 'V']
 
-          // 병렬로 모든 종목 데이터 호출
-          const quotes = await Promise.all(
+          // 1️⃣ 실시간 가격 데이터 호출 (getQuote)
+          const quoteResults = await Promise.all(
             candidateSymbols.map(sym => getQuote(sym))
           )
 
-          // 시가총액으로 정렬 (FMP quote에서 marketCap 제공)
-          // marketCap 없으면 price * volume 근사값 사용
-          const ranked = quotes
-            .map((q, idx) => {
-              const symbol = candidateSymbols[idx]
-              const marketCap = q?.marketCap || (q?.price && q?.volume ? q.price * q.volume : 0)
-              return {
-                symbol: symbol,
-                price: q?.price || null,
-                changePercentage: q?.changePercentage || null,
-                volume: q?.volume || null,
-                marketCap: marketCap
-              }
-            })
+          // 2️⃣ 정확한 시가총액 데이터 호출 (FMP /profile)
+          const marketCapResults = await Promise.all(
+            candidateSymbols.map(sym => getMarketCapData(sym))
+          )
+
+          // 3️⃣ 데이터 병합
+          const combined = quoteResults.map((q, idx) => {
+            const marketCapData = marketCapResults[idx]
+            return {
+              symbol: candidateSymbols[idx],
+              price: q?.price || null,
+              changePercentage: q?.changePercentage || null,
+              volume: q?.volume || null,
+              marketCap: marketCapData?.marketCap || null  // 정확한 FMP profile 시가총액
+            }
+          })
+
+          // 4️⃣ 유효한 데이터만 필터링 및 정렬
+          const ranked = combined
             .filter(item => item.price !== null && item.marketCap > 0)
             // 시가총액 기준 내림차순 정렬
             .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))
@@ -2849,7 +2888,7 @@ export default {
           response = {
             timestamp: new Date().toISOString(),
             dataType: "top7",
-            message: "S&P500 시총 상위 7개 (실시간 시가총액 기준)",
+            message: "S&P500 시총 상위 7개 (FMP 정확 시가총액 기준)",
             data: ranked
           }
         } catch (err) {
