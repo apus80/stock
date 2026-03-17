@@ -3655,8 +3655,24 @@ var ECON_DATA = {
                 // 스켈레톤 표시
                 allBox.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">🔄 검색 중...</div>';
 
-                // 통합 검색 - NewsAPI + Finnhub으로 국내/해외 모두 커버
-                await _nsSearchUnified(q, allBox, myTok);
+                // 한글 여부 감지 → 필요시 영어로 번역
+                var isKorean = /[가-힣]/.test(q);
+                var qEng = q;   // 영어 검색어 (원본 또는 번역)
+
+                if (isKorean) {
+                    // 한글 → 영어 번역 시도
+                    qEng = await _nsTranslate(q, 'ko|en');
+                    if (!qEng || qEng === q) {
+                        // 번역 실패 시 사전 조회
+                        qEng = _nsFinDict[q] || q;
+                    }
+                }
+
+                // 번역 중 새 검색이 시작됐으면 중단
+                if (_nsToken !== myTok) return;
+
+                // 통합 검색 - 원본 + 번역본 모두 사용
+                await _nsSearchUnified(q, qEng, allBox, myTok);
             }
 
             // 금융 키워드 사전 (번역 실패 시 fallback: 한→영)
@@ -3789,28 +3805,29 @@ var ECON_DATA = {
             // ════════════════════════════════════════════════════════════
             // 통합 뉴스 검색 (국내/해외 구분 없음, 제목 + 출처 + 날짜 표시)
             // ════════════════════════════════════════════════════════════
-            async function _nsSearchUnified(q, box, tok) {
+            async function _nsSearchUnified(q, qEng, box, tok) {
                 var srcEl = document.getElementById('nsAllSrc');
                 function stale() { return _nsToken !== tok; }
 
                 var allNews = [];
-                var qLow = q.toLowerCase();  // 검색어 (변형 없음)
+                var qLow = q.toLowerCase();
+                var qEngLow = qEng.toLowerCase();
 
-                // 1순위: NewsAPI (제목에 검색어 포함된 것만)
+                // 1순위: NewsAPI (원본 검색)
                 if (NS_NEWSAPI_KEY) {
                     try {
-                        // 검색어 그대로 사용 (변형 없음)
                         var nUrl = 'https://newsapi.org/v2/everything?q=' +
-                            encodeURIComponent(q) + '&sortBy=publishedAt&pageSize=50';
+                            encodeURIComponent(qEng) + '&sortBy=publishedAt&pageSize=50';
                         var ctrlNews = new AbortController();
                         setTimeout(function(){ ctrlNews.abort(); }, 8000);
                         var resNews = await fetch(nUrl + '&apiKey=' + NS_NEWSAPI_KEY, { signal: ctrlNews.signal });
                         var jsonNews = await resNews.json();
                         if (jsonNews.articles && jsonNews.articles.length) {
                             jsonNews.articles.forEach(function(a) {
-                                // 제목에 검색어가 포함된 경우만 추가
+                                // 제목 또는 설명에 검색어 포함된 경우만 (유연한 필터링)
                                 var titleLow = (a.title || '').toLowerCase();
-                                if (titleLow.includes(qLow)) {
+                                var descLow = (a.description || '').toLowerCase();
+                                if (titleLow.includes(qEngLow) || descLow.includes(qEngLow)) {
                                     allNews.push({
                                         title:       a.title || '',
                                         source:      a.source ? a.source.name : 'NewsAPI',
@@ -3823,7 +3840,7 @@ var ECON_DATA = {
                     } catch(e) { console.log('NewsAPI 검색 실패', e); }
                 }
 
-                // 2순위: Finnhub News (제목에 검색어 포함된 것만)
+                // 2순위: Finnhub News (보충)
                 if (NS_FINNHUB_KEY && allNews.length < 10) {
                     try {
                         var fUrl = 'https://finnhub.io/api/v1/news?category=general&minId=0';
@@ -3834,8 +3851,9 @@ var ECON_DATA = {
                         if (Array.isArray(jsonFin) && jsonFin.length > 0) {
                             jsonFin.forEach(function(a) {
                                 var titleLow = (a.headline || '').toLowerCase();
-                                // 제목에 검색어가 포함된 경우만 추가
-                                if (titleLow.includes(qLow)) {
+                                var summaryLow = (a.summary || '').toLowerCase();
+                                // 제목 또는 요약에 검색어 포함된 경우만
+                                if (titleLow.includes(qEngLow) || summaryLow.includes(qEngLow)) {
                                     allNews.push({
                                         title:       a.headline || '',
                                         source:      a.source || 'Finnhub',
