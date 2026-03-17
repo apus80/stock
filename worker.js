@@ -898,7 +898,10 @@ export default {
 
       // ✅ Retail Sales YoY 배열 계산: 각 포인트에서 ((current - 12M ago) / 12M ago) * 100
       function calculateRetailYoYArray(rsafsArray) {
-        if (!rsafsArray || rsafsArray.length < 13) return []
+        if (!rsafsArray || rsafsArray.length < 13) {
+          console.warn('⚠️ Retail YoY 계산 불가: 데이터 부족 (' + (rsafsArray?.length || 0) + '개 < 13개)')
+          return []
+        }
 
         const yoyValues = []
         const values = getValues(rsafsArray)  // 숫자 배열로 변환
@@ -915,6 +918,7 @@ export default {
           }
         }
 
+        console.log(`✅ Retail YoY: ${yoyValues.filter(v => v !== null).length}개 유효값 계산됨`)
         return yoyValues
       }
 
@@ -1297,10 +1301,13 @@ export default {
         const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi, svcPmi, retail] = results.map(extract)
 
         // 데이터 로깅
+          const mfgPmiValues = getValues(mfgPmi)
+          const svcPmiValues = getValues(svcPmi)
+          const retailValues = getValues(retail)
           console.log(`\n📊 ===== FRED 데이터 상태 =====`)
-          console.log(`   MFG_PMI (NAPM): ${mfgPmi?.length || 0}개 포인트`)
-          console.log(`   SVC_PMI (NAPMNOI): ${svcPmi?.length || 0}개 포인트`)
-          console.log(`   RETAIL (RSAFS): ${retail?.length || 0}개 포인트 → YoY 계산 중`)
+          console.log(`   MFG_PMI (NAPM): ${mfgPmi?.length || 0}개 → ${mfgPmiValues.length}개 유효값`)
+          console.log(`   SVC_PMI (NAPMNOI): ${svcPmi?.length || 0}개 → ${svcPmiValues.length}개 유효값`)
+          console.log(`   RETAIL (RSAFS): ${retail?.length || 0}개 → ${retailValues.length}개 유효값 (13개 필요)`)
           console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
