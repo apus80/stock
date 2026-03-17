@@ -3975,12 +3975,13 @@ var ECON_DATA = {
                 // ── 2순위: 매일경제 RSS (부족할 때) ─────────────────────────────
                 if (allArticles.length < 10) {
                     try {
-                        var r2j = await _rss2json('https://www.mk.co.kr/rss/40300001/', 10, 8000);
+                        var qLower = q.toLowerCase();
+                        var r2j = await _rss2json('https://www.mk.co.kr/rss/40300001/', 50, 8000);
                         if (r2j && r2j.status === 'ok' && r2j.items) {
                             r2j.items.forEach(function(it) {
                                 if (allArticles.length < 10) {
                                     var art = _r2jToArt(it, '매일경제');
-                                    if (art && art.title && art.url) {
+                                    if (art && art.title && art.url && art.title.toLowerCase().includes(qLower)) {
                                         allArticles.push(art);
                                     }
                                 }
@@ -3989,11 +3990,11 @@ var ECON_DATA = {
                             // CORS fallback
                             var doc = await _fetchRssXml('https://www.mk.co.kr/rss/40300001/', 8000);
                             if (doc) {
-                                var items = Array.from(doc.getElementsByTagName('item')).slice(0, 10);
+                                var items = Array.from(doc.getElementsByTagName('item')).slice(0, 50);
                                 items.forEach(function(it) {
                                     if (allArticles.length < 10) {
                                         var art = _xmlItemToArt(it, '매일경제');
-                                        if (art && art.title && art.url) {
+                                        if (art && art.title && art.url && art.title.toLowerCase().includes(qLower)) {
                                             allArticles.push(art);
                                         }
                                     }
@@ -4083,14 +4084,15 @@ var ECON_DATA = {
                 // ── 3순위: Google News RSS (부족 시 Fallback) ──────────────────
                 if (allArticles.length < 10) {
                     try {
+                        var qLower = q.toLowerCase();
                         var gnEngUrl = 'https://news.google.com/rss/search?q=' +
                             encodeURIComponent(q) + '&hl=en-US&gl=US&ceid=US:en';
-                        var r2jEng = await _rss2json(gnEngUrl, 10, 8000);
+                        var r2jEng = await _rss2json(gnEngUrl, 50, 8000);
                         if (r2jEng && r2jEng.status === 'ok' && r2jEng.items) {
                             r2jEng.items.forEach(function(it) {
                                 if (allArticles.length < 10) {
                                     var art = _r2jToArt(it, 'Google News');
-                                    if (art && art.title && art.url) {
+                                    if (art && art.title && art.url && art.title.toLowerCase().includes(qLower)) {
                                         allArticles.push(art);
                                     }
                                 }
@@ -4099,11 +4101,11 @@ var ECON_DATA = {
                             // CORS fallback
                             var docEng = await _fetchRssXml(gnEngUrl, 9000);
                             if (docEng) {
-                                var gnItems = Array.from(docEng.getElementsByTagName('item')).slice(0, 10);
+                                var gnItems = Array.from(docEng.getElementsByTagName('item')).slice(0, 50);
                                 gnItems.forEach(function(it) {
                                     if (allArticles.length < 10) {
                                         var art = _xmlItemToArt(it, 'Google News');
-                                        if (art && art.title && art.url) {
+                                        if (art && art.title && art.url && art.title.toLowerCase().includes(qLower)) {
                                             allArticles.push(art);
                                         }
                                     }
