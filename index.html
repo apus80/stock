@@ -3928,6 +3928,7 @@ var ECON_DATA = {
                 function stale() { return _nsToken !== tok; }
 
                 var allArticles = [];
+                var seenUrls = {};  // 중복 제거
                 var qLower = q.toLowerCase();
 
                 // ── 1순위: Naver News API ──────────────────────────────────
@@ -3952,10 +3953,12 @@ var ECON_DATA = {
                             var jsonN = await resN.json();
                             if (jsonN.items && jsonN.items.length) {
                                 jsonN.items.forEach(function(a) {
-                                    if (allArticles.length < 10) {
+                                    var url = a.originallink || a.link;
+                                    if (allArticles.length < 10 && !seenUrls[url]) {
+                                        seenUrls[url] = true;
                                         allArticles.push({
                                             title:       a.title.replace(/<[^>]+>/g,''),
-                                            url:         a.originallink || a.link,
+                                            url:         url,
                                             source:      '네이버뉴스',
                                             publishedAt: a.pubDate,
                                             description: a.description ? a.description.replace(/<[^>]+>/g,'') : ''
@@ -3971,15 +3974,18 @@ var ECON_DATA = {
                 // ── 2순위: 매일경제 RSS (부족할 때) ─────────────────────────────
                 if (allArticles.length < 10) {
                     try {
-                        var r2j = await _rss2json('https://www.mk.co.kr/rss/40300001/', 100, 8000);
+                        var r2j = await _rss2json('https://www.mk.co.kr/rss/40300001/', 200, 8000);
                         if (r2j && r2j.status === 'ok' && r2j.items) {
                             r2j.items.forEach(function(it) {
                                 if (allArticles.length < 10) {
                                     var art = _r2jToArt(it, '매일경제');
-                                    var titleMatch = art && art.title && art.title.toLowerCase().includes(qLower);
-                                    var descMatch = art && art.description && art.description.toLowerCase().includes(qLower);
-                                    if (art && art.title && art.url && (titleMatch || descMatch)) {
-                                        allArticles.push(art);
+                                    if (art && art.title && art.url && !seenUrls[art.url]) {
+                                        var titleMatch = art.title.toLowerCase().includes(qLower);
+                                        // 제목만 필터링 (설명은 무시)
+                                        if (titleMatch) {
+                                            seenUrls[art.url] = true;
+                                            allArticles.push(art);
+                                        }
                                     }
                                 }
                             });
@@ -3987,14 +3993,16 @@ var ECON_DATA = {
                             // CORS fallback
                             var doc = await _fetchRssXml('https://www.mk.co.kr/rss/40300001/', 8000);
                             if (doc) {
-                                var items = Array.from(doc.getElementsByTagName('item')).slice(0, 100);
+                                var items = Array.from(doc.getElementsByTagName('item')).slice(0, 200);
                                 items.forEach(function(it) {
                                     if (allArticles.length < 10) {
                                         var art = _xmlItemToArt(it, '매일경제');
-                                        var titleMatch = art && art.title && art.title.toLowerCase().includes(qLower);
-                                        var descMatch = art && art.description && art.description.toLowerCase().includes(qLower);
-                                        if (art && art.title && art.url && (titleMatch || descMatch)) {
-                                            allArticles.push(art);
+                                        if (art && art.title && art.url && !seenUrls[art.url]) {
+                                            var titleMatch = art.title.toLowerCase().includes(qLower);
+                                            if (titleMatch) {
+                                                seenUrls[art.url] = true;
+                                                allArticles.push(art);
+                                            }
                                         }
                                     }
                                 });
@@ -4026,6 +4034,8 @@ var ECON_DATA = {
                 function stale() { return _nsToken !== tok; }
 
                 var allArticles = [];
+                var seenUrls = {};  // 중복 제거
+                var qLower = q.toLowerCase();
 
                 // ── 1순위: NewsAPI (메인, 가장 안정적, 실시간) ──────────────────
                 if (NS_NEWSAPI_KEY) {
@@ -4040,7 +4050,8 @@ var ECON_DATA = {
                         var jsonNews = await resNews.json();
                         if (jsonNews.articles && jsonNews.articles.length) {
                             jsonNews.articles.forEach(function(a) {
-                                if (allArticles.length < 10) {
+                                if (allArticles.length < 10 && !seenUrls[a.url]) {
+                                    seenUrls[a.url] = true;
                                     allArticles.push({
                                         title:       a.title || '',
                                         url:         a.url || '',
@@ -4066,7 +4077,8 @@ var ECON_DATA = {
                         var jsonFin = await resFin.json();
                         if (Array.isArray(jsonFin) && jsonFin.length > 0) {
                             jsonFin.forEach(function(a) {
-                                if (allArticles.length < 10) {
+                                if (allArticles.length < 10 && !seenUrls[a.url]) {
+                                    seenUrls[a.url] = true;
                                     allArticles.push({
                                         title:       a.headline || '',
                                         url:         a.url || '',
@@ -4085,15 +4097,18 @@ var ECON_DATA = {
                     try {
                         var gnEngUrl = 'https://news.google.com/rss/search?q=' +
                             encodeURIComponent(q) + '&hl=en-US&gl=US&ceid=US:en';
-                        var r2jEng = await _rss2json(gnEngUrl, 100, 8000);
+                        var r2jEng = await _rss2json(gnEngUrl, 150, 8000);
                         if (r2jEng && r2jEng.status === 'ok' && r2jEng.items) {
                             r2jEng.items.forEach(function(it) {
                                 if (allArticles.length < 10) {
                                     var art = _r2jToArt(it, 'Google News');
-                                    var titleMatch = art && art.title && art.title.toLowerCase().includes(qLower);
-                                    var descMatch = art && art.description && art.description.toLowerCase().includes(qLower);
-                                    if (art && art.title && art.url && (titleMatch || descMatch)) {
-                                        allArticles.push(art);
+                                    if (art && art.title && art.url && !seenUrls[art.url]) {
+                                        // 제목만 필터링
+                                        var titleMatch = art.title.toLowerCase().includes(qLower);
+                                        if (titleMatch) {
+                                            seenUrls[art.url] = true;
+                                            allArticles.push(art);
+                                        }
                                     }
                                 }
                             });
@@ -4101,14 +4116,16 @@ var ECON_DATA = {
                             // CORS fallback
                             var docEng = await _fetchRssXml(gnEngUrl, 9000);
                             if (docEng) {
-                                var gnItems = Array.from(docEng.getElementsByTagName('item')).slice(0, 100);
+                                var gnItems = Array.from(docEng.getElementsByTagName('item')).slice(0, 150);
                                 gnItems.forEach(function(it) {
                                     if (allArticles.length < 10) {
                                         var art = _xmlItemToArt(it, 'Google News');
-                                        var titleMatch = art && art.title && art.title.toLowerCase().includes(qLower);
-                                        var descMatch = art && art.description && art.description.toLowerCase().includes(qLower);
-                                        if (art && art.title && art.url && (titleMatch || descMatch)) {
-                                            allArticles.push(art);
+                                        if (art && art.title && art.url && !seenUrls[art.url]) {
+                                            var titleMatch = art.title.toLowerCase().includes(qLower);
+                                            if (titleMatch) {
+                                                seenUrls[art.url] = true;
+                                                allArticles.push(art);
+                                            }
                                         }
                                     }
                                 });
@@ -4124,7 +4141,7 @@ var ECON_DATA = {
                         setTimeout(function(){ ctrl2.abort(); }, 8000);
                         var gUrl = 'https://gnews.io/api/v4/search?' + [
                             'q='       + encodeURIComponent(q),
-                            'lang=en', 'max=10',
+                            'lang=en', 'max=20',
                             'sortby=publishedAt',
                             'apikey='  + NS_GNEWS_KEY
                         ].join('&');
@@ -4132,7 +4149,8 @@ var ECON_DATA = {
                         var jsonG = await resG.json();
                         if (jsonG.articles && jsonG.articles.length) {
                             jsonG.articles.forEach(function(a) {
-                                if (allArticles.length < 10) {
+                                if (allArticles.length < 10 && !seenUrls[a.url]) {
+                                    seenUrls[a.url] = true;
                                     allArticles.push({
                                         title: a.title || '',
                                         url: a.url || '',
