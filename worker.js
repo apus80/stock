@@ -2874,9 +2874,14 @@ export default {
 
           // 4️⃣ 유효한 데이터만 필터링 및 정렬
           const ranked = combined
-            .filter(item => item.price !== null && item.marketCap > 0)
-            // 시가총액 기준 내림차순 정렬
-            .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))
+            .filter(item => item.price !== null)  // 가격이 있는 것만 필터링
+            // 시가총액(또는 가격) 기준 내림차순 정렬
+            .sort((a, b) => {
+              // marketCap이 있으면 사용, 없으면 price로 정렬
+              const aSort = a.marketCap || a.price
+              const bSort = b.marketCap || b.price
+              return (bSort || 0) - (aSort || 0)
+            })
             // rank 재설정
             .map((item, idx) => ({
               rank: idx + 1,
