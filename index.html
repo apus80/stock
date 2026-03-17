@@ -2336,6 +2336,7 @@ var ECON_DATA = {
                         autocomplete="off"
                         onkeydown="if(event.key==='Enter') nsSearch()">
                     <button onclick="nsSearch()">🔍 검색</button>
+                    <button onclick="nsRefresh()" title="새로고침" style="background:#667eea;margin-left:4px;padding:8px 12px;">🔄</button>
                 </div>
                 <p class="news-search-hint">
                     🌐 한글 입력 → 영어 번역 후 해외 뉴스 검색 &nbsp;|&nbsp; 영어 입력 → 한글 번역 후 국내 뉴스 검색 &nbsp;(국내·해외 동시)
@@ -2350,21 +2351,8 @@ var ECON_DATA = {
                         </div>
                     </div>
                     <div class="result-body">
-                        <div class="ns-columns">
-                            <div class="ns-col">
-                                <div class="ns-col-header">🇰🇷 국내 뉴스</div>
-                                <div id="nsKorBox"></div>
-                                <div id="nsKorSrc" class="ns-col-src"></div>
-                            </div>
-                            <div class="ns-col">
-                                <div class="ns-col-header">
-                                    🌐 해외 뉴스
-                                    <span id="nsTransBadge" class="ns-trans-badge" style="display:none;"></span>
-                                </div>
-                                <div id="nsEngBox"></div>
-                                <div id="nsEngSrc" class="ns-col-src"></div>
-                            </div>
-                        </div>
+                        <div id="nsAllBox" style="list-style:none;padding:0;margin:0;"></div>
+                        <div id="nsAllSrc" class="ns-col-src" style="text-align:center;margin-top:8px;"></div>
                     </div>
                 </div>
                 <p class="ns-api-note">
@@ -3638,14 +3626,21 @@ var ECON_DATA = {
                 clearTimeout(_nsDebounce);
                 _nsDebounce = setTimeout(_nsDoSearch, 0);
             }
+
+            function nsRefresh() {
+                var q = ((document.getElementById('nsInput') || {}).value || '').trim();
+                if (q) {
+                    nsSearch();
+                }
+            }
+
             // ── 메인 검색 오케스트레이터 ─────────────────────────────────
             async function _nsDoSearch() {
                 var myTok = ++_nsToken;   // 이 검색의 고유 토큰 (경쟁 조건 방지)
                 var q = ((document.getElementById('nsInput') || {}).value || '').trim();
                 var container = document.getElementById('nsContainer');
-                var korBox    = document.getElementById('nsKorBox');
-                var engBox    = document.getElementById('nsEngBox');
-                if (!korBox || !engBox) return;
+                var allBox = document.getElementById('nsAllBox');
+                if (!allBox) return;
                 if (!q) { if (container) container.style.display = 'none'; return; }
 
                 if (container) {
@@ -3658,33 +3653,10 @@ var ECON_DATA = {
                 }
 
                 // 스켈레톤 표시
-                var skel = '<div class="ns-skeleton"></div>'.repeat(3);
-                korBox.innerHTML = skel;
-                engBox.innerHTML = skel;
+                allBox.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;">🔄 검색 중...</div>';
 
-                // 한글 여부 감지 → 양방향 번역
-                var isKorean = /[가-힣]/.test(q);
-                var qEng = q;   // 해외뉴스용 (영어)
-                var qKor = q;   // 국내뉴스용 (한글)
-                var badge = document.getElementById('nsTransBadge');
-                if (isKorean) {
-                    // 한글 → 영어 (해외뉴스 검색용)
-                    qEng = await _nsTranslate(q, 'ko|en');
-                    if (badge) { badge.textContent = '"' + qEng + '"'; badge.style.display = 'inline'; }
-                } else {
-                    // 영어 → 한글 (국내뉴스 검색용)
-                    qKor = await _nsTranslate(q, 'en|ko');
-                    if (badge) badge.style.display = 'none';
-                }
-
-                // 번역 중 새 검색이 시작됐으면 중단
-                if (_nsToken !== myTok) return;
-
-                // 국내 + 해외 병렬 실행 (토큰 전달)
-                await Promise.all([
-                    _nsSearchKorean(qKor, korBox, myTok),
-                    _nsSearchEnglish(qEng, engBox, myTok)
-                ]);
+                // 통합 검색 - NewsAPI + Finnhub으로 국내/해외 모두 커버
+                await _nsSearchUnified(q, allBox, myTok);
             }
 
             // 금융 키워드 사전 (번역 실패 시 fallback: 한→영)
@@ -3812,6 +3784,101 @@ var ECON_DATA = {
                     publishedAt: pubEl   ? pubEl.textContent.trim()  : '',
                     description: descEl  ? descEl.textContent.replace(/<[^>]+>/g, '').trim() : ''
                 };
+            }
+
+            // ════════════════════════════════════════════════════════════
+            // 통합 뉴스 검색 (국내/해외 구분 없음, 제목 + 출처만 표시)
+            // ════════════════════════════════════════════════════════════
+            async function _nsSearchUnified(q, box, tok) {
+                var srcEl = document.getElementById('nsAllSrc');
+                function stale() { return _nsToken !== tok; }
+
+                var allNews = [];
+
+                // 금융 키워드 자동 조합
+                var finWords = ['주식','증권','금융','투자','환율','채권','펀드','ETF','코스피','코스닥','나스닥','금리','stock','finance','invest'];
+                var alreadyFin = finWords.some(function(k){ return q.toLowerCase().includes(k.toLowerCase()); });
+                var optQ = alreadyFin ? q : (q + ' stock finance');
+
+                // 1순위: NewsAPI (한글 + 영어 통합 검색)
+                if (NS_NEWSAPI_KEY) {
+                    try {
+                        // 현재 검색어 그대로 검색
+                        var nUrl = 'https://newsapi.org/v2/everything?q=' +
+                            encodeURIComponent(optQ) + '&sortBy=publishedAt&pageSize=15';
+                        var ctrlNews = new AbortController();
+                        setTimeout(function(){ ctrlNews.abort(); }, 8000);
+                        var resNews = await fetch(nUrl + '&apiKey=' + NS_NEWSAPI_KEY, { signal: ctrlNews.signal });
+                        var jsonNews = await resNews.json();
+                        if (jsonNews.articles && jsonNews.articles.length) {
+                            jsonNews.articles.forEach(function(a) {
+                                allNews.push({
+                                    title:       a.title || '',
+                                    source:      a.source ? a.source.name : 'NewsAPI',
+                                    url:         a.url || '',
+                                    publishedAt: a.publishedAt || new Date().toISOString()
+                                });
+                            });
+                        }
+                    } catch(e) { console.log('NewsAPI 통합 검색 실패', e); }
+                }
+
+                // 2순위: Finnhub News (금융 뉴스, 부족 시 보충)
+                if (NS_FINNHUB_KEY && allNews.length < 10) {
+                    try {
+                        var fUrl = 'https://finnhub.io/api/v1/news?category=general&minId=0';
+                        var ctrlFin = new AbortController();
+                        setTimeout(function(){ ctrlFin.abort(); }, 8000);
+                        var resFin = await fetch(fUrl + '&token=' + NS_FINNHUB_KEY, { signal: ctrlFin.signal });
+                        var jsonFin = await resFin.json();
+                        if (Array.isArray(jsonFin) && jsonFin.length > 0) {
+                            var qLow = optQ.toLowerCase();
+                            jsonFin.forEach(function(a) {
+                                var titleLow = (a.headline || '').toLowerCase();
+                                if (titleLow.includes(qLow) || allNews.length < 8) {
+                                    allNews.push({
+                                        title:       a.headline || '',
+                                        source:      a.source || 'Finnhub',
+                                        url:         a.url || '',
+                                        publishedAt: new Date(a.datetime * 1000).toISOString()
+                                    });
+                                }
+                            });
+                        }
+                    } catch(e) { console.log('Finnhub 통합 검색 실패', e); }
+                }
+
+                if (stale()) return;
+
+                // 최신순 정렬
+                allNews.sort(function(a,b) { return new Date(b.publishedAt) - new Date(a.publishedAt); });
+
+                // 최대 10개만 표시
+                var displayNews = allNews.slice(0, 10);
+
+                if (displayNews.length > 0) {
+                    _nsRenderUnified(displayNews, box);
+                    if (srcEl) srcEl.textContent = '📡 출처: NewsAPI · Finnhub';
+                } else {
+                    if (stale()) return;
+                    box.innerHTML = '<p style="text-align:center;padding:20px;color:#94a3b8;">😔 검색 결과 없음<br><span style="font-size:0.8em;">더 일반적인 키워드로 시도해 보세요</span></p>';
+                    if (srcEl) srcEl.textContent = '';
+                }
+            }
+
+            // 통합 렌더링 (제목 + 출처만 표시)
+            function _nsRenderUnified(newsArray, box) {
+                var html = '<ul style="list-style:none;padding:0;margin:0;">';
+                newsArray.forEach(function(news, idx) {
+                    var srcSpan = '<span style="font-size:0.75em;color:#10b981;margin-left:8px;background:#f0fdf4;padding:2px 6px;border-radius:3px;font-weight:600;">' + (news.source || 'News') + '</span>';
+                    var item = '<li style="padding:8px 0;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+                        '<a href="' + news.url + '" target="_blank" style="color:#0f766e;text-decoration:none;font-weight:500;flex:1;font-size:0.9em;line-height:1.4;">' + (news.title || '제목 없음') + '</a>' +
+                        srcSpan +
+                        '</li>';
+                    html += item;
+                });
+                html += '</ul>';
+                box.innerHTML = html;
             }
 
             async function _nsSearchKorean(q, box, tok) {
