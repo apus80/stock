@@ -5687,7 +5687,7 @@ var ECON_DATA = {
          * 카드 3 – 시총 Top 7 (동적 - Worker /top7 엔드포인트)
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
-            // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
+            // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴 (시총순 정렬)
             console.log('[Top7] /top7 엔드포인트 호출 시작');
             fetch(WORKER_API_BASE + '/top7')
                 .then(function(res) {
@@ -5700,21 +5700,47 @@ var ECON_DATA = {
                     console.log('[Top7] result.data 타입:', typeof result.data, '배열?', Array.isArray(result.data));
                     if (result && result.data && Array.isArray(result.data)) {
                         console.log('[Top7] 데이터 처리 시작, 항목 수:', result.data.length);
+                        // ✅ HTML DOM 요소들을 시총 순서대로 재배열
+                        var container = document.querySelector('.card'); // Top 7 카드 컨테이너
+                        var items = Array.from(container.querySelectorAll('.item'));
+
                         result.data.forEach(function(item, idx) {
-                            var ticker = (item.symbol || '').toLowerCase();
-                            var idPrefix = 'top7_' + ticker;
-                            console.log(`  [${idx}] ${ticker} - id: ${idPrefix}, price: ${item.price}`);
+                            if (idx >= items.length) return; // 7개 초과 방지
+
+                            var ticker = (item.symbol || '').toUpperCase();
+                            var rank = idx + 1;
+                            var itemElem = items[idx];
+
+                            console.log(`  [Rank ${rank}] ${ticker} - price: ${item.price}, mc: ${item.marketCap}`);
+
+                            // 이 .item 요소 재사용 (DOM에서의 위치는 유지)
+                            var labelSpan = itemElem.querySelector('span:first-child');
+                            labelSpan.textContent = rank + '. ' + ticker;
+
+                            // ID 업데이트 (데이터 바인딩용)
+                            var valueSpan = itemElem.querySelector('.value');
+                            var changeSpan = itemElem.querySelector('.chg-val');
+                            var statusSpan = itemElem.querySelector('.ns');
+
+                            var oldId = valueSpan.id;
+                            var newId = 'top7_' + ticker.toLowerCase();
+
+                            valueSpan.id = newId;
+                            if (changeSpan) changeSpan.id = 'chg-' + newId;
+                            if (statusSpan) statusSpan.id = 'ns-' + newId;
 
                             // 가격 설정
                             if (item.price !== null && item.price !== undefined) {
-                                console.log(`    ✅ 가격 설정: ${idPrefix} = ${item.price}`);
-                                imdSetValue(idPrefix, item.price, 2);
+                                console.log(`    ✅ 가격 설정: ${newId} = ${item.price}`);
+                                imdSetValue(newId, item.price, 2);
+                            } else {
+                                imdSetValue(newId, '-', 0);
                             }
 
                             // 등락률 설정
                             if (item.changePercentage !== null && item.changePercentage !== undefined) {
-                                console.log(`    ✅ 등락률 설정: chg-${idPrefix} = ${item.changePercentage}%`);
-                                imdSetChange(idPrefix, item.changePercentage, 'pct');
+                                console.log(`    ✅ 등락률 설정: chg-${newId} = ${item.changePercentage}%`);
+                                imdSetChange(newId, item.changePercentage, 'pct');
                             }
                         });
                     } else {
