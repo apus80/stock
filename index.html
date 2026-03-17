@@ -2384,13 +2384,13 @@ var ECON_DATA = {
             <!-- 뉴스 & 섹터 주도주 병렬 배치 영역 -->
             <div class="news-sector-row" data-ms="news">
                 <!-- SAVE 버튼 (실시간뉴스 페이지 전용) -->
-                <div style="margin: 10px 20px; text-align: center; padding: 6px 12px; background: #f8fafc; border-radius: 8px; border: 1px dashed #667eea;">
-                    <p style="font-size: 0.7em; color: #64748b; margin: 0 0 4px 0; font-weight: 500;">
-                        💾 포트폴리오 관리:
+                <div style="margin: 20px; text-align: center; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px dashed #667eea;">
+                    <p style="font-size: 0.85em; color: #4a5568; margin-bottom: 10px; font-weight: 600;">
+                        SaveTicker에서 보유종목 관리하기
                     </p>
                     <a href="https://saveticker.com/" target="_blank" rel="noopener noreferrer"
-                        style="display:inline-block; padding:4px 16px; background:var(--bg-gradient); color:#fff; text-decoration:none; border-radius:16px; font-weight:600; font-size:0.75em; transition:all 0.3s; box-shadow:var(--shadow-main);"
-                        onmouseover="this.style.transform='translateY(-1px)';"
+                        style="display:inline-block; padding:8px 25px; background:var(--bg-gradient); color:#fff; text-decoration:none; border-radius:20px; font-weight:700; font-size:0.9em; transition:all 0.3s; box-shadow:var(--shadow-main);"
+                        onmouseover="this.style.transform='translateY(-2px)';"
                         onmouseout="this.style.transform='translateY(0)';" id="save-link-btn">
                         SAVE
                     </a>
@@ -6429,7 +6429,6 @@ var ECON_DATA = {
                 if (item.value !== null && item.value !== undefined) {
                     imdSetValue(item.id, item.value, 2, item.unit);
                 } else {
-                    imdSetValue(item.id, '-', 2, item.unit);  // 값 없을 때 기본값 "-"
                     imdSetStatus(item.id, 'error');
                 }
             });
@@ -6485,10 +6484,9 @@ var ECON_DATA = {
             ];
 
             items.forEach(function(item) {
-                if (item.value !== null && item.value !== undefined) {
+                if (item.value) {
                     imdSetValue(item.id, item.value, 2, item.unit);
                 } else {
-                    imdSetValue(item.id, '-', 2, item.unit);  // 값 없을 때 기본값 "-"
                     imdSetStatus(item.id, 'error');
                 }
             });
@@ -7331,4 +7329,4 @@ var ECON_DATA = {
 
 </body>
 
-                                                                           </html>
+    </html>
