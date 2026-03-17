@@ -3589,14 +3589,22 @@ var ECON_DATA = {
             // ══════════════════════════════════════════════════════════════
 
             // ─── API 키 설정 (선택사항 - 미설정 시 무료 fallback으로 동작) ───
-            // ① Naver Open API (국내 뉴스 1순위) — corsproxy.io로 CORS 우회
+            // ① NewsAPI (국내/해외 통합 - 가장 안정적, 실시간)
+            //    가입: https://newsapi.org → 무료 키 생성
+            var NS_NEWSAPI_KEY  = '';  // NewsAPI 키 (미설정 시 RSS fallback)
+
+            // ② Finnhub (금융 전문, 실시간)
+            //    가입: https://finnhub.io → 무료 키 생성
+            var NS_FINNHUB_KEY  = '';  // Finnhub API 키
+
+            // ③ GNews (해외 뉴스 Fallback, CORS 공식 지원)
+            //    가입: https://gnews.io → 무료 100건/일
+            var NS_GNEWS_KEY    = 'd878b3dd7dc594c4fba6bc6ab3d3d51f';  // GNews API 키
+
+            // ④ Naver Open API (국내 뉴스 Fallback) — corsproxy.io로 CORS 우회
             //    가입: https://developers.naver.com → 애플리케이션 등록 → 검색 API
             var NS_NAVER_ID     = 'ZtMfDpGdck5cjAKBhP5p';  // ← Client ID
             var NS_NAVER_SECRET = 'tJG2dvct0P';             // ← Client Secret
-
-            // ② GNews (해외 뉴스 1순위, CORS 공식 지원)
-            //    가입: https://gnews.io → 무료 100건/일
-            var NS_GNEWS_KEY    = 'd878b3dd7dc594c4fba6bc6ab3d3d51f';  // GNews API 키
             // ────────────────────────────────────────────────────────────
 
             var _nsDebounce = null;
