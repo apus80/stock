@@ -681,6 +681,314 @@
             min-width: 40px;
             text-align: right;
         }
+
+        /* ===== BREAKOUT RADAR WIDGET ===== */
+        .breakout-widget {
+            background: linear-gradient(145deg, #0c1426 0%, #1a1f3a 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 16px;
+            padding: 0;
+            overflow: hidden;
+            margin-top: 30px;
+        }
+
+        .breakout-header {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 50%, #7f1d1d 100%);
+            padding: 24px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .breakout-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .breakout-header h2 {
+            font-size: 1.4em;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .breakout-header p {
+            font-size: 0.85em;
+            color: rgba(255,255,255,0.75);
+        }
+
+        .breakout-header .header-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 10px;
+            font-size: 0.78em;
+        }
+
+        .breakout-header .header-meta span {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .breakout-header .header-meta strong {
+            color: #fbbf24;
+        }
+
+        .breakout-body {
+            padding: 20px 24px 24px;
+        }
+
+        .breakout-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .breakout-table thead th {
+            padding: 10px 8px;
+            text-align: left;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+            white-space: nowrap;
+        }
+
+        .breakout-table tbody td {
+            padding: 12px 8px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+            color: #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .breakout-table tbody tr {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .breakout-table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.08);
+        }
+
+        .breakout-table tbody tr.signal-breakout {
+            background: rgba(239, 68, 68, 0.04);
+        }
+
+        .breakout-table tbody tr.signal-breakout:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .breakout-rank {
+            font-weight: 800;
+            color: #64748b;
+            font-size: 12px;
+            width: 28px;
+        }
+
+        .breakout-rank.top3 {
+            color: #fbbf24;
+        }
+
+        .breakout-ticker-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .breakout-ticker {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .breakout-name {
+            font-size: 10px;
+            color: #64748b;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .breakout-score-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .breakout-score-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(71, 85, 105, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+
+        .breakout-score-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+
+        .breakout-score-fill.level-high {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+        }
+
+        .breakout-score-fill.level-mid {
+            background: linear-gradient(90deg, #f59e0b, #eab308);
+        }
+
+        .breakout-score-fill.level-low {
+            background: linear-gradient(90deg, #6b7280, #9ca3af);
+        }
+
+        .breakout-score-num {
+            font-weight: 700;
+            min-width: 32px;
+            text-align: right;
+            font-size: 13px;
+        }
+
+        .signal-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .signal-tag.signal-BREAKOUT {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .signal-tag.signal-ACCUMULATION {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .signal-tag.signal-NEUTRAL {
+            background: rgba(107, 114, 128, 0.15);
+            color: #9ca3af;
+            border: 1px solid rgba(107, 114, 128, 0.3);
+        }
+
+        .signal-tag.signal-WEAKNESS {
+            background: rgba(71, 85, 105, 0.15);
+            color: #64748b;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .breakout-detail-panel {
+            margin-top: 20px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .breakout-detail-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .breakout-components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .breakout-comp-card {
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .breakout-comp-label {
+            font-size: 10px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .breakout-comp-value {
+            font-size: 1.3em;
+            font-weight: 800;
+        }
+
+        .breakout-comp-sub {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .breakout-technicals {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .breakout-tech-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .breakout-tech-label {
+            color: #94a3b8;
+        }
+
+        .breakout-tech-value {
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .breakout-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(71, 85, 105, 0.3);
+            flex-wrap: wrap;
+        }
+
+        .breakout-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .breakout-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
@@ -1360,6 +1668,321 @@
         }
 
         // =============================
+        // WIDGET 5: BREAKOUT RADAR
+        // 단기 돌파 후보 발굴 (1~3주, 목표 20%)
+        // 데이터 소스: FMP API /stable/quote (52주 고저, MA, 거래량 등)
+        // =============================
+
+        function BreakoutRadar({ onSelectSymbol }) {
+            const [data, setData] = useState(null)
+            const [loading, setLoading] = useState(false)
+            const [error, setError] = useState(null)
+            const [elapsed, setElapsed] = useState(0)
+            const [selectedIdx, setSelectedIdx] = useState(0)
+
+            const fetchData = useCallback(async () => {
+                setLoading(true)
+                setError(null)
+                setElapsed(0)
+                const timer = setInterval(() => setElapsed(p => p + 1), 1000)
+                try {
+                    // 출처: Worker /alpha/breakout → FMP /stable/quote (80종목)
+                    const res = await fetch(`${API_BASE}/alpha/breakout`, { method: 'POST' })
+                    const json = await res.json()
+                    if (json.error) throw new Error(json.error)
+                    setData(json)
+                    setSelectedIdx(0)
+                } catch (e) {
+                    setError(e.message)
+                } finally {
+                    setLoading(false)
+                    clearInterval(timer)
+                    setElapsed(0)
+                }
+            }, [])
+
+            useEffect(() => { fetchData() }, [fetchData])
+
+            const selected = data?.top_15?.[selectedIdx] || null
+
+            const scoreColor = (score) => {
+                if (score >= 75) return '#ef4444'
+                if (score >= 60) return '#f59e0b'
+                if (score >= 45) return '#eab308'
+                return '#6b7280'
+            }
+
+            const scoreLevel = (score) => {
+                if (score >= 70) return 'level-high'
+                if (score >= 50) return 'level-mid'
+                return 'level-low'
+            }
+
+            const compColor = (value) => {
+                if (value >= 70) return '#ef4444'
+                if (value >= 50) return '#f59e0b'
+                if (value >= 30) return '#eab308'
+                return '#6b7280'
+            }
+
+            const boolColor = (v) => v ? '#10b981' : '#ef4444'
+
+            return (
+                <div className="breakout-widget">
+                    <div className="breakout-header">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h2>Breakout Radar</h2>
+                                <p>S&P500 Top 80 | 단기 돌파 후보 발굴 (1~3주, 목표 20%)</p>
+                                {data && (
+                                    <div className="header-meta">
+                                        <span>분석: <strong>{data.analyzed || '-'}종목</strong></span>
+                                        <span>소요: <strong>{data.execution_time_sec || '-'}초</strong></span>
+                                        <span>갱신: <strong>{data.timestamp ? new Date(data.timestamp).toLocaleTimeString('ko-KR') : '-'}</strong></span>
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={fetchData}
+                                disabled={loading}
+                                style={{
+                                    background: 'rgba(255,255,255,0.15)',
+                                    border: '1px solid rgba(255,255,255,0.3)',
+                                    color: '#fff',
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    cursor: loading ? 'wait' : 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {loading ? `분석 중... ${elapsed}초` : '새로고침'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="breakout-body">
+                        {loading && !data && (
+                            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
+                                <div style={{ fontSize: '2em', marginBottom: '12px' }}>&#9201;</div>
+                                <div style={{ fontSize: '14px' }}>S&P500 Top 80 종목 분석 중... ({elapsed}초)</div>
+                                <div style={{ fontSize: '12px', marginTop: '8px', color: '#64748b' }}>7개 기술적 지표 스캐닝</div>
+                            </div>
+                        )}
+
+                        {error && !data && (
+                            <div className="error-box">
+                                <div>{error}</div>
+                                <button onClick={fetchData}>재시도</button>
+                            </div>
+                        )}
+
+                        {data && data.top_15 && data.top_15.length > 0 && (
+                            <>
+                                <table className="breakout-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>종목</th>
+                                            <th>현재가</th>
+                                            <th>등락</th>
+                                            <th style={{ minWidth: '140px' }}>Breakout Score</th>
+                                            <th>시그널</th>
+                                            <th>52W고점</th>
+                                            <th>거래량비</th>
+                                            <th>50MA</th>
+                                            <th>GC</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {data.top_15.slice(0, 5).map((stock, idx) => (
+                                            <tr
+                                                key={stock.symbol}
+                                                className={stock.signal === 'BREAKOUT' ? 'signal-breakout' : ''}
+                                                onClick={() => {
+                                                    setSelectedIdx(idx)
+                                                    if (onSelectSymbol) onSelectSymbol(stock.symbol)
+                                                }}
+                                                style={{
+                                                    background: selectedIdx === idx ? 'rgba(102, 126, 234, 0.12)' : undefined,
+                                                    borderLeft: selectedIdx === idx ? '3px solid #667eea' : '3px solid transparent'
+                                                }}
+                                            >
+                                                <td className={`breakout-rank ${idx < 3 ? 'top3' : ''}`}>
+                                                    {idx + 1}
+                                                </td>
+                                                <td>
+                                                    <div className="breakout-ticker-cell">
+                                                        <span className="breakout-ticker">{stock.symbol}</span>
+                                                        <span className="breakout-name">{stock.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ fontWeight: 600 }}>
+                                                    ${stock.price?.toFixed(2) || '-'}
+                                                </td>
+                                                <td className={stock.change > 0 ? 'value-positive' : stock.change < 0 ? 'value-negative' : ''}>
+                                                    {stock.change > 0 ? '+' : ''}{stock.change?.toFixed(2) || '0'}%
+                                                </td>
+                                                <td>
+                                                    <div className="breakout-score-bar">
+                                                        <div className="breakout-score-track">
+                                                            <div
+                                                                className={`breakout-score-fill ${scoreLevel(stock.breakoutScore)}`}
+                                                                style={{ width: `${Math.min(100, stock.breakoutScore)}%` }}
+                                                            />
+                                                        </div>
+                                                        <span
+                                                            className="breakout-score-num"
+                                                            style={{ color: scoreColor(stock.breakoutScore) }}
+                                                        >
+                                                            {stock.breakoutScore?.toFixed(0)}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span className={`signal-tag signal-${stock.signal}`}>
+                                                        {stock.signalLabel}
+                                                    </span>
+                                                </td>
+                                                <td style={{ fontSize: '12px' }}>
+                                                    <span style={{ color: stock.signals?.highProximity >= 90 ? '#10b981' : '#94a3b8' }}>
+                                                        {stock.signals?.highProximity?.toFixed(0) || '-'}%
+                                                    </span>
+                                                </td>
+                                                <td style={{ fontSize: '12px' }}>
+                                                    <span style={{ color: stock.signals?.volumeRatio >= 1.5 ? '#f59e0b' : '#94a3b8' }}>
+                                                        {stock.signals?.volumeRatio?.toFixed(1) || '-'}x
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span style={{ color: boolColor(stock.signals?.ma50Above), fontSize: '14px' }}>
+                                                        {stock.signals?.ma50Above ? '\u25B2' : '\u25BC'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span style={{ color: boolColor(stock.signals?.goldenCross), fontSize: '14px' }}>
+                                                        {stock.signals?.goldenCross ? '\u2713' : '\u2717'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                                {/* 선택된 종목 상세 분석 패널 */}
+                                {selected && (
+                                    <div className="breakout-detail-panel">
+                                        <div className="breakout-detail-title">
+                                            <span style={{ color: '#667eea', fontSize: '1.2em' }}>{selected.symbol}</span>
+                                            <span style={{ color: '#94a3b8', fontSize: '0.8em', fontWeight: 400 }}>{selected.name}</span>
+                                            <span className={`signal-tag signal-${selected.signal}`} style={{ marginLeft: 'auto' }}>
+                                                {selected.signalLabel} ({selected.breakoutScore?.toFixed(1)}점)
+                                            </span>
+                                        </div>
+
+                                        {/* 7개 컴포넌트 점수 */}
+                                        <div className="breakout-components-grid">
+                                            {[
+                                                { key: 'highScore', label: '52W 고점', sub: `${selected.signals?.highProximity?.toFixed(0)}%` },
+                                                { key: 'volScore', label: '거래량 급증', sub: `${selected.signals?.volumeRatio?.toFixed(1)}x` },
+                                                { key: 'momScore', label: '단기 모멘텀', sub: `${selected.signals?.momentum > 0 ? '+' : ''}${selected.signals?.momentum?.toFixed(2)}%` },
+                                                { key: 'ma50Score', label: '50MA 돌파', sub: selected.signals?.ma50Above ? 'Above' : 'Below' },
+                                                { key: 'goldenScore', label: '골든크로스', sub: selected.signals?.goldenCross ? 'Active' : 'N/A' },
+                                                { key: 'rangeScore', label: '52W 위치', sub: `${selected.signals?.yearRangePosition?.toFixed(0)}%` },
+                                                { key: 'pressureScore', label: '매수 압력', sub: `${selected.signals?.buyPressure?.toFixed(0)}%` },
+                                            ].map(comp => (
+                                                <div className="breakout-comp-card" key={comp.key}>
+                                                    <div className="breakout-comp-label">{comp.label}</div>
+                                                    <div
+                                                        className="breakout-comp-value"
+                                                        style={{ color: compColor(selected.components?.[comp.key] || 0) }}
+                                                    >
+                                                        {selected.components?.[comp.key]?.toFixed(0) || '0'}
+                                                    </div>
+                                                    <div className="breakout-comp-sub">{comp.sub}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* 기술적 지표 */}
+                                        <div className="breakout-technicals">
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">52W High</span>
+                                                <span className="breakout-tech-value">${selected.technicals?.yearHigh?.toFixed(2) || '-'}</span>
+                                            </div>
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">52W Low</span>
+                                                <span className="breakout-tech-value">${selected.technicals?.yearLow?.toFixed(2) || '-'}</span>
+                                            </div>
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">50일 이평</span>
+                                                <span className="breakout-tech-value">${selected.technicals?.priceAvg50?.toFixed(2) || '-'}</span>
+                                            </div>
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">200일 이평</span>
+                                                <span className="breakout-tech-value">${selected.technicals?.priceAvg200?.toFixed(2) || '-'}</span>
+                                            </div>
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">거래량</span>
+                                                <span className="breakout-tech-value">{selected.technicals?.volume ? (selected.technicals.volume / 1e6).toFixed(1) + 'M' : '-'}</span>
+                                            </div>
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">평균 거래량</span>
+                                                <span className="breakout-tech-value">{selected.technicals?.avgVolume ? (selected.technicals.avgVolume / 1e6).toFixed(1) + 'M' : '-'}</span>
+                                            </div>
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">PE</span>
+                                                <span className="breakout-tech-value">{selected.technicals?.pe?.toFixed(1) || '-'}</span>
+                                            </div>
+                                            <div className="breakout-tech-item">
+                                                <span className="breakout-tech-label">시가총액</span>
+                                                <span className="breakout-tech-value">{selected.technicals?.marketCap ? fmt.dollar(selected.technicals.marketCap) : '-'}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* 범례 */}
+                                        <div className="breakout-legend">
+                                            <div className="breakout-legend-item">
+                                                <div className="breakout-legend-dot" style={{ background: '#ef4444' }} />
+                                                <span>돌파 임박 (75+)</span>
+                                            </div>
+                                            <div className="breakout-legend-item">
+                                                <div className="breakout-legend-dot" style={{ background: '#f59e0b' }} />
+                                                <span>매집 단계 (60-74)</span>
+                                            </div>
+                                            <div className="breakout-legend-item">
+                                                <div className="breakout-legend-dot" style={{ background: '#eab308' }} />
+                                                <span>중립 (45-59)</span>
+                                            </div>
+                                            <div className="breakout-legend-item">
+                                                <div className="breakout-legend-dot" style={{ background: '#6b7280' }} />
+                                                <span>약세 (0-44)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 스코어링 설명 */}
+                                <div style={{ marginTop: '16px', padding: '14px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '11px', color: '#64748b', lineHeight: 1.7 }}>
+                                    <strong style={{ color: '#94a3b8' }}>Breakout Score 산출 로직 (7개 기술적 지표 가중합):</strong><br/>
+                                    52W 고점 근접도 20% | 거래량 급증 20% | 단기 모멘텀 15% | 50MA 돌파 15% | 골든크로스 10% | 52W 범위 위치 10% | 매수 압력 10%<br/>
+                                    <span style={{ color: '#475569' }}>데이터 소스: FMP API /stable/quote (실시간) | 대상: S&P500 시총 상위 80종목</span>
+                                </div>
+                            </>
+                        )}
+
+                        {data && (!data.top_15 || data.top_15.length === 0) && (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                                분석 결과가 없습니다.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )
+        }
+
+        // =============================
         // MAIN APP
         // =============================
 
@@ -1385,6 +2008,8 @@
                         <div style={{ marginTop: '30px' }}>
                             <SectorRotationDrillDown onSelectSymbol={setSelectedSymbol} />
                         </div>
+
+                        <BreakoutRadar onSelectSymbol={setSelectedSymbol} />
 
                         <div style={{ textAlign: 'center', color: '#2d3748', fontSize: '12px', marginTop: '40px', paddingBottom: '40px' }}>
                             <p>데이터 소스: FMP API, FRED, Alpha Discovery Engine</p>

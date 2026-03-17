@@ -1810,6 +1810,622 @@ export default {
         }
       }
 
+      // =============================
+      // BREAKOUT DISCOVERY ENGINE
+      // 📍 단기 돌파 후보 발굴 (1~3주, 목표 20%)
+      // 출처: FMP API /stable/quote (무료 플랜)
+      // =============================
+
+      async function getFullQuote(sym, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) return null
+          const j = await r.json()
+          if (!j || (Array.isArray(j) && j.length === 0)) return null
+          const q = Array.isArray(j) ? j[0] : j
+          if (!q || !q.price) return null
+          return q
+        } catch (e) {
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      function calculateBreakoutScore(q) {
+        if (!q || !q.price) return null
+
+        const price = q.price
+        const yearHigh = q.yearHigh || price
+        const yearLow = q.yearLow || price * 0.7
+        const volume = q.volume || 0
+        const avgVolume = q.avgVolume || volume || 1
+        const dayLow = q.dayLow || price
+        const dayHigh = q.dayHigh || price
+        const priceAvg50 = q.priceAvg50 || price
+        const priceAvg200 = q.priceAvg200 || price
+        const changePct = q.changesPercentage || q.changePercentage || 0
+        const pe = q.pe || 0
+        const marketCap = q.marketCap || 0
+        const open = q.open || price
+        const prevClose = q.previousClose || price
+
+        // 1. 52주 고점 근접도 (20%) - 고점 대비 90%+ = 돌파 직전
+        const highPct = yearHigh > 0 ? (price / yearHigh) * 100 : 50
+        const highScore = Math.max(0, Math.min(100, (highPct - 70) * (100 / 30)))
+
+        // 2. 거래량 급증 비율 (20%) - 평균 대비 1.5배 이상이면 기관 매집
+        const volRatio = avgVolume > 0 ? volume / avgVolume : 1
+        const volScore = Math.max(0, Math.min(100, (volRatio - 0.5) * 100))
+
+        // 3. 단기 모멘텀 (15%) - 일일 변화율 기반
+        const momScore = Math.max(0, Math.min(100, (changePct + 5) * 10))
+
+        // 4. 50일 이평선 돌파 (15%) - 가격 > 50MA = 강세 추세
+        const ma50Ratio = priceAvg50 > 0 ? price / priceAvg50 : 1
+        const ma50Score = Math.max(0, Math.min(100, (ma50Ratio - 0.9) * 500))
+
+        // 5. 골든크로스 시그널 (10%) - 50MA > 200MA = 장기 강세 전환
+        const goldenRatio = priceAvg200 > 0 ? priceAvg50 / priceAvg200 : 1
+        const goldenScore = Math.max(0, Math.min(100, (goldenRatio - 0.95) * 1000))
+
+        // 6. 52주 범위 내 위치 (10%) - 연간 범위 상위권
+        const yearRange = yearHigh - yearLow
+        const yearPosition = yearRange > 0 ? (price - yearLow) / yearRange * 100 : 50
+        const rangeScore = Math.max(0, Math.min(100, yearPosition))
+
+        // 7. 일중 매수 압력 (10%) - 장중 저가 대비 현재가 위치
+        const dayRange = dayHigh - dayLow
+        const dayPosition = dayRange > 0 ? (price - dayLow) / dayRange * 100 : 50
+        const pressureScore = Math.max(0, Math.min(100, dayPosition))
+
+        // 종합 Breakout Score (가중합)
+        const totalScore =
+          highScore * 0.20 +
+          volScore * 0.20 +
+          momScore * 0.15 +
+          ma50Score * 0.15 +
+          goldenScore * 0.10 +
+          rangeScore * 0.10 +
+          pressureScore * 0.10
+
+        // 시그널 분류
+        let signal, signalLabel
+        if (totalScore >= 75) { signal = 'BREAKOUT'; signalLabel = '돌파 임박' }
+        else if (totalScore >= 60) { signal = 'ACCUMULATION'; signalLabel = '매집 단계' }
+        else if (totalScore >= 45) { signal = 'NEUTRAL'; signalLabel = '중립' }
+        else { signal = 'WEAKNESS'; signalLabel = '약세' }
+
+        return {
+          symbol: q.symbol || q.name,
+          name: q.name || q.symbol,
+          price: parseFloat(price.toFixed(2)),
+          change: parseFloat(changePct.toFixed(2)),
+          breakoutScore: parseFloat(totalScore.toFixed(1)),
+          signal,
+          signalLabel,
+          signals: {
+            highProximity: parseFloat(highPct.toFixed(1)),
+            volumeRatio: parseFloat(volRatio.toFixed(2)),
+            momentum: parseFloat(changePct.toFixed(2)),
+            ma50Above: price > priceAvg50,
+            goldenCross: priceAvg50 > priceAvg200,
+            yearRangePosition: parseFloat(yearPosition.toFixed(1)),
+            buyPressure: parseFloat(dayPosition.toFixed(1))
+          },
+          technicals: {
+            yearHigh: parseFloat(yearHigh.toFixed(2)),
+            yearLow: parseFloat(yearLow.toFixed(2)),
+            priceAvg50: parseFloat(priceAvg50.toFixed(2)),
+            priceAvg200: parseFloat(priceAvg200.toFixed(2)),
+            volume,
+            avgVolume,
+            pe: pe ? parseFloat(pe.toFixed(1)) : null,
+            marketCap
+          },
+          components: {
+            highScore: parseFloat(highScore.toFixed(1)),
+            volScore: parseFloat(volScore.toFixed(1)),
+            momScore: parseFloat(momScore.toFixed(1)),
+            ma50Score: parseFloat(ma50Score.toFixed(1)),
+            goldenScore: parseFloat(goldenScore.toFixed(1)),
+            rangeScore: parseFloat(rangeScore.toFixed(1)),
+            pressureScore: parseFloat(pressureScore.toFixed(1))
+          }
+        }
+      }
+
+      async function runBreakoutDiscovery() {
+        try {
+          const universe = await getHedgeFundUniverse()
+          const stocks = universe.slice(0, 80) // S&P500 시총 상위 80종목
+          const results = []
+          const startTime = Date.now()
+
+          for (let i = 0; i < stocks.length; i++) {
+            try {
+              const q = await getFullQuote(stocks[i])
+              if (!q) continue
+              const scored = calculateBreakoutScore(q)
+              if (scored) results.push(scored)
+            } catch (e) {
+              console.error(`❌ Breakout ${stocks[i]}: ${e.message}`)
+            }
+            // Rate limit 관리
+            if (i % 10 === 9) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+
+          // Breakout Score 기준 내림차순 정렬
+          results.sort((a, b) => b.breakoutScore - a.breakoutScore)
+
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
+
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: 'breakout_discovery',
+            universe_size: stocks.length,
+            analyzed: results.length,
+            execution_time_sec: parseFloat(elapsedTime),
+            top_15: results.slice(0, 15)
+          }
+        } catch (e) {
+          console.error(`❌ runBreakoutDiscovery:`, e.message)
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: 'breakout_discovery',
+            error: e.message,
+            top_15: []
+          }
+        }
+      }
+
+      // =============================
+      // ALPHA SCANNER ENGINE (헤지펀드급 7-모듈 스코어링)
+      // 📍 단기 알파: S&P500 Top 80, 1~3주, 목표 20%
+      // 데이터 소스: FMP fundamentals + FRED macro
+      // =============================
+
+      // 1️⃣ Earnings Momentum Score (25%)
+      function calcEarningsMomentum(earnings, growth) {
+        if (!earnings) return { score: 0, epsSurprise: null, revSurprise: null }
+        let score = 0
+        const epsA = earnings.epsActual
+        const epsE = earnings.epsEstimated
+        const revA = earnings.revenueActual
+        const revE = earnings.revenueEstimated
+
+        // EPS Surprise
+        let epsSurprise = null
+        if (epsA && epsE && epsE !== 0) {
+          epsSurprise = ((epsA / epsE) - 1) * 100
+          const ratio = epsA / epsE
+          if (ratio >= 1.20) score += 30
+          else if (ratio >= 1.10) score += 20
+          else if (ratio >= 1.05) score += 10
+          else if (ratio >= 1.0) score += 5
+        }
+
+        // Revenue Surprise
+        let revSurprise = null
+        if (revA && revE && revE !== 0) {
+          revSurprise = ((revA / revE) - 1) * 100
+          const ratio = revA / revE
+          if (ratio >= 1.20) score += 30
+          else if (ratio >= 1.10) score += 20
+          else if (ratio >= 1.05) score += 10
+          else if (ratio >= 1.0) score += 5
+        }
+
+        // Bonus: positive surprise + positive epsGrowth
+        const epsGrowth = growth?.epsGrowth || 0
+        if (epsSurprise > 0 && epsGrowth > 0) score += 10
+
+        return {
+          score: Math.min(100, score),
+          epsSurprise: epsSurprise != null ? parseFloat(epsSurprise.toFixed(2)) : null,
+          revSurprise: revSurprise != null ? parseFloat(revSurprise.toFixed(2)) : null
+        }
+      }
+
+      // 2️⃣ Fundamental Acceleration (20%)
+      function calcFundamentalAccel(growth, income) {
+        if (!growth && !income) return { score: 0 }
+        let score = 0
+
+        const revGrowth = growth?.revenueGrowth || 0
+        const epsGrowth = growth?.epsGrowth || 0
+        const niGrowth = growth?.netIncomeGrowth || 0
+
+        // Revenue growth positive & accelerating
+        if (revGrowth > 0.20) score += 25
+        else if (revGrowth > 0.10) score += 20
+        else if (revGrowth > 0.05) score += 15
+        else if (revGrowth > 0) score += 10
+
+        // EPS growth accelerating
+        if (epsGrowth > 0.20) score += 25
+        else if (epsGrowth > 0.10) score += 20
+        else if (epsGrowth > 0.05) score += 15
+        else if (epsGrowth > 0) score += 10
+
+        // Net income growth
+        if (niGrowth > 0.15) score += 20
+        else if (niGrowth > 0.05) score += 10
+        else if (niGrowth > 0) score += 5
+
+        // Margin expansion: operatingIncome/revenue
+        if (income?.revenue && income?.operatingIncome) {
+          const opMargin = income.operatingIncome / income.revenue
+          if (opMargin > 0.30) score += 15
+          else if (opMargin > 0.20) score += 10
+          else if (opMargin > 0.10) score += 5
+        }
+
+        return { score: Math.min(100, score), revenueGrowth: revGrowth, epsGrowth, niGrowth }
+      }
+
+      // 3️⃣ Balance Sheet Strength (10%)
+      function calcBalanceStrength(balance, income) {
+        if (!balance) return { score: 0 }
+        let score = 0
+        const ebitda = income?.ebitda || 1
+        const netDebt = balance.netDebt || 0
+        const cash = balance.cashAndCashEquivalents || 0
+        const shortDebt = balance.shortTermDebt || 0
+        const totalDebt = balance.totalDebt || 0
+
+        // netDebt / ebitda < 2 → strong
+        if (ebitda > 0) {
+          const leverage = netDebt / ebitda
+          if (leverage < 0) score += 40  // net cash position
+          else if (leverage < 1) score += 35
+          else if (leverage < 2) score += 25
+          else if (leverage < 3) score += 10
+        }
+
+        // cash > shortTermDebt → strong
+        if (cash > shortDebt && shortDebt > 0) score += 30
+        else if (cash > 0) score += 15
+
+        // Low total debt relative to assets
+        if (balance.totalAssets && balance.totalAssets > 0) {
+          const debtRatio = totalDebt / balance.totalAssets
+          if (debtRatio < 0.2) score += 30
+          else if (debtRatio < 0.4) score += 20
+          else if (debtRatio < 0.6) score += 10
+        }
+
+        return { score: Math.min(100, score) }
+      }
+
+      // 4️⃣ Cash Flow Quality (15%)
+      function calcCashFlowQuality(cashflow, income) {
+        if (!cashflow) return { score: 0, fcf: null }
+        let score = 0
+        const fcf = cashflow.freeCashFlow || 0
+        const ocf = cashflow.operatingCashFlow || 0
+        const ni = income?.netIncome || 0
+        const sbc = cashflow.stockBasedCompensation || 0
+        const buybacks = cashflow.commonStockRepurchased || 0
+
+        // freeCashFlow > 0
+        if (fcf > 0) {
+          score += 30
+          // FCF relative to market cap proxy (revenue)
+          if (income?.revenue && income.revenue > 0) {
+            const fcfMargin = fcf / income.revenue
+            if (fcfMargin > 0.20) score += 20
+            else if (fcfMargin > 0.10) score += 15
+            else if (fcfMargin > 0.05) score += 10
+          }
+        }
+
+        // operatingCashFlow > netIncome → quality earnings
+        if (ocf > ni && ni > 0) score += 20
+
+        // Buybacks present → shareholder return
+        if (buybacks < 0) score += 15  // negative = repurchased
+
+        // Penalty: high stock-based compensation
+        if (sbc > 0 && income?.revenue && income.revenue > 0) {
+          const sbcRatio = sbc / income.revenue
+          if (sbcRatio > 0.10) score -= 15
+          else if (sbcRatio > 0.05) score -= 5
+        }
+
+        return { score: Math.max(0, Math.min(100, score)), fcf }
+      }
+
+      // 5️⃣ Float Compression (10%)
+      function calcFloatCompression(shares, growth) {
+        if (!shares || !shares.floatShares) return { score: 0, floatCategory: 'Unknown' }
+        const floatShares = shares.floatShares
+        let score = 0
+        let floatCategory = 'Large'
+
+        // Float size scoring
+        if (floatShares < 100e6) { score += 50; floatCategory = 'Micro' }
+        else if (floatShares < 500e6) { score += 40; floatCategory = 'Small' }
+        else if (floatShares < 2e9) { score += 25; floatCategory = 'Medium' }
+        else if (floatShares < 10e9) { score += 15; floatCategory = 'Large' }
+        else { score += 5; floatCategory = 'Mega' }
+
+        // Combine with growth → squeeze potential
+        const revGrowth = growth?.revenueGrowth || 0
+        const epsGrowth = growth?.epsGrowth || 0
+        if ((revGrowth > 0.10 || epsGrowth > 0.10) && floatShares < 2e9) {
+          score += 30  // high growth + tight float = squeeze
+        }
+        if ((revGrowth > 0.20 || epsGrowth > 0.20) && floatShares < 500e6) {
+          score += 20  // extreme squeeze potential
+        }
+
+        return { score: Math.min(100, score), floatCategory }
+      }
+
+      // 6️⃣ Valuation Sweet Spot (10%)
+      function calcValuationScore(ratios, growth) {
+        if (!ratios) return { score: 0 }
+        let score = 0
+        const pe = ratios.priceToEarningsRatio || 0
+        const pb = ratios.priceToBookRatio || 0
+        const revGrowth = growth?.revenueGrowth || 0
+
+        // PE sweet spot: 15~60
+        if (pe > 0 && pe <= 15) score += 40  // deep value
+        else if (pe > 15 && pe <= 30) score += 35  // reasonable
+        else if (pe > 30 && pe <= 60) score += 20  // growth premium
+        else if (pe > 60 && revGrowth > 0.20) score += 15  // high PE but justified by growth
+        else if (pe > 60) score += 0  // overvalued without growth
+
+        // PB scoring
+        if (pb > 0 && pb <= 3) score += 30
+        else if (pb > 3 && pb <= 8) score += 20
+        else if (pb > 8 && pb <= 15) score += 10
+        else score += 5
+
+        // PEG-like: penalize ultra high PE without growth
+        if (pe > 80 && revGrowth < 0.10) score -= 20
+
+        return { score: Math.max(0, Math.min(100, score)) }
+      }
+
+      // 7️⃣ Macro Overlay (10%)
+      function calcMacroOverlay(macroData) {
+        if (!macroData) return { score: 50, riskMode: 'NEUTRAL', multiplier: 1.0 }
+        let score = 0
+        const vix = macroData.vix || 20
+        const hySpread = macroData.hySpread || 4
+        const us10y = macroData.us10y || 4
+
+        // VIX scoring
+        if (vix < 15) score += 40
+        else if (vix < 20) score += 30
+        else if (vix < 25) score += 15
+        else score += 0
+
+        // HY spread: falling = risk-on
+        if (hySpread < 3) score += 30
+        else if (hySpread < 5) score += 20
+        else if (hySpread < 7) score += 10
+
+        // 10Y yield stability
+        if (us10y < 4.5) score += 30
+        else if (us10y < 5.0) score += 20
+        else score += 10
+
+        const riskMode = score >= 70 ? 'RISK_ON' : score >= 40 ? 'NEUTRAL' : 'RISK_OFF'
+        const multiplier = riskMode === 'RISK_OFF' ? 0.7 : riskMode === 'RISK_ON' ? 1.0 : 0.85
+
+        return { score: Math.min(100, score), riskMode, multiplier }
+      }
+
+      // 종합 Alpha Scanner 점수 계산
+      function calcTotalAlphaScore(modules) {
+        const raw =
+          (modules.earnings?.score || 0) * 0.25 +
+          (modules.fundamental?.score || 0) * 0.20 +
+          (modules.balance?.score || 0) * 0.10 +
+          (modules.cashflow?.score || 0) * 0.15 +
+          (modules.float?.score || 0) * 0.10 +
+          (modules.valuation?.score || 0) * 0.10 +
+          (modules.macro?.score || 0) * 0.10
+
+        // Macro overlay multiplier
+        const multiplier = modules.macro?.multiplier || 1.0
+        const total = raw * multiplier
+
+        // Breakout probability estimation
+        let breakoutProb = 0
+        if (total >= 80) breakoutProb = 85
+        else if (total >= 70) breakoutProb = 65
+        else if (total >= 60) breakoutProb = 45
+        else if (total >= 50) breakoutProb = 25
+        else breakoutProb = 10
+
+        return {
+          totalScore: parseFloat(total.toFixed(1)),
+          momentumScore: parseFloat(((modules.earnings?.score || 0) * 0.25).toFixed(1)),
+          qualityScore: parseFloat((
+            (modules.fundamental?.score || 0) * 0.20 +
+            (modules.balance?.score || 0) * 0.10 +
+            (modules.cashflow?.score || 0) * 0.15
+          ).toFixed(1)),
+          squeezeScore: parseFloat(((modules.float?.score || 0) * 0.10).toFixed(1)),
+          breakoutProbability: breakoutProb,
+          macroMultiplier: multiplier
+        }
+      }
+
+      async function runAlphaScanner() {
+        try {
+          const startTime = Date.now()
+          const universe = await getHedgeFundUniverse()
+          const stocks = universe.slice(0, 80)
+
+          // Step 1: Macro data (1 call, shared across all stocks)
+          let macroData = null
+          try {
+            // 출처: getMarketDataCached() → flat 구조 (vix, us10y 등) + 중첩 구조 (MARKET_RISK)
+            const mktData = await getMarketDataCached()
+            macroData = {
+              vix: mktData?.vix || 20,
+              hySpread: mktData?.MARKET_RISK?.HY_OAS_SPREAD || 4,
+              us10y: mktData?.us10y || 4
+            }
+          } catch (e) { console.error('Macro fetch failed:', e.message) }
+
+          const macroModule = calcMacroOverlay(macroData)
+
+          // Step 2: Quick screen - get full quotes for all 80
+          const quoteResults = []
+          for (let i = 0; i < stocks.length; i++) {
+            try {
+              const q = await getFullQuote(stocks[i])
+              if (q && q.price) quoteResults.push({ symbol: stocks[i], quote: q })
+            } catch (e) { /* skip */ }
+            if (i % 15 === 14) await new Promise(r => setTimeout(r, 300))
+          }
+
+          // Step 3: Deep analysis for top candidates (batch of 15)
+          // Sort by preliminary momentum (daily change) to prioritize
+          quoteResults.sort((a, b) => {
+            const aChange = Math.abs(a.quote.changesPercentage || 0)
+            const bChange = Math.abs(b.quote.changesPercentage || 0)
+            return bChange - aChange
+          })
+
+          const candidates = quoteResults.slice(0, 20) // deep analyze top 20
+          const results = []
+
+          for (let i = 0; i < candidates.length; i++) {
+            const { symbol, quote } = candidates[i]
+            try {
+              // Parallel fetch of all fundamentals
+              const [earningsRes, growthRes, incomeRes, balanceRes, cashflowRes, ratiosRes, profileRes, sharesRes] =
+                await Promise.allSettled([
+                  getEarnings(symbol),
+                  getFinancialGrowth(symbol),
+                  getIncomeStatement(symbol),
+                  getBalanceSheet(symbol),
+                  getCashFlow(symbol),
+                  getRatios(symbol),
+                  getCompanyProfile(symbol),
+                  getSharesFloat(symbol)
+                ])
+
+              const extract = (r) => r.status === 'fulfilled' ? r.value : null
+              const earnings = extract(earningsRes)
+              const growth = extract(growthRes)
+              const income = extract(incomeRes)
+              const balance = extract(balanceRes)
+              const cashflow = extract(cashflowRes)
+              const ratios = extract(ratiosRes)?.data || extract(ratiosRes)
+              const profile = extract(profileRes)
+              const shares = extract(sharesRes)
+
+              // Calculate all 7 modules
+              const earningsModule = calcEarningsMomentum(earnings, growth)
+              const fundamentalModule = calcFundamentalAccel(growth, income)
+              const balanceModule = calcBalanceStrength(balance, income)
+              const cashflowModule = calcCashFlowQuality(cashflow, income)
+              const floatModule = calcFloatCompression(shares, growth)
+              const valuationModule = calcValuationScore(ratios, growth)
+
+              const modules = {
+                earnings: earningsModule,
+                fundamental: fundamentalModule,
+                balance: balanceModule,
+                cashflow: cashflowModule,
+                float: floatModule,
+                valuation: valuationModule,
+                macro: macroModule
+              }
+
+              const total = calcTotalAlphaScore(modules)
+
+              // Filter: totalScore >= 30 (relaxed to ensure we get results)
+              if (total.totalScore < 30) continue
+
+              results.push({
+                symbol,
+                companyName: profile?.companyName || quote.name || symbol,
+                sector: profile?.sector || quote.sector || '-',
+                price: parseFloat((quote.price || 0).toFixed(2)),
+                change: parseFloat((quote.changesPercentage || 0).toFixed(2)),
+                totalScore: total.totalScore,
+                momentumScore: total.momentumScore,
+                qualityScore: total.qualityScore,
+                squeezeScore: total.squeezeScore,
+                breakoutProbability: total.breakoutProbability,
+                macroMultiplier: total.macroMultiplier,
+                signals: {
+                  epsSurprise: earningsModule.epsSurprise,
+                  revSurprise: earningsModule.revSurprise,
+                  revenueGrowth: fundamentalModule.revenueGrowth ? parseFloat((fundamentalModule.revenueGrowth * 100).toFixed(1)) : null,
+                  epsGrowth: fundamentalModule.epsGrowth ? parseFloat((fundamentalModule.epsGrowth * 100).toFixed(1)) : null,
+                  freeCashFlow: cashflowModule.fcf,
+                  floatCategory: floatModule.floatCategory,
+                  pe: ratios?.priceToEarningsRatio ? parseFloat(ratios.priceToEarningsRatio.toFixed(1)) : null,
+                  pb: ratios?.priceToBookRatio ? parseFloat(ratios.priceToBookRatio.toFixed(1)) : null
+                },
+                modules: {
+                  earnings: earningsModule.score,
+                  fundamental: fundamentalModule.score,
+                  balance: balanceModule.score,
+                  cashflow: cashflowModule.score,
+                  float: floatModule.score,
+                  valuation: valuationModule.score,
+                  macro: macroModule.score
+                },
+                macroOverlay: {
+                  riskMode: macroModule.riskMode,
+                  vix: macroData?.vix || null,
+                  hySpread: macroData?.hySpread || null
+                }
+              })
+            } catch (e) {
+              console.error(`❌ AlphaScanner ${symbol}: ${e.message}`)
+            }
+
+            if (i % 5 === 4) await new Promise(r => setTimeout(r, 300))
+          }
+
+          results.sort((a, b) => b.totalScore - a.totalScore)
+
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: 'alpha_scanner',
+            universe_size: stocks.length,
+            deep_analyzed: candidates.length,
+            qualified: results.length,
+            execution_time_sec: parseFloat(((Date.now() - startTime) / 1000).toFixed(1)),
+            macro: {
+              riskMode: macroModule.riskMode,
+              multiplier: macroModule.multiplier,
+              score: macroModule.score,
+              vix: macroData?.vix || null,
+              hySpread: macroData?.hySpread || null,
+              us10y: macroData?.us10y || null
+            },
+            top_20: results.slice(0, 20)
+          }
+        } catch (e) {
+          console.error(`❌ runAlphaScanner:`, e.message)
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: 'alpha_scanner',
+            error: e.message,
+            top_20: []
+          }
+        }
+      }
+
       /* ================================
          경로 기반 라우팅
       ================================ */
@@ -2331,6 +2947,22 @@ export default {
       } else if (pathname === "/alpha/discovery") {
         try {
           response = await runAlphaDiscovery()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
+      // /alpha/alpha-scanner - 헤지펀드급 7-모듈 알파 스캐너
+      } else if (pathname === "/alpha/alpha-scanner") {
+        try {
+          response = await runAlphaScanner()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
+      // /alpha/breakout - 단기 돌파 후보 발굴 (1~3주 목표)
+      } else if (pathname === "/alpha/breakout") {
+        try {
+          response = await runBreakoutDiscovery()
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }
