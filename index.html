@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773055170 -->
+    <!-- Version: v1773055171 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5692,16 +5692,23 @@ var ECON_DATA = {
 
             // Step 1: 함수 시작 표시 (🟢 = 함수 호출됨)
             var elem1 = document.getElementById('top7_rank1');
+            console.log('[Top7] elem1=' + (elem1 ? 'FOUND' : 'NULL'));
             if (elem1) {
                 elem1.textContent = '🟢'; // 함수 호출됨 증명
+                console.log('[Top7] ✓ Set to 🟢');
             }
 
             // Step 2: fetch 호출 with timeout
             var url = WORKER_API_BASE + '/top7';
+            console.log('[Top7] WORKER_API_BASE=' + WORKER_API_BASE);
             console.log('[Top7] fetch URL=' + url);
 
             // 🔄 Step 2.1: 표시 (API 호출 시작)
-            if (elem1) elem1.textContent = '🔄 API';
+            console.log('[Top7] About to set 🔄 API');
+            if (elem1) {
+                elem1.textContent = '🔄 API';
+                console.log('[Top7] ✓ Set to 🔄 API');
+            }
 
             // ✅ Proper timeout using AbortController (10초: 7개 종목 × 1.3초 + 여유)
             var controller = new AbortController();
