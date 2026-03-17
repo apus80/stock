@@ -1906,13 +1906,13 @@
 
                         <div class="card">
                             <div class="title-area"><span class="title">3. 시총 Top 7</span><button class="card-rfbtn" id="rfbtn-3" onclick="imdRefreshCard(3)" title="새로고침">↻</button></div>
-                            <div class="item"><span id="top7_rank1_label">1. -</span><span class="item-right"><span id="top7_rank1" class="value">-</span><span id="chg-top7_rank1" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank1"></span></span></div>
-                            <div class="item"><span id="top7_rank2_label">2. -</span><span class="item-right"><span id="top7_rank2" class="value">-</span><span id="chg-top7_rank2" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank2"></span></span></div>
-                            <div class="item"><span id="top7_rank3_label">3. -</span><span class="item-right"><span id="top7_rank3" class="value">-</span><span id="chg-top7_rank3" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank3"></span></span></div>
-                            <div class="item"><span id="top7_rank4_label">4. -</span><span class="item-right"><span id="top7_rank4" class="value">-</span><span id="chg-top7_rank4" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank4"></span></span></div>
-                            <div class="item"><span id="top7_rank5_label">5. -</span><span class="item-right"><span id="top7_rank5" class="value">-</span><span id="chg-top7_rank5" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank5"></span></span></div>
-                            <div class="item"><span id="top7_rank6_label">6. -</span><span class="item-right"><span id="top7_rank6" class="value">-</span><span id="chg-top7_rank6" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank6"></span></span></div>
-                            <div class="item"><span id="top7_rank7_label">7. -</span><span class="item-right"><span id="top7_rank7" class="value">-</span><span id="chg-top7_rank7" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank7"></span></span></div>
+                            <div class="item"><span>MSFT</span><span class="item-right"><span id="top7_msft" class="value">-</span><span id="chg-top7_msft" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_msft"></span></span></div>
+                            <div class="item"><span>AAPL</span><span class="item-right"><span id="top7_aapl" class="value">-</span><span id="chg-top7_aapl" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_aapl"></span></span></div>
+                            <div class="item"><span>NVDA</span><span class="item-right"><span id="top7_nvda" class="value">-</span><span id="chg-top7_nvda" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_nvda"></span></span></div>
+                            <div class="item"><span>GOOGL</span><span class="item-right"><span id="top7_googl" class="value">-</span><span id="chg-top7_googl" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_googl"></span></span></div>
+                            <div class="item"><span>AMZN</span><span class="item-right"><span id="top7_amzn" class="value">-</span><span id="chg-top7_amzn" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_amzn"></span></span></div>
+                            <div class="item"><span>TSLA</span><span class="item-right"><span id="top7_tsla" class="value">-</span><span id="chg-top7_tsla" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_tsla"></span></span></div>
+                            <div class="item"><span>META</span><span class="item-right"><span id="top7_meta" class="value">-</span><span id="chg-top7_meta" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_meta"></span></span></div>
                         </div>
 
                         <div class="card">
@@ -5687,7 +5687,7 @@ var ECON_DATA = {
          * 카드 3 – 시총 Top 7 (동적 - Worker /top7 엔드포인트)
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
-            // Worker /top7 엔드포인트에서 시총 상위 7개를 순서대로 가져옴
+            // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
             console.log('[Top7] /top7 엔드포인트 호출 시작');
             fetch(WORKER_API_BASE + '/top7')
                 .then(function(res) {
@@ -5697,67 +5697,51 @@ var ECON_DATA = {
                 })
                 .then(function(result) {
                     console.log('[Top7] API 응답:', result);
-                    if (!result) {
-                        console.warn('[Top7] result is null/undefined');
-                        return;
+                    console.log('[Top7] result.data 타입:', typeof result.data, '배열?', Array.isArray(result.data));
+                    if (result && result.data && Array.isArray(result.data)) {
+                        console.log('[Top7] 데이터 처리 시작, 항목 수:', result.data.length);
+                        result.data.forEach(function(item, idx) {
+                            var ticker = (item.symbol || '').toLowerCase();
+                            var idPrefix = 'top7_' + ticker;
+                            console.log(`  [${idx}] ${ticker} - id: ${idPrefix}, price: ${item.price}`);
+
+                            // 가격 설정
+                            if (item.price !== null && item.price !== undefined) {
+                                console.log(`    ✅ 가격 설정: ${idPrefix} = ${item.price}`);
+                                imdSetValue(idPrefix, item.price, 2);
+                            }
+
+                            // 등락률 설정
+                            if (item.changePercentage !== null && item.changePercentage !== undefined) {
+                                console.log(`    ✅ 등락률 설정: chg-${idPrefix} = ${item.changePercentage}%`);
+                                imdSetChange(idPrefix, item.changePercentage, 'pct');
+                            }
+                        });
+                    } else {
+                        console.warn('[Top7] result.data가 배열이 아니거나 없음:', result);
                     }
-
-                    // ✅ 응답 구조 확인: result.data가 배열인지 체크
-                    var dataArray = result.data;
-                    if (!Array.isArray(dataArray)) {
-                        console.warn('[Top7] result.data가 배열이 아님:', typeof dataArray, dataArray);
-                        return;
-                    }
-
-                    console.log('[Top7] 데이터 처리 시작, 항목 수:', dataArray.length);
-
-                    // ✅ 시총순 데이터를 순위별 ID에 매핑 (1위 → top7_rank1, 2위 → top7_rank2, ...)
-                    dataArray.forEach(function(item, idx) {
-                        var rank = idx + 1;
-                        if (rank > 7) return; // 7개 초과 방지
-
-                        var ticker = (item.symbol || '').toUpperCase();
-                        var rankId = 'top7_rank' + rank;
-                        var rankLabelId = rankId + '_label';
-                        var price = item.price;
-                        var changePercentage = item.changePercentage;
-
-                        console.log(`  [Rank ${rank}] ${ticker} - price: ${price}, chg: ${changePercentage}`);
-
-                        // 라벨 업데이트 (1. NVDA, 2. MSFT, ...)
-                        var labelElem = document.getElementById(rankLabelId);
-                        if (labelElem) {
-                            labelElem.textContent = rank + '. ' + ticker;
-                        } else {
-                            console.warn(`    ⚠️ DOM 요소 ${rankLabelId}를 찾을 수 없음`);
-                        }
-
-                        // 가격 설정
-                        var priceElem = document.getElementById(rankId);
-                        if (!priceElem) {
-                            console.warn(`    ⚠️ 가격 요소 ${rankId}를 찾을 수 없음`);
-                        } else if (price !== null && price !== undefined && !isNaN(price)) {
-                            console.log(`    ✅ 가격 설정: ${rankId} = ${price}`);
-                            imdSetValue(rankId, price, 2);
-                        } else {
-                            console.log(`    ⚠️ 가격값 없음: ${rankId}`);
-                            imdSetValue(rankId, '-', 0);
-                        }
-
-                        // 등락률 설정
-                        if (changePercentage !== null && changePercentage !== undefined && !isNaN(changePercentage)) {
-                            console.log(`    ✅ 등락률 설정: chg-${rankId} = ${changePercentage}%`);
-                            imdSetChange(rankId, changePercentage, 'pct');
-                        }
-                    });
                 })
                 .catch(function(err) {
                     console.error('[Top7] /top7 호출 실패:', err);
-                    // ✅ DOM에 에러 표시 (모바일에서 콘솔을 볼 수 없으므로)
-                    for (var i = 1; i <= 7; i++) {
-                        var elem = document.getElementById('top7_rank' + i);
-                        if (elem) elem.innerText = '×';  // × 표시로 에러 표시
-                    }
+                    // Fallback: 개별 조회
+                    var fallbackTickers = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META'];
+                    fallbackTickers.forEach(function(ticker) {
+                        fetch(WORKER_API_BASE + '/stock?symbol=' + ticker)
+                            .then(function(res) { return res.json(); })
+                            .then(function(result) {
+                                if (result && result.data) {
+                                    var data = result.data;
+                                    var idPrefix = 'top7_' + ticker.toLowerCase();
+                                    if (data.price) {
+                                        imdSetValue(idPrefix, data.price, 2);
+                                    }
+                                    if (data.changePercentage !== undefined) {
+                                        imdSetChange(idPrefix, data.changePercentage, 'pct');
+                                    }
+                                }
+                            })
+                            .catch(function(e) { console.warn('[Top7 Fallback] ' + ticker + ' failed:', e); });
+                    });
                 });
         }
 
