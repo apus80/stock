@@ -83,7 +83,8 @@ export default {
             changePercentage: quote.changesPercentage || quote.changePercentage, // FMP는 's'가 붙음
             change: quote.change,
             volume: quote.volume,
-            timestamp: quote.timestamp
+            timestamp: quote.timestamp,
+            marketCap: quote.marketCap || null // 시가총액 (선택사항)
           }
 
           // console.log(`✅ ${sym}: price=${normalized.price}, change=${normalized.changePercentage}%`)
