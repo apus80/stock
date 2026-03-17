@@ -262,7 +262,10 @@ export default {
         "DCOILWTICO": { divisor: 1, unit: "$" },
         "PCEPI": { divisor: 1, unit: "idx" },  // PCE Inflation Index
         "VIXCLS": { divisor: 1, unit: "idx" },  // VIX from FRED
-        "BAMLH0A0HYM2": { divisor: 1, unit: "%" }  // High Yield OAS Spread
+        "BAMLH0A0HYM2": { divisor: 1, unit: "%" },  // High Yield OAS Spread
+        "MMNRNJ": { divisor: 1, unit: "idx" },  // ✅ Manufacturing PMI (index)
+        "NAPMIT": { divisor: 1, unit: "idx" },  // ✅ Services PMI (index)
+        "RSXFS": { divisor: 1, unit: "%" }      // ✅ Retail Sales (%)
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
@@ -1411,7 +1414,10 @@ export default {
             REAL_GDP: gdpVal,
             INDUSTRIAL_PRODUCTION: indproVal,
             NONFARM_PAYROLLS: payelmsVal,
-            PCE_INFLATION: pcepilfeVal
+            PCE_INFLATION: pcepilfeVal,
+            MFG_PMI: convertFredValue("MMNRNJ", getLatestValue(mfgPmi)),  // ✅ Manufacturing PMI (출처: FRED MMNRNJ)
+            SVC_PMI: convertFredValue("NAPMIT", getLatestValue(svcPmi)),  // ✅ Services PMI (출처: FRED NAPMIT)
+            RETAIL_SALES: convertFredValue("RSXFS", getLatestValue(retail))  // ✅ Retail Sales YoY (출처: FRED RSXFS)
           },
           // Economic Indicators with historical chart data (dates + values)
           ECONOMIC_INDICATORS: economicIndicators
