@@ -2336,6 +2336,7 @@ var ECON_DATA = {
                         autocomplete="off"
                         onkeydown="if(event.key==='Enter') nsSearch()">
                     <button onclick="nsSearch()">🔍 검색</button>
+                    <button onclick="nsRefresh()" title="새로고침" style="background:#667eea;padding:8px 12px;border:none;border-radius:4px;color:white;cursor:pointer;font-size:1em;">🔄</button>
                 </div>
                 <p class="news-search-hint">
                     🌐 한글 입력 → 영어 번역 후 해외 뉴스 검색 &nbsp;|&nbsp; 영어 입력 → 한글 번역 후 국내 뉴스 검색 &nbsp;(국내·해외 동시)
@@ -3637,6 +3638,13 @@ var ECON_DATA = {
             function nsSearch() {
                 clearTimeout(_nsDebounce);
                 _nsDebounce = setTimeout(_nsDoSearch, 0);
+            }
+
+            function nsRefresh() {
+                var q = (document.getElementById('nsInput') || {}).value || '';
+                if (q.trim()) {
+                    nsSearch();
+                }
             }
             // ── 메인 검색 오케스트레이터 ─────────────────────────────────
             async function _nsDoSearch() {
