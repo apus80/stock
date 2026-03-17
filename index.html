@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773055175 -->
+    <!-- Version: v1773055177 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5708,84 +5708,21 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 순서대로 가져옴
-            console.log('[Top7] 함수 시작');
-
-            // Step 1: 함수 시작 표시 (누적 상태) - 라벨 요소에 표시!
-            var elemStatus = document.getElementById('top7_rank1_label');
-            console.log('[Top7] elemStatus=' + (elemStatus ? 'FOUND' : 'NULL'));
-            if (elemStatus) {
-                var curText = elemStatus.textContent || '1. -';
-                elemStatus.textContent = curText + '🟢'; // 누적 상태
-                console.log('[Top7] ✓ Append 🟢 (was: ' + curText + ')');
-            }
-
-            // Step 2: fetch 호출 with timeout
             var url = WORKER_API_BASE + '/top7';
-            console.log('[Top7] WORKER_API_BASE=' + WORKER_API_BASE);
-            console.log('[Top7] fetch URL=' + url);
-
-            // 🔄 Step 2.1: 표시 (API 호출 시작)
-            console.log('[Top7] About to call fetch');
-            if (elemStatus) {
-                elemStatus.textContent = elemStatus.textContent + '🔄';
-                console.log('[Top7] ✓ Append 🔄');
-            }
-
-            // ✅ Proper timeout using AbortController (10초: 7개 종목 × 1.3초 + 여유)
             var controller = new AbortController();
             var timeoutId = setTimeout(function() { controller.abort(); }, 10000);
 
             fetch(url, { signal: controller.signal })
                 .then(function(res) {
                     clearTimeout(timeoutId);
-                    console.log('[Top7] fetch 응답: HTTP ' + res.status);
-
-                    // Step 2.5: HTTP 응답 상태 표시 (누적)
-                    if (elemStatus) {
-                        if (res.status === 200) {
-                            elemStatus.textContent = elemStatus.textContent + '📡';
-                            console.log('[Top7] ✓ Append 📡 (HTTP 200)');
-                        } else {
-                            elemStatus.textContent = elemStatus.textContent + ('❌' + res.status);
-                            console.log('[Top7] ✓ Append ❌ (HTTP ' + res.status + ')');
-                        }
-                    }
-
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     return res.json();
                 })
                 .then(function(result) {
-                    console.log('[Top7] JSON 파싱 완료');
-                    console.log('[Top7] RAW RESPONSE:', result); // ← 전체 응답 출력!
-
-                    // 📦 Step 3.1: JSON 파싱 표시 (누적)
-                    if (elemStatus) {
-                        elemStatus.textContent = elemStatus.textContent + '📦';
-                        console.log('[Top7] ✓ Append 📦');
-                    }
-
-                    // Step 3: 응답 구조 검증
+                    // 응답 검증
                     var hasData = result && result.data && Array.isArray(result.data);
-                    var dataCount = (result && result.data) ? result.data.length : 0;
-
-                    console.log('[Top7] hasData=' + hasData + ', dataCount=' + dataCount);
-                    if (result && result.data && result.data.length > 0) {
-                        console.log('[Top7] First item:', result.data[0]); // ← 첫 항목 구조 출력!
-                    }
-
-                    if (!hasData || dataCount === 0) {
-                        // Step 3.5: 데이터 없음
-                        if (elemStatus) {
-                            elemStatus.textContent = elemStatus.textContent + ('⚠️' + dataCount);
-                            console.log('[Top7] ✓ Append ⚠️ (empty data)');
-                        }
-                        throw new Error('No data (count=' + dataCount + ')');
-                    }
-
-                    // 🔧 Step 4.1: 데이터 처리 중 표시 (누적)
-                    if (elemStatus) {
-                        elemStatus.textContent = elemStatus.textContent + '🔧';
-                        console.log('[Top7] ✓ Append 🔧');
+                    if (!hasData || result.data.length === 0) {
+                        throw new Error('No data');
                     }
 
                     var loaded = 0;
@@ -5798,19 +5735,10 @@ var ECON_DATA = {
                         var rankLabelId = rankId + '_label';
                         var price = item.price;
 
-                        console.log('[Top7] [' + rank + '] ' + ticker + ' = ' + price);
-
-                        // 라벨 업데이트 (상태 마크 보존!)
+                        // 라벨 업데이트
                         var labelElem = document.getElementById(rankLabelId);
                         if (labelElem) {
-                            // 현재 라벨에서 상태 마크 부분 추출 ("1. - 🟢🔄..." → " 🟢🔄...")
-                            var currentLabel = labelElem.textContent;
-                            var statusStartIdx = currentLabel.indexOf(' 🟢');
-                            var statusPart = (statusStartIdx > -1) ? currentLabel.substring(statusStartIdx) : '';
-
-                            // 새 라벨 + 상태 마크 유지
-                            labelElem.textContent = rank + '. ' + ticker + statusPart;
-                            console.log('[Top7] [' + rank + '] Label updated: ' + labelElem.textContent);
+                            labelElem.textContent = rank + '. ' + ticker;
                         }
 
                         // 가격 설정
@@ -5826,31 +5754,17 @@ var ECON_DATA = {
                             imdSetChange(rankId, item.changePercentage, 'pct');
                         }
                     });
-
-                    // Step 5: 완료 (누적)
-                    console.log('[Top7] 완료: ' + loaded + '/' + dataCount);
-                    if (elemStatus) {
-                        elemStatus.textContent = elemStatus.textContent + (loaded > 0 ? '✅' : '⚠️');
-                        console.log('[Top7] ✓ Append ' + (loaded > 0 ? '✅' : '⚠️'));
-                    }
                 })
                 .catch(function(err) {
                     clearTimeout(timeoutId);
-                    console.error('[Top7] ERROR:', err.message);
-
-                    // 에러 표시 (누적)
-                    var errType = err.name === 'AbortError' ? 'TIMEOUT' : err.message.substring(0, 10);
-                    if (elemStatus) {
-                        elemStatus.textContent = elemStatus.textContent + ('❌' + errType);
-                        console.log('[Top7] ✓ Append ❌ (' + errType + ')');
-                    }
-
-                    // 모든 항목에 에러 표시
-                    for (var i = 2; i <= 7; i++) {
-                        var elem = document.getElementById('top7_rank' + i);
-                        if (elem) {
-                            elem.textContent = '✗';
+                    console.error('[Top7] Error:', err.message);
+                    // 실패 시 모든 항목 "-" 표시
+                    for (var i = 1; i <= 7; i++) {
+                        var labelElem = document.getElementById('top7_rank' + i + '_label');
+                        if (labelElem) {
+                            labelElem.textContent = i + '. -';
                         }
+                        imdSetValue('top7_rank' + i, '-', 0);
                     }
                 });
         }
