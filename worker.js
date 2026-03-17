@@ -2804,26 +2804,30 @@ export default {
 
           console.log(`[/top7] 시작: ${topSymbols.length}개 종목 조회`)
 
-          // 1️⃣ 실시간 가격 데이터 호출
-          const quoteResults = await Promise.all(
+          // 1️⃣ 실시간 가격 데이터 호출 (일부 실패해도 진행)
+          const quoteResults = await Promise.allSettled(
             topSymbols.map(sym => getQuote(sym))
           )
 
           // DEBUG: 각 종목별 결과 확인
-          quoteResults.forEach((q, idx) => {
+          quoteResults.forEach((result, idx) => {
             const sym = topSymbols[idx]
+            const q = result.status === 'fulfilled' ? result.value : null
             console.log(`   [${sym}] ${q ? `✅ price=${q.price}` : '❌ null'}`)
           })
 
           // 2️⃣ 데이터 변환 (null 체크)
           const data = quoteResults
-            .map((q, idx) => ({
-              symbol: topSymbols[idx],
-              price: q && q.price ? parseFloat(q.price.toFixed(2)) : null,
-              changePercentage: q && q.changePercentage ? parseFloat(q.changePercentage.toFixed(2)) : null,
-              volume: q?.volume || null,
-              marketCap: q?.marketCap || 0  // 시가총액 (정렬용)
-            }))
+            .map((result, idx) => {
+              const q = result.status === 'fulfilled' ? result.value : null
+              return {
+                symbol: topSymbols[idx],
+                price: q && q.price ? parseFloat(q.price.toFixed(2)) : null,
+                changePercentage: q && q.changePercentage ? parseFloat(q.changePercentage.toFixed(2)) : null,
+                volume: q?.volume || null,
+                marketCap: q?.marketCap || 0  // 시가총액 (정렬용)
+              }
+            })
             .filter(item => item.price !== null)  // 데이터 없는 항목 제외
             .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))  // 시가총액 기준 내림차순 정렬
             .map((item, idx) => ({
