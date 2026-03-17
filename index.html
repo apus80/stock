@@ -5708,36 +5708,42 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 순서대로 가져옴
-            console.log('[Top7] /top7 엔드포인트 호출 시작');
+            console.log('[Top7] imdLoadTop7 함수 시작!');
+
+            // 임시 마커 표시
+            var elem1 = document.getElementById('top7_rank1');
+            if (elem1) {
+                elem1.textContent = '⏳'; // 로딩 중 표시
+            }
+
+            console.log('[Top7] fetch 호출 직전, URL=' + WORKER_API_BASE + '/top7');
 
             fetch(WORKER_API_BASE + '/top7')
                 .then(function(res) {
+                    console.log('[Top7] then1: HTTP ' + res.status);
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     return res.json();
                 })
                 .then(function(result) {
-                    console.log('[Top7] API 응답:', result);
+                    console.log('[Top7] then2: result received', result);
 
                     // 응답을 간단하게 표시
-                    var info = 'dataType=' + (result?.dataType || '?') +
-                               ' count=' + (result?.count || '0');
+                    var info = 'DT=' + (result?.dataType || '?') +
+                               ' cnt=' + (result?.count || '0');
 
-                    // DOM에 응답 정보 표시 (top7_rank1 아래)
-                    var elem = document.getElementById('top7_rank1');
-                    if (elem && elem.parentElement) {
-                        var infoDiv = document.createElement('div');
-                        infoDiv.style.cssText = 'font-size:10px;color:#0f0;margin-top:6px';
-                        infoDiv.textContent = '[INFO] ' + info;
-                        elem.parentElement.insertAdjacentElement('afterend', infoDiv);
-                    }
+                    console.log('[Top7] then2: info=' + info);
 
                     if (!result || !result.data || !Array.isArray(result.data)) {
+                        console.warn('[Top7] Invalid structure');
                         throw new Error('Invalid response structure');
                     }
 
                     if (result.data.length === 0) {
-                        throw new Error('Data array is empty (count=0)');
+                        console.warn('[Top7] Empty data');
+                        throw new Error('Data array is empty');
                     }
+
+                    console.log('[Top7] Processing ' + result.data.length + ' items');
 
                     // 데이터 처리
                     var loaded = 0;
@@ -5748,6 +5754,8 @@ var ECON_DATA = {
                         var ticker = (item.symbol || '').toUpperCase();
                         var rankId = 'top7_rank' + rank;
                         var rankLabelId = rankId + '_label';
+
+                        console.log('[Top7] [' + rank + '] ' + ticker + ' price=' + item.price);
 
                         // 라벨 업데이트
                         var labelElem = document.getElementById(rankLabelId);
@@ -5769,27 +5777,17 @@ var ECON_DATA = {
                         }
                     });
 
-                    console.log('[Top7] 완료: ' + loaded + '/' + result.data.length);
+                    console.log('[Top7] Success: loaded ' + loaded + ' items');
                 })
                 .catch(function(err) {
-                    console.error('[Top7] 에러:', err.message);
+                    console.error('[Top7] CATCH ERROR:', err.message);
 
-                    // ✅ 에러를 DOM에 표시 (모바일용)
+                    // ✅ 에러를 DOM에 표시
                     for (var i = 1; i <= 7; i++) {
                         var elem = document.getElementById('top7_rank' + i);
                         if (elem) {
                             elem.innerText = '✗';
                         }
-                    }
-
-                    // 에러 메시지 표시
-                    var errorDiv = document.createElement('div');
-                    errorDiv.style.cssText = 'font-size:10px;color:#f00;margin-top:6px;padding:4px;background:#1a1a1a';
-                    errorDiv.textContent = '[ERROR] ' + err.message;
-
-                    var firstElem = document.getElementById('top7_rank1');
-                    if (firstElem && firstElem.parentElement) {
-                        firstElem.parentElement.insertAdjacentElement('afterend', errorDiv);
                     }
                 });
         }
@@ -7113,16 +7111,19 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadAll() {
             console.log('🚀 [imdLoadAll] DASHBOARD 로드 시작');
-            // 메타데이터 먼저 로드 (라벨 및 단위 초기화) - 실패해도 계속 진행
+
+            // 메타데이터 로드 시도 (실패해도 계속 진행)
             loadDashboardMetadata().catch(function(e) {
-                console.warn('📝 [imdLoadAll] 메타데이터 로드 실패 (무시하고 계속):', e.message);
-                return null;
-            }).then(function() {
-                console.log('📊 [imdLoadAll] 메타데이터 처리 완료, 데이터 로드 시작');
+                console.warn('📝 메타데이터 로드 실패 (무시하고 계속):', e.message);
+            }).finally(function() {
+                // finally 블록: 성공/실패 상관없이 항상 실행됨
+                console.log('📊 데이터 로드 시작');
+
+                // 모든 로드 함수 즉시 호출
                 imdLoadMarketRegime();
                 imdLoadKorea();
                 imdLoadUS();
-                imdLoadTop7();
+                imdLoadTop7();  // ← 여기서 반드시 호출
                 imdLoadFutures();
                 imdLoadCrypto();
                 imdLoadCommodities();
