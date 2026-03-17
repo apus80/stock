@@ -1906,13 +1906,13 @@
 
                         <div class="card">
                             <div class="title-area"><span class="title">3. 시총 Top 7</span><button class="card-rfbtn" id="rfbtn-3" onclick="imdRefreshCard(3)" title="새로고침">↻</button></div>
-                            <div class="item"><span>MSFT</span><span class="item-right"><span id="top7_msft" class="value">-</span><span id="chg-top7_msft" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_msft"></span></span></div>
-                            <div class="item"><span>AAPL</span><span class="item-right"><span id="top7_aapl" class="value">-</span><span id="chg-top7_aapl" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_aapl"></span></span></div>
-                            <div class="item"><span>NVDA</span><span class="item-right"><span id="top7_nvda" class="value">-</span><span id="chg-top7_nvda" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_nvda"></span></span></div>
-                            <div class="item"><span>GOOGL</span><span class="item-right"><span id="top7_googl" class="value">-</span><span id="chg-top7_googl" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_googl"></span></span></div>
-                            <div class="item"><span>AMZN</span><span class="item-right"><span id="top7_amzn" class="value">-</span><span id="chg-top7_amzn" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_amzn"></span></span></div>
-                            <div class="item"><span>TSLA</span><span class="item-right"><span id="top7_tsla" class="value">-</span><span id="chg-top7_tsla" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_tsla"></span></span></div>
-                            <div class="item"><span>META</span><span class="item-right"><span id="top7_meta" class="value">-</span><span id="chg-top7_meta" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_meta"></span></span></div>
+                            <div class="item"><span id="top7_rank1_label">1. -</span><span class="item-right"><span id="top7_rank1" class="value">-</span><span id="chg-top7_rank1" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank1"></span></span></div>
+                            <div class="item"><span id="top7_rank2_label">2. -</span><span class="item-right"><span id="top7_rank2" class="value">-</span><span id="chg-top7_rank2" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank2"></span></span></div>
+                            <div class="item"><span id="top7_rank3_label">3. -</span><span class="item-right"><span id="top7_rank3" class="value">-</span><span id="chg-top7_rank3" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank3"></span></span></div>
+                            <div class="item"><span id="top7_rank4_label">4. -</span><span class="item-right"><span id="top7_rank4" class="value">-</span><span id="chg-top7_rank4" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank4"></span></span></div>
+                            <div class="item"><span id="top7_rank5_label">5. -</span><span class="item-right"><span id="top7_rank5" class="value">-</span><span id="chg-top7_rank5" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank5"></span></span></div>
+                            <div class="item"><span id="top7_rank6_label">6. -</span><span class="item-right"><span id="top7_rank6" class="value">-</span><span id="chg-top7_rank6" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank6"></span></span></div>
+                            <div class="item"><span id="top7_rank7_label">7. -</span><span class="item-right"><span id="top7_rank7" class="value">-</span><span id="chg-top7_rank7" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_rank7"></span></span></div>
                         </div>
 
                         <div class="card">
@@ -5709,7 +5709,7 @@ var ECON_DATA = {
          * 카드 3 – 시총 Top 7 (동적 - Worker /top7 엔드포인트)
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
-            // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴 (시총순 정렬)
+            // Worker /top7 엔드포인트에서 시총 상위 7개를 순서대로 가져옴
             console.log('[Top7] /top7 엔드포인트 호출 시작');
             fetch(WORKER_API_BASE + '/top7')
                 .then(function(res) {
@@ -5719,59 +5719,38 @@ var ECON_DATA = {
                 })
                 .then(function(result) {
                     console.log('[Top7] API 응답:', result);
-                    console.log('[Top7] result.data 타입:', typeof result.data, '배열?', Array.isArray(result.data));
                     if (result && result.data && Array.isArray(result.data)) {
                         console.log('[Top7] 데이터 처리 시작, 항목 수:', result.data.length);
-                        // ✅ "시총 Top 7" 카드를 정확히 찾기
-                        var titleElem = Array.from(document.querySelectorAll('.title')).find(function(t) {
-                            return t.textContent.includes('시총 Top 7');
-                        });
 
-                        if (!titleElem) {
-                            console.error('[Top7] "시총 Top 7" 카드를 찾을 수 없음');
-                            return;
-                        }
-
-                        var container = titleElem.closest('.card');
-                        var items = Array.from(container.querySelectorAll('.item'));
-                        console.log(`[Top7] ✅ Top 7 카드 찾음, item 개수: ${items.length}`);
-
+                        // ✅ 시총순 데이터를 순위별 ID에 매핑 (1위 → top7_rank1, 2위 → top7_rank2, ...)
                         result.data.forEach(function(item, idx) {
-                            if (idx >= items.length) return; // 7개 초과 방지
+                            var rank = idx + 1;
+                            if (rank > 7) return; // 7개 초과 방지
 
                             var ticker = (item.symbol || '').toUpperCase();
-                            var rank = idx + 1;
-                            var itemElem = items[idx];
+                            var rankId = 'top7_rank' + rank;
+                            var rankLabelId = rankId + '_label';
 
-                            console.log(`  [Rank ${rank}] ${ticker} - price: ${item.price}, mc: ${item.marketCap}`);
+                            console.log(`  [Rank ${rank}] ${ticker} - price: ${item.price}`);
 
-                            // HTML 종목명 업데이트 (시총 기준 순위)
-                            var labelSpan = itemElem.querySelector('span:first-child');
-                            labelSpan.textContent = rank + '. ' + ticker;
-
-                            // ID 업데이트 (데이터 바인딩용)
-                            var valueSpan = itemElem.querySelector('.value');
-                            var changeSpan = itemElem.querySelector('.chg-val');
-                            var statusSpan = itemElem.querySelector('.ns');
-
-                            var newId = 'top7_' + ticker.toLowerCase();
-
-                            valueSpan.id = newId;
-                            if (changeSpan) changeSpan.id = 'chg-' + newId;
-                            if (statusSpan) statusSpan.id = 'ns-' + newId;
+                            // 라벨 업데이트 (1. NVDA, 2. MSFT, ...)
+                            var labelElem = document.getElementById(rankLabelId);
+                            if (labelElem) {
+                                labelElem.textContent = rank + '. ' + ticker;
+                            }
 
                             // 가격 설정
                             if (item.price !== null && item.price !== undefined) {
-                                console.log(`    ✅ 가격 설정: ${newId} = ${item.price}`);
-                                imdSetValue(newId, item.price, 2);
+                                console.log(`    ✅ 가격 설정: ${rankId} = ${item.price}`);
+                                imdSetValue(rankId, item.price, 2);
                             } else {
-                                imdSetValue(newId, '-', 0);
+                                imdSetValue(rankId, '-', 0);
                             }
 
                             // 등락률 설정
                             if (item.changePercentage !== null && item.changePercentage !== undefined) {
-                                console.log(`    ✅ 등락률 설정: chg-${newId} = ${item.changePercentage}%`);
-                                imdSetChange(newId, item.changePercentage, 'pct');
+                                console.log(`    ✅ 등락률 설정: chg-${rankId} = ${item.changePercentage}%`);
+                                imdSetChange(rankId, item.changePercentage, 'pct');
                             }
                         });
                     } else {
@@ -5780,25 +5759,7 @@ var ECON_DATA = {
                 })
                 .catch(function(err) {
                     console.error('[Top7] /top7 호출 실패:', err);
-                    // Fallback: 개별 조회
-                    var fallbackTickers = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META'];
-                    fallbackTickers.forEach(function(ticker) {
-                        fetch(WORKER_API_BASE + '/stock?symbol=' + ticker)
-                            .then(function(res) { return res.json(); })
-                            .then(function(result) {
-                                if (result && result.data) {
-                                    var data = result.data;
-                                    var idPrefix = 'top7_' + ticker.toLowerCase();
-                                    if (data.price) {
-                                        imdSetValue(idPrefix, data.price, 2);
-                                    }
-                                    if (data.changePercentage !== undefined) {
-                                        imdSetChange(idPrefix, data.changePercentage, 'pct');
-                                    }
-                                }
-                            })
-                            .catch(function(e) { console.warn('[Top7 Fallback] ' + ticker + ' failed:', e); });
-                    });
+                    console.log('[Top7] 현재 캐시된 값 유지');
                 });
         }
 
