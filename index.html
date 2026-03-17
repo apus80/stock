@@ -5279,6 +5279,136 @@ var ECON_DATA = {
             });
         }
 
+        // 새로운 함수: Worker에서 경제 지표 동적 갱신
+        async function imdLoadEconFromWorker() {
+            try {
+                // worker /market 엔드포인트에서 데이터 가져오기
+                const response = await fetch('/market');
+                if (!response.ok) {
+                    console.warn('[ECON] Worker /market 요청 실패:', response.status);
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data.ECONOMIC_INDICATORS) {
+                    console.warn('[ECON] ECONOMIC_INDICATORS 없음');
+                    return;
+                }
+
+                const indicators = data.ECONOMIC_INDICATORS;
+                let updated = false;
+
+                // Worker에서 반환된 9개 지표 업데이트
+                // 1. Fed Funds Rate
+                if (indicators.fedfunds && indicators.fedfunds.dates && indicators.fedfunds.values) {
+                    const ind = ECON_DATA.indicators.fedfunds;
+                    ind.dates = indicators.fedfunds.dates;
+                    ind.values = indicators.fedfunds.values;
+                    ind.current = indicators.fedfunds.current;
+                    ind.prev = indicators.fedfunds.prev;
+                    ind.change = indicators.fedfunds.change;
+                    updated = true;
+                }
+
+                // 2. CPI YoY
+                if (indicators.cpi && indicators.cpi.dates && indicators.cpi.values) {
+                    const ind = ECON_DATA.indicators.cpi;
+                    ind.dates = indicators.cpi.dates;
+                    ind.values = indicators.cpi.values;
+                    ind.current = indicators.cpi.current;
+                    ind.prev = indicators.cpi.prev;
+                    ind.change = indicators.cpi.change;
+                    updated = true;
+                }
+
+                // 3. Core CPI YoY
+                if (indicators.core_cpi && indicators.core_cpi.dates && indicators.core_cpi.values) {
+                    const ind = ECON_DATA.indicators.core_cpi;
+                    ind.dates = indicators.core_cpi.dates;
+                    ind.values = indicators.core_cpi.values;
+                    ind.current = indicators.core_cpi.current;
+                    ind.prev = indicators.core_cpi.prev;
+                    ind.change = indicators.core_cpi.change;
+                    updated = true;
+                }
+
+                // 4. Core PCE YoY
+                if (indicators.core_pce && indicators.core_pce.dates && indicators.core_pce.values) {
+                    const ind = ECON_DATA.indicators.core_pce;
+                    ind.dates = indicators.core_pce.dates;
+                    ind.values = indicators.core_pce.values;
+                    ind.current = indicators.core_pce.current;
+                    ind.prev = indicators.core_pce.prev;
+                    ind.change = indicators.core_pce.change;
+                    updated = true;
+                }
+
+                // 5. Nonfarm Payrolls
+                if (indicators.payems && indicators.payems.dates && indicators.payems.values) {
+                    const ind = ECON_DATA.indicators.payems;
+                    ind.dates = indicators.payems.dates;
+                    ind.values = indicators.payems.values;
+                    ind.current = indicators.payems.current;
+                    ind.prev = indicators.payems.prev;
+                    ind.change = indicators.payems.change;
+                    updated = true;
+                }
+
+                // 6. Unemployment Rate
+                if (indicators.unrate && indicators.unrate.dates && indicators.unrate.values) {
+                    const ind = ECON_DATA.indicators.unrate;
+                    ind.dates = indicators.unrate.dates;
+                    ind.values = indicators.unrate.values;
+                    ind.current = indicators.unrate.current;
+                    ind.prev = indicators.unrate.prev;
+                    ind.change = indicators.unrate.change;
+                    updated = true;
+                }
+
+                // 7. 10Y Treasury Yield
+                if (indicators.dgs10 && indicators.dgs10.dates && indicators.dgs10.values) {
+                    const ind = ECON_DATA.indicators.dgs10;
+                    ind.dates = indicators.dgs10.dates;
+                    ind.values = indicators.dgs10.values;
+                    ind.current = indicators.dgs10.current;
+                    ind.prev = indicators.dgs10.prev;
+                    ind.change = indicators.dgs10.change;
+                    updated = true;
+                }
+
+                // 8. Yield Curve (10Y-2Y)
+                if (indicators.spread && indicators.spread.dates && indicators.spread.values) {
+                    const ind = ECON_DATA.indicators.spread;
+                    ind.dates = indicators.spread.dates;
+                    ind.values = indicators.spread.values;
+                    ind.current = indicators.spread.current;
+                    ind.prev = indicators.spread.prev;
+                    ind.change = indicators.spread.change;
+                    updated = true;
+                }
+
+                // 9. Consumer Sentiment
+                if (indicators.umcsent && indicators.umcsent.dates && indicators.umcsent.values) {
+                    const ind = ECON_DATA.indicators.umcsent;
+                    ind.dates = indicators.umcsent.dates;
+                    ind.values = indicators.umcsent.values;
+                    ind.current = indicators.umcsent.current;
+                    ind.prev = indicators.umcsent.prev;
+                    ind.change = indicators.umcsent.change;
+                    updated = true;
+                }
+
+                // 갱신된 경우 차트 재렌더
+                if (updated && typeof window.renderEconGrid === 'function') {
+                    window.renderEconGrid(true);
+                    ECON_DATA.lastUpdated = new Date().toISOString().split('T')[0];
+                    console.log('[ECON] Worker 경제지표 갱신 완료');
+                }
+            } catch (e) {
+                console.warn('[ECON] Worker 경제지표 로드 실패:', e);
+            }
+        }
+
         /* ── Twelvedata 헬퍼 (프록시 경유 – free tier CORS 미지원) ── */
         function twelvePrice(symbol) {
             var url = TWELVE_BASE + '/price?symbol=' + encodeURIComponent(symbol) + '&apikey=' + TWELVE_KEY;
@@ -6992,10 +7122,11 @@ var ECON_DATA = {
         // Auto-refresh market data every 30 seconds (Worker API - near real-time)
         setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 30000);
 
-        // 경제지표 대시보드 – FRED 실시간 갱신 (별도 주기: 4시간)
+        // 경제지표 대시보드 – Worker에서 동적 갱신 (별도 주기: 5분)
         // DOMContentLoaded 이후 비동기 실행 보장
-        setTimeout(imdLoadEconFromFRED, 500);
-        setInterval(imdLoadEconFromFRED, 4 * 60 * 60 * 1000);
+        // Worker /market 엔드포인트에서 FRED 데이터를 가져와 업데이트
+        setTimeout(imdLoadEconFromWorker, 500);
+        setInterval(imdLoadEconFromWorker, 5 * 60 * 1000);  // 5분 주기 갱신
     })();
     </script>
 
