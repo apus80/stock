@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773055174 -->
+    <!-- Version: v1773055175 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5736,6 +5736,7 @@ var ECON_DATA = {
                 })
                 .then(function(result) {
                     console.log('[Top7] JSON 파싱 완료');
+                    console.log('[Top7] RAW RESPONSE:', result); // ← 전체 응답 출력!
 
                     // 📦 Step 3.1: JSON 파싱 표시 (누적)
                     if (elemStatus) {
@@ -5747,7 +5748,10 @@ var ECON_DATA = {
                     var hasData = result && result.data && Array.isArray(result.data);
                     var dataCount = (result && result.data) ? result.data.length : 0;
 
-                    console.log('[Top7] dataCount=' + dataCount);
+                    console.log('[Top7] hasData=' + hasData + ', dataCount=' + dataCount);
+                    if (result && result.data && result.data.length > 0) {
+                        console.log('[Top7] First item:', result.data[0]); // ← 첫 항목 구조 출력!
+                    }
 
                     if (!hasData || dataCount === 0) {
                         // Step 3.5: 데이터 없음
