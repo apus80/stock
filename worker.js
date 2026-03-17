@@ -269,8 +269,24 @@ export default {
             console.log(`   ⚠️  key-metrics 응답 수신 (유료 엔드포인트)`)
           } else if (endpoint.includes('historical')) {
             console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+          // console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            if (Array.isArray(data) && data[0]) {
+              const quote = data[0]
+          // console.log(`   📋 quote 필드: ${Object.keys(quote).slice(0, 30).join(', ')}`)
+          // console.log(`   💰 주요값: price=${quote.price}, pe=${quote.pe}, pb=${quote.priceToBook}, epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
+          // console.log(`   📊 전체: ${JSON.stringify(quote).substring(0, 200)}`)
+            }
+          } else if (endpoint.includes('key-metrics')) {
+          // console.log(`   📦 key-metrics 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            if (Array.isArray(data) && data[0]) {
+              const fields = Object.keys(data[0]).filter(k => k.includes('Ratio') || k.includes('Growth') || k.includes('Cap') || k.includes('Shares'))
+          // console.log(`   📋 필드: peRatio=${data[0].peRatio}, priceToBookRatio=${data[0].priceToBookRatio}, floatShares=${data[0].floatShares}`)
+          // console.log(`   📈 성장률: revenueGrowth=${data[0].revenueGrowth}, earningsGrowth=${data[0].earningsGrowth}`)
+            }
+          } else if (endpoint.includes('historical')) {
+          // console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'} - 최근 3개: ${data.substring ? data : JSON.stringify(data).substring(0, 100)}`)
           } else if (endpoint.includes('insider')) {
-            console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+          // console.log(`   📦 insider 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
           }
 
           return data
@@ -302,6 +318,19 @@ export default {
             quote: quote,
             ratios: ratios,  // ✅ ratios 데이터 추가
             metrics: null  // /stable/key-metrics는 유료 플랜이므로 null로 설정
+          // 📍 최적화: 필수 2개 API만 호출 (180 호출/일)
+          // quote: 가격, key-metrics: 성장률 및 지표
+          const results = await Promise.allSettled([
+            fetchFMP(`/stable/quote?symbol=${symbol}`),
+            fetchFMP(`/stable/key-metrics?symbol=${symbol}`)
+          ])
+
+          const extract = (r) => r.status === 'fulfilled' ? r.value : null
+          const [quote, metrics] = results.map(extract)
+
+          return {
+            quote: quote ? (Array.isArray(quote) ? quote[0] : quote) : null,
+            metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -380,6 +409,37 @@ export default {
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
         const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
 
+
+        // ✅ 기본 정보 (quote에서)
+        const price = quote?.price || 0
+        const symbol = quote?.symbol || 'N/A'
+        const dayLow = quote?.dayLow || price
+        const dayHigh = quote?.dayHigh || price
+
+        // ✅ 비율 지표 (metrics에서)
+        const pe = metrics?.peRatio || 50
+        const pb = metrics?.priceToBookRatio || 10
+        const roe = metrics?.returnOnEquity || 15
+        const debtToEquity = metrics?.debtToEquity || 0.5
+
+        // ✅ 성장률 지표 (metrics에서)
+        let revenueGrowth = metrics?.revenueGrowth || metrics?.revenue_growth || 0
+        let epsGrowth = metrics?.epsGrowth || metrics?.earningsGrowth || metrics?.earnings_growth || 0
+
+        // ✅ 수익성 지표 (metrics에서 근사)
+        // profitMargin = netIncome / revenue (보통 0-30%)
+        const netMargin = metrics?.netProfitMargin || metrics?.netMarginRatio || 10
+        const grossMargin = metrics?.grossProfitMargin || 40
+
+        // operatingMargin = operatingIncome / revenue
+        const operatingMargin = metrics?.operatingProfitMargin || metrics?.operatingMarginRatio || 15
+
+        // ✅ 섹터 정보 (metrics에서)
+        const sector = metrics?.sector || 'N/A'
+
+        // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
+        const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
+
         return {
           symbol,
           price,
@@ -448,6 +508,35 @@ export default {
           // profitScore, roiScore 제거 (기본값만 존재해서 모든 종목이 동일)
 
         return Math.max(0, Math.min(100, score))
+      // Explosive Score (7개 지표 가중합)
+      function explosiveScore(factors) {
+        if (!factors) return 0
+
+        // 성장률 정규화 (0~100%)
+        const normalizeGrowth = (g) => Math.max(0, Math.min(100, g * 100))
+        const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
+        const epsScore = normalizeGrowth(factors.epsGrowth || 0)
+        const profitScore = Math.min(100, (factors.profitMargin || 10) * 3)
+        const roiScore = Math.min(100, (factors.roe || 15) * 3)
+
+        // 밸류에이션 역정규화 (PE/PB 낮을수록 높음)
+        const peScore = Math.max(0, 100 - (factors.pe || 50) * 1.5)
+        const pbScore = Math.max(0, 100 - (factors.pb || 10) * 5)
+
+        // 모멘텀 (일일 가격 움직임)
+        const momentumScore = Math.min(100, (factors.momentum || 0) * 500)
+
+        // ✅ 최종 점수 (7개 지표 가중합)
+        const score =
+          revenueScore * 0.25 +        // 수익성장 (25%)
+          epsScore * 0.25 +            // EPS성장 (25%)
+          profitScore * 0.15 +         // 수익성 (15%)
+          roiScore * 0.15 +            // ROE (15%)
+          peScore * 0.10 +             // PE 가치 (10%)
+          pbScore * 0.05 +             // PB 가치 (5%)
+          momentumScore * 0.05         // 모멘텀 (5%)
+
+        return Math.max(0, score)
       }
 
       // 9개 인디케이터 기반 Explosive Score 계산 (가중합)
