@@ -396,37 +396,6 @@ export default {
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
         const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
 
-
-        // ✅ 기본 정보 (quote에서)
-        const price = quote?.price || 0
-        const symbol = quote?.symbol || 'N/A'
-        const dayLow = quote?.dayLow || price
-        const dayHigh = quote?.dayHigh || price
-
-        // ✅ 비율 지표 (metrics에서)
-        const pe = metrics?.peRatio || 50
-        const pb = metrics?.priceToBookRatio || 10
-        const roe = metrics?.returnOnEquity || 15
-        const debtToEquity = metrics?.debtToEquity || 0.5
-
-        // ✅ 성장률 지표 (metrics에서)
-        let revenueGrowth = metrics?.revenueGrowth || metrics?.revenue_growth || 0
-        let epsGrowth = metrics?.epsGrowth || metrics?.earningsGrowth || metrics?.earnings_growth || 0
-
-        // ✅ 수익성 지표 (metrics에서 근사)
-        // profitMargin = netIncome / revenue (보통 0-30%)
-        const netMargin = metrics?.netProfitMargin || metrics?.netMarginRatio || 10
-        const grossMargin = metrics?.grossProfitMargin || 40
-
-        // operatingMargin = operatingIncome / revenue
-        const operatingMargin = metrics?.operatingProfitMargin || metrics?.operatingMarginRatio || 15
-
-        // ✅ 섹터 정보 (metrics에서)
-        const sector = metrics?.sector || 'N/A'
-
-        // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
-        const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
-
         return {
           symbol,
           price,
