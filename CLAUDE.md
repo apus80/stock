@@ -363,3 +363,426 @@ US10Y: 4.28  // ✅ 올바름
 US10Y: { value: 4.28 }  // ❌ 금지 (index.html이 인식 못함)
 ```
 
+---
+
+## 📐 Worker 개별 종목 엔드포인트 응답 구조
+
+### 1️⃣ `/stock` 엔드포인트 (실시간 주가)
+**용도:** index.html 종목 검색 → 기본 주가 데이터
+
+```json
+{
+  "timestamp": "2026-03-16T10:30:00Z",
+  "dataType": "stock",
+  "symbol": "AAPL",
+  "data": {
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "price": 185.42,
+    "change": 2.15,
+    "changePercentage": 1.17,
+    "timestamp": "2026-03-16T15:59:00Z"
+  }
+}
+```
+
+**데이터 소스:** FMP API `/stable/quote?symbol=X`
+**사용처:** index.html의 종목 검색 결과 표시
+
+---
+
+### 2️⃣ `/alpha` 엔드포인트 (Alpha Discovery Score + PE/PB)
+**용도:** ai-analysis-2.html 개별 종목 상세 분석
+
+```json
+{
+  "timestamp": "2026-03-16T10:30:00Z",
+  "dataType": "alpha",
+  "symbol": "AAPL",
+  "data": {
+    "symbol": "AAPL",
+    "explosiveScore": 75.4321,
+    "factors": {
+      "price": 185.42,
+      "pe": 28.5,                    // ✅ FMP fundamentals/ratios에서 가져옴
+      "pb": 42.3,                    // ✅ FMP fundamentals/ratios에서 가져옴
+      "floatShares": 2540000000,
+      "marketCap": 2850000000000,
+      "revenueGrowth": 5.8,
+      "earningsGrowth": 12.4,
+      "analystScore": 78,
+      "insiderActivity": 0.42
+    },
+    "metrics": {
+      "momentum": 3.2145,
+      "volume": 42.15
+    },
+    "profile": {
+      "company": "AAPL",
+      "sector": "Technology",
+      "industry": "Consumer Electronics"
+    }
+  }
+}
+```
+
+**데이터 소스:**
+- `quote`: FMP API `/stable/quote?symbol=X` (실시간)
+- `fundamentals`: FMP API `/fundamentals/financials?symbol=X` (분기/연간)
+- `ratios`: FMP API `/fundamentals/ratios?symbol=X` (**PE/PB 출처** ✅)
+- `metrics`: FMP API `/quote-short?symbol=X` + `/financials/metric?symbol=X`
+
+**PE/PB 데이터 흐름:**
+```javascript
+// worker.js getAlphaData() → calculateFactors()
+1. getRatios(symbol) 호출 → FMP /fundamentals/ratios
+2. priceToEarningsRatio, priceToBookRatio 추출
+3. fallback: quote.pe, metrics.peRatio 등 (순서대로)
+4. 최종 기본값: pe=50, pb=10
+
+const pe = ratios?.priceToEarningsRatio
+        || quote?.pe
+        || metrics?.peRatio
+        || 50
+const pb = ratios?.priceToBookRatio
+        || quote?.priceToBook
+        || quote?.pb
+        || metrics?.priceToBookRatio
+        || 10
+```
+
+**사용처:** ai-analysis-2.html의 개별 종목 상세 분석 (pe/pb 계산 포함)
+
+---
+
+### 3️⃣ `/alpha/discovery` 엔드포인트 (Top 20 종목 + Alpha Score)
+**용도:** ai-analysis-2.html의 Alpha Discovery Scanner 위젯
+
+```json
+{
+  "timestamp": "2026-03-16T10:30:00Z",
+  "analysis_type": "alpha_discovery",
+  "top_20": [
+    {
+      "rank": 1,
+      "symbol": "NVDA",
+      "explosiveScore": 92.1234,
+      "factors": {
+        "price": 945.23,
+        "pe": 45.2,              // ✅ /fundamentals/ratios에서 가져옴
+        "pb": 15.8,              // ✅ /fundamentals/ratios에서 가져옴
+        "revenueGrowth": 24.5,
+        "earningsGrowth": 35.2,
+        "analystScore": 85,
+        "insiderActivity": 0.65
+      },
+      "profile": {
+        "company": "NVDA",
+        "sector": "Technology"
+      }
+    },
+    // ... 19개 더
+  ],
+  "analyzed": 500,
+  "universe_size": 5000,
+  "execution_time_sec": 12.45
+}
+```
+
+**특징:**
+- 내부적으로 `/alpha` 호출 (모든 종목)
+- explosiveScore 기준 상위 20개 반환
+- 각 종목의 factors에 pe/pb 포함
+
+---
+
+## 🔗 엔드포인트별 필드 비교표
+
+| 엔드포인트 | PE 필드 | PB 필드 | 데이터 소스 | 사용처 | 응답 형식 |
+|-----------|---------|---------|-----------|--------|---------|
+| `/stock` | ❌ 없음 | ❌ 없음 | FMP `/stable/quote` | index.html 검색 | `{ data: quote }` |
+| `/alpha` | ✅ `factors.pe` | ✅ `factors.pb` | FMP `/fundamentals/ratios` (1순위) | ai-analysis-2.html 상세분석 | `{ data: { factors, metrics, profile } }` |
+| `/alpha/discovery` | ✅ `factors.pe` | ✅ `factors.pb` | FMP `/fundamentals/ratios` (1순위) | ai-analysis-2.html Scanner위젯 | `{ top_20: [...], analyzed, universe_size }` |
+
+---
+
+## 📝 PE/PB 데이터 검증 체크리스트
+
+- [x] `/alpha` 엔드포인트에서 `factors.pe`, `factors.pb` 반환 여부 ✅
+- [x] `getRatios()` 함수가 FMP `/fundamentals/ratios` 호출 ✅
+- [x] `calculateFactors()` 함수에서 ratios 우선 사용 ✅
+- [x] Balance Sheet 필드명 `accountPayables` 수정 ✅
+- [x] ai-analysis-2.html에서 `/alpha/discovery` 호출 (770번 줄) ✅
+- [x] ai-analysis-2.html에서 `factors.pe ?? 50`, `factors.pb ?? 10` 사용 (730-731번 줄) ✅
+- [x] HTML 기본값은 자동으로 ratios 값으로 대체됨 ✅
+
+---
+
+## 📌 마지막 수정 내역 (2026-03-16)
+
+### worker.js 변경사항:
+1. **getAlphaData() 함수** (line ~450)
+   - `getRatios(symbol)` 호출 추가
+   - PE/PB를 FMP ratios 데이터에서 가져오도록 개선
+
+2. **calculateFactors() 함수** (line ~348-349)
+   - `priceToEarningsRatio` 우선 사용
+   - `priceToBookRatio` 우선 사용
+   - fallback 체인 설정 (metrics → quote → 기본값)
+
+3. **Balance Sheet 필드명 수정** (line ~367)
+   - `accountsPayable` → `accountPayables`
+
+### HTML 변경사항:
+- **없음** ✅ (worker 변경으로 자동 반영됨)
+
+---
+
+## 🔗 FRED API 엔드포인트 및 필드 정보
+
+### **FRED API 호출 구조**
+```
+URL: https://api.stlouisfed.org/fred/series/observations
+메서드: GET
+쿼리 파라미터:
+  - series_id: FRED 시리즈 코드 (WALCL, UNRATE 등)
+  - api_key: FRED API 키
+  - file_type: json
+  - units: 선택사항 (pc1=전년동기대비%, lin=선형, etc.)
+
+응답 구조:
+{
+  "observations": [
+    { "date": "2026-03-16", "value": "7234567" },
+    { "date": "2026-03-15", "value": "7234512" },
+    ...
+  ]
+}
+```
+
+### **Worker에서 사용 중인 FRED 시리즈**
+
+| 코드 | 설명 | 단위 | 출처 | Divisor | 저장 단위 | index.html 변환 |
+|------|------|------|------|---------|----------|---------|
+| **WALCL** | Fed Balance Sheet | millions | FRED | 1,000,000 | **T** | /1,000,000 → T |
+| **RRPONTSYD** | Reverse Repo | millions | FRED | 1 | **B** | /1,000 → B (이미 Billions) |
+| **WTREGEN** | TGA (Treasury General Account) | millions | FRED | 1,000,000 | **T** | /1,000,000 → T |
+| **M2SL** | M2 Money Supply | billions | FRED | 1,000 | **T** | ×1000→millions, /1,000,000→T |
+| **DGS10** | 10Y Treasury Yield | % | FRED | 1 | **%** | 직접 사용 |
+| **DGS2** | 2Y Treasury Yield | % | FRED | 1 | **%** | 직접 사용 |
+| **T10YIE** | 10Y Inflation Expectation | % | FRED | 1 | **%** | 직접 사용 |
+| **CPIAUCSL** | CPI Index (All Items) | index | FRED | 1 | **idx** | 직접 사용 |
+| **CPILFESL** | Core CPI (YoY%) | % | FRED (units=pc1) | 1 | **%** | 직접 사용 |
+| **UNRATE** | Unemployment Rate | % | FRED | 1 | **%** | 직접 사용 |
+| **UMCSENT** | Consumer Sentiment | idx | FRED | 1 | **idx** | 직접 사용 |
+| **GDPC1** | Real GDP | billions | FRED | 1 | **B** | 직접 사용 |
+| **INDPRO** | Industrial Production | idx | FRED | 1 | **idx** | 직접 사용 |
+| **PAYEMS** | Nonfarm Payrolls | thousands | FRED | 1 | **K** | 직접 사용 |
+| **PCEPILFE** | PCE Inflation (ex food/energy) | % | FRED | 1 | **%** | 직접 사용 |
+| **FEDFUNDS** | Federal Funds Rate | % | FRED | 1 | **%** | 직접 사용 |
+| **PCEPI** | PCE Inflation Index | index | FRED | 1 | **idx** | 직접 사용 |
+| **VIXCLS** | VIX from FRED | index | FRED | 1 | **idx** | 직접 사용 |
+| **BAMLH0A0HYM2** | High Yield OAS Spread | % | FRED | 1 | **%** | 직접 사용 |
+
+### **FRED 데이터 처리 흐름 (worker.js)**
+
+```javascript
+// 1️⃣ FRED API 호출 (fredGet 함수)
+async function fredGet(series, units = null) {
+  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json${units ? `&units=${units}` : ''}`
+  return await fetch(url) // observations 배열 반환
+}
+
+// 2️⃣ 최신값 추출 (getLatestValue 함수)
+function getLatestValue(fredArray) {
+  // 배열 끝에서 시작해서 유효한 값 찾기 (역순 검색)
+  // '.' 또는 공백값 스킵
+  return parseFloat(array[array.length-1].value)
+}
+
+// 3️⃣ 단위 변환 (convertFredValue 함수)
+function convertFredValue(series, rawValue) {
+  const conversion = FRED_CONVERSIONS[series]
+  return rawValue / conversion.divisor // T, B, %, idx 등으로 변환
+}
+
+// 4️⃣ 최종 저장
+const fedVal = convertFredValue("WALCL", getLatestValue(fed)) // T 단위로 저장
+const m2Val = m2RawVal ? m2RawVal * 1000 : null  // billions → millions
+```
+
+### **Worker 응답에서 FRED 데이터 위치**
+
+```json
+{
+  "fed": 7.23,              // WALCL (T 단위) - 출처: FRED
+  "fedRaw": 7234567,        // raw value (millions)
+  "rp": 123.45,             // RRPONTSYD (B 단위) - 출처: FRED
+  "rpRaw": 123456,          // raw value
+  "us10y": 4.28,            // DGS10 (%) - 출처: FRED
+  "us2y": 4.15,             // DGS2 (%) - 출처: FRED
+  "yieldCurve": 0.13,       // 10Y - 2Y 계산값
+  "MACRO_BASE": {
+    "CPI": 314.12,          // CPIAUCSL (index)
+    "CPI_YOY": 3.2,         // CPIAUCSL YoY% (units=pc1)
+    "CORE_CPI_YOY": 2.8,    // CPILFESL YoY% (units=pc1)
+    "PCE_INFLATION": 2.6,   // PCEPI
+    "FED_RATE": 4.33,       // FEDFUNDS (%)
+    "INFLATION_EXPECTATION": 2.30, // T10YIE (%)
+    "UNEMPLOYMENT": 4.10,   // UNRATE (%)
+    "M2": 21500000,         // M2SL billions×1000→millions
+    "REAL_RATES": 1.98      // 10Y - 기대인플레이션
+  },
+  "MACRO_INDICATORS": {
+    "CONSUMER_SENTIMENT": 64.7,   // UMCSENT
+    "REAL_GDP": 23450.0,          // GDPC1
+    "INDUSTRIAL_PRODUCTION": 103.2, // INDPRO
+    "NONFARM_PAYROLLS": 158400,   // PAYEMS
+    "PCE_INFLATION": 2.6          // PCEPILFE
+  },
+  "MARKET_RISK": {
+    "VIX_FRED": 18.45,           // VIXCLS (from FRED)
+    "HY_OAS_SPREAD": 345.50      // BAMLH0A0HYM2 (%)
+  }
+}
+```
+
+---
+
+## 🌐 Yahoo Finance API 엔드포인트
+
+### **DXY (달러 인덱스) - Yahoo Finance**
+
+**URL:** `https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d`
+
+**필수 헤더:**
+```javascript
+headers: {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...'
+}
+```
+
+**응답 구조:**
+```json
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "regularMarketPrice": 104.32,
+          "regularMarketChange": 0.28,
+          "regularMarketChangePercent": 0.27,
+          "currency": "USD"
+        },
+        "timestamp": [1710662400],
+        "indicators": {...}
+      }
+    ]
+  }
+}
+```
+
+**Worker 처리:**
+```javascript
+async function yahooFinanceDXY() {
+  // 1. Yahoo 호출
+  const url = 'https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=1d&range=1d'
+  const meta = response?.chart?.result?.[0]?.meta
+
+  // 2. 필드 추출
+  return {
+    price: meta.regularMarketPrice,           // 104.32
+    changePercentage: meta.regularMarketChangePercent  // 0.27
+  }
+}
+```
+
+**Worker 응답에서 위치:**
+```json
+{
+  "dxyPrice": 104.32,      // Yahoo DXY 현재가
+  "dxyChange": 0.27,       // Yahoo DXY 변화%
+  "FX": {
+    "DXY": {               // /market 엔드포인트에서 반환
+      "price": 104.32,
+      "changePercentage": 0.27
+    }
+  }
+}
+```
+
+**특징:**
+- 공개 API (인증 불필요, User-Agent만 필수)
+- 실시간 데이터 제공
+- 한국 지수(KOSPI) 대신 DXY 사용 (KOSPI는 FMP API로 대체)
+
+---
+
+## 📝 API 소스별 검증 체크리스트
+
+### ✅ FMP API (주식/ETF/지수)
+- [x] `/stable/quote` 엔드포인트 사용 (무료 플랜 검증)
+- [x] 배열 응답 정규화 처리 (Array/Object)
+- [x] price, changePercentage 필드 확인
+- [x] null/undefined 처리
+- [x] PE/PB: `/fundamentals/ratios` 우선 사용
+
+### ✅ FRED API (경제지표)
+- [x] `/fred/series/observations` 엔드포인트 정상
+- [x] 최신값 추출 (역순 검색) 정상
+- [x] FRED_CONVERSIONS 단위 변환 테이블 정상
+- [x] units 매개변수 지원 (pc1=YoY%)
+- [x] raw 값 저장 (index.html에서 변환)
+- [x] M2: billions × 1000 → millions 변환
+
+### ✅ Yahoo Finance API (DXY)
+- [x] `/v8/finance/chart/{symbol}` 엔드포인트 정상
+- [x] User-Agent 헤더 포함
+- [x] regularMarketPrice/regularMarketChangePercent 필드 확인
+- [x] null 처리 정상
+- [x] 공개 API (인증 불필요)
+
+---
+
+## 🔄 모든 데이터 소스별 의존성 맵
+
+```
+┌─────────────────────────────────────────────────────┐
+│  worker.js /market 엔드포인트                        │
+│  (getMarketData 함수 - Promise.allSettled)          │
+└────┬────────────────────────────────────────────────┘
+     │
+     ├─ FMP API (/stable/quote)
+     │  ├─ 주식: SPY, QQQ, DIA, SOXX, IWM, ^VIX
+     │  ├─ 채권: HYG, LQD, VTI, TLT
+     │  ├─ 섹터: XLK~XLRE (8개)
+     │  ├─ 원자재: GCUSD, SIUSD, BZUSD
+     │  ├─ FX: USDKRW, USDJPY, EURUSD
+     │  ├─ 한국: EWY
+     │  └─ 암호: BTCUSD, ETHUSD, SOLUSD
+     │
+     ├─ FRED API (/fred/series/observations)
+     │  ├─ 유동성: WALCL, RRPONTSYD, WTREGEN
+     │  ├─ 금리: DGS10, DGS2, FEDFUNDS, T10YIE
+     │  ├─ 인플레이션: CPIAUCSL, CPILFESL, PCEPI
+     │  ├─ 고용: UNRATE, PAYEMS, UMCSENT
+     │  ├─ GDP: GDPC1
+     │  ├─ 생산: INDPRO, PCEPILFE
+     │  ├─ VIX: VIXCLS
+     │  └─ 신용: BAMLH0A0HYM2
+     │
+     └─ Yahoo Finance (/v8/finance/chart)
+        └─ 달러인덱스: DX-Y.NYB (DXY)
+```
+
+---
+
+## 📊 최종 검증 결과
+
+| 데이터 소스 | 상태 | 검증 내용 |
+|-----------|------|---------|
+| FMP API | ✅ 정상 | `/stable/quote` 무료플랜 동작 확인, PE/PB ratios 추가 |
+| FRED API | ✅ 정상 | 19개 시리즈 호출, 단위 변환 정상, YoY% 지원 |
+| Yahoo Finance | ✅ 정상 | DXY 공개 API, User-Agent 헤더 포함, 실시간 데이터 |
+| 모든 HTML | ✅ 자동 반영 | worker 변경으로 데이터 자동 업데이트 |
+

@@ -251,6 +251,24 @@ export default {
 
           // 🔍 DEBUG: 각 API별 응답 확인
           if (endpoint.includes('quote')) {
+            console.log(`   📦 quote 응답 형식: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
+            if (Array.isArray(data) && data[0]) {
+              const quote = data[0]
+              const keys = Object.keys(quote)
+              console.log(`   📋 quote 필드 수: ${keys.length}`)
+              console.log(`   📋 모든 필드: ${keys.join(', ')}`)
+              console.log(`   💰 주요값:`)
+              console.log(`      price=${quote.price}`)
+              console.log(`      pe=${quote.pe}, peRatio=${quote.peRatio}`)
+              console.log(`      pb=${quote.pb}, priceToBook=${quote.priceToBook}`)
+              console.log(`      dayLow=${quote.dayLow}, dayHigh=${quote.dayHigh}`)
+              console.log(`      epsTrailingTwelveMonths=${quote.epsTrailingTwelveMonths}`)
+              console.log(`      sector=${quote.sector}, industry=${quote.industry}`)
+            }
+          } else if (endpoint.includes('key-metrics')) {
+            console.log(`   ⚠️  key-metrics 응답 수신 (유료 엔드포인트)`)
+          } else if (endpoint.includes('historical')) {
+            console.log(`   📦 historical 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
           // console.log(`   📦 quote 응답: ${Array.isArray(data) ? `Array[${data.length}]` : 'Object'}`)
             if (Array.isArray(data) && data[0]) {
               const quote = data[0]
@@ -282,6 +300,24 @@ export default {
 
       async function getAlphaData(symbol) {
         try {
+          // 📍 주의: /stable/key-metrics는 유료 플랜 엔드포인트
+          // 무료 플랜은 /stable/quote만 사용 가능
+          // quote 응답에서 최대한 많은 정보 추출
+          const quoteData = await fetchFMP(`/stable/quote?symbol=${symbol}`)
+          const quote = quoteData ? (Array.isArray(quoteData) ? quoteData[0] : quoteData) : null
+
+          // ✅ PE/PB는 /fundamentals/ratios에서 가져옴
+          const ratiosData = await getRatios(symbol)
+          const ratios = ratiosData?.data || null
+
+          console.log(`\n📍 [${symbol}] getAlphaData 결과:`)
+          console.log(`   Quote 응답:`, quote ? `✅ 받음 (${Object.keys(quote).length}개 필드)` : `❌ null`)
+          console.log(`   Ratios 응답:`, ratios ? `✅ PE=${ratios.priceToEarningsRatio}, PB=${ratios.priceToBookRatio}` : `❌ null`)
+
+          return {
+            quote: quote,
+            ratios: ratios,  // ✅ ratios 데이터 추가
+            metrics: null  // /stable/key-metrics는 유료 플랜이므로 null로 설정
           // 📍 최적화: 필수 2개 API만 호출 (180 호출/일)
           // quote: 가격, key-metrics: 성장률 및 지표
           const results = await Promise.allSettled([
@@ -306,7 +342,73 @@ export default {
         if (!data || !data.quote) return null
 
         const quote = data.quote
+        const ratios = data.ratios
         const metrics = data.metrics
+
+        // 🔍 DEBUG: 실제 API 응답 데이터 확인
+        console.log(`\n📊 [${quote?.symbol}] === API 응답 데이터 ===`)
+        console.log(`Quote 필드:`, Object.keys(quote).slice(0, 20))
+        console.log(`Ratios 필드:`, Object.keys(ratios || {}).slice(0, 20))
+        console.log(`Metrics 필드:`, Object.keys(metrics || {}).slice(0, 20))
+        console.log(`Quote 데이터:`, {
+          price: quote?.price,
+          dayLow: quote?.dayLow,
+          dayHigh: quote?.dayHigh
+        })
+        console.log(`Ratios 데이터:`, {
+          priceToEarningsRatio: ratios?.priceToEarningsRatio,
+          priceToBookRatio: ratios?.priceToBookRatio
+        })
+        console.log(`Metrics 데이터:`, {
+          peRatio: metrics?.peRatio,
+          priceToBookRatio: metrics?.priceToBookRatio,
+          revenueGrowth: metrics?.revenueGrowth,
+          earningsGrowth: metrics?.earningsGrowth,
+          epsGrowth: metrics?.epsGrowth,
+          netProfitMargin: metrics?.netProfitMargin,
+          returnOnEquity: metrics?.returnOnEquity
+        })
+
+        // ✅ 기본 정보 (quote에서)
+        const price = quote?.price || 0
+        const symbol = quote?.symbol || 'N/A'
+        const dayLow = quote?.dayLow || quote?.dayLow || price
+        const dayHigh = quote?.dayHigh || quote?.dayHigh || price
+
+        console.log(`   ✅ 기본정보: price=${price}, dayLow=${dayLow}, dayHigh=${dayHigh}`)
+
+        // ✅ 비율 지표
+        // 우선순위: ratios (/fundamentals/ratios) > quote > metrics > 기본값
+        const pe = ratios?.priceToEarningsRatio || quote?.pe || metrics?.peRatio || 50
+        const pb = ratios?.priceToBookRatio || quote?.priceToBook || quote?.pb || metrics?.priceToBookRatio || 10
+        const roe = metrics?.returnOnEquity || 15  // quote에는 보통 없음
+        const debtToEquity = metrics?.debtToEquity || 0.5
+
+        console.log(`   ✅ 비율지표: pe=${pe}, pb=${pb}, roe=${roe}`)
+
+        // ✅ 성장률 지표 (quote에 있는지 확인, 없으면 0으로 설정)
+        // /stable/quote에는 보통 성장률이 없음 → 모두 0으로 초기화
+        let revenueGrowth = quote?.revenueGrowth || metrics?.revenueGrowth || 0
+        let epsGrowth = quote?.epsGrowth || metrics?.epsGrowth || 0
+
+        console.log(`   ⚠️  성장률: revenueGrowth=${revenueGrowth}, epsGrowth=${epsGrowth}`)
+
+        // ✅ 수익성 지표 (quote에 없으면 기본값)
+        // profitMargin = netIncome / revenue (보통 0-30%)
+        const netMargin = metrics?.netProfitMargin || 10
+        const grossMargin = metrics?.grossProfitMargin || 40
+
+        // operatingMargin = operatingIncome / revenue
+        const operatingMargin = metrics?.operatingProfitMargin || 15
+
+        // ✅ 섹터 정보 (quote에 있는지 확인)
+        const sector = quote?.sector || metrics?.sector || 'N/A'
+
+        console.log(`   ℹ️  섹터: ${sector}, netMargin=${netMargin}`)
+
+        // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
+        const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
+
 
         // ✅ 기본 정보 (quote에서)
         const price = quote?.price || 0
@@ -356,6 +458,56 @@ export default {
         }
       }
 
+      // Explosive Score (100점 만점 정규화)
+      function explosiveScore(factors) {
+        if (!factors) return 0
+
+        // ✅ 1. 성장률 정규화 (0~100, 상한선 적용)
+        // 데이터가 소수점 형태(0.1=10%)일 경우 * 100, 백분율 형태(10)일 경우 그대로 사용
+        const normalizeGrowth = (g) => {
+          const value = g || 0
+          // 소수점 형태 판별: 1보다 작으면 * 100
+          const normalized = value < 1 ? value * 100 : value
+          return Math.max(0, Math.min(100, normalized))
+        }
+        const revenueScore = normalizeGrowth(factors.revenueGrowth)
+        const epsScore = normalizeGrowth(factors.epsGrowth)
+
+        // ⚠️ 기본값 문제 수정: quote에서만 데이터를 받으므로 profitMargin, roe는 기본값만 존재
+        // 따라서 이 점수들은 모든 종목에서 동일
+        // 대신 PE, PB, Momentum 점수에 더 큰 가중치를 줌
+        const profitScore = Math.min(100, (factors.profitMargin || 10) * 5)
+        const roiScore = Math.min(100, (factors.roe || 15) * 5)
+
+        // ✅ 2. 밸류에이션 정규화 (PE/PB 낮을수록 높음, 범위 확장)
+        // PE 정규화: PE 10을 100점, PE 50을 0점
+        const peScore = Math.max(0, Math.min(100, 100 - (factors.pe || 50) / 0.4))
+        // PB 정규화: PB 1을 100점, PB 10을 0점
+        const pbScore = Math.max(0, Math.min(100, 100 - (factors.pb || 10) / 0.1))
+
+        // ✅ 3. 모멘텀 정규화 (0~100, 10%를 100점)
+        const momentumScore = Math.min(100, Math.max(0, (factors.momentum || 0) * 1000))
+
+        console.log(`   📊 Score 계산 상세:`)
+        console.log(`      - Revenue: ${revenueScore.toFixed(1)} (가중 ${(revenueScore*0.15).toFixed(1)})`)
+        console.log(`      - EPS:     ${epsScore.toFixed(1)} (가중 ${(epsScore*0.15).toFixed(1)})`)
+        console.log(`      - PE:      ${peScore.toFixed(1)} (가중 ${(peScore*0.3).toFixed(1)})`)
+        console.log(`      - PB:      ${pbScore.toFixed(1)} (가중 ${(pbScore*0.25).toFixed(1)})`)
+        console.log(`      - Momentum:${momentumScore.toFixed(1)} (가중 ${(momentumScore*0.15).toFixed(1)})`)
+
+        // ✅ 최종 점수 (가중합 → 100점 만점)
+        // 변경: revenueScore, epsScore 가중치 증가
+        //      profitScore, roiScore 제거 (항상 동일한 기본값)
+        //      peScore, pbScore, momentumScore 가중치 증가 (quote 필드에서 계산 가능)
+        const score =
+          revenueScore * 0.15 +        // 수익성장 (15%)
+          epsScore * 0.15 +            // EPS성장 (15%)
+          peScore * 0.30 +             // PE 가치 (30%) ← 증가
+          pbScore * 0.25 +             // PB 가치 (25%) ← 증가
+          momentumScore * 0.15         // 모멘텀 (15%) ← 증가
+          // profitScore, roiScore 제거 (기본값만 존재해서 모든 종목이 동일)
+
+        return Math.max(0, Math.min(100, score))
       // Explosive Score (7개 지표 가중합)
       function explosiveScore(factors) {
         if (!factors) return 0
@@ -600,7 +752,7 @@ export default {
             longTermDebt: balance.longTermDebt || null,
             shortTermDebt: balance.shortTermDebt || null,
             inventory: balance.inventory || null,
-            accountsPayable: balance.accountPayables || null,
+            accountPayables: balance.accountPayables || null,
             netDebt: balance.netDebt || null,
             totalDebt: balance.totalDebt || null,
             timestamp: new Date().toISOString()

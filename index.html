@@ -4559,6 +4559,59 @@ var ECON_DATA = {
         // Worker 엔드포인트
         var WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev/';
 
+        // ═══════════════════════════════════════════════════════
+        // 📦 캐싱 설정 (카드 7, 9, 12, 13)
+        // ═══════════════════════════════════════════════════════
+        var CACHE_CONFIG = {
+            LIQUIDITY: {
+                key: 'cache_liquidity_card7',
+                ttl: 1 * 60 * 60 * 1000  // 1시간
+            },
+            SENTIMENT: {
+                key: 'cache_sentiment_card9',
+                ttl: 1 * 60 * 60 * 1000  // 1시간
+            },
+            MACRO_BASE: {
+                key: 'cache_macro_base_card12',
+                ttl: 4 * 60 * 60 * 1000  // 4시간
+            },
+            MACRO_INDICATORS: {
+                key: 'cache_macro_indicators_card13',
+                ttl: 4 * 60 * 60 * 1000  // 4시간
+            }
+        };
+
+        // 캐시 로드 함수
+        function imdLoadCache(cacheName) {
+            var cached = localStorage.getItem(CACHE_CONFIG[cacheName].key);
+            if (!cached) return null;
+
+            try {
+                var data = JSON.parse(cached);
+                var age = Date.now() - data.timestamp;
+
+                if (age > CACHE_CONFIG[cacheName].ttl) {
+                    localStorage.removeItem(CACHE_CONFIG[cacheName].key);
+                    return null;
+                }
+                return data.value;
+            } catch(e) {
+                return null;
+            }
+        }
+
+        // 캐시 저장 함수
+        function imdSaveCache(cacheName, value) {
+            try {
+                localStorage.setItem(CACHE_CONFIG[cacheName].key, JSON.stringify({
+                    value: value,
+                    timestamp: Date.now()
+                }));
+            } catch(e) {
+                console.warn('Cache save failed:', cacheName, e);
+            }
+        }
+
         var CORS_PX    = [
             'https://corsproxy.io/?',
             'https://api.allorigins.win/raw?url=',
@@ -5832,54 +5885,74 @@ var ECON_DATA = {
          * 유동성 지표: FRED (WALCL / RRPONTSYD / M2SL)
          * ══════════════════════════════════════════════════════ */
         function imdLoadLiquidity() {
-            // Worker의 ?action=market 엔드포인트에서 모든 데이터 한 번에 가져오기
+            // Step 1: 캐시된 값 즉시 표시
+            var cached = imdLoadCache('LIQUIDITY');
+            if (cached) {
+                imdDisplayLiquidity(cached);
+                // 상태 표시: ✅ (캐시됨)
+                ['fedbal','repo','tga','m2','us10y','us2y','yieldcurve'].forEach(function(id) {
+                    imdSetStatus(id, 'sync');
+                });
+            }
+
+            // Step 2: 백그라운드에서 새로운 데이터 로드
             workerFetchMarket().then(function(data) {
                 if (!data) {
                     console.error('[IMD] Market data is null');
+                    if (!cached) {
+                        ['fedbal','repo','tga','m2','us10y','us2y','yieldcurve'].forEach(function(id) {
+                            imdSetStatus(id, 'error');
+                        });
+                    }
                     return;
                 }
 
                 console.log('[IMD] Market data received:', data.dataType);
-
-                // RATES - Treasury Yields
-                if (data.RATES) {
-                    if (data.RATES.US10Y) {
-                        imdSetValue('us10y', data.RATES.US10Y, 2, '%');
-                    }
-                    if (data.RATES.US2Y) {
-                        imdSetValue('us2y', data.RATES.US2Y, 2, '%');
-                    }
-                    if (data.RATES.YIELD_CURVE) {
-                        imdSetValue('yieldcurve', data.RATES.YIELD_CURVE, 2, '%');
-                    }
-                }
-
-                // LIQUIDITY - Fed Balance, Reverse Repo, TGA
-                if (data.LIQUIDITY) {
-                    if (data.LIQUIDITY.FED_BALANCE) {
-                        // FED_BALANCE는 원래 raw 값, T(Trillions) 단위로 변환: /1,000,000
-                        imdSetValue('fedbal', (data.LIQUIDITY.FED_BALANCE / 1000000), 1, 'T');
-                    }
-                    if (data.LIQUIDITY.REVERSE_REPO != null) {
-                        // RRPONTSYD: FRED 원값이 이미 Billions 단위 → 변환 없이 직접 사용
-                        imdSetValue('repo', data.LIQUIDITY.REVERSE_REPO, 1, 'B');
-                    }
-                    if (data.LIQUIDITY.TGA) {
-                        // TGA는 T(Trillions) 단위: /1,000,000
-                        imdSetValue('tga', (data.LIQUIDITY.TGA / 1000000), 1, 'T');
-                    }
-                }
-
-                // MACRO_BASE - M2 Money Supply
-                if (data.MACRO_BASE && data.MACRO_BASE.M2) {
-                    // M2는 raw 값 (millions), T(Trillions)로 변환: /1,000,000
-                    imdSetValue('m2', (data.MACRO_BASE.M2 / 1000000), 1, 'T');
-                }
+                imdDisplayLiquidity(data);
+                imdSaveCache('LIQUIDITY', data);
 
                 console.log('[IMD] Market Liquidity loaded successfully');
             }).catch(function(e) {
                 console.error('[IMD] Market data load failed:', e);
+                if (!cached) {
+                    ['fedbal','repo','tga','m2','us10y','us2y','yieldcurve'].forEach(function(id) {
+                        imdSetStatus(id, 'error');
+                    });
+                }
             });
+        }
+
+        function imdDisplayLiquidity(data) {
+            // RATES - Treasury Yields
+            if (data.RATES) {
+                if (data.RATES.US10Y) {
+                    imdSetValue('us10y', data.RATES.US10Y, 2, '%');
+                }
+                if (data.RATES.US2Y) {
+                    imdSetValue('us2y', data.RATES.US2Y, 2, '%');
+                }
+                if (data.RATES.YIELD_CURVE) {
+                    imdSetValue('yieldcurve', data.RATES.YIELD_CURVE, 2, '%');
+                }
+            }
+
+            // LIQUIDITY - Fed Balance, Reverse Repo, TGA
+            if (data.LIQUIDITY) {
+                if (data.LIQUIDITY.FED_BALANCE) {
+                    imdSetValue('fedbal', (data.LIQUIDITY.FED_BALANCE / 1000000), 1, 'T');
+                }
+                if (data.LIQUIDITY.REVERSE_REPO != null) {
+                    imdSetValue('repo', data.LIQUIDITY.REVERSE_REPO, 1, 'B');
+                }
+                if (data.LIQUIDITY.TGA) {
+                    imdSetValue('tga', (data.LIQUIDITY.TGA / 1000000), 1, 'T');
+                }
+            }
+
+            // MACRO_BASE - M2 Money Supply
+            if (data.MACRO_BASE && data.MACRO_BASE.M2) {
+                imdSetValue('m2', (data.MACRO_BASE.M2 / 1000000), 1, 'T');
+            }
         }
 
         /* ══════════════════════════════════════════════════════
@@ -5941,6 +6014,15 @@ var ECON_DATA = {
          * Put/Call Ratio: CBOE CSV 파싱
          * ══════════════════════════════════════════════════════ */
         function imdLoadSentiment() {
+            // Step 1: 캐시된 값 즉시 표시
+            var cached = imdLoadCache('SENTIMENT');
+            if (cached) {
+                imdDisplaySentiment(cached);
+                imdSetStatus('fear', 'sync');
+                imdSetStatus('putcall', 'sync');
+            }
+
+            // Step 2: Fear & Greed – Worker /feargreed 호출 (Alternative.me API)
             // Fear & Greed – Worker 경유 Alternative.me API (6h 캐시)
             var FEAR_CACHE_KEY = 'feargreed_cache';
             var FEAR_CACHE_TTL = 6 * 60 * 60 * 1000; // 6시간
@@ -5960,13 +6042,46 @@ var ECON_DATA = {
                 .then(function(d) {
                     if (d && d.score !== null && !isNaN(d.score)) {
                         imdSetValue('fear', d.score, 0);
-                        localStorage.setItem(FEAR_CACHE_KEY, JSON.stringify({ score: d.score, ts: Date.now() }));
+                        imdSetStatus('fear', 'ok');
+                        // 캐시 데이터 업데이트
+                        if (cached) {
+                            cached.fearGreedScore = d.score;
+                        } else {
+                            cached = { fearGreedScore: d.score };
+                        }
+                        imdSaveCache('SENTIMENT', cached);
                         return;
                     }
                     imdSetStatus('fear', 'error');
                 })
                 .catch(function() { imdSetStatus('fear', 'error'); });
 
+            // Step 3: Put/Call Ratio – Worker /market 엔드포인트에서 로드
+            workerFetchMarket().then(function(data) {
+                if (data && data.OPTIONS && data.OPTIONS.PUT_CALL_RATIO !== null && !isNaN(data.OPTIONS.PUT_CALL_RATIO)) {
+                    imdSetValue('putcall', data.OPTIONS.PUT_CALL_RATIO, 2);
+                    imdSetStatus('putcall', 'ok');
+                    // 캐시 데이터 업데이트
+                    if (!cached) cached = {};
+                    cached.putCallRatio = data.OPTIONS.PUT_CALL_RATIO;
+                    imdSaveCache('SENTIMENT', cached);
+                } else {
+                    console.warn('Put/Call Ratio: 데이터 없음');
+                    if (!cached) imdSetStatus('putcall', 'error');
+                }
+            }).catch(function(err) {
+                console.warn('Put/Call Ratio 로드 실패:', err);
+                if (!cached) imdSetStatus('putcall', 'error');
+            });
+        }
+
+        function imdDisplaySentiment(data) {
+            if (data.fearGreedScore !== null && !isNaN(data.fearGreedScore)) {
+                imdSetValue('fear', data.fearGreedScore, 0);
+            }
+            if (data.putCallRatio !== null && !isNaN(data.putCallRatio)) {
+                imdSetValue('putcall', data.putCallRatio, 2);
+            }
             // Put/Call Ratio – Worker /market 엔드포인트에서 로드
             workerFetchMarket().then(function(data) {
                 if (data && data.OPTIONS && data.OPTIONS.PUT_CALL_RATIO !== null && !isNaN(data.OPTIONS.PUT_CALL_RATIO)) {
@@ -6057,34 +6172,57 @@ var ECON_DATA = {
          * Worker API → FRED
          * ══════════════════════════════════════════════════════ */
         function imdLoadMacroBase() {
+            var itemIds = ['fed_rate','cpi','core_cpi_yoy','unemployment','inflation_exp','real_rates'];
+
+            // Step 1: 캐시된 값 즉시 표시
+            var cached = imdLoadCache('MACRO_BASE');
+            if (cached && cached.MACRO_BASE) {
+                imdDisplayMacroBase(cached);
+                itemIds.forEach(function(id) {
+                    imdSetStatus(id, 'sync');
+                });
+            }
+
+            // Step 2: 백그라운드에서 새로운 데이터 로드
             workerFetchMarket().then(function(data) {
                 if (data && data.MACRO_BASE) {
-                    var macro = data.MACRO_BASE;
-                    var items = [
-                        {id: 'fed_rate',     value: macro.FED_RATE,      unit: '%'},
-                        {id: 'cpi',          value: macro.CPI_YOY,       unit: '%'},
-                        {id: 'core_cpi_yoy', value: macro.CORE_CPI_YOY,  unit: '%'},
-                        {id: 'unemployment', value: macro.UNEMPLOYMENT,   unit: '%'},
-                        {id: 'inflation_exp',value: macro.INFLATION_EXPECTATION, unit: '%'},
-                        {id: 'real_rates',   value: macro.REAL_RATES,    unit: '%'}
-                    ];
-
-                    items.forEach(function(item) {
-                        if (item.value !== null && item.value !== undefined) {
-                            imdSetValue(item.id, item.value, 2, item.unit);
-                            imdSetStatus(item.id, 'sync');
-                        } else {
-                            imdSetStatus(item.id, 'error');
-                        }
+                    imdDisplayMacroBase(data);
+                    imdSaveCache('MACRO_BASE', data);
+                    itemIds.forEach(function(id) {
+                        imdSetStatus(id, 'ok');
                     });
                     return;
                 }
                 throw new Error('No MACRO_BASE data');
             }).catch(function(err) {
                 console.error('[ERROR] imdLoadMacroBase:', err);
-                ['fed_rate','cpi','core_cpi_yoy','unemployment','inflation_exp','real_rates'].forEach(function(id) {
-                    imdSetStatus(id, 'error');
-                });
+                if (!cached) {
+                    itemIds.forEach(function(id) {
+                        imdSetStatus(id, 'error');
+                    });
+                }
+            });
+        }
+
+        function imdDisplayMacroBase(data) {
+            if (!data || !data.MACRO_BASE) return;
+
+            var macro = data.MACRO_BASE;
+            var items = [
+                {id: 'fed_rate',     value: macro.FED_RATE,      unit: '%'},
+                {id: 'cpi',          value: macro.CPI_YOY,       unit: '%'},
+                {id: 'core_cpi_yoy', value: macro.CORE_CPI_YOY,  unit: '%'},
+                {id: 'unemployment', value: macro.UNEMPLOYMENT,   unit: '%'},
+                {id: 'inflation_exp',value: macro.INFLATION_EXPECTATION, unit: '%'},
+                {id: 'real_rates',   value: macro.REAL_RATES,    unit: '%'}
+            ];
+
+            items.forEach(function(item) {
+                if (item.value !== null && item.value !== undefined) {
+                    imdSetValue(item.id, item.value, 2, item.unit);
+                } else {
+                    imdSetStatus(item.id, 'error');
+                }
             });
         }
 
@@ -6093,33 +6231,56 @@ var ECON_DATA = {
          * Worker API → FRED
          * ══════════════════════════════════════════════════════ */
         function imdLoadMacroIndicators() {
+            var itemIds = ['sentiment','gdp','indpro','payems','pce_inf'];
+
+            // Step 1: 캐시된 값 즉시 표시
+            var cached = imdLoadCache('MACRO_INDICATORS');
+            if (cached && cached.MACRO_INDICATORS) {
+                imdDisplayMacroIndicators(cached);
+                itemIds.forEach(function(id) {
+                    imdSetStatus(id, 'sync');
+                });
+            }
+
+            // Step 2: 백그라운드에서 새로운 데이터 로드
             workerFetchMarket().then(function(data) {
                 if (data && data.MACRO_INDICATORS) {
-                    var indicators = data.MACRO_INDICATORS;
-                    var items = [
-                        {id: 'sentiment', value: indicators.CONSUMER_SENTIMENT, unit: 'idx'},
-                        {id: 'gdp', value: indicators.REAL_GDP ? (indicators.REAL_GDP / 1000) : null, unit: 'B'},
-                        {id: 'indpro', value: indicators.INDUSTRIAL_PRODUCTION, unit: 'idx'},
-                        {id: 'payems', value: indicators.NONFARM_PAYROLLS ? (indicators.NONFARM_PAYROLLS / 1000) : null, unit: 'K'},
-                        {id: 'pce_inf', value: indicators.PCE_INFLATION, unit: '%'}
-                    ];
-
-                    items.forEach(function(item) {
-                        if (item.value) {
-                            imdSetValue(item.id, item.value, 2, item.unit);
-                            imdSetStatus(item.id, 'sync');
-                        } else {
-                            imdSetStatus(item.id, 'error');
-                        }
+                    imdDisplayMacroIndicators(data);
+                    imdSaveCache('MACRO_INDICATORS', data);
+                    itemIds.forEach(function(id) {
+                        imdSetStatus(id, 'ok');
                     });
                     return;
                 }
                 throw new Error('No MACRO_INDICATORS data');
             }).catch(function(err) {
                 console.error('[ERROR] imdLoadMacroIndicators:', err);
-                ['sentiment','gdp','indpro','payems','pce_inf'].forEach(function(id) {
-                    imdSetStatus(id, 'error');
-                });
+                if (!cached) {
+                    itemIds.forEach(function(id) {
+                        imdSetStatus(id, 'error');
+                    });
+                }
+            });
+        }
+
+        function imdDisplayMacroIndicators(data) {
+            if (!data || !data.MACRO_INDICATORS) return;
+
+            var indicators = data.MACRO_INDICATORS;
+            var items = [
+                {id: 'sentiment', value: indicators.CONSUMER_SENTIMENT, unit: 'idx'},
+                {id: 'gdp', value: indicators.REAL_GDP ? (indicators.REAL_GDP / 1000) : null, unit: 'B'},
+                {id: 'indpro', value: indicators.INDUSTRIAL_PRODUCTION, unit: 'idx'},
+                {id: 'payems', value: indicators.NONFARM_PAYROLLS ? (indicators.NONFARM_PAYROLLS / 1000) : null, unit: 'K'},
+                {id: 'pce_inf', value: indicators.PCE_INFLATION, unit: '%'}
+            ];
+
+            items.forEach(function(item) {
+                if (item.value) {
+                    imdSetValue(item.id, item.value, 2, item.unit);
+                } else {
+                    imdSetStatus(item.id, 'error');
+                }
             });
         }
 

@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시스템 유지보수</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg2: #161b22;
+            --bg3: #1c2128;
+            --bg4: #21262d;
+            --border: #30363d;
+            --muted: #484f58;
+            --text-muted: #8b949e;
+            --text: #c9d1d9;
+            --text-bright: #e6edf3;
+            --blue: #58a6ff;
+            --green: #3fb950;
+            --red: #f85149;
+            --yellow: #d29922;
+            --purple: #bc8ef9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--purple);
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 13px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg4);
+            color: var(--text);
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--border);
+            color: var(--text-bright);
+        }
+
+        button.active {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+
+        .widget-section {
+            margin-bottom: 40px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .widget-header {
+            background: var(--bg3);
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .widget-id {
+            background: var(--blue);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .widget-title {
+            flex: 1;
+            color: var(--text-bright);
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .widget-position {
+            color: var(--text-muted);
+            font-size: 11px;
+            background: var(--bg4);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .widget-body {
+            padding: 20px;
+        }
+
+        .logic-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            color: var(--green);
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .formula {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid var(--yellow);
+            margin-bottom: 15px;
+            font-size: 11px;
+            overflow-x: auto;
+            line-height: 1.8;
+        }
+
+        .formula-line {
+            margin: 6px 0;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .data-table thead {
+            background: var(--bg3);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .data-table th {
+            padding: 10px;
+            text-align: left;
+            color: var(--text-bright);
+            font-weight: 600;
+            border-right: 1px solid var(--border);
+        }
+
+        .data-table th:last-child {
+            border-right: none;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+
+        .data-table td:last-child {
+            border-right: none;
+        }
+
+        .data-table tbody tr:hover {
+            background: var(--bg3);
+        }
+
+        .field-name {
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        .value-actual {
+            color: var(--green);
+        }
+
+        .value-default {
+            color: var(--yellow);
+            font-weight: bold;
+        }
+
+        .status-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-icon.actual {
+            background: var(--green);
+        }
+
+        .status-icon.default {
+            background: var(--yellow);
+        }
+
+        .status-icon.error {
+            background: var(--red);
+        }
+
+        .timestamp {
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .no-data {
+            color: var(--text-muted);
+            padding: 20px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .warning {
+            background: rgba(217, 119, 6, 0.1);
+            border-left: 3px solid var(--yellow);
+            padding: 12px;
+            border-radius: 4px;
+            color: var(--yellow);
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+
+        .success {
+            background: rgba(52, 168, 83, 0.1);
+            border-left: 3px solid var(--green);
+            padding: 12px;
+            border-radius: 4px;
+            color: var(--green);
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+
+        .value-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .value-badge.actual {
+            background: rgba(52, 168, 83, 0.2);
+            color: var(--green);
+        }
+
+        .value-badge.default {
+            background: rgba(217, 119, 6, 0.2);
+            color: var(--yellow);
+        }
+
+        .weight-bar {
+            display: inline-block;
+            height: 12px;
+            background: var(--blue);
+            opacity: 0.7;
+            border-radius: 2px;
+            min-width: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .data-table {
+                font-size: 10px;
+            }
+
+            .data-table th, .data-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📊 위젯 계산 로직 검증 대시보드</h1>
+    <p class="subtitle">각 위젯의 계산 공식과 실제 데이터 값을 모니터링합니다</p>
+
+    <div class="controls">
+        <button class="active" onclick="refreshAll()">🔄 모두 새로고침</button>
+        <button onclick="toggleAutoRefresh()">⏱ 자동 갱신 OFF</button>
+        <button onclick="exportData()">💾 데이터 내보내기</button>
+    </div>
+
+    <!-- Widget 1: Alpha Discovery Scanner -->
+    <div class="widget-section">
+        <div class="widget-header">
+            <div class="widget-id">ai_1</div>
+            <div class="widget-title">Alpha Discovery Scanner</div>
+            <div class="widget-position">Grid Position: Full Width</div>
+        </div>
+        <div class="widget-body">
+            <div class="logic-section">
+                <div class="section-title">📐 Explosive Score 계산 공식</div>
+                <div class="formula">
+                    <div class="formula-line"><strong>explosiveScore = 100점 만점 정규화</strong></div>
+                    <div class="formula-line" style="margin-top: 10px;">공식:</div>
+                    <div class="formula-line">&nbsp;&nbsp;score = revenueScore × 0.15</div>
+                    <div class="formula-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ epsScore × 0.15</div>
+                    <div class="formula-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ peScore × 0.30</div>
+                    <div class="formula-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ pbScore × 0.25</div>
+                    <div class="formula-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ momentumScore × 0.15</div>
+                </div>
+
+                <div class="section-title">📊 각 항목별 정규화 방법</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>항목</th>
+                            <th>데이터 소스</th>
+                            <th>정규화 방법</th>
+                            <th>범위</th>
+                            <th>가중치</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="field-name">Revenue Score</td>
+                            <td>metrics.revenueGrowth || 0</td>
+                            <td>revenueGrowth × 100 (if &lt;1) 또는 그대로</td>
+                            <td>0~100</td>
+                            <td>15%</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">EPS Score</td>
+                            <td>metrics.epsGrowth || 0</td>
+                            <td>epsGrowth × 100 (if &lt;1) 또는 그대로</td>
+                            <td>0~100</td>
+                            <td>15%</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">PE Score</td>
+                            <td>ratios.priceToEarningsRatio || quote.pe || 50</td>
+                            <td>100 - (PE / 0.4) [PE 낮을수록 높음]</td>
+                            <td>0~100</td>
+                            <td>30%</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">PB Score</td>
+                            <td>ratios.priceToBookRatio || quote.pb || 10</td>
+                            <td>100 - (PB / 0.1) [PB 낮을수록 높음]</td>
+                            <td>0~100</td>
+                            <td>25%</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">Momentum Score</td>
+                            <td>(dayHigh - dayLow) / dayLow</td>
+                            <td>momentum × 1000 [일중 변동성]</td>
+                            <td>0~100</td>
+                            <td>15%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 20px;">
+                    <div class="warning">
+                        ⚠️ <strong>주의사항</strong><br/>
+                        - PE/PB는 /fundamentals/ratios 우선 사용 (기본값: PE=50, PB=10)<br/>
+                        - 성장률(revenueGrowth, epsGrowth)이 0인 경우 점수가 0이 됨<br/>
+                        - 모멘텀은 일중 변동성만 계산 (장기 추세 미포함)
+                    </div>
+                </div>
+            </div>
+
+            <div class="logic-section">
+                <div class="section-title">🔍 실시간 데이터 샘플 (AAPL)</div>
+                <div id="ai1_data" class="no-data">데이터 로드 중...</div>
+            </div>
+
+            <div class="timestamp">
+                마지막 업데이트: <span id="ai1_timestamp">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget 2: Market Entry Gate -->
+    <div class="widget-section">
+        <div class="widget-header">
+            <div class="widget-id">ai_2</div>
+            <div class="widget-title">Market Entry Gate</div>
+            <div class="widget-position">Grid Position: Standalone</div>
+        </div>
+        <div class="widget-body">
+            <div class="logic-section">
+                <div class="section-title">🚪 진입 게이트 판정 로직</div>
+                <div class="formula">
+                    <div class="formula-line"><strong>4가지 조건 검증:</strong></div>
+                    <div class="formula-line">1. Market Regime: 현재 시장 상태 (Uptrend/Downtrend/Sideways)</div>
+                    <div class="formula-line">2. Volatility: VIX 수준 평가</div>
+                    <div class="formula-line">3. Credit Spread: 신용 스프레드 위험도</div>
+                    <div class="formula-line">4. Fear & Greed: 시장 심리 지수</div>
+                </div>
+
+                <div class="section-title">📊 게이트 판정 기준</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>게이트명</th>
+                            <th>데이터 소스</th>
+                            <th>PASS 조건</th>
+                            <th>CAUTION</th>
+                            <th>BLOCK</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="field-name">Market Regime</td>
+                            <td>/analysis/market-regime</td>
+                            <td>Uptrend 상태</td>
+                            <td>Sideways 상태</td>
+                            <td>Downtrend 상태</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">Volatility</td>
+                            <td>/analysis/volatility-regime</td>
+                            <td>VIX &lt; 20</td>
+                            <td>VIX 20~30</td>
+                            <td>VIX &gt; 30</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">Credit Stress</td>
+                            <td>/analysis/credit-stress</td>
+                            <td>HY OAS &lt; 400</td>
+                            <td>HY OAS 400~600</td>
+                            <td>HY OAS &gt; 600</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">Fear & Greed</td>
+                            <td>/feargreed</td>
+                            <td>Score &gt; 50 (Greed)</td>
+                            <td>Score 40~50</td>
+                            <td>Score &lt; 40 (Fear)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 15px;">
+                    <div class="success">
+                        ✅ <strong>최종 판정</strong><br/>
+                        - 모두 PASS: 강력한 진입 신호<br/>
+                        - 1~2개 CAUTION: 조심스러운 진입<br/>
+                        - 1개 이상 BLOCK: 진입 회피 권고
+                    </div>
+                </div>
+            </div>
+
+            <div class="logic-section">
+                <div class="section-title">🔍 실시간 게이트 상태</div>
+                <div id="ai2_data" class="no-data">데이터 로드 중...</div>
+            </div>
+
+            <div class="timestamp">
+                마지막 업데이트: <span id="ai2_timestamp">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget 3: Single Stock Deep Dive -->
+    <div class="widget-section">
+        <div class="widget-header">
+            <div class="widget-id">ai_3</div>
+            <div class="widget-title">종목 깊이 분석 (Single Stock Deep Dive)</div>
+            <div class="widget-position">Grid Position: Standalone</div>
+        </div>
+        <div class="widget-body">
+            <div class="logic-section">
+                <div class="section-title">💰 분석 항목 및 데이터 소스</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>분석 항목</th>
+                            <th>API 엔드포인트</th>
+                            <th>주요 필드</th>
+                            <th>기본값</th>
+                            <th>설명</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="field-name">Alpha Score</td>
+                            <td>/alpha?symbol=X</td>
+                            <td>explosiveScore, factors (pe, pb, ...)</td>
+                            <td>0</td>
+                            <td>개별 종목 발굴 점수</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">성장 지표</td>
+                            <td>/fundamentals/growth?symbol=X</td>
+                            <td>revenueGrowth, epsGrowth, freeCashflowGrowth</td>
+                            <td>-</td>
+                            <td>최근 3/5/10년 성장률</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">손익계산서</td>
+                            <td>/fundamentals/income?symbol=X</td>
+                            <td>revenue, netIncome, grossProfit, operatingIncome</td>
+                            <td>-</td>
+                            <td>수익성 분석</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">재무상태표</td>
+                            <td>/fundamentals/balance?symbol=X</td>
+                            <td>totalAssets, totalLiabilities, stockholdersEquity</td>
+                            <td>-</td>
+                            <td>재무 안정성</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">현금흐름표</td>
+                            <td>/fundamentals/cashflow?symbol=X</td>
+                            <td>operatingCashFlow, capex, freeCashFlow</td>
+                            <td>-</td>
+                            <td>현금 창출력</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">재무비율</td>
+                            <td>/fundamentals/ratios?symbol=X</td>
+                            <td>pe, pb, roe, debtToEquity, currentRatio</td>
+                            <td>PE=50, PB=10</td>
+                            <td>밸류에이션 & 효율성</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 15px;">
+                    <div class="warning">
+                        ⚠️ <strong>기본값 사용 기준</strong><br/>
+                        - PE/PB: /fundamentals/ratios에서 미제공 시 50/10 사용<br/>
+                        - 성장률: 0으로 처리 (API 미제공)<br/>
+                        - 수익성: metrics에서만 제공 (quote 미포함)
+                    </div>
+                </div>
+            </div>
+
+            <div class="logic-section">
+                <div class="section-title">🔍 실시간 분석 데이터 (AAPL)</div>
+                <div id="ai3_data" class="no-data">데이터 로드 중...</div>
+            </div>
+
+            <div class="timestamp">
+                마지막 업데이트: <span id="ai3_timestamp">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget 4: Sector Rotation Drill Down -->
+    <div class="widget-section">
+        <div class="widget-header">
+            <div class="widget-id">ai_4</div>
+            <div class="widget-title">섹터 회전 분석 (Sector Rotation Drill Down)</div>
+            <div class="widget-position">Grid Position: Full Width</div>
+        </div>
+        <div class="widget-body">
+            <div class="logic-section">
+                <div class="section-title">📊 섹터 회전 로직</div>
+                <div class="formula">
+                    <div class="formula-line"><strong>Step 1: 섹터 순위 조회</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ /analysis/sector-rotation API 호출</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 각 섹터의 w1 (1주일 가중치) 기준 정렬</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Step 2: 강한 섹터 필터링</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ w1 > 0인 상위 섹터만 선택</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Step 3: 섹터 내 종목 발굴</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ /alpha/discovery API로 전체 종목 조회</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 각 종목의 sector와 explosiveScore 확인</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 강한 섹터에 속한 종목만 필터링</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Step 4: 정렬 및 표시</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ explosiveScore 기준 정렬 (내림차순)</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 각 섹터별 Top 5 종목 표시</div>
+                </div>
+
+                <div class="section-title">🎯 매칭 규칙</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>API 섹터명</th>
+                            <th>종목 sector 필드 대응</th>
+                            <th>예시 심볼</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="field-name">Technology</td>
+                            <td>technology, Technology, Information Technology</td>
+                            <td>AAPL, NVDA, MSFT</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">Healthcare</td>
+                            <td>healthcare, Healthcare, Health Care</td>
+                            <td>JNJ, UNH, PFE</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">Energy</td>
+                            <td>energy, Energy</td>
+                            <td>XOM, CVX, EOG</td>
+                        </tr>
+                        <tr>
+                            <td class="field-name">Financials</td>
+                            <td>financials, Financials, Financial Services</td>
+                            <td>JPM, BAC, GS</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="logic-section">
+                <div class="section-title">🔍 실시간 섹터 순위</div>
+                <div id="ai4_data" class="no-data">데이터 로드 중...</div>
+            </div>
+
+            <div class="timestamp">
+                마지막 업데이트: <span id="ai4_timestamp">-</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev';
+let autoRefreshInterval = null;
+
+// 데이터 로드 함수들
+async function loadWidget1Data() {
+    try {
+        const response = await fetch(`${WORKER_URL}/alpha?symbol=AAPL`);
+        const data = await response.json();
+
+        if (!data.data || !data.data.factors) {
+            document.getElementById('ai1_data').innerHTML = '<div class="no-data">데이터 없음</div>';
+            return;
+        }
+
+        const factors = data.data.factors;
+        const score = data.data.explosiveScore || 0;
+
+        // 각 점수 계산
+        const revenueScore = Math.max(0, Math.min(100, (factors.revenueGrowth || 0) * 100));
+        const epsScore = Math.max(0, Math.min(100, (factors.epsGrowth || 0) * 100));
+        const peScore = Math.max(0, Math.min(100, 100 - ((factors.pe || 50) / 0.4)));
+        const pbScore = Math.max(0, Math.min(100, 100 - ((factors.pb || 10) / 0.1)));
+        const momentumScore = Math.min(100, Math.max(0, (factors.momentum || 0) * 1000));
+
+        const html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>항목</th>
+                        <th>계산값</th>
+                        <th>가중치</th>
+                        <th>점수</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="field-name">Revenue Growth</td>
+                        <td>${factors.revenueGrowth?.toFixed(4) || 'N/A'}</td>
+                        <td>15%</td>
+                        <td><strong>${revenueScore.toFixed(1)}</strong></td>
+                        <td><span class="value-badge ${factors.revenueGrowth !== 0 && factors.revenueGrowth !== undefined ? 'actual' : 'default'}">
+                            ${factors.revenueGrowth !== 0 && factors.revenueGrowth !== undefined ? '✓ 실제값' : '⚠ 기본값(0)'}
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">EPS Growth</td>
+                        <td>${factors.epsGrowth?.toFixed(4) || 'N/A'}</td>
+                        <td>15%</td>
+                        <td><strong>${epsScore.toFixed(1)}</strong></td>
+                        <td><span class="value-badge ${factors.epsGrowth !== 0 && factors.epsGrowth !== undefined ? 'actual' : 'default'}">
+                            ${factors.epsGrowth !== 0 && factors.epsGrowth !== undefined ? '✓ 실제값' : '⚠ 기본값(0)'}
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">PE Ratio</td>
+                        <td>${factors.pe?.toFixed(2) || 'N/A'}</td>
+                        <td>30%</td>
+                        <td><strong>${peScore.toFixed(1)}</strong></td>
+                        <td><span class="value-badge ${factors.pe !== 50 ? 'actual' : 'default'}">
+                            ${factors.pe !== 50 ? '✓ 실제값' : '⚠ 기본값(50)'}
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">PB Ratio</td>
+                        <td>${factors.pb?.toFixed(2) || 'N/A'}</td>
+                        <td>25%</td>
+                        <td><strong>${pbScore.toFixed(1)}</strong></td>
+                        <td><span class="value-badge ${factors.pb !== 10 ? 'actual' : 'default'}">
+                            ${factors.pb !== 10 ? '✓ 실제값' : '⚠ 기본값(10)'}
+                        </span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">Momentum</td>
+                        <td>${(factors.momentum || 0).toFixed(4)}</td>
+                        <td>15%</td>
+                        <td><strong>${momentumScore.toFixed(1)}</strong></td>
+                        <td><span class="value-badge actual">✓ 실제값</span></td>
+                    </tr>
+                    <tr style="background: var(--bg3);">
+                        <td class="field-name"><strong>최종 Score</strong></td>
+                        <td colspan="2"></td>
+                        <td><strong style="color: var(--green); font-size: 13px;">${score.toFixed(2)}</strong></td>
+                        <td><span class="value-badge actual">✓ 계산됨</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted);">
+                📌 Price: ${factors.price?.toFixed(2)}, Symbol: AAPL
+            </div>
+        `;
+        document.getElementById('ai1_data').innerHTML = html;
+        document.getElementById('ai1_timestamp').textContent = new Date().toLocaleTimeString('ko-KR');
+    } catch (e) {
+        document.getElementById('ai1_data').innerHTML = `<div class="no-data">❌ 로드 실패: ${e.message}</div>`;
+    }
+}
+
+async function loadWidget2Data() {
+    try {
+        const results = await Promise.allSettled([
+            fetch(`${WORKER_URL}/analysis/market-regime`).then(r => r.json()),
+            fetch(`${WORKER_URL}/analysis/volatility-regime`).then(r => r.json()),
+            fetch(`${WORKER_URL}/analysis/credit-stress`).then(r => r.json()),
+            fetch(`${WORKER_URL}/feargreed`).then(r => r.json())
+        ]);
+
+        const regime = results[0].status === 'fulfilled' ? results[0].value : null;
+        const vol = results[1].status === 'fulfilled' ? results[1].value : null;
+        const credit = results[2].status === 'fulfilled' ? results[2].value : null;
+        const fg = results[3].status === 'fulfilled' ? results[3].value : null;
+
+        const gates = [
+            {
+                name: 'Market Regime',
+                value: regime?.regime || 'N/A',
+                status: regime?.regime === 'Uptrend' ? 'pass' : regime?.regime === 'Sideways' ? 'caution' : 'block'
+            },
+            {
+                name: 'Volatility',
+                value: `VIX: ${vol?.vixIndex?.toFixed(1) || 'N/A'}`,
+                status: (vol?.vixIndex || 0) < 20 ? 'pass' : (vol?.vixIndex || 0) < 30 ? 'caution' : 'block'
+            },
+            {
+                name: 'Credit Stress',
+                value: `OAS: ${credit?.hyOasSpread?.toFixed(0) || 'N/A'}bps`,
+                status: (credit?.hyOasSpread || 0) < 400 ? 'pass' : (credit?.hyOasSpread || 0) < 600 ? 'caution' : 'block'
+            },
+            {
+                name: 'Fear & Greed',
+                value: `Score: ${fg?.score?.toFixed(0) || 'N/A'}`,
+                status: (fg?.score || 0) > 50 ? 'pass' : (fg?.score || 0) > 40 ? 'caution' : 'block'
+            }
+        ];
+
+        const statusIcon = (s) => `<span class="status-icon ${s}"></span>`;
+        const statusText = (s) => s === 'pass' ? '✅ PASS' : s === 'caution' ? '⚠️ CAUTION' : '❌ BLOCK';
+
+        const html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>게이트</th>
+                        <th>현재값</th>
+                        <th>판정</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${gates.map(g => `
+                        <tr>
+                            <td class="field-name">${g.name}</td>
+                            <td>${g.value}</td>
+                            <td class="value-${g.status}">${statusText(g.status)}</td>
+                            <td>${statusIcon(g.status)} ${g.status.toUpperCase()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        document.getElementById('ai2_data').innerHTML = html;
+        document.getElementById('ai2_timestamp').textContent = new Date().toLocaleTimeString('ko-KR');
+    } catch (e) {
+        document.getElementById('ai2_data').innerHTML = `<div class="no-data">❌ 로드 실패: ${e.message}</div>`;
+    }
+}
+
+async function loadWidget3Data() {
+    try {
+        const response = await fetch(`${WORKER_URL}/alpha?symbol=AAPL`);
+        const data = await response.json();
+
+        if (!data.data) {
+            document.getElementById('ai3_data').innerHTML = '<div class="no-data">데이터 없음</div>';
+            return;
+        }
+
+        const factors = data.data.factors || {};
+        const html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>지표</th>
+                        <th>값</th>
+                        <th>기본값 여부</th>
+                        <th>설명</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="field-name">Explosive Score</td>
+                        <td><strong>${(data.data.explosiveScore || 0).toFixed(2)}</strong></td>
+                        <td><span class="value-badge actual">✓ 계산됨</span></td>
+                        <td>종목 발굴 점수</td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">가격 (Price)</td>
+                        <td>${factors.price?.toFixed(2) || 'N/A'}</td>
+                        <td><span class="value-badge actual">✓ 실제값</span></td>
+                        <td>현재 주가</td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">PE 비율</td>
+                        <td>${factors.pe?.toFixed(2) || 'N/A'}</td>
+                        <td><span class="value-badge ${factors.pe !== 50 ? 'actual' : 'default'}">
+                            ${factors.pe !== 50 ? '✓ 실제값' : '⚠ 기본값(50)'}
+                        </span></td>
+                        <td>밸류에이션</td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">PB 비율</td>
+                        <td>${factors.pb?.toFixed(2) || 'N/A'}</td>
+                        <td><span class="value-badge ${factors.pb !== 10 ? 'actual' : 'default'}">
+                            ${factors.pb !== 10 ? '✓ 실제값' : '⚠ 기본값(10)'}
+                        </span></td>
+                        <td>장부가 대비 가격</td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">ROE</td>
+                        <td>${factors.roe?.toFixed(2) || 'N/A'}</td>
+                        <td><span class="value-badge ${factors.roe !== 15 ? 'actual' : 'default'}">
+                            ${factors.roe !== 15 ? '✓ 실제값' : '⚠ 기본값(15)'}
+                        </span></td>
+                        <td>자기자본수익률</td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">수익 성장률</td>
+                        <td>${factors.revenueGrowth?.toFixed(4) || '0'}</td>
+                        <td><span class="value-badge ${factors.revenueGrowth !== 0 ? 'actual' : 'default'}">
+                            ${factors.revenueGrowth !== 0 ? '✓ 실제값' : '⚠ 기본값(0)'}
+                        </span></td>
+                        <td>일반적으로 0 (quote 미포함)</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+        document.getElementById('ai3_data').innerHTML = html;
+        document.getElementById('ai3_timestamp').textContent = new Date().toLocaleTimeString('ko-KR');
+    } catch (e) {
+        document.getElementById('ai3_data').innerHTML = `<div class="no-data">❌ 로드 실패: ${e.message}</div>`;
+    }
+}
+
+async function loadWidget4Data() {
+    try {
+        const response = await fetch(`${WORKER_URL}/analysis/sector-rotation`);
+        const data = await response.json();
+
+        if (!data.rankings || !Array.isArray(data.rankings)) {
+            document.getElementById('ai4_data').innerHTML = '<div class="no-data">데이터 없음</div>';
+            return;
+        }
+
+        const sorted = [...data.rankings].sort((a, b) => (b.w1 ?? 0) - (a.w1 ?? 0));
+        const strongSectors = sorted.filter(s => (s.w1 ?? 0) > 0).slice(0, 5);
+
+        const html = `
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>순위</th>
+                        <th>섹터명</th>
+                        <th>1주일 가중 (w1)</th>
+                        <th>1개월 가중 (w4)</th>
+                        <th>3개월 가중 (w13)</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${strongSectors.map((s, i) => `
+                        <tr>
+                            <td><strong>#${i + 1}</strong></td>
+                            <td class="field-name">${s.name || 'Unknown'}</td>
+                            <td><strong style="color: ${(s.w1 ?? 0) > 0 ? 'var(--green)' : 'var(--text-muted)'};">${(s.w1 ?? 0).toFixed(2)}</strong></td>
+                            <td>${(s.w4 ?? 0).toFixed(2)}</td>
+                            <td>${(s.w13 ?? 0).toFixed(2)}</td>
+                            <td><span class="value-badge actual">🔥 강한 섹터</span></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted);">
+                ℹ️ 총 ${data.rankings.length}개 섹터 중 강한 섹터 ${strongSectors.length}개 발견
+            </div>
+        `;
+        document.getElementById('ai4_data').innerHTML = html;
+        document.getElementById('ai4_timestamp').textContent = new Date().toLocaleTimeString('ko-KR');
+    } catch (e) {
+        document.getElementById('ai4_data').innerHTML = `<div class="no-data">❌ 로드 실패: ${e.message}</div>`;
+    }
+}
+
+async function refreshAll() {
+    await Promise.all([
+        loadWidget1Data(),
+        loadWidget2Data(),
+        loadWidget3Data(),
+        loadWidget4Data()
+    ]);
+}
+
+function toggleAutoRefresh() {
+    const btn = event.target;
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        btn.textContent = '⏱ 자동 갱신 OFF';
+        btn.classList.remove('active');
+    } else {
+        autoRefreshInterval = setInterval(refreshAll, 60000); // 1분마다
+        btn.textContent = '⏱ 자동 갱신 ON (60초)';
+        btn.classList.add('active');
+    }
+}
+
+function exportData() {
+    const data = {
+        timestamp: new Date().toISOString(),
+        widgets: {
+            ai_1: { id: 'ai1_data', content: document.getElementById('ai1_data').innerHTML },
+            ai_2: { id: 'ai2_data', content: document.getElementById('ai2_data').innerHTML },
+            ai_3: { id: 'ai3_data', content: document.getElementById('ai3_data').innerHTML },
+            ai_4: { id: 'ai4_data', content: document.getElementById('ai4_data').innerHTML }
+        }
+    };
+
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `widget-validation-${Date.now()}.json`;
+    a.click();
+}
+
+// 초기 로드
+window.addEventListener('load', () => {
+    refreshAll();
+});
+</script>
+
+</body>
+</html>
