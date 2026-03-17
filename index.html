@@ -469,10 +469,10 @@
             border: none;
         }
 
-        /* 뉴스 & 섹터 병렬 레이아웃 */
+        /* 뉴스 & 뉴스브리핑 병렬 레이아웃 */
         .news-sector-row {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
             padding: 0 20px;
             margin-bottom: 20px;
@@ -481,6 +481,24 @@
         @media (max-width: 1024px) {
             .news-sector-row {
                 grid-template-columns: 1fr;
+                flex-direction: column;
+            }
+        }
+
+        /* 모바일뷰: 실시간 뉴스 > 뉴스 브리핑 순서 보장 */
+        @media (max-width: 768px) {
+            .news-sector-row {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .news-sector-row .news-dashboard {
+                order: 1;
+            }
+
+            .news-sector-row #marketNewsCardArea {
+                order: 2;
             }
         }
 
@@ -1770,15 +1788,6 @@
         🔍
     </button>
 
-    <!-- 포트폴리오 관리 SAVE 버튼 (고정) -->
-    <a href="https://saveticker.com/" target="_blank" rel="noopener noreferrer"
-        style="position:fixed; top:20px; right:20px; z-index:9997; display:inline-flex; align-items:center; justify-content:center; padding:12px 32px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; text-decoration:none; border-radius:25px; font-weight:700; font-size:1.2em; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 8px 24px rgba(102,126,234,0.4); border:none; cursor:pointer;"
-        onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 32px rgba(102,126,234,0.6)';"
-        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 24px rgba(102,126,234,0.4)';title="포트폴리오 관리">
-        💾 미장은 역시 오선님!
-    </a>
-
-
     <!-- 메인 컨텐츠 -->
     <div id="mainContent" class="main-content">
         <div class="container">
@@ -2387,9 +2396,33 @@ var ECON_DATA = {
                 </div>
             </div>
 
-            <!-- 뉴스 & 섹터 주도주 병렬 배치 영역 -->
+            <!-- 포트폴리오 관리 SAVE 버튼 (뉴스탭에만) -->
+            <div data-ms="news" style="display:flex; flex-direction:column; align-items:center; gap:8px; margin: 20px 0; padding: 0 20px;">
+                <a href="https://saveticker.com/" target="_blank" rel="noopener noreferrer"
+                    style="display:inline-flex; align-items:center; justify-content:center; padding:7.2px 19.2px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:#fff; text-decoration:none; border-radius:16px; font-weight:700; font-size:0.72em; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:0 4px 12px rgba(102,126,234,0.4); border:none; cursor:pointer;"
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(102,126,234,0.6)';"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.4)';"
+                    title="포트폴리오 관리">
+                    SAVE
+                </a>
+                <span style="font-size:0.7em; color:#667eea; font-weight:600; text-align:center; white-space:nowrap; line-height:1.3;">미장은 역시<br>오선님!</span>
+            </div>
+
+            <!-- 뉴스 & 뉴스브리핑 병렬 배치 영역 (좌: 실시간뉴스, 우: 브리핑) -->
             <div class="news-sector-row" data-ms="news">
-                <!-- 자동화 마켓 뉴스 카드 위치 -->
+                <!-- 좌측: 실시간 시장 뉴스 대시보드 -->
+                <div class="card news-dashboard" style="margin-bottom: 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h3 class="section-title" style="border:none; padding:0; margin:0;">📰 실시간 시장 뉴스</h3>
+                            <button id="newsLangToggle" onclick="toggleNewsLang()" style="display:inline-flex;align-items:center;gap:4px;padding:4px 14px;background:rgba(102,126,234,0.12);border:1px solid rgba(102,126,234,0.35);border-radius:20px;color:#667eea;font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all 0.2s;" title="뉴스 제목 언어 전환">🌐 English</button>
+                        </div>
+                        <button onclick="refreshNews()" class="btn-load" style="padding:4px 12px; font-size:11px;">🔄 새로고침</button>
+                    </div>
+                    <div class="news-grid" id="newsContainer"></div>
+                </div>
+
+                <!-- 우측: 자동화 마켓 뉴스 브리핑 카드 -->
                 <!-- MARKET_NEWS_CARD_START -->
             <div id="marketNewsCardArea">
                 <div class="news-card-wrapper">
