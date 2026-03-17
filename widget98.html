@@ -644,6 +644,126 @@
         </div>
     </div>
 
+    <!-- Widget 5: Alpha Scanner PRO (7-Module Scoring) -->
+    <div class="widget-section">
+        <div class="widget-header">
+            <div class="widget-id">ai_5</div>
+            <div class="widget-title">Alpha Scanner PRO (7-Module Hedge Fund Scoring)</div>
+            <div class="widget-position">ai-analysis-3.html Widget 11</div>
+        </div>
+        <div class="widget-body">
+            <div class="logic-section">
+                <div class="section-title">📐 7-Module Scoring Formula</div>
+                <div class="formula">
+                    <div class="formula-line"><strong>Module 1: Earnings Momentum (25%)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ epsSurprise = epsActual / epsEstimated</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 1.05 → +10, 1.10 → +20, 1.20 → +30</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ Bonus: positive surprise + positive epsGrowth → +10</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Module 2: Fundamental Acceleration (20%)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ revenueGrowth >20% → 25pt, >10% → 20pt, >5% → 15pt, >0% → 10pt</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ epsGrowth 동일 구간, netIncomeGrowth 가산</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ Margin Expansion: opMargin >30% → +15</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Module 3: Balance Sheet (10%)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ netDebt/EBITDA &lt; 2 → strong, cash > shortTermDebt → +30</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ debtRatio &lt; 0.2 → +30, &lt; 0.4 → +20</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Module 4: Cash Flow Quality (15%)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ FCF > 0 → +30, FCF margin >20% → +20</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ OCF > NetIncome → +20 (quality earnings)</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ Buybacks → +15, SBC penalty: >10% → -15</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Module 5: Float Compression (10%)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ &lt;100M → Micro(50pt), &lt;500M → Small(40pt), &lt;2B → Med(25pt)</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ High growth + tight float → squeeze bonus +30/+20</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Module 6: Valuation Sweet Spot (10%)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ PE 0~15 → 40pt, 15~30 → 35pt, 30~60 → 20pt</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ PB 0~3 → 30pt, 3~8 → 20pt, 8~15 → 10pt</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ Penalty: PE>80 & revGrowth&lt;10% → -20</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Module 7: Macro Overlay (10%)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ VIX &lt;15 → 40pt, &lt;20 → 30pt, &lt;25 → 15pt</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ HY spread &lt;3 → 30pt, &lt;5 → 20pt</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ RISK_OFF → totalScore × 0.7</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Final: totalScore = Σ(module × weight) × macroMultiplier</strong></div>
+                </div>
+
+                <div class="section-title">🎯 API 엔드포인트</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>엔드포인트</th>
+                            <th>모듈</th>
+                            <th>추출 필드</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="field-name">/fundamentals/earnings</td><td>Earnings Momentum</td><td>epsActual, epsEstimated, revenueActual, revenueEstimated</td></tr>
+                        <tr><td class="field-name">/fundamentals/growth</td><td>Fundamental Accel</td><td>revenueGrowth, epsGrowth, netIncomeGrowth</td></tr>
+                        <tr><td class="field-name">/fundamentals/income</td><td>Fundamental + Balance + CF</td><td>revenue, operatingIncome, netIncome, ebitda</td></tr>
+                        <tr><td class="field-name">/fundamentals/balance</td><td>Balance Sheet</td><td>netDebt, cash, shortTermDebt, totalDebt, totalAssets</td></tr>
+                        <tr><td class="field-name">/fundamentals/cashflow</td><td>Cash Flow Quality</td><td>freeCashFlow, operatingCashFlow, commonStockRepurchased, SBC</td></tr>
+                        <tr><td class="field-name">/fundamentals/ratios</td><td>Valuation</td><td>priceToEarningsRatio, priceToBookRatio</td></tr>
+                        <tr><td class="field-name">/fundamentals/shares</td><td>Float Compression</td><td>floatShares</td></tr>
+                        <tr><td class="field-name">/market (cached)</td><td>Macro Overlay</td><td>vix, MARKET_RISK.HY_OAS_SPREAD, us10y</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="logic-section">
+                <div class="section-title">🔍 실시간 Alpha Scanner 결과</div>
+                <div id="ai5_data" class="no-data">데이터 로드 중...</div>
+            </div>
+
+            <div class="timestamp">
+                마지막 업데이트: <span id="ai5_timestamp">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget 6: Breakout Radar -->
+    <div class="widget-section">
+        <div class="widget-header">
+            <div class="widget-id">ai_6</div>
+            <div class="widget-title">Breakout Radar (단기 돌파 후보 발굴)</div>
+            <div class="widget-position">ai-analysis-3.html 이전 위젯</div>
+        </div>
+        <div class="widget-body">
+            <div class="logic-section">
+                <div class="section-title">📐 Breakout Radar 스코어링</div>
+                <div class="formula">
+                    <div class="formula-line"><strong>Step 1: Universe 구성</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ S&P500 Top 80 시가총액 종목</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ getHedgeFundUniverse() 함수 사용</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Step 2: Quote 수집</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ getFullQuote(symbol) × 80개 종목</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 일별 변동률(changesPercentage) 기준 정렬</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Step 3: Deep Analysis (Top 20)</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 8개 fundamentals API 병렬 호출 (Promise.allSettled)</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ 7-Module Scoring Engine 적용</div>
+                    <div class="formula-line"></div>
+                    <div class="formula-line"><strong>Step 4: 필터 및 정렬</strong></div>
+                    <div class="formula-line">&nbsp;&nbsp;→ totalScore ≥ 30 필터</div>
+                    <div class="formula-line">&nbsp;&nbsp;→ totalScore DESC 정렬, Top 5 반환</div>
+                </div>
+            </div>
+
+            <div class="logic-section">
+                <div class="section-title">🔍 실시간 개별 종목 검증 (AAPL)</div>
+                <div id="ai6_data" class="no-data">데이터 로드 중...</div>
+            </div>
+
+            <div class="timestamp">
+                마지막 업데이트: <span id="ai6_timestamp">-</span>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -939,12 +1059,295 @@ async function loadWidget4Data() {
     }
 }
 
+// Widget 5: Alpha Scanner PRO 검증
+async function loadWidget5Data() {
+    try {
+        document.getElementById('ai5_data').innerHTML = '<div class="no-data">🔬 Alpha Scanner 호출 중... (최대 60초)</div>';
+        const response = await fetch(`${WORKER_URL}/alpha/alpha-scanner`, { method: 'POST' });
+        const data = await response.json();
+
+        if (!data || !data.top_20) {
+            document.getElementById('ai5_data').innerHTML = '<div class="no-data">❌ Alpha Scanner 응답 없음</div>';
+            return;
+        }
+
+        const macro = data.macro || {};
+        const riskColor = macro.riskMode === 'RISK_ON' ? 'var(--green)' : macro.riskMode === 'RISK_OFF' ? 'var(--red)' : 'var(--yellow)';
+
+        let html = `
+            <div style="margin-bottom: 12px; padding: 8px; background: rgba(100,126,234,0.1); border-radius: 6px; font-size: 12px;">
+                <strong>📊 스캔 결과:</strong> ${data.universe_size || '-'}종목 유니버스 → ${data.deep_analyzed || '-'}종목 딥분석 → ${data.qualified || '-'}종목 적격 | 소요: ${data.execution_time_sec || '-'}초
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>항목</th>
+                        <th>값</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="field-name">🌍 Macro Risk Mode</td>
+                        <td style="color: ${riskColor}; font-weight: 700;">${macro.riskMode || 'N/A'}</td>
+                        <td><span class="value-badge ${macro.riskMode ? 'actual' : 'default'}">${macro.riskMode ? '✓ 실제값' : '⚠ 기본값'}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">&nbsp;&nbsp;VIX</td>
+                        <td>${macro.vix != null ? macro.vix.toFixed(1) : '-'}</td>
+                        <td><span class="value-badge ${macro.vix ? 'actual' : 'default'}">${macro.vix ? '✓ FRED' : '⚠ 기본값(20)'}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">&nbsp;&nbsp;HY OAS Spread</td>
+                        <td>${macro.hySpread != null ? macro.hySpread.toFixed(2) : '-'}</td>
+                        <td><span class="value-badge ${macro.hySpread ? 'actual' : 'default'}">${macro.hySpread ? '✓ FRED' : '⚠ 기본값(4)'}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">&nbsp;&nbsp;US 10Y</td>
+                        <td>${macro.us10y != null ? macro.us10y.toFixed(2) + '%' : '-'}</td>
+                        <td><span class="value-badge ${macro.us10y ? 'actual' : 'default'}">${macro.us10y ? '✓ FRED' : '⚠ 기본값(4)'}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="field-name">&nbsp;&nbsp;Macro Multiplier</td>
+                        <td>×${(macro.multiplier || 1).toFixed(2)}</td>
+                        <td><span class="value-badge actual">${macro.multiplier < 1 ? '⚠ RISK-OFF 감점' : '✓ 정상'}</span></td>
+                    </tr>
+                </tbody>
+            </table>`;
+
+        // Top 5 종목 상세 검증
+        const top5 = data.top_20.slice(0, 5);
+        if (top5.length > 0) {
+            html += `<div style="margin-top: 16px; font-size: 13px; font-weight: 700; color: var(--text);">🏆 TOP ${top5.length} 종목 상세 검증</div>`;
+
+            top5.forEach((stock, idx) => {
+                const scoreColor = stock.totalScore >= 80 ? 'var(--green)' : stock.totalScore >= 70 ? 'var(--yellow)' : stock.totalScore >= 60 ? 'var(--yellow)' : 'var(--red)';
+                const m = stock.modules || {};
+                const s = stock.signals || {};
+
+                html += `
+                <div style="margin-top: 12px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; border-left: 3px solid ${scoreColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-weight: 800; font-size: 14px;">#${idx + 1} ${stock.symbol} <span style="font-size: 11px; color: var(--text-muted);">${stock.companyName || ''}</span></span>
+                        <span style="font-size: 20px; font-weight: 900; color: ${scoreColor};">${stock.totalScore}</span>
+                    </div>
+                    <table class="data-table" style="font-size: 11px;">
+                        <thead><tr><th>모듈</th><th>점수 (0~100)</th><th>가중치</th><th>기여</th><th>상태</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="field-name">Earnings Momentum</td>
+                                <td style="color: ${m.earnings >= 50 ? 'var(--green)' : 'var(--red)'};">${m.earnings || 0}</td>
+                                <td>25%</td>
+                                <td>${((m.earnings || 0) * 0.25).toFixed(1)}</td>
+                                <td><span class="value-badge ${s.epsSurprise != null ? 'actual' : 'default'}">${s.epsSurprise != null ? 'EPS ' + (s.epsSurprise > 0 ? '+' : '') + s.epsSurprise + '%' : '⚠ 실적 없음'}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="field-name">Fundamental Accel</td>
+                                <td style="color: ${m.fundamental >= 50 ? 'var(--green)' : 'var(--red)'};">${m.fundamental || 0}</td>
+                                <td>20%</td>
+                                <td>${((m.fundamental || 0) * 0.20).toFixed(1)}</td>
+                                <td><span class="value-badge ${s.revenueGrowth != null ? 'actual' : 'default'}">${s.revenueGrowth != null ? 'Rev ' + (s.revenueGrowth > 0 ? '+' : '') + s.revenueGrowth + '%' : '⚠ 성장 없음'}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="field-name">Cash Flow Quality</td>
+                                <td style="color: ${m.cashflow >= 50 ? 'var(--green)' : 'var(--red)'};">${m.cashflow || 0}</td>
+                                <td>15%</td>
+                                <td>${((m.cashflow || 0) * 0.15).toFixed(1)}</td>
+                                <td><span class="value-badge ${s.freeCashFlow != null ? 'actual' : 'default'}">${s.freeCashFlow != null ? 'FCF $' + (s.freeCashFlow / 1e9).toFixed(1) + 'B' : '⚠ FCF 없음'}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="field-name">Balance Sheet</td>
+                                <td style="color: ${m.balance >= 50 ? 'var(--green)' : 'var(--red)'};">${m.balance || 0}</td>
+                                <td>10%</td>
+                                <td>${((m.balance || 0) * 0.10).toFixed(1)}</td>
+                                <td><span class="value-badge actual">✓ 계산</span></td>
+                            </tr>
+                            <tr>
+                                <td class="field-name">Float Compression</td>
+                                <td style="color: ${m.float >= 50 ? 'var(--green)' : 'var(--red)'};">${m.float || 0}</td>
+                                <td>10%</td>
+                                <td>${((m.float || 0) * 0.10).toFixed(1)}</td>
+                                <td><span class="value-badge ${s.floatCategory !== 'Unknown' ? 'actual' : 'default'}">${s.floatCategory || 'Unknown'}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="field-name">Valuation</td>
+                                <td style="color: ${m.valuation >= 50 ? 'var(--green)' : 'var(--red)'};">${m.valuation || 0}</td>
+                                <td>10%</td>
+                                <td>${((m.valuation || 0) * 0.10).toFixed(1)}</td>
+                                <td><span class="value-badge ${s.pe != null ? 'actual' : 'default'}">${s.pe != null ? 'PE ' + s.pe : '⚠ PE 없음'} ${s.pb != null ? '/ PB ' + s.pb : ''}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="field-name">Macro Overlay</td>
+                                <td style="color: ${m.macro >= 50 ? 'var(--green)' : 'var(--red)'};">${m.macro || 0}</td>
+                                <td>10%</td>
+                                <td>${((m.macro || 0) * 0.10).toFixed(1)}</td>
+                                <td><span class="value-badge actual">×${(stock.macroMultiplier || 1).toFixed(2)}</span></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="font-weight: 700;">
+                                <td>TOTAL</td>
+                                <td colspan="2" style="color: ${scoreColor};">${stock.totalScore}</td>
+                                <td>Breakout: ${stock.breakoutProbability}%</td>
+                                <td><span class="value-badge actual">✓ 종합</span></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>`;
+            });
+        } else {
+            html += '<div class="no-data" style="margin-top: 12px;">적격 종목 없음 (모두 30점 미만)</div>';
+        }
+
+        document.getElementById('ai5_data').innerHTML = html;
+        document.getElementById('ai5_timestamp').textContent = new Date().toLocaleTimeString('ko-KR');
+    } catch (e) {
+        document.getElementById('ai5_data').innerHTML = `<div class="no-data">❌ 로드 실패: ${e.message}</div>`;
+    }
+}
+
+// Widget 6: Breakout Radar 개별 종목 검증 (AAPL 샘플)
+async function loadWidget6Data() {
+    const testSymbol = 'AAPL';
+    try {
+        document.getElementById('ai6_data').innerHTML = `<div class="no-data">🔍 ${testSymbol} 개별 fundamentals 검증 중...</div>`;
+
+        const [earningsRes, growthRes, incomeRes, balanceRes, cashflowRes, ratiosRes, profileRes, sharesRes] = await Promise.allSettled([
+            fetch(`${WORKER_URL}/fundamentals/earnings?symbol=${testSymbol}`).then(r => r.json()),
+            fetch(`${WORKER_URL}/fundamentals/growth?symbol=${testSymbol}`).then(r => r.json()),
+            fetch(`${WORKER_URL}/fundamentals/income?symbol=${testSymbol}`).then(r => r.json()),
+            fetch(`${WORKER_URL}/fundamentals/balance?symbol=${testSymbol}`).then(r => r.json()),
+            fetch(`${WORKER_URL}/fundamentals/cashflow?symbol=${testSymbol}`).then(r => r.json()),
+            fetch(`${WORKER_URL}/fundamentals/ratios?symbol=${testSymbol}`).then(r => r.json()),
+            fetch(`${WORKER_URL}/fundamentals/profile?symbol=${testSymbol}`).then(r => r.json()),
+            fetch(`${WORKER_URL}/fundamentals/shares?symbol=${testSymbol}`).then(r => r.json())
+        ]);
+
+        const extract = (r) => r.status === 'fulfilled' ? r.value : null;
+        const earnings = extract(earningsRes)?.data || extract(earningsRes);
+        const growth = extract(growthRes)?.data || extract(growthRes);
+        const income = extract(incomeRes)?.data || extract(incomeRes);
+        const balance = extract(balanceRes)?.data || extract(balanceRes);
+        const cashflow = extract(cashflowRes)?.data || extract(cashflowRes);
+        const ratios = extract(ratiosRes)?.data || extract(ratiosRes);
+        const profile = extract(profileRes)?.data || extract(profileRes);
+        const shares = extract(sharesRes)?.data || extract(sharesRes);
+
+        // 개별 모듈 계산 (worker와 동일한 로직 재현)
+        // Module 1: Earnings Momentum
+        let eMod = { score: 0, epsSurprise: null, revSurprise: null };
+        if (earnings?.epsActual && earnings?.epsEstimated) {
+            const ratio = earnings.epsActual / earnings.epsEstimated;
+            eMod.epsSurprise = ((ratio - 1) * 100).toFixed(2);
+            if (ratio >= 1.20) eMod.score += 30;
+            else if (ratio >= 1.10) eMod.score += 20;
+            else if (ratio >= 1.05) eMod.score += 10;
+            else if (ratio >= 1.0) eMod.score += 5;
+        }
+        if (earnings?.revenueActual && earnings?.revenueEstimated) {
+            const ratio = earnings.revenueActual / earnings.revenueEstimated;
+            eMod.revSurprise = ((ratio - 1) * 100).toFixed(2);
+            if (ratio >= 1.20) eMod.score += 30;
+            else if (ratio >= 1.10) eMod.score += 20;
+            else if (ratio >= 1.05) eMod.score += 10;
+            else if (ratio >= 1.0) eMod.score += 5;
+        }
+        if (eMod.epsSurprise > 0 && (growth?.epsGrowth || 0) > 0) eMod.score += 10;
+        eMod.score = Math.min(100, eMod.score);
+
+        // Module 6: Valuation
+        let vMod = { score: 0 };
+        const pe = ratios?.priceToEarningsRatio || 0;
+        const pb = ratios?.priceToBookRatio || 0;
+        if (pe > 0 && pe <= 15) vMod.score += 40;
+        else if (pe <= 30) vMod.score += 35;
+        else if (pe <= 60) vMod.score += 20;
+        else if (pe > 60 && (growth?.revenueGrowth || 0) > 0.20) vMod.score += 15;
+        if (pb > 0 && pb <= 3) vMod.score += 30;
+        else if (pb <= 8) vMod.score += 20;
+        else if (pb <= 15) vMod.score += 10;
+        else vMod.score += 5;
+        vMod.score = Math.max(0, Math.min(100, vMod.score));
+
+        const badge = (val, fallback, src) => {
+            const hasVal = val != null && val !== undefined;
+            return `<span class="value-badge ${hasVal ? 'actual' : 'default'}">${hasVal ? '✓ ' + src : '⚠ ' + fallback}</span>`;
+        };
+
+        const fmt = (v, dec = 2) => v != null ? Number(v).toFixed(dec) : '-';
+        const fmtB = (v) => v != null ? '$' + (v / 1e9).toFixed(1) + 'B' : '-';
+
+        let html = `
+            <div style="margin-bottom: 10px; font-size: 13px; font-weight: 700;">🧪 ${testSymbol} (${profile?.companyName || '-'}) 개별 모듈 검증</div>
+            <table class="data-table">
+                <thead><tr><th>API 엔드포인트</th><th>필드</th><th>값</th><th>상태</th></tr></thead>
+                <tbody>
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">📊 /fundamentals/earnings</td></tr>
+                    <tr><td class="field-name">epsActual</td><td>earnings.epsActual</td><td>${fmt(earnings?.epsActual)}</td><td>${badge(earnings?.epsActual, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">epsEstimated</td><td>earnings.epsEstimated</td><td>${fmt(earnings?.epsEstimated)}</td><td>${badge(earnings?.epsEstimated, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">revenueActual</td><td>earnings.revenueActual</td><td>${fmtB(earnings?.revenueActual)}</td><td>${badge(earnings?.revenueActual, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">revenueEstimated</td><td>earnings.revenueEstimated</td><td>${fmtB(earnings?.revenueEstimated)}</td><td>${badge(earnings?.revenueEstimated, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">→ EPS Surprise</td><td>계산값</td><td style="color: ${eMod.epsSurprise > 0 ? 'var(--green)' : 'var(--red)'};">${eMod.epsSurprise != null ? eMod.epsSurprise + '%' : '-'}</td><td>${badge(eMod.epsSurprise, '계산불가', '계산')}</td></tr>
+                    <tr><td class="field-name">→ Rev Surprise</td><td>계산값</td><td style="color: ${eMod.revSurprise > 0 ? 'var(--green)' : 'var(--red)'};">${eMod.revSurprise != null ? eMod.revSurprise + '%' : '-'}</td><td>${badge(eMod.revSurprise, '계산불가', '계산')}</td></tr>
+                    <tr><td class="field-name">→ Earnings Score</td><td>Module 1 (25%)</td><td style="font-weight: 700;">${eMod.score}/100</td><td>기여: ${(eMod.score * 0.25).toFixed(1)}pt</td></tr>
+
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">📈 /fundamentals/growth</td></tr>
+                    <tr><td class="field-name">revenueGrowth</td><td>growth.revenueGrowth</td><td>${growth?.revenueGrowth != null ? (growth.revenueGrowth * 100).toFixed(1) + '%' : '-'}</td><td>${badge(growth?.revenueGrowth, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">epsGrowth</td><td>growth.epsGrowth</td><td>${growth?.epsGrowth != null ? (growth.epsGrowth * 100).toFixed(1) + '%' : '-'}</td><td>${badge(growth?.epsGrowth, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">netIncomeGrowth</td><td>growth.netIncomeGrowth</td><td>${growth?.netIncomeGrowth != null ? (growth.netIncomeGrowth * 100).toFixed(1) + '%' : '-'}</td><td>${badge(growth?.netIncomeGrowth, '없음', 'FMP')}</td></tr>
+
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">💰 /fundamentals/income</td></tr>
+                    <tr><td class="field-name">revenue</td><td>income.revenue</td><td>${fmtB(income?.revenue)}</td><td>${badge(income?.revenue, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">operatingIncome</td><td>income.operatingIncome</td><td>${fmtB(income?.operatingIncome)}</td><td>${badge(income?.operatingIncome, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">netIncome</td><td>income.netIncome</td><td>${fmtB(income?.netIncome)}</td><td>${badge(income?.netIncome, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">ebitda</td><td>income.ebitda</td><td>${fmtB(income?.ebitda)}</td><td>${badge(income?.ebitda, '없음', 'FMP')}</td></tr>
+
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">🏦 /fundamentals/balance</td></tr>
+                    <tr><td class="field-name">cashAndCashEquivalents</td><td>balance.cash</td><td>${fmtB(balance?.cashAndCashEquivalents)}</td><td>${badge(balance?.cashAndCashEquivalents, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">totalDebt</td><td>balance.totalDebt</td><td>${fmtB(balance?.totalDebt)}</td><td>${badge(balance?.totalDebt, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">netDebt</td><td>balance.netDebt</td><td>${fmtB(balance?.netDebt)}</td><td>${badge(balance?.netDebt, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">shortTermDebt</td><td>balance.shortTermDebt</td><td>${fmtB(balance?.shortTermDebt)}</td><td>${badge(balance?.shortTermDebt, '없음', 'FMP')}</td></tr>
+
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">💸 /fundamentals/cashflow</td></tr>
+                    <tr><td class="field-name">freeCashFlow</td><td>cashflow.freeCashFlow</td><td>${fmtB(cashflow?.freeCashFlow)}</td><td>${badge(cashflow?.freeCashFlow, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">operatingCashFlow</td><td>cashflow.operatingCashFlow</td><td>${fmtB(cashflow?.operatingCashFlow)}</td><td>${badge(cashflow?.operatingCashFlow, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">commonStockRepurchased</td><td>cashflow.buybacks</td><td>${fmtB(cashflow?.commonStockRepurchased)}</td><td>${badge(cashflow?.commonStockRepurchased, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">stockBasedCompensation</td><td>cashflow.SBC</td><td>${fmtB(cashflow?.stockBasedCompensation)}</td><td>${badge(cashflow?.stockBasedCompensation, '없음', 'FMP')}</td></tr>
+
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">📊 /fundamentals/ratios</td></tr>
+                    <tr><td class="field-name">priceToEarningsRatio</td><td>ratios.PE</td><td>${fmt(pe, 1)}</td><td>${badge(pe || null, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">priceToBookRatio</td><td>ratios.PB</td><td>${fmt(pb, 1)}</td><td>${badge(pb || null, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">→ Valuation Score</td><td>Module 6 (10%)</td><td style="font-weight: 700;">${vMod.score}/100</td><td>기여: ${(vMod.score * 0.10).toFixed(1)}pt</td></tr>
+
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">🏢 /fundamentals/profile</td></tr>
+                    <tr><td class="field-name">companyName</td><td>profile.companyName</td><td>${profile?.companyName || '-'}</td><td>${badge(profile?.companyName, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">sector</td><td>profile.sector</td><td>${profile?.sector || '-'}</td><td>${badge(profile?.sector, '없음', 'FMP')}</td></tr>
+
+                    <tr style="background: rgba(100,126,234,0.08);"><td colspan="4" style="font-weight: 700;">📉 /fundamentals/shares</td></tr>
+                    <tr><td class="field-name">floatShares</td><td>shares.floatShares</td><td>${shares?.floatShares != null ? (shares.floatShares / 1e9).toFixed(2) + 'B' : '-'}</td><td>${badge(shares?.floatShares, '없음', 'FMP')}</td></tr>
+                    <tr><td class="field-name">outstandingShares</td><td>shares.outstandingShares</td><td>${shares?.outstandingShares != null ? (shares.outstandingShares / 1e9).toFixed(2) + 'B' : '-'}</td><td>${badge(shares?.outstandingShares, '없음', 'FMP')}</td></tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted);">
+                ℹ️ 위 데이터는 worker.js의 Alpha Scanner가 각 종목에 대해 호출하는 8개 fundamentals API의 실제 응답을 검증합니다.
+            </div>
+        `;
+
+        document.getElementById('ai6_data').innerHTML = html;
+        document.getElementById('ai6_timestamp').textContent = new Date().toLocaleTimeString('ko-KR');
+    } catch (e) {
+        document.getElementById('ai6_data').innerHTML = `<div class="no-data">❌ 로드 실패: ${e.message}</div>`;
+    }
+}
+
 async function refreshAll() {
     await Promise.all([
         loadWidget1Data(),
         loadWidget2Data(),
         loadWidget3Data(),
-        loadWidget4Data()
+        loadWidget4Data(),
+        loadWidget5Data(),
+        loadWidget6Data()
     ]);
 }
 
@@ -969,7 +1372,9 @@ function exportData() {
             ai_1: { id: 'ai1_data', content: document.getElementById('ai1_data').innerHTML },
             ai_2: { id: 'ai2_data', content: document.getElementById('ai2_data').innerHTML },
             ai_3: { id: 'ai3_data', content: document.getElementById('ai3_data').innerHTML },
-            ai_4: { id: 'ai4_data', content: document.getElementById('ai4_data').innerHTML }
+            ai_4: { id: 'ai4_data', content: document.getElementById('ai4_data').innerHTML },
+            ai_5: { id: 'ai5_data', content: document.getElementById('ai5_data').innerHTML },
+            ai_6: { id: 'ai6_data', content: document.getElementById('ai6_data').innerHTML }
         }
     };
 
