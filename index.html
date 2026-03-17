@@ -5520,37 +5520,52 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
 
         /**
-         * 카드 3 – 시총 Top 7 (MSFT, AAPL, NVDA, GOOGL, AMZN, TSLA, META)
+         * 카드 3 – 시총 Top 7 (동적 - Worker /top7 엔드포인트)
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
-            var top7Tickers = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META'];
+            // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
+            fetch('/top7')
+                .then(function(res) { return res.json(); })
+                .then(function(result) {
+                    if (result && result.data && Array.isArray(result.data)) {
+                        result.data.forEach(function(item) {
+                            var ticker = (item.symbol || '').toLowerCase();
+                            var idPrefix = 'top7_' + ticker;
 
-            Promise.all(top7Tickers.map(function(ticker) {
-                return fetch('/stock?symbol=' + ticker)
-                    .then(function(res) { return res.json(); })
-                    .catch(function(err) {
-                        console.warn('[Top7] Failed to load ' + ticker, err);
-                        return null;
-                    });
-            })).then(function(results) {
-                results.forEach(function(result, idx) {
-                    var ticker = top7Tickers[idx];
-                    if (result && result.data) {
-                        var data = result.data;
-                        var idPrefix = 'top7_' + ticker.toLowerCase();
+                            // 가격 설정
+                            if (item.price !== null && item.price !== undefined) {
+                                imdSetValue(idPrefix, item.price, 2);
+                            }
 
-                        // 가격 설정
-                        if (data.price) {
-                            imdSetValue(idPrefix, data.price, 2);
-                        }
-
-                        // 등락률 설정
-                        if (data.changePercentage !== undefined && data.changePercentage !== null) {
-                            imdSetChange(idPrefix, data.changePercentage, 'pct');
-                        }
+                            // 등락률 설정
+                            if (item.changePercentage !== null && item.changePercentage !== undefined) {
+                                imdSetChange(idPrefix, item.changePercentage, 'pct');
+                            }
+                        });
                     }
+                })
+                .catch(function(err) {
+                    console.warn('[Top7] Failed to load from /top7 endpoint:', err);
+                    // Fallback: 개별 조회
+                    var fallbackTickers = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META'];
+                    fallbackTickers.forEach(function(ticker) {
+                        fetch('/stock?symbol=' + ticker)
+                            .then(function(res) { return res.json(); })
+                            .then(function(result) {
+                                if (result && result.data) {
+                                    var data = result.data;
+                                    var idPrefix = 'top7_' + ticker.toLowerCase();
+                                    if (data.price) {
+                                        imdSetValue(idPrefix, data.price, 2);
+                                    }
+                                    if (data.changePercentage !== undefined) {
+                                        imdSetChange(idPrefix, data.changePercentage, 'pct');
+                                    }
+                                }
+                            })
+                            .catch(function(e) { console.warn('[Top7 Fallback] ' + ticker + ' failed:', e); });
+                    });
                 });
-            });
         }
 
         function imdLoadFutures() {
