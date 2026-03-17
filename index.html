@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773055173 -->
+    <!-- Version: v1773055174 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5776,10 +5776,17 @@ var ECON_DATA = {
 
                         console.log('[Top7] [' + rank + '] ' + ticker + ' = ' + price);
 
-                        // 라벨 업데이트
+                        // 라벨 업데이트 (상태 마크 보존!)
                         var labelElem = document.getElementById(rankLabelId);
                         if (labelElem) {
-                            labelElem.textContent = rank + '. ' + ticker;
+                            // 현재 라벨에서 상태 마크 부분 추출 ("1. - 🟢🔄..." → " 🟢🔄...")
+                            var currentLabel = labelElem.textContent;
+                            var statusStartIdx = currentLabel.indexOf(' 🟢');
+                            var statusPart = (statusStartIdx > -1) ? currentLabel.substring(statusStartIdx) : '';
+
+                            // 새 라벨 + 상태 마크 유지
+                            labelElem.textContent = rank + '. ' + ticker + statusPart;
+                            console.log('[Top7] [' + rank + '] Label updated: ' + labelElem.textContent);
                         }
 
                         // 가격 설정
