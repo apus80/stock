@@ -264,8 +264,8 @@ export default {
         "VIXCLS": { divisor: 1, unit: "idx" },  // VIX from FRED
         "BAMLH0A0HYM2": { divisor: 1, unit: "%" },  // High Yield OAS Spread
         "MMNRNJ": { divisor: 1, unit: "idx" },  // ✅ Manufacturing PMI (index)
-        "NAPMIT": { divisor: 1, unit: "idx" },  // ✅ Services PMI (index)
-        "RSXFS": { divisor: 1, unit: "%" }      // ✅ Retail Sales (%)
+        "IPMANSM": { divisor: 1, unit: "idx" },  // ✅ Services PMI (ISM Non-Mfg) (index)
+        "RSXFS": { divisor: 1, unit: "%" }      // ✅ Retail Sales ex-Auto (%)
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
@@ -1246,8 +1246,8 @@ export default {
           yahooFinanceDXY(),  // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // ISM PMI (FRED에서 가져오기)
           fredGet("MMNRNJ"),   // ISM Manufacturing PMI
-          fredGet("NAPMIT"),   // ISM Non-Manufacturing (Services) PMI
-          fredGet("RSXFS")     // Retail Sales ex-Auto (YoY%) - FRED에서 PC1로 변환
+          fredGet("IPMANSM"),  // ✅ ISM Services (Non-Manufacturing) PMI
+          fredGet("RSXFS")     // ✅ Retail Sales ex-Auto
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
@@ -1416,7 +1416,7 @@ export default {
             NONFARM_PAYROLLS: payelmsVal,
             PCE_INFLATION: pcepilfeVal,
             MFG_PMI: convertFredValue("MMNRNJ", getLatestValue(mfgPmi)),  // ✅ Manufacturing PMI (출처: FRED MMNRNJ)
-            SVC_PMI: convertFredValue("NAPMIT", getLatestValue(svcPmi)),  // ✅ Services PMI (출처: FRED NAPMIT)
+            SVC_PMI: convertFredValue("IPMANSM", getLatestValue(svcPmi)),  // ✅ Services PMI (출처: FRED IPMANSM)
             RETAIL_SALES: convertFredValue("RSXFS", getLatestValue(retail))  // ✅ Retail Sales YoY (출처: FRED RSXFS)
           },
           // Economic Indicators with historical chart data (dates + values)
