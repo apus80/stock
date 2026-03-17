@@ -2224,43 +2224,6 @@ var ECON_DATA = {
 </script>
             <!-- ECON_DATA_END -->
 
-            <div class="econ-wrap" data-ms="macro">
-                <div class="econ-hdr">
-                    <h3>📊 주요 경제지표 대시보드</h3>
-                    <span class="econ-updated" id="econUpdated">출처: FRED·ISM·BLS·BEA | 업데이트: --</span>
-                </div>
-                <div class="econ-grid" id="econGrid">
-                    <!-- JS 렌더링 -->
-                </div>
-                <!-- 경제 분석 요약 (월 1회 자동 생성) -->
-                <div class="econ-analysis" id="econAnalysis" style="display:none;">
-                    <div class="econ-ana-hdr">
-                        <span>
-                            <span class="econ-ana-badge" id="econAnaBadge" style="background:#84cc16;">📊 경제 분석</span>
-                        </span>
-                        <span class="econ-ana-date" id="econAnaDate"></span>
-                    </div>
-                    <p class="econ-ana-sum" id="econAnaSum"></p>
-                    <p class="econ-ana-det" id="econAnaDet"></p>
-                </div>
-            </div>
-
-            <!-- 경제지표 상세 모달 -->
-            <div class="econ-overlay" id="econOverlay" onclick="if(event.target===this)closeEconModal()">
-                <div class="econ-modal">
-                    <div class="econ-modal-hdr">
-                        <h2 id="econModalTitle">지표 상세</h2>
-                        <button class="econ-modal-close" onclick="closeEconModal()">✕</button>
-                    </div>
-                    <div class="econ-chart-wrap">
-                        <canvas id="econModalCanvas"></canvas>
-                    </div>
-                    <div class="econ-modal-note" id="econModalNote"></div>
-                    <div class="econ-stats" id="econModalStats"></div>
-                </div>
-            </div>
-
-
             <!-- 기업 요약정보 검색 -->
             <div class="company-search" data-ms="search">
                 <h3>🏢 기업 요약정보 검색</h3>
@@ -2392,6 +2355,43 @@ var ECON_DATA = {
                     </div>
                 </div>
 
+            </div>
+
+            <!-- 주요 경제지표 대시보드 (News 섹션 상단) -->
+            <div class="econ-wrap" data-ms="news">
+                <div class="econ-hdr">
+                    <h3>📊 주요 경제지표 대시보드</h3>
+                    <span class="econ-updated" id="econUpdated">출처: FRED·ISM·BLS·BEA | 업데이트: --</span>
+                </div>
+                <div class="econ-grid" id="econGrid">
+                    <!-- JS 렌더링 -->
+                </div>
+                <!-- 경제 분석 요약 (월 1회 자동 생성) -->
+                <div class="econ-analysis" id="econAnalysis" style="display:none;">
+                    <div class="econ-ana-hdr">
+                        <span>
+                            <span class="econ-ana-badge" id="econAnaBadge" style="background:#84cc16;">📊 경제 분석</span>
+                        </span>
+                        <span class="econ-ana-date" id="econAnaDate"></span>
+                    </div>
+                    <p class="econ-ana-sum" id="econAnaSum"></p>
+                    <p class="econ-ana-det" id="econAnaDet"></p>
+                </div>
+            </div>
+
+            <!-- 경제지표 상세 모달 -->
+            <div class="econ-overlay" id="econOverlay" onclick="if(event.target===this)closeEconModal()">
+                <div class="econ-modal">
+                    <div class="econ-modal-hdr">
+                        <h2 id="econModalTitle">지표 상세</h2>
+                        <button class="econ-modal-close" onclick="closeEconModal()">✕</button>
+                    </div>
+                    <div class="econ-chart-wrap">
+                        <canvas id="econModalCanvas"></canvas>
+                    </div>
+                    <div class="econ-modal-note" id="econModalNote"></div>
+                    <div class="econ-stats" id="econModalStats"></div>
+                </div>
             </div>
 
             <!-- 뉴스 & 섹터 주도주 병렬 배치 영역 -->
