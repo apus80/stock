@@ -396,6 +396,9 @@ export default {
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
         const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
 
+        // ✅ 거래량 (quote에서)
+        const volume = quote?.volume || 0
+
         return {
           symbol,
           price,
@@ -409,6 +412,7 @@ export default {
           operatingMargin,
           sector,
           momentum: dailyMomentum,
+          volume: volume,
           dayLow,
           dayHigh
         }
@@ -503,13 +507,13 @@ export default {
               insiderActivity: factors.insiderActivity
             },
             metrics: {
-              momentum: parseFloat(momentum.toFixed(4)),
-              volume: parseFloat(volume.toFixed(2))
+              momentum: parseFloat((factors.momentum || 0).toFixed(4)),
+              volume: factors.volume ? parseFloat(factors.volume.toFixed(2)) : 0
             },
             profile: {
               company: data.quote?.symbol || symbol,
-              sector: data.metrics?.sector || null,
-              industry: data.metrics?.industry || null
+              sector: data.quote?.sector || null,
+              industry: data.quote?.industry || null
             }
           }
         } catch (e) {
@@ -757,10 +761,12 @@ export default {
 
           const ratios = Array.isArray(data) ? data[0] : data
           return {
-            symbol: symbol,
-            priceToEarningsRatio: ratios.priceToEarningsRatio || null,
-            priceToBookRatio: ratios.priceToBookRatio || null,
-            timestamp: new Date().toISOString()
+            data: {
+              symbol: symbol,
+              priceToEarningsRatio: ratios.priceToEarningsRatio || null,
+              priceToBookRatio: ratios.priceToBookRatio || null,
+              timestamp: new Date().toISOString()
+            }
           }
         } catch (e) {
           console.error(`❌ getRatios ${symbol}:`, e.message)
