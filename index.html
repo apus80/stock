@@ -6406,6 +6406,7 @@ var ECON_DATA = {
                 if (item.value !== null && item.value !== undefined) {
                     imdSetValue(item.id, item.value, 2, item.unit);
                 } else {
+                    imdSetValue(item.id, '-', 2, item.unit);  // 값 없을 때 기본값 "-"
                     imdSetStatus(item.id, 'error');
                 }
             });
@@ -6461,9 +6462,10 @@ var ECON_DATA = {
             ];
 
             items.forEach(function(item) {
-                if (item.value) {
+                if (item.value !== null && item.value !== undefined) {
                     imdSetValue(item.id, item.value, 2, item.unit);
                 } else {
+                    imdSetValue(item.id, '-', 2, item.unit);  // 값 없을 때 기본값 "-"
                     imdSetStatus(item.id, 'error');
                 }
             });
