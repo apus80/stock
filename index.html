@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773055166 -->
+    <!-- Version: v1773055167 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5716,17 +5716,22 @@ var ECON_DATA = {
                 elem1.textContent = '⏳'; // 로딩 중
             }
 
-            // Step 2: fetch 호출
+            // Step 2: fetch 호출 with timeout
             var url = WORKER_API_BASE + '/top7';
             console.log('[Top7] fetch URL=' + url);
 
-            fetch(url, { timeout: 5000 })
+            // ✅ Proper timeout using AbortController
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
+
+            fetch(url, { signal: controller.signal })
                 .then(function(res) {
+                    clearTimeout(timeoutId);
                     console.log('[Top7] fetch 응답: HTTP ' + res.status);
 
                     // Step 2.5: HTTP 응답 상태 표시
                     if (elem1) {
-                        elem1.textContent = res.status === 200 ? '📦' : '❌';
+                        elem1.textContent = res.status === 200 ? '📦' : '❌ HTTP' + res.status;
                     }
 
                     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -5744,7 +5749,7 @@ var ECON_DATA = {
                     if (!hasData || dataCount === 0) {
                         // Step 3.5: 데이터 없음
                         if (elem1) {
-                            elem1.textContent = '⚠️'; // 데이터 없음
+                            elem1.textContent = '⚠️ EMPTY'; // 데이터 없음
                         }
                         throw new Error('No data (count=' + dataCount + ')');
                     }
@@ -5789,22 +5794,24 @@ var ECON_DATA = {
                     // Step 5: 완료
                     console.log('[Top7] 완료: ' + loaded + '/' + dataCount);
                     if (elem1) {
-                        elem1.textContent = loaded > 0 ? '✅' : '⚠️';
+                        elem1.textContent = loaded > 0 ? '✅' : '⚠️ NONE';
                     }
                 })
                 .catch(function(err) {
+                    clearTimeout(timeoutId);
                     console.error('[Top7] ERROR:', err.message);
 
-                    // 에러 표시
+                    // 에러 표시 (에러 타입 표시)
+                    var errMsg = '❌ ' + (err.name === 'AbortError' ? 'TIMEOUT' : err.message.substring(0, 10));
                     if (elem1) {
-                        elem1.textContent = '❌';
+                        elem1.textContent = errMsg;
                     }
 
                     // 모든 항목에 에러 표시
-                    for (var i = 1; i <= 7; i++) {
+                    for (var i = 2; i <= 7; i++) {
                         var elem = document.getElementById('top7_rank' + i);
-                        if (elem && i > 1) {
-                            elem.innerText = '✗';
+                        if (elem) {
+                            elem.textContent = '✗';
                         }
                     }
                 });
@@ -7164,7 +7171,7 @@ var ECON_DATA = {
             0: { fn: imdLoadMarketRegime,     ids: ['regime-label','regime-confidence','regime-signals','regime-time'] },
             1: { fn: imdLoadKorea,            ids: ['ewy'] },
             2: { fn: function(){ imdLoadUS(); imdLoadUSExtended(); }, ids: ['sp500','nasdaq','dow','russell','vix','sox'] },
-            3: { fn: imdLoadTop7,             ids: ['top7_msft','top7_aapl','top7_nvda','top7_googl','top7_amzn','top7_tsla','top7_meta'] },
+            3: { fn: imdLoadTop7,             ids: ['top7_rank1','top7_rank2','top7_rank3','top7_rank4','top7_rank5','top7_rank6','top7_rank7'] },
             4: { fn: imdLoadFutures,          ids: ['spfuture','nasfuture','rtyfuture'] },
             5: { fn: imdLoadCrypto,           ids: ['btc','eth','sol'] },
             6: { fn: imdLoadCommodities,      ids: ['gold','silver','oil','dxy'] },
