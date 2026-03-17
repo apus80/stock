@@ -1208,8 +1208,8 @@ export default {
           yahooFinanceDXY(),  // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // ISM PMI (FRED에서 가져오기)
           fredGet("MMNRNJ"),   // ISM Manufacturing PMI
-          fredGet("ISMCILSA"), // ISM Services PMI
-          fredGet("RSAFS", "pc1") // Census Bureau Retail Sales (YoY%)
+          fredGet("NAPMIT"),   // ISM Non-Manufacturing (Services) PMI
+          fredGet("RSXFS")     // Retail Sales ex-Auto (YoY%) - FRED에서 PC1로 변환
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
