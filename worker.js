@@ -13,7 +13,7 @@ export default {
 
       // URL 파싱
       const url = new URL(request.url)
-      const pathname = url.pathname
+      const pathname = url.pathname.toLowerCase()
       const action = url.searchParams.get('action')
       const symbol = url.searchParams.get('symbol')
       const series = url.searchParams.get('series')
