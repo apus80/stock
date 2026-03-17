@@ -2203,8 +2203,6 @@ var ECON_DATA = {
     dgs10: {label:"국채 10Y",icon:"🏛️",unit:"%",freq:"일간→월평균",isHighGood:null,threshold:4.5,thresholdLabel:"주의 구간",color:"#6366f1",current:4.21,prev:3.97,change:0.24,dates:["2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03"],values:[3.44, 3.64, 3.81, 3.97, 4.09, 4.59, 4.88, 4.37, 3.88, 3.99, 4.25, 4.2, 4.69, 4.51, 4.36, 4.09, 3.91, 3.81, 4.28, 4.18, 4.58, 4.58, 4.24, 4.23, 4.17, 4.41, 4.24, 4.37, 4.23, 4.16, 4.11, 4.02, 4.18, 4.26, 3.97, 4.21]},
     spread: {label:"장단기 스프레드",icon:"📊",unit:"%",freq:"10Y-2Y",isHighGood:true,threshold:0,thresholdLabel:"역전=침체신호",color:"#0ea5e9",current:0.51,prev:0.59,change:-0.08,dates:["2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03"],values:[-0.6, -0.76, -1.06, -0.91, -0.76, -0.44, -0.19, -0.36, -0.35, -0.28, -0.39, -0.39, -0.35, -0.38, -0.35, -0.2, 0.0, 0.15, 0.12, 0.05, 0.33, 0.36, 0.25, 0.34, 0.57, 0.52, 0.52, 0.43, 0.64, 0.56, 0.51, 0.55, 0.71, 0.74, 0.59, 0.51]},
     mfg_pmi: {label:"제조업 PMI",icon:"🔧",unit:"",freq:"월간·ISM",isHighGood:true,threshold:50,thresholdLabel:"50=확장기준",color:"#14b8a6",current:null,prev:null,change:null,dates:[],values:[]},
-    svc_pmi: {label:"서비스 PMI",icon:"💼",unit:"",freq:"월간·ISM",isHighGood:true,threshold:50,thresholdLabel:"50=확장기준",color:"#06b6d4",current:null,prev:null,change:null,dates:[],values:[]},
-    retail: {label:"소매판매 YoY",icon:"🛒",unit:"%",freq:"월간·Census",isHighGood:true,threshold:0,thresholdLabel:"성장 기준",color:"#f97316",current:null,prev:null,change:null,dates:[],values:[]},
     umcsent: {label:"소비자심리",icon:"😊",unit:"",freq:"월간·UMich",isHighGood:true,threshold:80,thresholdLabel:"낙관 기준",color:"#f472b6",current:56.4,prev:52.9,change:3.5,dates:["2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01"],values:[76.9, 79.4, 77.2, 69.1, 68.2, 66.4, 67.9, 70.1, 70.5, 71.8, 74.0, 71.7, 64.7, 57.0, 52.2, 52.2, 60.7, 61.7, 58.2, 55.1, 53.6, 51.0, 52.9, 56.4]}
   }
 };
@@ -4138,7 +4136,7 @@ var ECON_DATA = {
                     anaBox.style.display = 'block';
                 })();
 
-                var ORDER = ['fedfunds','cpi','core_cpi','core_pce','payems','unrate','dgs10','spread','mfg_pmi','svc_pmi','retail','umcsent'];
+                var ORDER = ['fedfunds','cpi','core_cpi','core_pce','payems','unrate','dgs10','spread','mfg_pmi','umcsent'];
 
                 // ── SVG 스파크라인 생성 (캐시로 중복 계산 방지) ──────────
                 var _sparkCache = {};
@@ -5384,27 +5382,6 @@ var ECON_DATA = {
                     updated = true;
                 }
 
-                // 11. Services PMI
-                if (indicators.svc_pmi && indicators.svc_pmi.dates && indicators.svc_pmi.values) {
-                    const ind = ECON_DATA.indicators.svc_pmi;
-                    ind.dates = indicators.svc_pmi.dates;
-                    ind.values = indicators.svc_pmi.values;
-                    ind.current = indicators.svc_pmi.current;
-                    ind.prev = indicators.svc_pmi.prev;
-                    ind.change = indicators.svc_pmi.change;
-                    updated = true;
-                }
-
-                // 12. Retail Sales YoY
-                if (indicators.retail && indicators.retail.dates && indicators.retail.values) {
-                    const ind = ECON_DATA.indicators.retail;
-                    ind.dates = indicators.retail.dates;
-                    ind.values = indicators.retail.values;
-                    ind.current = indicators.retail.current;
-                    ind.prev = indicators.retail.prev;
-                    ind.change = indicators.retail.change;
-                    updated = true;
-                }
 
                 // 갱신된 경우 차트 재렌더
                 if (updated && typeof window.renderEconGrid === 'function') {

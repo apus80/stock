@@ -896,47 +896,6 @@ export default {
         return rawValue / conversion.divisor
       }
 
-      // ✅ Retail Sales YoY 배열 계산: 각 포인트에서 ((current - 12M ago) / 12M ago) * 100
-      function calculateRetailYoYArray(rsafsArray) {
-        if (!rsafsArray || rsafsArray.length < 13) {
-          console.warn('⚠️ Retail YoY 계산 불가: 데이터 부족 (' + (rsafsArray?.length || 0) + '개 < 13개)')
-          return []
-        }
-
-        const yoyValues = []
-        const values = getValues(rsafsArray)  // 숫자 배열로 변환
-
-        for (let i = 0; i < values.length; i++) {
-          const current = values[i]
-          const lastYear = values[i - 12]  // 12개월 전 값
-
-          if (current !== null && lastYear !== null && lastYear !== 0) {
-            const yoy = ((current - lastYear) / lastYear) * 100
-            yoyValues.push(parseFloat(yoy.toFixed(2)))
-          } else {
-            yoyValues.push(null)
-          }
-        }
-
-        console.log(`✅ Retail YoY: ${yoyValues.filter(v => v !== null).length}개 유효값 계산됨`)
-        return yoyValues
-      }
-
-      // ✅ Retail Sales 최신 YoY 단일값 계산: ((current - 12M ago) / 12M ago) * 100
-      function calculateRetailYoY(rsafsArray) {
-        if (!rsafsArray || rsafsArray.length < 13) return null
-
-        const values = getValues(rsafsArray)
-        const current = values[values.length - 1]
-        const lastYear = values[values.length - 13]
-
-        if (current !== null && lastYear !== null && lastYear !== 0) {
-          const yoy = ((current - lastYear) / lastYear) * 100
-          return parseFloat(yoy.toFixed(2))
-        }
-
-        return null
-      }
 
       // 📦 캐싱: 60초 내 중복 호출 방지
       let cachedMarketData = null
@@ -989,7 +948,7 @@ export default {
       // Build economic indicators object with historical dates and values for charting
       function buildEconomicIndicators(
         fedfunds, cpiYoyData, coreCpiYoyData, pcepilfe,
-        payems, unrate, dgs10, dgs2, umcsent, mfgPmi, svcPmi, retail
+        payems, unrate, dgs10, dgs2, umcsent, mfgPmi
       ) {
         // Helper to get latest value
         const getLast = (arr) => arr && arr.length > 0 ? arr[arr.length - 1] : null
@@ -1016,11 +975,6 @@ export default {
         const umsentValues = getValues(umcsent)
         const mfgPmiDates = getDates(mfgPmi)
         const mfgPmiValues = getValues(mfgPmi)
-        const svcPmiDates = getDates(svcPmi)
-        const svcPmiValues = getValues(svcPmi)
-        const retailDates = getDates(retail)
-        // ✅ Retail Sales를 YoY%로 계산 (현재 - 12개월 전) / 12개월 전 × 100
-        const retailValues = calculateRetailYoYArray(retail)
 
         // Calculate spread (10Y - 2Y)
         const spreadDates = dgs10Dates
@@ -1190,38 +1144,6 @@ export default {
             dates: mfgPmiDates,
             values: mfgPmiValues
           },
-          svc_pmi: {
-            label: 'Services PMI',
-            icon: '💼',
-            unit: '',
-            freq: 'Monthly',
-            isHighGood: true,
-            threshold: 50.0,
-            color: '#06b6d4',
-            current: getLast(svcPmiValues),
-            prev: getSecondLast(svcPmiValues),
-            change: (getLast(svcPmiValues) && getSecondLast(svcPmiValues))
-              ? parseFloat((getLast(svcPmiValues) - getSecondLast(svcPmiValues)).toFixed(2))
-              : null,
-            dates: svcPmiDates,
-            values: svcPmiValues
-          },
-          retail: {
-            label: 'Retail Sales YoY',
-            icon: '🛍️',
-            unit: '%',
-            freq: 'Monthly',
-            isHighGood: true,
-            threshold: 2.0,
-            color: '#f97316',
-            current: getLast(retailValues),
-            prev: getSecondLast(retailValues),
-            change: (getLast(retailValues) && getSecondLast(retailValues))
-              ? parseFloat((getLast(retailValues) - getSecondLast(retailValues)).toFixed(2))
-              : null,
-            dates: retailDates,
-            values: retailValues
-          }
         }
       }
 
@@ -1291,24 +1213,12 @@ export default {
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),  // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // ISM PMI & Retail (FRED에서 가져오기)
-          fredGet("NAPM"),     // ✅ Manufacturing PMI (NAPM)
-          fredGet("NAPMNOI"),  // ✅ Services PMI (NAPMNOI)
-          fredGet("RSAFS")     // ✅ Advance Retail Sales (월간) - YoY 계산용
+          fredGet("NAPM")      // ✅ Manufacturing PMI (NAPM)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi, svcPmi, retail] = results.map(extract)
-
-        // 데이터 로깅
-          const mfgPmiValues = getValues(mfgPmi)
-          const svcPmiValues = getValues(svcPmi)
-          const retailValues = getValues(retail)
-          console.log(`\n📊 ===== FRED 데이터 상태 =====`)
-          console.log(`   MFG_PMI (NAPM): ${mfgPmi?.length || 0}개 → ${mfgPmiValues.length}개 유효값`)
-          console.log(`   SVC_PMI (NAPMNOI): ${svcPmi?.length || 0}개 → ${svcPmiValues.length}개 유효값`)
-          console.log(`   RETAIL (RSAFS): ${retail?.length || 0}개 → ${retailValues.length}개 유효값 (13개 필요)`)
-          console.log(`================================\n`)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi] = results.map(extract)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
@@ -1346,7 +1256,7 @@ export default {
         // Build economic indicators with historical dates and values
         const economicIndicators = buildEconomicIndicators(
           fedfunds, cpiYoyData, coreCpiYoyData, pcepilfe,
-          payems, unrate, dgs10, dgs2, umcsent, mfgPmi, svcPmi, retail
+          payems, unrate, dgs10, dgs2, umcsent, mfgPmi
         )
 
         return {
@@ -1452,9 +1362,7 @@ export default {
             INDUSTRIAL_PRODUCTION: indproVal,
             NONFARM_PAYROLLS: payelmsVal,
             PCE_INFLATION: pcepilfeVal,
-            MFG_PMI: convertFredValue("NAPM", getLatestValue(mfgPmi)),      // ✅ Manufacturing PMI (출처: FRED NAPM)
-            SVC_PMI: convertFredValue("NAPMNOI", getLatestValue(svcPmi)),  // ✅ Services PMI (출처: FRED NAPMNOI)
-            RETAIL_SALES: calculateRetailYoY(retail)                       // ✅ Retail Sales YoY (출처: FRED RSAFS, YoY 계산)
+            MFG_PMI: convertFredValue("NAPM", getLatestValue(mfgPmi))      // ✅ Manufacturing PMI (출처: FRED NAPM)
           },
           // Economic Indicators with historical chart data (dates + values)
           ECONOMIC_INDICATORS: economicIndicators
