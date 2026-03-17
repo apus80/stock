@@ -257,7 +257,7 @@
         }
 
         .section-title {
-            font-size: 1.25em;
+            font-size: 1.0em;
             color: var(--text-main);
             margin-bottom: 20px;
             padding-left: 10px;
@@ -2507,30 +2507,6 @@ var ECON_DATA = {
 
             <!-- 뉴스 & 섹터 주도주 병렬 배치 영역 -->
             <div class="news-sector-row" data-ms="news">
-                <!-- 실시간 섹터 주도주 -->
-                <div class="card sector-card" style="margin-bottom: 0;">
-                    <h3 class="section-title">🚀 실시간 섹터 주도주 (US)</h3>
-                    <div class="tradingview-widget-container" style="height: 400px; width: 100%;">
-                        <div class="tradingview-widget-container__widget"></div>
-                        <script type="text/x-tradingview"
-                            data-src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" >
-                                {
-                                    "width": "100%", "height": 400, "symbolsGroups": [
-                                        {
-                                            "name": "주요 섹터", "symbols": [
-                                                { "name": "AMEX:XLK", "displayName": "기술 (Tech)" }, { "name": "AMEX:XLV", "displayName": "헬스 (Health)" },
-                                                { "name": "AMEX:XLF", "displayName": "금융 (Finance)" }, { "name": "AMEX:XLE", "displayName": "에너지 (Energy)" },
-                                                { "name": "AMEX:XLY", "displayName": "소비재 (Cons)" }, { "name": "AMEX:XLI", "displayName": "산업재 (Indus)" },
-                                                { "name": "AMEX:XLC", "displayName": "통신 (Comm)" }, { "name": "AMEX:XLB", "displayName": "소재 (Materials)" },
-                                                { "name": "AMEX:XLU", "displayName": "유틸리티 (Utils)" }, { "name": "AMEX:XLRE", "displayName": "리츠 (REITs)" }
-                                            ]
-                                        }
-                                    ], "showSymbolLogo": true, "colorTheme": "light", "isTransparent": false, "locale": "ko"
-                                }
-                            </script>
-                    </div>
-                </div>
-
                 <!-- 뉴스 대시보드 -->
                 <div class="card news-dashboard" style="margin-bottom: 0;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
