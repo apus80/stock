@@ -2795,11 +2795,10 @@ export default {
           }
         }
       }
-      // /top7 endpoint - 시총 상위 7개 (실시간 가격)
+      // /top7 endpoint - 시총 상위 7개 (실시간 가격 + 정확한 시가총액)
       else if (pathname === "/top7") {
         try {
           // ✅ 최신 시총순위 (2026년 기준)
-          // 출처: FMP API /stable/quote (무료 플랜 확인됨)
           const topSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META']
 
           console.log(`[/top7] 시작: ${topSymbols.length}개 종목 조회`)
@@ -2809,31 +2808,40 @@ export default {
             topSymbols.map(sym => getQuote(sym))
           )
 
+          // 2️⃣ 정확한 시가총액 데이터 호출 (FMP /profile 엔드포인트)
+          const marketCapResults = await Promise.all(
+            topSymbols.map(sym => getMarketCapData(sym))
+          )
+
           // DEBUG: 각 종목별 결과 확인
           quoteResults.forEach((q, idx) => {
             const sym = topSymbols[idx]
-            console.log(`   [${sym}] ${q ? `✅ price=${q.price}` : '❌ null'}`)
+            const mc = marketCapResults[idx]
+            console.log(`   [${sym}] ${q ? `✅ price=${q.price}` : '❌ null'}, marketCap=${mc?.marketCap || 'null'}`)
           })
 
-          // 2️⃣ 데이터 변환 (null 체크)
+          // 3️⃣ 데이터 병합 (가격 + 시가총액)
           const data = quoteResults
             .map((q, idx) => ({
               symbol: topSymbols[idx],
               price: q && q.price ? parseFloat(q.price.toFixed(2)) : null,
               changePercentage: q && q.changePercentage ? parseFloat(q.changePercentage.toFixed(2)) : null,
               volume: q?.volume || null,
-              marketCap: q?.marketCap || 0  // 시가총액 (정렬용)
+              marketCap: marketCapResults[idx]?.marketCap || 0  // 정확한 시가총액
             }))
             .filter(item => item.price !== null)  // 데이터 없는 항목 제외
             .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))  // 시가총액 기준 내림차순 정렬
-            .map((item, idx) => ({
-              rank: idx + 1,
-              symbol: item.symbol,
-              price: item.price,
-              changePercentage: item.changePercentage,
-              volume: item.volume,
-              marketCap: item.marketCap
-            }))
+            .map((item, idx) => {
+              const ranked = {
+                rank: idx + 1,
+                symbol: item.symbol,
+                price: item.price,
+                changePercentage: item.changePercentage,
+                volume: item.volume
+              }
+              console.log(`[Rank ${ranked.rank}] ${ranked.symbol}: marketCap=${item.marketCap}`)
+              return ranked
+            })
 
           // 3️⃣ 응답
           response = {
