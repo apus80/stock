@@ -931,7 +931,7 @@ export default {
       // Build economic indicators object with historical dates and values for charting
       function buildEconomicIndicators(
         fedfunds, cpiYoyData, coreCpiYoyData, pcepilfe,
-        payems, unrate, dgs10, dgs2, umcsent
+        payems, unrate, dgs10, dgs2, umcsent, mfgPmi, svcPmi, retail
       ) {
         // Helper to get latest value
         const getLast = (arr) => arr && arr.length > 0 ? arr[arr.length - 1] : null
@@ -956,6 +956,12 @@ export default {
         const dgs2Values = getValues(dgs2)
         const umsentDates = getDates(umcsent)
         const umsentValues = getValues(umcsent)
+        const mfgPmiDates = getDates(mfgPmi)
+        const mfgPmiValues = getValues(mfgPmi)
+        const svcPmiDates = getDates(svcPmi)
+        const svcPmiValues = getValues(svcPmi)
+        const retailDates = getDates(retail)
+        const retailValues = getValues(retail)
 
         // Calculate spread (10Y - 2Y)
         const spreadDates = dgs10Dates
@@ -1108,6 +1114,54 @@ export default {
               : null,
             dates: umsentDates,
             values: umsentValues
+          },
+          mfg_pmi: {
+            label: 'Manufacturing PMI',
+            icon: '🔧',
+            unit: '',
+            freq: 'Monthly',
+            isHighGood: true,
+            threshold: 50.0,
+            color: '#14b8a6',
+            current: getLast(mfgPmiValues),
+            prev: getSecondLast(mfgPmiValues),
+            change: (getLast(mfgPmiValues) && getSecondLast(mfgPmiValues))
+              ? parseFloat((getLast(mfgPmiValues) - getSecondLast(mfgPmiValues)).toFixed(2))
+              : null,
+            dates: mfgPmiDates,
+            values: mfgPmiValues
+          },
+          svc_pmi: {
+            label: 'Services PMI',
+            icon: '💼',
+            unit: '',
+            freq: 'Monthly',
+            isHighGood: true,
+            threshold: 50.0,
+            color: '#06b6d4',
+            current: getLast(svcPmiValues),
+            prev: getSecondLast(svcPmiValues),
+            change: (getLast(svcPmiValues) && getSecondLast(svcPmiValues))
+              ? parseFloat((getLast(svcPmiValues) - getSecondLast(svcPmiValues)).toFixed(2))
+              : null,
+            dates: svcPmiDates,
+            values: svcPmiValues
+          },
+          retail: {
+            label: 'Retail Sales YoY',
+            icon: '🛍️',
+            unit: '%',
+            freq: 'Monthly',
+            isHighGood: true,
+            threshold: 2.0,
+            color: '#f97316',
+            current: getLast(retailValues),
+            prev: getSecondLast(retailValues),
+            change: (getLast(retailValues) && getSecondLast(retailValues))
+              ? parseFloat((getLast(retailValues) - getSecondLast(retailValues)).toFixed(2))
+              : null,
+            dates: retailDates,
+            values: retailValues
           }
         }
       }
@@ -1176,12 +1230,16 @@ export default {
           getQuote("USDKRW"),  // USD/KRW (원/달러 환율)
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
-          yahooFinanceDXY()   // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
+          yahooFinanceDXY(),  // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
+          // ISM PMI (FRED에서 가져오기)
+          fredGet("MMNRNJ"),   // ISM Manufacturing PMI
+          fredGet("ISMCILSA"), // ISM Services PMI
+          fredGet("RSAFS", "pc1") // Census Bureau Retail Sales (YoY%)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi, svcPmi, retail] = results.map(extract)
 
         // 데이터 로깅
           // console.log(`\n📊 ===== API 호출 결과 요약 =====`)
@@ -1238,7 +1296,7 @@ export default {
         // Build economic indicators with historical dates and values
         const economicIndicators = buildEconomicIndicators(
           fedfunds, cpiYoyData, coreCpiYoyData, pcepilfe,
-          payems, unrate, dgs10, dgs2, umcsent
+          payems, unrate, dgs10, dgs2, umcsent, mfgPmi, svcPmi, retail
         )
 
         return {
