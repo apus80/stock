@@ -2809,33 +2809,46 @@ export default {
           }
         }
       }
-      // /top7 endpoint - S&P500 시총 상위 7개 (동적)
+      // /top7 endpoint - S&P500 시총 상위 7개 (동적 정렬)
       else if (pathname === "/top7") {
         try {
-          // S&P500 시총 상위 종목 (변동되므로 필요시 업데이트)
-          const top7Symbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META']
+          // S&P500 주요 대형주 풀
+          const candidateSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'BRK.B', 'JNJ', 'V']
 
           // 병렬로 모든 종목 데이터 호출
           const quotes = await Promise.all(
-            top7Symbols.map(sym => getQuote(sym))
+            candidateSymbols.map(sym => getQuote(sym))
           )
 
-          // 시총 기준으로 정렬 (price * volume 근사)
-          // 참고: 정확한 시총은 marketCap 필드 필요 (FMP에서 제공)
+          // 시가총액으로 정렬 (FMP quote에서 marketCap 제공)
+          // marketCap 없으면 price * volume 근사값 사용
           const ranked = quotes
-            .map((q, idx) => ({
+            .map((q, idx) => {
+              const symbol = candidateSymbols[idx]
+              const marketCap = q?.marketCap || (q?.price && q?.volume ? q.price * q.volume : 0)
+              return {
+                symbol: symbol,
+                price: q?.price || null,
+                changePercentage: q?.changePercentage || null,
+                volume: q?.volume || null,
+                marketCap: marketCap
+              }
+            })
+            .filter(item => item.price !== null && item.marketCap > 0)
+            // 시가총액 기준 내림차순 정렬
+            .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))
+            // rank 재설정
+            .map((item, idx) => ({
               rank: idx + 1,
-              symbol: top7Symbols[idx],
-              price: q?.price || null,
-              changePercentage: q?.changePercentage || null,
-              volume: q?.volume || null
+              ...item
             }))
-            .filter(item => item.price !== null)
+            // 상위 7개만 반환
+            .slice(0, 7)
 
           response = {
             timestamp: new Date().toISOString(),
             dataType: "top7",
-            message: "S&P500 시총 상위 7개 (실시간 가격)",
+            message: "S&P500 시총 상위 7개 (실시간 시가총액 기준)",
             data: ranked
           }
         } catch (err) {
