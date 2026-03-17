@@ -911,6 +911,207 @@ export default {
         return cachedMarketData
       }
 
+      // Helper functions to extract dates and values from FRED observations
+      function getDates(fredArray) {
+        if (!fredArray || fredArray.length === 0) return []
+        return fredArray.map(obs => obs.date)
+      }
+
+      function getValues(fredArray) {
+        if (!fredArray || fredArray.length === 0) return []
+        return fredArray
+          .map(obs => {
+            const val = obs.value
+            if (val && val !== '.' && val !== '') return parseFloat(val)
+            return null
+          })
+          .filter(v => v !== null)
+      }
+
+      // Build economic indicators object with historical dates and values for charting
+      function buildEconomicIndicators(
+        fedfunds, cpiYoyData, coreCpiYoyData, pcepilfe,
+        payems, unrate, dgs10, dgs2, umcsent
+      ) {
+        // Helper to get latest value
+        const getLast = (arr) => arr && arr.length > 0 ? arr[arr.length - 1] : null
+        const getSecondLast = (arr) => arr && arr.length > 1 ? arr[arr.length - 2] : null
+
+        // Extract dates and values
+        const fedDates = getDates(fedfunds)
+        const fedValues = getValues(fedfunds)
+        const cpiDates = getDates(cpiYoyData)
+        const cpiValues = getValues(cpiYoyData)
+        const coreCpiDates = getDates(coreCpiYoyData)
+        const coreCpiValues = getValues(coreCpiYoyData)
+        const pcepilDates = getDates(pcepilfe)
+        const pcepilValues = getValues(pcepilfe)
+        const payemsDates = getDates(payems)
+        const payemsValues = getValues(payems)
+        const unrateDates = getDates(unrate)
+        const unrateValues = getValues(unrate)
+        const dgs10Dates = getDates(dgs10)
+        const dgs10Values = getValues(dgs10)
+        const dgs2Dates = getDates(dgs2)
+        const dgs2Values = getValues(dgs2)
+        const umsentDates = getDates(umcsent)
+        const umsentValues = getValues(umcsent)
+
+        // Calculate spread (10Y - 2Y)
+        const spreadDates = dgs10Dates
+        const spreadValues = dgs10Values.map((val, idx) => {
+          const dgs2Val = dgs2Values[idx]
+          return val && dgs2Val ? parseFloat((val - dgs2Val).toFixed(3)) : null
+        }).filter(v => v !== null)
+
+        return {
+          fedfunds: {
+            label: 'Fed Funds Rate',
+            icon: '📊',
+            unit: '%',
+            freq: 'Daily',
+            isHighGood: false,
+            threshold: 2.0,
+            color: '#FF6B6B',
+            current: getLast(fedValues),
+            prev: getSecondLast(fedValues),
+            change: (getLast(fedValues) && getSecondLast(fedValues))
+              ? parseFloat((getLast(fedValues) - getSecondLast(fedValues)).toFixed(3))
+              : null,
+            dates: fedDates,
+            values: fedValues
+          },
+          cpi: {
+            label: 'CPI YoY',
+            icon: '📈',
+            unit: '%',
+            freq: 'Monthly',
+            isHighGood: false,
+            threshold: 2.0,
+            color: '#FF8C42',
+            current: getLast(cpiValues),
+            prev: getSecondLast(cpiValues),
+            change: (getLast(cpiValues) && getSecondLast(cpiValues))
+              ? parseFloat((getLast(cpiValues) - getSecondLast(cpiValues)).toFixed(3))
+              : null,
+            dates: cpiDates,
+            values: cpiValues
+          },
+          core_cpi: {
+            label: 'Core CPI YoY',
+            icon: '📊',
+            unit: '%',
+            freq: 'Monthly',
+            isHighGood: false,
+            threshold: 2.0,
+            color: '#4ECDC4',
+            current: getLast(coreCpiValues),
+            prev: getSecondLast(coreCpiValues),
+            change: (getLast(coreCpiValues) && getSecondLast(coreCpiValues))
+              ? parseFloat((getLast(coreCpiValues) - getSecondLast(coreCpiValues)).toFixed(3))
+              : null,
+            dates: coreCpiDates,
+            values: coreCpiValues
+          },
+          core_pce: {
+            label: 'Core PCE YoY',
+            icon: '💰',
+            unit: '%',
+            freq: 'Monthly',
+            isHighGood: false,
+            threshold: 2.0,
+            color: '#95E1D3',
+            current: getLast(pcepilValues),
+            prev: getSecondLast(pcepilValues),
+            change: (getLast(pcepilValues) && getSecondLast(pcepilValues))
+              ? parseFloat((getLast(pcepilValues) - getSecondLast(pcepilValues)).toFixed(3))
+              : null,
+            dates: pcepilDates,
+            values: pcepilValues
+          },
+          payems: {
+            label: 'Nonfarm Payrolls',
+            icon: '👥',
+            unit: 'K',
+            freq: 'Monthly',
+            isHighGood: true,
+            threshold: 150000,
+            color: '#38B6FF',
+            current: getLast(payemsValues),
+            prev: getSecondLast(payemsValues),
+            change: (getLast(payemsValues) && getSecondLast(payemsValues))
+              ? parseFloat((getLast(payemsValues) - getSecondLast(payemsValues)).toFixed(0))
+              : null,
+            dates: payemsDates,
+            values: payemsValues
+          },
+          unrate: {
+            label: 'Unemployment Rate',
+            icon: '📉',
+            unit: '%',
+            freq: 'Monthly',
+            isHighGood: false,
+            threshold: 4.0,
+            color: '#FF6B9D',
+            current: getLast(unrateValues),
+            prev: getSecondLast(unrateValues),
+            change: (getLast(unrateValues) && getSecondLast(unrateValues))
+              ? parseFloat((getLast(unrateValues) - getSecondLast(unrateValues)).toFixed(3))
+              : null,
+            dates: unrateDates,
+            values: unrateValues
+          },
+          dgs10: {
+            label: '10Y Treasury Yield',
+            icon: '📊',
+            unit: '%',
+            freq: 'Daily',
+            isHighGood: false,
+            threshold: 3.0,
+            color: '#FFD93D',
+            current: getLast(dgs10Values),
+            prev: getSecondLast(dgs10Values),
+            change: (getLast(dgs10Values) && getSecondLast(dgs10Values))
+              ? parseFloat((getLast(dgs10Values) - getSecondLast(dgs10Values)).toFixed(3))
+              : null,
+            dates: dgs10Dates,
+            values: dgs10Values
+          },
+          spread: {
+            label: 'Yield Curve (10Y-2Y)',
+            icon: '📈',
+            unit: '%',
+            freq: 'Daily',
+            isHighGood: true,
+            threshold: 0.0,
+            color: '#6BCB77',
+            current: getLast(spreadValues),
+            prev: getSecondLast(spreadValues),
+            change: (getLast(spreadValues) && getSecondLast(spreadValues))
+              ? parseFloat((getLast(spreadValues) - getSecondLast(spreadValues)).toFixed(3))
+              : null,
+            dates: spreadDates,
+            values: spreadValues
+          },
+          umcsent: {
+            label: 'Consumer Sentiment',
+            icon: '😊',
+            unit: 'idx',
+            freq: 'Monthly',
+            isHighGood: true,
+            threshold: 65.0,
+            color: '#A8E6CF',
+            current: getLast(umsentValues),
+            prev: getSecondLast(umsentValues),
+            change: (getLast(umsentValues) && getSecondLast(umsentValues))
+              ? parseFloat((getLast(umsentValues) - getSecondLast(umsentValues)).toFixed(2))
+              : null,
+            dates: umsentDates,
+            values: umsentValues
+          }
+        }
+      }
+
       async function getMarketData() {
           // console.log("🔄 모든 시장 데이터 API 호출 시작...")
           // console.log(`📍 환경: FMP=${FMP ? '✅' : '❌'}, FRED=${FRED ? '✅' : '❌'}`)
@@ -1034,6 +1235,12 @@ export default {
         const ewyPrice = ewy?.price
         const ewyChange = ewy?.changePercentage
 
+        // Build economic indicators with historical dates and values
+        const economicIndicators = buildEconomicIndicators(
+          fedfunds, cpiYoyData, coreCpiYoyData, pcepilfe,
+          payems, unrate, dgs10, dgs2, umcsent
+        )
+
         return {
           spy: spy?.price,
           qqq: qqq?.price,
@@ -1137,7 +1344,9 @@ export default {
             INDUSTRIAL_PRODUCTION: indproVal,
             NONFARM_PAYROLLS: payelmsVal,
             PCE_INFLATION: pcepilfeVal
-          }
+          },
+          // Economic Indicators with historical chart data (dates + values)
+          ECONOMIC_INDICATORS: economicIndicators
         }
       }
 
