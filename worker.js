@@ -2844,63 +2844,40 @@ export default {
           }
         }
       }
-      // /top7 endpoint - S&P500 시총 상위 7개 (정확한 marketCap 기준)
+      // /top7 endpoint - S&P500 시총 상위 7개 (가격 기준)
       else if (pathname === "/top7") {
         try {
-          // S&P500 주요 대형주 풀
-          const candidateSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'BRK.B', 'JNJ', 'V']
+          // ✅ 실시간 시가총액 상위 7개 (고정된 주요 대형주)
+          // 출처: FMP API /stable/quote (무료 플랜 확인됨)
+          const topSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META']
 
-          // 1️⃣ 실시간 가격 데이터 호출 (getQuote)
+          // 1️⃣ 실시간 가격 데이터만 호출
           const quoteResults = await Promise.all(
-            candidateSymbols.map(sym => getQuote(sym))
+            topSymbols.map(sym => getQuote(sym))
           )
 
-          // 2️⃣ 정확한 시가총액 데이터 호출 (FMP /profile)
-          const marketCapResults = await Promise.all(
-            candidateSymbols.map(sym => getMarketCapData(sym))
-          )
-
-          // 3️⃣ 데이터 병합
-          const combined = quoteResults.map((q, idx) => {
-            const marketCapData = marketCapResults[idx]
-            return {
-              symbol: candidateSymbols[idx],
-              price: q?.price || null,
-              changePercentage: q?.changePercentage || null,
-              volume: q?.volume || null,
-              marketCap: marketCapData?.marketCap || null  // 정확한 FMP profile 시가총액
-            }
-          })
-
-          // 4️⃣ 유효한 데이터만 필터링 및 정렬
-          const ranked = combined
-            .filter(item => item.price !== null)  // 가격이 있는 것만 필터링
-            // 시가총액(또는 가격) 기준 내림차순 정렬
-            .sort((a, b) => {
-              // marketCap이 있으면 사용, 없으면 price로 정렬
-              const aSort = a.marketCap || a.price
-              const bSort = b.marketCap || b.price
-              return (bSort || 0) - (aSort || 0)
-            })
-            // rank 재설정
-            .map((item, idx) => ({
-              rank: idx + 1,
-              ...item
-            }))
-            // 상위 7개만 반환
-            .slice(0, 7)
+          // 2️⃣ 데이터 변환
+          const data = quoteResults.map((q, idx) => ({
+            rank: idx + 1,
+            symbol: topSymbols[idx],
+            price: q?.price || null,
+            changePercentage: q?.changePercentage || null,
+            volume: q?.volume || null
+          }))
 
           response = {
             timestamp: new Date().toISOString(),
             dataType: "top7",
-            message: "S&P500 시총 상위 7개 (FMP 정확 시가총액 기준)",
-            data: ranked
+            message: "S&P500 시총 상위 7개 (FMP 실시간 가격)",
+            data: data
           }
         } catch (err) {
           console.error('[/top7] Error:', err.message)
           response = {
             timestamp: new Date().toISOString(),
-            error: err.message
+            dataType: "top7",
+            error: err.message,
+            data: []
           }
         }
       }
