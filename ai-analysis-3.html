@@ -576,6 +576,18 @@
             </div>
         </div>
 
+        <!-- 위젯 11: Alpha Scanner (헤지펀드급 7-모듈 스코어링) -->
+        <div class="widget" style="border-left: 4px solid #ef4444; background: linear-gradient(145deg, #ffffff 0%, #fff5f5 100%);">
+            <div class="widget-title" style="border-bottom: 2px solid #ef4444;">
+                <div style="font-size: 1.1em;">🔬 Alpha Scanner <span style="font-size: 0.7em; color: #ef4444; font-weight: 800;">PRO</span></div>
+                <span style="font-size: 0.75em;">7-Module Scoring | S&P500 Top 80 | 1~3주 목표 20%</span>
+                <button class="widget-refresh" onclick="refreshWidget(11)">🔄</button>
+            </div>
+            <div id="widget-11" class="content">
+                <div class="loading">🔬 헤지펀드급 알파 스캐닝 중...</div>
+            </div>
+        </div>
+
         <div class="info-box">
             <strong>ℹ️ 정보:</strong> 각 위젯은 실시간 시장 데이터와 거시경제 지표를 기반으로 자동 계산됩니다.
             데이터 소스: FMP API, FRED, Yahoo Finance
@@ -651,7 +663,7 @@
             if (discoveryData) {
                 console.log('✅ 캐시에서 Discovery 데이터 로드됨');
                 // 캐시된 데이터로 모든 위젯 표시
-                for (let i = 1; i <= 10; i++) {
+                for (let i = 1; i <= 11; i++) {
                     loadWidgetData(i, discoveryData, marketData);
                 }
             }
@@ -1032,6 +1044,147 @@
                             </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
+                        }
+                        break;
+
+                    case 11:
+                        // 🔬 Alpha Scanner (헤지펀드급 7-모듈 스코어링)
+                        // 데이터 소스: Worker /alpha/alpha-scanner → FMP fundamentals + FRED macro
+                        try {
+                            elem.innerHTML = '<div class="loading">🔬 S&P500 Top 80 종목 딥 분석 중... (최대 60초)</div>';
+                            const scannerRes = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/alpha-scanner', { method: 'POST' });
+                            const scannerData = await scannerRes.json();
+
+                            if (scannerData && scannerData.top_20 && scannerData.top_20.length > 0) {
+                                const top5 = scannerData.top_20.slice(0, 5);
+                                const macro = scannerData.macro || {};
+
+                                // 거시환경 배지
+                                const riskColor = macro.riskMode === 'RISK_ON' ? '#10b981' : macro.riskMode === 'RISK_OFF' ? '#ef4444' : '#f59e0b';
+                                const riskLabel = macro.riskMode === 'RISK_ON' ? 'RISK-ON' : macro.riskMode === 'RISK_OFF' ? 'RISK-OFF' : 'NEUTRAL';
+                                const riskIcon = macro.riskMode === 'RISK_ON' ? '🟢' : macro.riskMode === 'RISK_OFF' ? '🔴' : '🟡';
+
+                                html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:10px 12px; background:linear-gradient(90deg,${riskColor}11,transparent); border-left:3px solid ${riskColor}; border-radius:0 6px 6px 0;">
+                                    <div>
+                                        <span style="font-size:12px; color:#718096;">거시환경</span>
+                                        <span style="font-weight:800; color:${riskColor}; margin-left:8px;">${riskIcon} ${riskLabel}</span>
+                                        <span style="font-size:11px; color:#718096; margin-left:8px;">배율 ×${(macro.multiplier || 1).toFixed(2)}</span>
+                                    </div>
+                                    <div style="font-size:11px; color:#718096;">
+                                        VIX ${(macro.vix || 0).toFixed(1)} | HY ${(macro.hySpread || 0).toFixed(1)} | 10Y ${(macro.us10y || 0).toFixed(2)}%
+                                    </div>
+                                </div>`;
+
+                                html += `<div style="font-size:10px; color:#a0aec0; margin-bottom:10px; text-align:right;">
+                                    분석: ${scannerData.deep_analyzed || '-'}종목 | 적격: ${scannerData.qualified || '-'}종목 | 소요: ${scannerData.execution_time_sec || '-'}초
+                                </div>`;
+
+                                // TOP 5 종목 카드
+                                top5.forEach((stock, idx) => {
+                                    const scoreColor = stock.totalScore >= 80 ? '#10b981' : stock.totalScore >= 70 ? '#f59e0b' : stock.totalScore >= 60 ? '#eab308' : '#ef4444';
+                                    const probColor = stock.breakoutProbability >= 65 ? '#10b981' : stock.breakoutProbability >= 45 ? '#f59e0b' : '#ef4444';
+                                    const changeColor = stock.change >= 0 ? '#10b981' : '#ef4444';
+                                    const rankBg = idx === 0 ? '#fbbf2420' : idx === 1 ? '#e5e7eb20' : idx === 2 ? '#d97706' + '15' : 'transparent';
+                                    const rankColor = idx < 3 ? '#fbbf24' : '#a0aec0';
+
+                                    html += `<div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:12px; position:relative; overflow:hidden; transition:all 0.2s; border-left:4px solid ${scoreColor};">`;
+
+                                    // Row 1: Rank + Ticker + Score
+                                    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                        <div style="display:flex; align-items:center; gap:12px;">
+                                            <span style="font-size:18px; font-weight:900; color:${rankColor};">#${idx + 1}</span>
+                                            <div>
+                                                <span style="font-size:16px; font-weight:800; color:#2d3748;">${stock.symbol}</span>
+                                                <span style="font-size:11px; color:#a0aec0; margin-left:6px;">${stock.companyName || ''}</span>
+                                            </div>
+                                            <span style="font-size:12px; color:${changeColor}; font-weight:600;">$${stock.price} (${stock.change >= 0 ? '+' : ''}${stock.change}%)</span>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <div style="font-size:28px; font-weight:900; color:${scoreColor}; line-height:1;">${stock.totalScore.toFixed(0)}</div>
+                                            <div style="font-size:9px; color:#a0aec0; text-transform:uppercase;">Total Score</div>
+                                        </div>
+                                    </div>`;
+
+                                    // Row 2: Breakout Probability Bar
+                                    html += `<div style="margin-bottom:12px;">
+                                        <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+                                            <span style="color:#718096;">Breakout 확률</span>
+                                            <span style="font-weight:700; color:${probColor};">${stock.breakoutProbability}%</span>
+                                        </div>
+                                        <div style="height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+                                            <div style="height:100%; width:${stock.breakoutProbability}%; background:linear-gradient(90deg,${probColor},${probColor}aa); border-radius:4px; transition:width 0.8s;"></div>
+                                        </div>
+                                    </div>`;
+
+                                    // Row 3: Signal Badges
+                                    html += `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;">`;
+                                    if (stock.signals.epsSurprise != null) {
+                                        const c = stock.signals.epsSurprise > 0 ? '#10b981' : '#ef4444';
+                                        html += `<span style="padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${c}18; color:${c}; border:1px solid ${c}30;">EPS ${stock.signals.epsSurprise > 0 ? '+' : ''}${stock.signals.epsSurprise}%</span>`;
+                                    }
+                                    if (stock.signals.revSurprise != null) {
+                                        const c = stock.signals.revSurprise > 0 ? '#10b981' : '#ef4444';
+                                        html += `<span style="padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${c}18; color:${c}; border:1px solid ${c}30;">REV ${stock.signals.revSurprise > 0 ? '+' : ''}${stock.signals.revSurprise}%</span>`;
+                                    }
+                                    if (stock.signals.revenueGrowth != null) {
+                                        const c = stock.signals.revenueGrowth > 0 ? '#10b981' : '#ef4444';
+                                        html += `<span style="padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${c}18; color:${c}; border:1px solid ${c}30;">매출 ${stock.signals.revenueGrowth > 0 ? '+' : ''}${stock.signals.revenueGrowth}%</span>`;
+                                    }
+                                    if (stock.signals.epsGrowth != null) {
+                                        const c = stock.signals.epsGrowth > 0 ? '#10b981' : '#ef4444';
+                                        html += `<span style="padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${c}18; color:${c}; border:1px solid ${c}30;">EPS성장 ${stock.signals.epsGrowth > 0 ? '+' : ''}${stock.signals.epsGrowth}%</span>`;
+                                    }
+                                    if (stock.signals.freeCashFlow != null) {
+                                        const fcfB = (stock.signals.freeCashFlow / 1e9).toFixed(1);
+                                        const c = stock.signals.freeCashFlow > 0 ? '#10b981' : '#ef4444';
+                                        html += `<span style="padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${c}18; color:${c}; border:1px solid ${c}30;">FCF $${fcfB}B</span>`;
+                                    }
+                                    if (stock.signals.floatCategory) {
+                                        const fc = stock.signals.floatCategory;
+                                        const c = fc === 'Micro' || fc === 'Small' ? '#8b5cf6' : '#718096';
+                                        html += `<span style="padding:3px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${c}18; color:${c}; border:1px solid ${c}30;">Float: ${fc}</span>`;
+                                    }
+                                    html += `</div>`;
+
+                                    // Row 4: 7-Module Score Bars
+                                    html += `<div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px;">`;
+                                    const modLabels = [
+                                        { key: 'earnings', label: 'Earn', w: '25%' },
+                                        { key: 'fundamental', label: 'Fund', w: '20%' },
+                                        { key: 'cashflow', label: 'CF', w: '15%' },
+                                        { key: 'balance', label: 'BS', w: '10%' },
+                                        { key: 'float', label: 'Float', w: '10%' },
+                                        { key: 'valuation', label: 'Val', w: '10%' },
+                                        { key: 'macro', label: 'Macro', w: '10%' }
+                                    ];
+                                    modLabels.forEach(m => {
+                                        const val = stock.modules[m.key] || 0;
+                                        const barColor = val >= 70 ? '#10b981' : val >= 40 ? '#f59e0b' : '#ef4444';
+                                        html += `<div style="text-align:center;">
+                                            <div style="font-size:8px; color:#a0aec0; margin-bottom:2px;">${m.label}</div>
+                                            <div style="height:4px; background:#e2e8f0; border-radius:2px; overflow:hidden;">
+                                                <div style="height:100%; width:${val}%; background:${barColor}; border-radius:2px;"></div>
+                                            </div>
+                                            <div style="font-size:9px; font-weight:700; color:${barColor}; margin-top:1px;">${val.toFixed(0)}</div>
+                                        </div>`;
+                                    });
+                                    html += `</div>`;
+
+                                    html += `</div>`; // card close
+                                });
+
+                                // 스코어링 설명
+                                html += `<div style="margin-top:14px; padding:12px; background:#f7fafc; border-radius:8px; font-size:10px; color:#a0aec0; line-height:1.8; border:1px solid #e2e8f0;">
+                                    <strong style="color:#718096;">🔬 Alpha Scanner 7-Module Scoring:</strong><br>
+                                    Earnings Momentum 25% | Fundamental Acceleration 20% | Cash Flow Quality 15% | Balance Sheet 10% | Float Compression 10% | Valuation 10% | Macro Overlay 10%<br>
+                                    <span style="color:#cbd5e0;">필터: revenueGrowth > 0 + earnings surprise 존재 | 데이터: FMP fundamentals + FRED macro | Macro RISK-OFF 시 ×0.7 배율 적용</span>
+                                </div>`;
+                            } else {
+                                html = '<div class="loading">⚠️ Alpha Scanner 데이터를 불러올 수 없습니다</div>';
+                            }
+                        } catch (scanErr) {
+                            console.error('Widget 11 error:', scanErr);
+                            html = '<div class="loading">❌ Alpha Scanner 로드 실패: ' + scanErr.message + '</div>';
                         }
                         break;
 
