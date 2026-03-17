@@ -2202,6 +2202,11 @@
             <!-- ── 주요 경제지표 대시보드 ── -->
             <!-- ECON_DATA_START -->
 <script>
+// ============================================================
+// Worker API 기본 URL (Cloudflare Workers)
+// ============================================================
+const WORKER_API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+
 var ECON_DATA = {
   lastUpdated: "2026-03-17",
   analysisMonth: "2026-03",
@@ -5270,7 +5275,7 @@ var ECON_DATA = {
         async function imdLoadEconFromWorker() {
             try {
                 // worker /market 엔드포인트에서 데이터 가져오기
-                const response = await fetch('/market');
+                const response = await fetch(WORKER_API_BASE + '/market');
                 if (!response.ok) {
                     console.warn('[ECON] Worker /market 요청 실패:', response.status);
                     return;
@@ -5684,7 +5689,7 @@ var ECON_DATA = {
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
             console.log('[Top7] /top7 엔드포인트 호출 시작');
-            fetch('/top7')
+            fetch(WORKER_API_BASE + '/top7')
                 .then(function(res) {
                     console.log('[Top7] Response status:', res.status, res.statusText);
                     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -5721,7 +5726,7 @@ var ECON_DATA = {
                     // Fallback: 개별 조회
                     var fallbackTickers = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META'];
                     fallbackTickers.forEach(function(ticker) {
-                        fetch('/stock?symbol=' + ticker)
+                        fetch(WORKER_API_BASE + '/stock?symbol=' + ticker)
                             .then(function(res) { return res.json(); })
                             .then(function(result) {
                                 if (result && result.data) {
