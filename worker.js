@@ -2818,13 +2818,22 @@ export default {
           // 2️⃣ 데이터 변환 (null 체크)
           const data = quoteResults
             .map((q, idx) => ({
-              rank: idx + 1,
               symbol: topSymbols[idx],
               price: q && q.price ? parseFloat(q.price.toFixed(2)) : null,
               changePercentage: q && q.changePercentage ? parseFloat(q.changePercentage.toFixed(2)) : null,
-              volume: q?.volume || null
+              volume: q?.volume || null,
+              marketCap: q?.marketCap || 0  // 시가총액 (정렬용)
             }))
             .filter(item => item.price !== null)  // 데이터 없는 항목 제외
+            .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))  // 시가총액 기준 내림차순 정렬
+            .map((item, idx) => ({
+              rank: idx + 1,
+              symbol: item.symbol,
+              price: item.price,
+              changePercentage: item.changePercentage,
+              volume: item.volume,
+              marketCap: item.marketCap
+            }))
 
           // 3️⃣ 응답
           response = {
