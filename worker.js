@@ -203,6 +203,9 @@ export default {
           }
           const obs = j.observations || []
           if (obs.length > 0) {
+            console.log(`✅ FRED ${series}: ${obs.length}개 데이터포인트`)
+          } else {
+            console.warn(`⚠️ FRED ${series}: 데이터 없음 (observations=[])`)
           // console.log(`✅ FRED ${series}: ${obs.length} obs, latest=${obs[obs.length-1].value}`)
           }
           return obs
@@ -1255,23 +1258,11 @@ export default {
         const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi, svcPmi, retail] = results.map(extract)
 
         // 데이터 로깅
-          // console.log(`\n📊 ===== API 호출 결과 요약 =====`)
-          // console.log(`📈 미국 주식:`)
-          // console.log(`   SPY: ${spy?.price || '⚠️ 실패'} (change: ${spy?.changePercentage || '⚠️'}%)`)
-          // console.log(`   QQQ: ${qqq?.price || '⚠️ 실패'} (change: ${qqq?.changePercentage || '⚠️'}%)`)
-          // console.log(`   DIA: ${dia?.price || '⚠️ 실패'} (change: ${dia?.changePercentage || '⚠️'}%)`)
-          // console.log(`📊 섹터:`)
-          // console.log(`   XLK: ${xlk?.price || '⚠️ 실패'}, XLF: ${xlf?.price || '⚠️'}, XLE: ${xle?.price || '⚠️'}, XLV: ${xlv?.price || '⚠️'}`)
-          // console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
-          // console.log(`💰 채권 & 광범위:`)
-          // console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
-          // console.log(`🇰🇷 한국 시장 (FMP):`)
-          // console.log(`   EWY: ${ewy?.price || '⚠️ 실패'} (change: ${ewy?.changePercentage || '⚠️'}%)`)
-          // console.log(`🪙 암호화폐 (Binance):`)
-          // console.log(`   BTC: ${btc?.price || '⚠️ 실패'}, ETH: ${eth?.price || '⚠️'}, SOL: ${sol?.price || '⚠️'}`)
-          // console.log(`📊 FRED 경제지표:`)
-          // console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
-          // console.log(`================================\n`)
+          console.log(`\n📊 ===== FRED 데이터 상태 =====`)
+          console.log(`   MFG_PMI: ${mfgPmi?.length || 0}개 포인트`)
+          console.log(`   SVC_PMI (IPMANSM): ${svcPmi?.length || 0}개 포인트`)
+          console.log(`   RETAIL (RSXFS): ${retail?.length || 0}개 포인트`)
+          console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
