@@ -3591,11 +3591,11 @@ var ECON_DATA = {
             // ─── API 키 설정 (선택사항 - 미설정 시 무료 fallback으로 동작) ───
             // ① NewsAPI (국내/해외 통합 - 가장 안정적, 실시간)
             //    가입: https://newsapi.org → 무료 키 생성
-            var NS_NEWSAPI_KEY  = '';  // NewsAPI 키 (미설정 시 RSS fallback)
+            var NS_NEWSAPI_KEY  = '8a732e90667e4dc9bb9047da389b8df2';  // NewsAPI 키
 
             // ② Finnhub (금융 전문, 실시간)
             //    가입: https://finnhub.io → 무료 키 생성
-            var NS_FINNHUB_KEY  = '';  // Finnhub API 키
+            var NS_FINNHUB_KEY  = 'd6o3ajhr01qsfaqqs6p0d6o3ajhr01qsfaqqs6pg';  // Finnhub API 키
 
             // ③ GNews (해외 뉴스 Fallback, CORS 공식 지원)
             //    가입: https://gnews.io → 무료 100건/일
@@ -3824,7 +3824,35 @@ var ECON_DATA = {
                 var alreadyFin = finWords.some(function(k){ return q.includes(k); });
                 var optQ = alreadyFin ? q : (q + ' 주식 증권');
 
-                // ── 1순위: Naver News API (corsproxy → allorigins fallback) ──
+                // ── 1순위: NewsAPI (가장 안정적, 실시간) ──────────────────────
+                if (NS_NEWSAPI_KEY) {
+                    try {
+                        var nUrl = 'https://newsapi.org/v2/everything?q=' +
+                            encodeURIComponent(optQ) + '&language=ko&sortBy=publishedAt&pageSize=10';
+                        var ctrlNews = new AbortController();
+                        setTimeout(function(){ ctrlNews.abort(); }, 8000);
+                        var resNews = await fetch(nUrl + '&apiKey=' + NS_NEWSAPI_KEY, {
+                            signal: ctrlNews.signal
+                        });
+                        var jsonNews = await resNews.json();
+                        if (jsonNews.articles && jsonNews.articles.length) {
+                            if (stale()) return;
+                            _nsRender(jsonNews.articles.slice(0,3).map(function(a) {
+                                return {
+                                    title:       a.title || '',
+                                    url:         a.url || '',
+                                    source:      a.source ? a.source.name : 'NewsAPI',
+                                    publishedAt: a.publishedAt || '',
+                                    description: a.description || ''
+                                };
+                            }), box, 'kor');
+                            if (srcEl) srcEl.textContent = '📡 출처: NewsAPI (한국어)';
+                            return;
+                        }
+                    } catch(e) { console.log('NewsAPI KO 실패', e); }
+                }
+
+                // ── 2순위: Naver News API (corsproxy → allorigins fallback) ──
                 if (NS_NAVER_ID && NS_NAVER_SECRET) {
                     var naverApiUrl = 'https://openapi.naver.com/v1/search/news.json?query=' +
                         encodeURIComponent(optQ) + '&display=5&sort=date';
@@ -3977,7 +4005,69 @@ var ECON_DATA = {
                 var srcEl = document.getElementById('nsEngSrc');
                 function stale() { return _nsToken !== tok; }
 
-                // ── 1순위: Google News RSS (rss2json.com — CORS 없이 안정적) ─
+                // ── 1순위: NewsAPI (가장 안정적, 실시간) ──────────────────────
+                if (NS_NEWSAPI_KEY) {
+                    try {
+                        var nUrl = 'https://newsapi.org/v2/everything?q=' +
+                            encodeURIComponent(q + ' finance stock') + '&language=en&sortBy=publishedAt&pageSize=10';
+                        var ctrlNews = new AbortController();
+                        setTimeout(function(){ ctrlNews.abort(); }, 8000);
+                        var resNews = await fetch(nUrl + '&apiKey=' + NS_NEWSAPI_KEY, {
+                            signal: ctrlNews.signal
+                        });
+                        var jsonNews = await resNews.json();
+                        if (jsonNews.articles && jsonNews.articles.length) {
+                            if (stale()) return;
+                            _nsRender(jsonNews.articles.slice(0,3).map(function(a) {
+                                return {
+                                    title:       a.title || '',
+                                    url:         a.url || '',
+                                    source:      a.source ? a.source.name : 'NewsAPI',
+                                    publishedAt: a.publishedAt || '',
+                                    description: a.description || ''
+                                };
+                            }), box, 'eng');
+                            if (srcEl) srcEl.textContent = '📡 출처: NewsAPI (영어)';
+                            return;
+                        }
+                    } catch(e) { console.log('NewsAPI EN 실패', e); }
+                }
+
+                // ── 2순위: Finnhub News API (금융 전문) ─────────────────────────
+                if (NS_FINNHUB_KEY) {
+                    try {
+                        var fUrl = 'https://finnhub.io/api/v1/news?category=general&minId=0';
+                        var ctrlFin = new AbortController();
+                        setTimeout(function(){ ctrlFin.abort(); }, 8000);
+                        var resFin = await fetch(fUrl + '&token=' + NS_FINNHUB_KEY, {
+                            signal: ctrlFin.signal
+                        });
+                        var jsonFin = await resFin.json();
+                        if (Array.isArray(jsonFin) && jsonFin.length > 0) {
+                            var filtered = jsonFin.filter(function(a) {
+                                var qLow = q.toLowerCase();
+                                var titleLow = (a.headline || '').toLowerCase();
+                                return titleLow.includes(qLow) || titleLow.includes('finance') || titleLow.includes('stock');
+                            });
+                            if (filtered.length > 0) {
+                                if (stale()) return;
+                                _nsRender(filtered.slice(0,3).map(function(a) {
+                                    return {
+                                        title:       a.headline || '',
+                                        url:         a.url || '',
+                                        source:      a.source || 'Finnhub',
+                                        publishedAt: new Date(a.datetime * 1000).toISOString(),
+                                        description: a.summary || ''
+                                    };
+                                }), box, 'eng');
+                                if (srcEl) srcEl.textContent = '📡 출처: Finnhub News (금융)';
+                                return;
+                            }
+                        }
+                    } catch(e) { console.log('Finnhub 실패', e); }
+                }
+
+                // ── 3순위: Google News RSS (rss2json.com — CORS 없이 안정적) ─
                 var gnEngUrl = 'https://news.google.com/rss/search?q=' +
                     encodeURIComponent(q + ' finance stock') + '&hl=en-US&gl=US&ceid=US:en';
                 var r2jEng = await _rss2json(gnEngUrl, 6, 8000);
