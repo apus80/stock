@@ -2843,8 +2843,7 @@ export default {
                 symbol: item.symbol,
                 price: item.price,
                 changePercentage: item.changePercentage,
-                volume: item.volume,
-                marketCap: item.marketCap  // 디버깅용 포함
+                volume: item.volume
               }
               console.log(`[Rank ${ranked.rank}] ${ranked.symbol}: marketCap=${item.marketCap}`)
               return ranked
