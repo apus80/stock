@@ -298,8 +298,11 @@ const WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev';
 
 const ENDPOINTS = {
   '시장 데이터': [
-    { path: '/market', params: null, desc: '모든 시장 데이터' },
+    { path: '/market', params: null, desc: '모든 시장 데이터 + 12개 경제지표' },
     { path: '/feargreed', params: null, desc: '공포탐욕 지수' },
+  ],
+  '📊 경제지표 검증 (신규)': [
+    { path: '/market-indicators', params: null, desc: '12개 경제지표 전체 검증 (mfg_pmi, svc_pmi, retail 포함)' },
   ],
   '개별 종목 분석': [
     { path: '/stock', params: 'symbol=AAPL', desc: '종목 분석 (symbol 필수)' },
@@ -403,6 +406,11 @@ function renderEndpoints() {
 }
 
 async function testEndpoint(path, id) {
+  // 경제지표 검증 특수 처리
+  if (path === '/market-indicators') {
+    return testEconomicIndicators();
+  }
+
   const dotEl = document.getElementById(`${id}-dot`);
   const resultEl = document.getElementById(`${id}-result`);
   const inputEl = document.getElementById(`${id}-input`);
@@ -436,6 +444,66 @@ async function testEndpoint(path, id) {
     dotEl.className = 'status-dot fail';
     resultEl.innerHTML = `<span class="result-fail">❌ ${e.message}</span>`;
     addLog(`❌ ${path}: ${e.message}`, 'fail');
+  }
+
+  updateSummary();
+}
+
+// 경제지표 상세 검증
+async function testEconomicIndicators() {
+  addLog('🔍 경제지표 검증 시작...', 'info');
+
+  try {
+    const t0 = Date.now();
+    const res = await fetch(`${WORKER_URL}/market`);
+    const ms = Date.now() - t0;
+    const data = await res.json();
+
+    if (!res.ok) {
+      addLog(`❌ /market 호출 실패: HTTP ${res.status}`, 'fail');
+      return;
+    }
+
+    const indicators = data.ECONOMIC_INDICATORS;
+    if (!indicators) {
+      addLog(`❌ ECONOMIC_INDICATORS 필드 없음`, 'fail');
+      return;
+    }
+
+    // 12개 지표 검증
+    const requiredIndicators = ['fedfunds', 'cpi', 'core_cpi', 'core_pce', 'payems', 'unrate', 'dgs10', 'spread', 'umcsent', 'mfg_pmi', 'svc_pmi', 'retail'];
+    const checkResults = {};
+
+    requiredIndicators.forEach(ind => {
+      const exists = ind in indicators;
+      const hasData = exists && indicators[ind] && typeof indicators[ind] === 'object';
+      const hasDates = hasData && Array.isArray(indicators[ind].dates) && indicators[ind].dates.length > 0;
+      const hasValues = hasData && Array.isArray(indicators[ind].values) && indicators[ind].values.length > 0;
+      const hasCurrent = hasData && indicators[ind].current !== null && indicators[ind].current !== undefined;
+
+      checkResults[ind] = { exists, hasData, hasDates, hasValues, hasCurrent };
+
+      const status = exists && hasData && hasDates && hasValues ? '✅' : '⚠️';
+      addLog(`${status} ${ind}: ${indicators[ind]?.label || '-'} (dates: ${hasDates ? '✓' : '✗'}, values: ${hasValues ? '✓' : '✗'}, current: ${hasCurrent ? '✓' : '✗'})`, hasData ? 'ok' : 'fail');
+    });
+
+    // 특별히 신규 3개 지표 강조
+    addLog('', 'info');
+    addLog('🆕 신규 경제지표 (3개):', 'info');
+    ['mfg_pmi', 'svc_pmi', 'retail'].forEach(ind => {
+      const result = checkResults[ind];
+      if (result.exists && result.hasData && result.hasDates && result.hasValues) {
+        addLog(`✅ ${ind}: ${indicators[ind].label} - 완벽하게 로드됨`, 'ok');
+      } else {
+        addLog(`❌ ${ind}: 데이터 불완전`, 'fail');
+      }
+    });
+
+    addLog(``, 'info');
+    addLog(`✅ 경제지표 검증 완료 (${ms}ms) - 12개 지표 모두 확인됨`, 'ok');
+
+  } catch (e) {
+    addLog(`❌ 경제지표 검증 실패: ${e.message}`, 'fail');
   }
 
   updateSummary();

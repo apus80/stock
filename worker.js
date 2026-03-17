@@ -869,19 +869,32 @@ export default {
 
       // Helper functions to extract dates and values from FRED observations
       function getDates(fredArray) {
-        if (!fredArray || fredArray.length === 0) return []
-        return fredArray.map(obs => obs.date)
+        if (!fredArray || !Array.isArray(fredArray) || fredArray.length === 0) {
+          console.warn('⚠️ getDates: 입력이 비어있거나 배열이 아님', fredArray)
+          return []
+        }
+        const dates = fredArray.map(obs => obs?.date).filter(d => d)
+        console.log(`✅ getDates: ${dates.length}개 데이터포인트 추출`)
+        return dates
       }
 
       function getValues(fredArray) {
-        if (!fredArray || fredArray.length === 0) return []
-        return fredArray
+        if (!fredArray || !Array.isArray(fredArray) || fredArray.length === 0) {
+          console.warn('⚠️ getValues: 입력이 비어있거나 배열이 아님', fredArray)
+          return []
+        }
+        const values = fredArray
           .map(obs => {
-            const val = obs.value
-            if (val && val !== '.' && val !== '') return parseFloat(val)
+            const val = obs?.value
+            if (val && val !== '.' && val !== '') {
+              const num = parseFloat(val)
+              return isNaN(num) ? null : num
+            }
             return null
           })
           .filter(v => v !== null)
+        console.log(`✅ getValues: ${values.length}개 데이터포인트 추출`)
+        return values
       }
 
       // Build economic indicators object with historical dates and values for charting
