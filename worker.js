@@ -2753,7 +2753,9 @@ export default {
           CREDIT: marketData.CREDIT || {},
           BREADTH: marketData.BREADTH || {},
           MACRO_BASE: marketData.MACRO_BASE || {},
-          MACRO_INDICATORS: marketData.MACRO_INDICATORS || {}
+          MACRO_INDICATORS: marketData.MACRO_INDICATORS || {},
+          // 경제 지표 (dates + values 포함 차트용)
+          ECONOMIC_INDICATORS: marketData.ECONOMIC_INDICATORS || {}
         }
       }
       // /stock endpoint - 개별 주식 데이터
