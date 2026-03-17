@@ -396,6 +396,9 @@ export default {
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
         const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
 
+        // ✅ 거래량 (quote에서)
+        const volume = quote?.volume || 0
+
         return {
           symbol,
           price,
@@ -409,6 +412,7 @@ export default {
           operatingMargin,
           sector,
           momentum: dailyMomentum,
+          volume: volume,
           dayLow,
           dayHigh
         }
@@ -503,13 +507,13 @@ export default {
               insiderActivity: factors.insiderActivity
             },
             metrics: {
-              momentum: parseFloat(momentum.toFixed(4)),
-              volume: parseFloat(volume.toFixed(2))
+              momentum: parseFloat((factors.momentum || 0).toFixed(4)),
+              volume: factors.volume ? parseFloat(factors.volume.toFixed(2)) : 0
             },
             profile: {
               company: data.quote?.symbol || symbol,
-              sector: data.metrics?.sector || null,
-              industry: data.metrics?.industry || null
+              sector: data.quote?.sector || null,
+              industry: data.quote?.industry || null
             }
           }
         } catch (e) {
@@ -757,10 +761,12 @@ export default {
 
           const ratios = Array.isArray(data) ? data[0] : data
           return {
-            symbol: symbol,
-            priceToEarningsRatio: ratios.priceToEarningsRatio || null,
-            priceToBookRatio: ratios.priceToBookRatio || null,
-            timestamp: new Date().toISOString()
+            data: {
+              symbol: symbol,
+              priceToEarningsRatio: ratios.priceToEarningsRatio || null,
+              priceToBookRatio: ratios.priceToBookRatio || null,
+              timestamp: new Date().toISOString()
+            }
           }
         } catch (e) {
           console.error(`❌ getRatios ${symbol}:`, e.message)
@@ -869,19 +875,32 @@ export default {
 
       // Helper functions to extract dates and values from FRED observations
       function getDates(fredArray) {
-        if (!fredArray || fredArray.length === 0) return []
-        return fredArray.map(obs => obs.date)
+        if (!fredArray || !Array.isArray(fredArray) || fredArray.length === 0) {
+          console.warn('⚠️ getDates: 입력이 비어있거나 배열이 아님', fredArray)
+          return []
+        }
+        const dates = fredArray.map(obs => obs?.date).filter(d => d)
+        console.log(`✅ getDates: ${dates.length}개 데이터포인트 추출`)
+        return dates
       }
 
       function getValues(fredArray) {
-        if (!fredArray || fredArray.length === 0) return []
-        return fredArray
+        if (!fredArray || !Array.isArray(fredArray) || fredArray.length === 0) {
+          console.warn('⚠️ getValues: 입력이 비어있거나 배열이 아님', fredArray)
+          return []
+        }
+        const values = fredArray
           .map(obs => {
-            const val = obs.value
-            if (val && val !== '.' && val !== '') return parseFloat(val)
+            const val = obs?.value
+            if (val && val !== '.' && val !== '') {
+              const num = parseFloat(val)
+              return isNaN(num) ? null : num
+            }
             return null
           })
           .filter(v => v !== null)
+        console.log(`✅ getValues: ${values.length}개 데이터포인트 추출`)
+        return values
       }
 
       // Build economic indicators object with historical dates and values for charting
@@ -2790,33 +2809,46 @@ export default {
           }
         }
       }
-      // /top7 endpoint - S&P500 시총 상위 7개 (동적)
+      // /top7 endpoint - S&P500 시총 상위 7개 (동적 정렬)
       else if (pathname === "/top7") {
         try {
-          // S&P500 시총 상위 종목 (변동되므로 필요시 업데이트)
-          const top7Symbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META']
+          // S&P500 주요 대형주 풀
+          const candidateSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META', 'BRK.B', 'JNJ', 'V']
 
           // 병렬로 모든 종목 데이터 호출
           const quotes = await Promise.all(
-            top7Symbols.map(sym => getQuote(sym))
+            candidateSymbols.map(sym => getQuote(sym))
           )
 
-          // 시총 기준으로 정렬 (price * volume 근사)
-          // 참고: 정확한 시총은 marketCap 필드 필요 (FMP에서 제공)
+          // 시가총액으로 정렬 (FMP quote에서 marketCap 제공)
+          // marketCap 없으면 price * volume 근사값 사용
           const ranked = quotes
-            .map((q, idx) => ({
+            .map((q, idx) => {
+              const symbol = candidateSymbols[idx]
+              const marketCap = q?.marketCap || (q?.price && q?.volume ? q.price * q.volume : 0)
+              return {
+                symbol: symbol,
+                price: q?.price || null,
+                changePercentage: q?.changePercentage || null,
+                volume: q?.volume || null,
+                marketCap: marketCap
+              }
+            })
+            .filter(item => item.price !== null && item.marketCap > 0)
+            // 시가총액 기준 내림차순 정렬
+            .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))
+            // rank 재설정
+            .map((item, idx) => ({
               rank: idx + 1,
-              symbol: top7Symbols[idx],
-              price: q?.price || null,
-              changePercentage: q?.changePercentage || null,
-              volume: q?.volume || null
+              ...item
             }))
-            .filter(item => item.price !== null)
+            // 상위 7개만 반환
+            .slice(0, 7)
 
           response = {
             timestamp: new Date().toISOString(),
             dataType: "top7",
-            message: "S&P500 시총 상위 7개 (실시간 가격)",
+            message: "S&P500 시총 상위 7개 (실시간 시가총액 기준)",
             data: ranked
           }
         } catch (err) {
