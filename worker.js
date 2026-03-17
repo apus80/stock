@@ -318,19 +318,6 @@ export default {
             quote: quote,
             ratios: ratios,  // ✅ ratios 데이터 추가
             metrics: null  // /stable/key-metrics는 유료 플랜이므로 null로 설정
-          // 📍 최적화: 필수 2개 API만 호출 (180 호출/일)
-          // quote: 가격, key-metrics: 성장률 및 지표
-          const results = await Promise.allSettled([
-            fetchFMP(`/stable/quote?symbol=${symbol}`),
-            fetchFMP(`/stable/key-metrics?symbol=${symbol}`)
-          ])
-
-          const extract = (r) => r.status === 'fulfilled' ? r.value : null
-          const [quote, metrics] = results.map(extract)
-
-          return {
-            quote: quote ? (Array.isArray(quote) ? quote[0] : quote) : null,
-            metrics: metrics ? (Array.isArray(metrics) ? metrics[0] : metrics) : null
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
