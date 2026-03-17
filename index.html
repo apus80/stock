@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773055169 -->
+    <!-- Version: v1773055170 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5690,17 +5690,17 @@ var ECON_DATA = {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 순서대로 가져옴
             console.log('[Top7] 함수 시작');
 
-            // Step 1: 함수 시작 표시
+            // Step 1: 함수 시작 표시 (🟢 = 함수 호출됨)
             var elem1 = document.getElementById('top7_rank1');
             if (elem1) {
-                elem1.textContent = '⏳'; // 로딩 중
+                elem1.textContent = '🟢'; // 함수 호출됨 증명
             }
 
             // Step 2: fetch 호출 with timeout
             var url = WORKER_API_BASE + '/top7';
             console.log('[Top7] fetch URL=' + url);
 
-            // 🔄 Step 2.1: 표시
+            // 🔄 Step 2.1: 표시 (API 호출 시작)
             if (elem1) elem1.textContent = '🔄 API';
 
             // ✅ Proper timeout using AbortController (10초: 7개 종목 × 1.3초 + 여유)
