@@ -3787,43 +3787,43 @@ var ECON_DATA = {
             }
 
             // ════════════════════════════════════════════════════════════
-            // 통합 뉴스 검색 (국내/해외 구분 없음, 제목 + 출처만 표시)
+            // 통합 뉴스 검색 (국내/해외 구분 없음, 제목 + 출처 + 날짜 표시)
             // ════════════════════════════════════════════════════════════
             async function _nsSearchUnified(q, box, tok) {
                 var srcEl = document.getElementById('nsAllSrc');
                 function stale() { return _nsToken !== tok; }
 
                 var allNews = [];
+                var qLow = q.toLowerCase();  // 검색어 (변형 없음)
 
-                // 금융 키워드 자동 조합
-                var finWords = ['주식','증권','금융','투자','환율','채권','펀드','ETF','코스피','코스닥','나스닥','금리','stock','finance','invest'];
-                var alreadyFin = finWords.some(function(k){ return q.toLowerCase().includes(k.toLowerCase()); });
-                var optQ = alreadyFin ? q : (q + ' stock finance');
-
-                // 1순위: NewsAPI (한글 + 영어 통합 검색)
+                // 1순위: NewsAPI (제목에 검색어 포함된 것만)
                 if (NS_NEWSAPI_KEY) {
                     try {
-                        // 현재 검색어 그대로 검색
+                        // 검색어 그대로 사용 (변형 없음)
                         var nUrl = 'https://newsapi.org/v2/everything?q=' +
-                            encodeURIComponent(optQ) + '&sortBy=publishedAt&pageSize=15';
+                            encodeURIComponent(q) + '&sortBy=publishedAt&pageSize=50';
                         var ctrlNews = new AbortController();
                         setTimeout(function(){ ctrlNews.abort(); }, 8000);
                         var resNews = await fetch(nUrl + '&apiKey=' + NS_NEWSAPI_KEY, { signal: ctrlNews.signal });
                         var jsonNews = await resNews.json();
                         if (jsonNews.articles && jsonNews.articles.length) {
                             jsonNews.articles.forEach(function(a) {
-                                allNews.push({
-                                    title:       a.title || '',
-                                    source:      a.source ? a.source.name : 'NewsAPI',
-                                    url:         a.url || '',
-                                    publishedAt: a.publishedAt || new Date().toISOString()
-                                });
+                                // 제목에 검색어가 포함된 경우만 추가
+                                var titleLow = (a.title || '').toLowerCase();
+                                if (titleLow.includes(qLow)) {
+                                    allNews.push({
+                                        title:       a.title || '',
+                                        source:      a.source ? a.source.name : 'NewsAPI',
+                                        url:         a.url || '',
+                                        publishedAt: a.publishedAt || new Date().toISOString()
+                                    });
+                                }
                             });
                         }
-                    } catch(e) { console.log('NewsAPI 통합 검색 실패', e); }
+                    } catch(e) { console.log('NewsAPI 검색 실패', e); }
                 }
 
-                // 2순위: Finnhub News (금융 뉴스, 부족 시 보충)
+                // 2순위: Finnhub News (제목에 검색어 포함된 것만)
                 if (NS_FINNHUB_KEY && allNews.length < 10) {
                     try {
                         var fUrl = 'https://finnhub.io/api/v1/news?category=general&minId=0';
@@ -3832,10 +3832,10 @@ var ECON_DATA = {
                         var resFin = await fetch(fUrl + '&token=' + NS_FINNHUB_KEY, { signal: ctrlFin.signal });
                         var jsonFin = await resFin.json();
                         if (Array.isArray(jsonFin) && jsonFin.length > 0) {
-                            var qLow = optQ.toLowerCase();
                             jsonFin.forEach(function(a) {
                                 var titleLow = (a.headline || '').toLowerCase();
-                                if (titleLow.includes(qLow) || allNews.length < 8) {
+                                // 제목에 검색어가 포함된 경우만 추가
+                                if (titleLow.includes(qLow)) {
                                     allNews.push({
                                         title:       a.headline || '',
                                         source:      a.source || 'Finnhub',
@@ -3845,7 +3845,7 @@ var ECON_DATA = {
                                 }
                             });
                         }
-                    } catch(e) { console.log('Finnhub 통합 검색 실패', e); }
+                    } catch(e) { console.log('Finnhub 검색 실패', e); }
                 }
 
                 if (stale()) return;
@@ -3858,22 +3858,25 @@ var ECON_DATA = {
 
                 if (displayNews.length > 0) {
                     _nsRenderUnified(displayNews, box);
-                    if (srcEl) srcEl.textContent = '📡 출처: NewsAPI · Finnhub';
+                    if (srcEl) srcEl.textContent = '📡 출처: NewsAPI · Finnhub (Reuters = 로이터통신, AP = AP통신)';
                 } else {
                     if (stale()) return;
-                    box.innerHTML = '<p style="text-align:center;padding:20px;color:#94a3b8;">😔 검색 결과 없음<br><span style="font-size:0.8em;">더 일반적인 키워드로 시도해 보세요</span></p>';
+                    box.innerHTML = '<p style="text-align:center;padding:20px;color:#94a3b8;">😔 검색 결과 없음<br><span style="font-size:0.8em;">다른 키워드로 시도해 보세요</span></p>';
                     if (srcEl) srcEl.textContent = '';
                 }
             }
 
-            // 통합 렌더링 (제목 + 출처만 표시)
+            // 통합 렌더링 (제목 + 출처 + 날짜 표시)
             function _nsRenderUnified(newsArray, box) {
                 var html = '<ul style="list-style:none;padding:0;margin:0;">';
                 newsArray.forEach(function(news, idx) {
-                    var srcSpan = '<span style="font-size:0.75em;color:#10b981;margin-left:8px;background:#f0fdf4;padding:2px 6px;border-radius:3px;font-weight:600;">' + (news.source || 'News') + '</span>';
-                    var item = '<li style="padding:8px 0;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
-                        '<a href="' + news.url + '" target="_blank" style="color:#0f766e;text-decoration:none;font-weight:500;flex:1;font-size:0.9em;line-height:1.4;">' + (news.title || '제목 없음') + '</a>' +
-                        srcSpan +
+                    var srcSpan = '<span style="font-size:0.75em;color:#10b981;background:#f0fdf4;padding:2px 6px;border-radius:3px;font-weight:600;">' + (news.source || 'News') + '</span>';
+                    var dateObj = new Date(news.publishedAt);
+                    var dateStr = dateObj.toLocaleDateString('ko-KR') + ' ' + dateObj.getHours() + ':' + String(dateObj.getMinutes()).padStart(2, '0');
+                    var dateSpan = '<span style="font-size:0.75em;color:#64748b;">' + dateStr + '</span>';
+                    var item = '<li style="padding:10px 0;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">' +
+                        '<a href="' + news.url + '" target="_blank" style="color:#0f766e;text-decoration:none;font-weight:500;flex:1;font-size:0.9em;line-height:1.5;hover:text-decoration:underline;">' + (news.title || '제목 없음') + '</a>' +
+                        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">' + srcSpan + dateSpan + '</div>' +
                         '</li>';
                     html += item;
                 });
