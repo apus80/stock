@@ -1796,7 +1796,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {data.top_15.map((stock, idx) => (
+                                        {data.top_15.slice(0, 5).map((stock, idx) => (
                                             <tr
                                                 key={stock.symbol}
                                                 className={stock.signal === 'BREAKOUT' ? 'signal-breakout' : ''}
