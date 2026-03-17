@@ -469,10 +469,10 @@
             border: none;
         }
 
-        /* 뉴스 & 섹터 병렬 레이아웃 */
+        /* 뉴스 & 뉴스브리핑 병렬 레이아웃 */
         .news-sector-row {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
             padding: 0 20px;
             margin-bottom: 20px;
@@ -2387,21 +2387,21 @@ var ECON_DATA = {
                 </div>
             </div>
 
-            <!-- 실시간 뉴스 대시보드 -->
-            <div class="card news-dashboard" style="margin-bottom: 20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <h3 class="section-title" style="border:none; padding:0; margin:0;">📰 실시간 시장 뉴스</h3>
-                        <button id="newsLangToggle" onclick="toggleNewsLang()" style="display:inline-flex;align-items:center;gap:4px;padding:4px 14px;background:rgba(102,126,234,0.12);border:1px solid rgba(102,126,234,0.35);border-radius:20px;color:#667eea;font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all 0.2s;" title="뉴스 제목 언어 전환">🌐 English</button>
-                    </div>
-                    <button onclick="refreshNews()" class="btn-load" style="padding:4px 12px; font-size:11px;">🔄 새로고침</button>
-                </div>
-                <div class="news-grid" id="newsContainer"></div>
-            </div>
-
-            <!-- 뉴스 & 섹터 주도주 병렬 배치 영역 -->
+            <!-- 뉴스 & 뉴스브리핑 병렬 배치 영역 (좌: 실시간뉴스, 우: 브리핑) -->
             <div class="news-sector-row" data-ms="news">
-                <!-- 자동화 마켓 뉴스 카드 위치 -->
+                <!-- 좌측: 실시간 시장 뉴스 대시보드 -->
+                <div class="card news-dashboard" style="margin-bottom: 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h3 class="section-title" style="border:none; padding:0; margin:0;">📰 실시간 시장 뉴스</h3>
+                            <button id="newsLangToggle" onclick="toggleNewsLang()" style="display:inline-flex;align-items:center;gap:4px;padding:4px 14px;background:rgba(102,126,234,0.12);border:1px solid rgba(102,126,234,0.35);border-radius:20px;color:#667eea;font-size:0.8rem;cursor:pointer;white-space:nowrap;transition:all 0.2s;" title="뉴스 제목 언어 전환">🌐 English</button>
+                        </div>
+                        <button onclick="refreshNews()" class="btn-load" style="padding:4px 12px; font-size:11px;">🔄 새로고침</button>
+                    </div>
+                    <div class="news-grid" id="newsContainer"></div>
+                </div>
+
+                <!-- 우측: 자동화 마켓 뉴스 브리핑 카드 -->
                 <!-- MARKET_NEWS_CARD_START -->
             <div id="marketNewsCardArea">
                 <div class="news-card-wrapper">
