@@ -5,7 +5,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <!-- Version: v1773055167 -->
+    <!-- Version: v1773055169 -->
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -5720,9 +5720,12 @@ var ECON_DATA = {
             var url = WORKER_API_BASE + '/top7';
             console.log('[Top7] fetch URL=' + url);
 
-            // ✅ Proper timeout using AbortController
+            // 🔄 Step 2.1: 표시
+            if (elem1) elem1.textContent = '🔄 API';
+
+            // ✅ Proper timeout using AbortController (10초: 7개 종목 × 1.3초 + 여유)
             var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
+            var timeoutId = setTimeout(function() { controller.abort(); }, 10000);
 
             fetch(url, { signal: controller.signal })
                 .then(function(res) {
@@ -5731,7 +5734,11 @@ var ECON_DATA = {
 
                     // Step 2.5: HTTP 응답 상태 표시
                     if (elem1) {
-                        elem1.textContent = res.status === 200 ? '📦' : '❌ HTTP' + res.status;
+                        if (res.status === 200) {
+                            elem1.textContent = '📡 OK';
+                        } else {
+                            elem1.textContent = '❌ HTTP' + res.status;
+                        }
                     }
 
                     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -5739,6 +5746,9 @@ var ECON_DATA = {
                 })
                 .then(function(result) {
                     console.log('[Top7] JSON 파싱 완료');
+
+                    // 📦 Step 3.1: JSON 파싱 표시
+                    if (elem1) elem1.textContent = '📦 JSON';
 
                     // Step 3: 응답 구조 검증
                     var hasData = result && result.data && Array.isArray(result.data);
@@ -5749,14 +5759,14 @@ var ECON_DATA = {
                     if (!hasData || dataCount === 0) {
                         // Step 3.5: 데이터 없음
                         if (elem1) {
-                            elem1.textContent = '⚠️ EMPTY'; // 데이터 없음
+                            elem1.textContent = '⚠️ EMPTY(' + dataCount + ')'; // 데이터 없음
                         }
                         throw new Error('No data (count=' + dataCount + ')');
                     }
 
-                    // Step 4: 데이터 처리 시작
+                    // 🔧 Step 4.1: 데이터 처리 중 표시
                     if (elem1) {
-                        elem1.textContent = '🔄'; // 처리 중
+                        elem1.textContent = '🔧 (' + dataCount + ')'; // 처리 중
                     }
 
                     var loaded = 0;

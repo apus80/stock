@@ -2805,8 +2805,9 @@ export default {
           console.log(`[/top7] 시작: ${topSymbols.length}개 종목 조회`)
 
           // 1️⃣ 실시간 가격 데이터 호출 (일부 실패해도 진행)
+          // ⏱️ timeout: 8초 (클라이언트 timeout은 5초, 여유 있게)
           const quoteResults = await Promise.allSettled(
-            topSymbols.map(sym => getQuote(sym))
+            topSymbols.map(sym => getQuote(sym, 8000))
           )
 
           // DEBUG: 각 종목별 결과 확인
