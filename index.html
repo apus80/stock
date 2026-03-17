@@ -2262,17 +2262,19 @@ var ECON_DATA = {
                 <!-- 글로벌 시장 핵심 지표 -->
                 <div class="card macro-card">
                     <h3 class="section-title">📊 글로벌 시장 핵심 지표</h3>
-                    <div class="tradingview-widget-container" style="height: 550px;">
+                    <div class="tradingview-widget-container" style="height: 330px;">
                         <div class="tradingview-widget-container__widget"></div>
                         <script type="text/x-tradingview"
                             data-src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" >
                                 {
-                                    "colorTheme": "light", "dateRange": "12M", "showChart": true, "locale": "ko", "width": "100%", "height": 550,
-                                        "largeChartUrl": "", "isTransparent": false, "showSymbolLogo": true,
+                                    "colorTheme": "light", "dateRange": "12M", "showChart": true, "locale": "ko", "width": "100%", "height": 330,
+                                        "largeChartUrl": "", "isTransparent": false, "showSymbolLogo": false,
                                             "tabs": [
                                                 { "name": "미국 지수", "symbols": [{ "s": "NASDAQ:QQQ", "d": "나스닥 100" }, { "s": "AMEX:SPY", "d": "S&P 500" }, { "s": "FOREXCOM:DJI", "d": "다우 존스" }] },
                                                 { "name": "한국/VIX", "symbols": [{ "s": "KRX:KOSPI", "d": "코스피" }, { "s": "KRX:KOSDAQ", "d": "코스닥" }, { "s": "CBOE:VIX", "d": "VIX 공포지수" }] },
-                                                { "name": "글로벌/선물", "symbols": [{ "s": "CME_MINI:NQ1!", "d": "나스닥 선물" }, { "s": "BINANCE:BTCUSDT", "d": "비트코인" }, { "s": "OANDA:XAUUSD", "d": "금 (골드)" }] }
+                                                { "name": "FX", "symbols": [{ "s": "FX:KRWUSD", "d": "원/달러" }, { "s": "FX:JPYUSD", "d": "엔/달러" }] },
+                                                { "name": "상품", "symbols": [{ "s": "TVC:GOLD", "d": "금" }, { "s": "TVC:SILVER", "d": "은" }, { "s": "USOIL", "d": "WTI유" }] },
+                                                { "name": "암호", "symbols": [{ "s": "BINANCE:BTCUSDT", "d": "비트코인" }, { "s": "BINANCE:ETHUSDT", "d": "이더리움" }] }
                                             ]
                                 }
                             </script>
@@ -3383,12 +3385,6 @@ var ECON_DATA = {
                 // 5. MK 뉴스 기본 카테고리(증권) 표시
                 if (typeof mkShow === 'function') mkShow('증권');
 
-                // 6. 뉴스 검색 입력 이벤트 (별도 DOMContentLoaded 제거 → 여기서 통합 등록)
-                var nsInp = document.getElementById('nsInput');
-                if (nsInp) nsInp.addEventListener('input', function() {
-                    clearTimeout(_nsDebounce);
-                    _nsDebounce = setTimeout(_nsDoSearch, 500);
-                });
 
                 console.log("✅ 모든 데이터 로딩 완료");
             }
@@ -3437,7 +3433,7 @@ var ECON_DATA = {
 
             /* ── 결과 최소화/펼치기 토글 ── */
             function toggleResultMin(btn) {
-                var card = btn.closest('.co-card, .search-result, #nsContainer');
+                var card = btn.closest('.co-card, .search-result');
                 var body = card ? card.querySelector('.result-body') : null;
                 if (!body) return;
                 var isMin = body.classList.contains('minimized');
