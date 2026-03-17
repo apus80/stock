@@ -5709,105 +5709,87 @@ var ECON_DATA = {
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 순서대로 가져옴
             console.log('[Top7] /top7 엔드포인트 호출 시작');
-            var debugInfo = '';
 
             fetch(WORKER_API_BASE + '/top7')
                 .then(function(res) {
-                    debugInfo = 'HTTP ' + res.status;
-                    console.log('[Top7] Response status:', res.status, res.statusText);
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     return res.json();
                 })
                 .then(function(result) {
                     console.log('[Top7] API 응답:', result);
 
-                    if (!result) {
-                        console.warn('[Top7] result is null');
-                        debugInfo += ' | result=null';
-                        throw new Error('result is null');
+                    // 응답을 간단하게 표시
+                    var info = 'dataType=' + (result?.dataType || '?') +
+                               ' count=' + (result?.count || '0');
+
+                    // DOM에 응답 정보 표시 (top7_rank1 아래)
+                    var elem = document.getElementById('top7_rank1');
+                    if (elem && elem.parentElement) {
+                        var infoDiv = document.createElement('div');
+                        infoDiv.style.cssText = 'font-size:10px;color:#0f0;margin-top:6px';
+                        infoDiv.textContent = '[INFO] ' + info;
+                        elem.parentElement.insertAdjacentElement('afterend', infoDiv);
                     }
 
-                    debugInfo += ' | type=' + result.dataType + ' | count=' + result.count;
-
-                    // ✅ 응답 구조 확인: result.data가 배열인지 체크
-                    var dataArray = result.data;
-                    if (!Array.isArray(dataArray)) {
-                        console.warn('[Top7] result.data가 배열이 아님:', typeof dataArray);
-                        debugInfo += ' | ERROR:data_not_array';
-                        throw new Error('data is not array');
+                    if (!result || !result.data || !Array.isArray(result.data)) {
+                        throw new Error('Invalid response structure');
                     }
 
-                    if (dataArray.length === 0) {
-                        console.warn('[Top7] data 배열이 비어있음');
-                        debugInfo += ' | ERROR:data_empty';
-                        throw new Error('data is empty');
+                    if (result.data.length === 0) {
+                        throw new Error('Data array is empty (count=0)');
                     }
 
-                    console.log('[Top7] 데이터 처리 시작, 항목 수:', dataArray.length);
-
-                    // ✅ 시총순 데이터를 순위별 ID에 매핑 (1위 → top7_rank1, 2위 → top7_rank2, ...)
-                    var loadedCount = 0;
-                    dataArray.forEach(function(item, idx) {
+                    // 데이터 처리
+                    var loaded = 0;
+                    result.data.forEach(function(item, idx) {
                         var rank = idx + 1;
-                        if (rank > 7) return; // 7개 초과 방지
+                        if (rank > 7) return;
 
                         var ticker = (item.symbol || '').toUpperCase();
                         var rankId = 'top7_rank' + rank;
                         var rankLabelId = rankId + '_label';
-                        var price = item.price;
-                        var changePercentage = item.changePercentage;
 
-                        console.log(`  [Rank ${rank}] ${ticker} - price: ${price}, chg: ${changePercentage}`);
-
-                        // 라벨 업데이트 (1. NVDA, 2. MSFT, ...)
+                        // 라벨 업데이트
                         var labelElem = document.getElementById(rankLabelId);
                         if (labelElem) {
                             labelElem.textContent = rank + '. ' + ticker;
                         }
 
                         // 가격 설정
-                        var priceElem = document.getElementById(rankId);
-                        if (priceElem && price !== null && price !== undefined && !isNaN(price)) {
-                            console.log(`    ✅ 가격 설정: ${rankId} = ${price}`);
-                            imdSetValue(rankId, price, 2);
-                            loadedCount++;
-                        } else if (priceElem) {
-                            console.log(`    ⚠️ 가격값 없음 또는 invalid: ${rankId}`);
+                        if (item.price !== null && item.price !== undefined && !isNaN(item.price)) {
+                            imdSetValue(rankId, item.price, 2);
+                            loaded++;
+                        } else {
                             imdSetValue(rankId, '-', 0);
                         }
 
                         // 등락률 설정
-                        if (changePercentage !== null && changePercentage !== undefined && !isNaN(changePercentage)) {
-                            console.log(`    ✅ 등락률 설정: chg-${rankId} = ${changePercentage}%`);
-                            imdSetChange(rankId, changePercentage, 'pct');
+                        if (item.changePercentage !== null && item.changePercentage !== undefined) {
+                            imdSetChange(rankId, item.changePercentage, 'pct');
                         }
                     });
 
-                    debugInfo += ' | loaded=' + loadedCount;
-                    console.log('[Top7] 완료:', debugInfo);
+                    console.log('[Top7] 완료: ' + loaded + '/' + result.data.length);
                 })
                 .catch(function(err) {
                     console.error('[Top7] 에러:', err.message);
-                    debugInfo += ' | ERR:' + (err.message || 'unknown');
 
-                    // ✅ DOM에 에러 표시 (모바일에서 볼 수 있도록)
+                    // ✅ 에러를 DOM에 표시 (모바일용)
                     for (var i = 1; i <= 7; i++) {
                         var elem = document.getElementById('top7_rank' + i);
                         if (elem) {
-                            elem.innerText = '✗';  // ✗ 표시 (fetch 실패)
+                            elem.innerText = '✗';
                         }
                     }
 
-                    // 디버그 정보를 화면에 표시 (모바일 진단용)
-                    var debugElem = document.getElementById('top7_rank1');
-                    if (debugElem) {
-                        var parent = debugElem.closest('.card');
-                        if (parent) {
-                            var debugDiv = document.createElement('div');
-                            debugDiv.style.cssText = 'font-size:11px;color:#f00;margin-top:8px;padding:4px;background:#1a1a1a;border:1px solid #f00';
-                            debugDiv.textContent = 'DEBUG: ' + debugInfo;
-                            parent.appendChild(debugDiv);
-                        }
+                    // 에러 메시지 표시
+                    var errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = 'font-size:10px;color:#f00;margin-top:6px;padding:4px;background:#1a1a1a';
+                    errorDiv.textContent = '[ERROR] ' + err.message;
+
+                    var firstElem = document.getElementById('top7_rank1');
+                    if (firstElem && firstElem.parentElement) {
+                        firstElem.parentElement.insertAdjacentElement('afterend', errorDiv);
                     }
                 });
         }
