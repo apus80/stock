@@ -699,10 +699,12 @@
         }
 
         .news-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            display: flex;
+            gap: 15px;
             margin-top: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            scroll-behavior: smooth;
         }
 
         .news-item {
@@ -710,6 +712,8 @@
             border-radius: var(--radius-small);
             border: 1px solid #edf2f7;
             transition: border-color 0.2s, background 0.2s;
+            flex-shrink: 0;
+            min-width: 300px;
         }
 
         @media (hover: hover) {
@@ -1787,6 +1791,20 @@
                 </div>
             </div>
 
+            <!-- SAVE TICKER 프로모션 (상단) -->
+            <div
+                style="margin-top: 20px; text-align: center; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px dashed #667eea;">
+                <p style="font-size: 0.85em; color: #4a5568; margin-bottom: 10px; font-weight: 600;">
+                    역시 미증시는 오선님!!
+                </p>
+                <a href="https://saveticker.com/" target="_blank" rel="noopener noreferrer"
+                    style="display:inline-block; padding:8px 25px; background:var(--bg-gradient); color:#fff; text-decoration:none; border-radius:20px; font-weight:700; font-size:0.9em; transition:all 0.3s; box-shadow:var(--shadow-main);"
+                    onmouseover="this.style.transform='translateY(-2px)';"
+                    onmouseout="this.style.transform='translateY(0)';" id="save-link-btn">
+                    SAVE
+                </a>
+            </div>
+
             <!-- ── 모바일 뒤로가기 버튼 (섹션 뷰 시 표시) ── -->
             <button id="msBackBtn" class="ms-back-btn ms-hidden" onclick="backToMobileLanding()">
                 ← 홈으로
@@ -2390,19 +2408,6 @@ var ECON_DATA = {
                     </div>
                     <div class="news-grid" id="newsContainer"></div>
 
-                    <!-- SAVE 뉴스링크 복구 -->
-                    <div
-                        style="margin-top: 15px; text-align: center; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px dashed #667eea;">
-                        <p style="font-size: 0.85em; color: #4a5568; margin-bottom: 10px; font-weight: 600;">
-                            🔎 정밀 티커 분석이 필요하다면?
-                        </p>
-                        <a href="https://saveticker.com/" target="_blank" rel="noopener noreferrer"
-                            style="display:inline-block; padding:8px 25px; background:var(--bg-gradient); color:#fff; text-decoration:none; border-radius:20px; font-weight:700; font-size:0.9em; transition:all 0.3s; box-shadow:var(--shadow-main);"
-                            onmouseover="this.style.transform='translateY(-2px)';"
-                            onmouseout="this.style.transform='translateY(0)';" id="save-link-btn">
-                            🚀 SaveTicker 방문
-                        </a>
-                    </div>
                 </div>
 
                 <!-- 자동화 마켓 뉴스 카드 위치 -->
