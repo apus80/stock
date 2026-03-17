@@ -203,6 +203,9 @@ export default {
           }
           const obs = j.observations || []
           if (obs.length > 0) {
+            console.log(`✅ FRED ${series}: ${obs.length}개 데이터포인트`)
+          } else {
+            console.warn(`⚠️ FRED ${series}: 데이터 없음 (observations=[])`)
           // console.log(`✅ FRED ${series}: ${obs.length} obs, latest=${obs[obs.length-1].value}`)
           }
           return obs
@@ -263,9 +266,9 @@ export default {
         "PCEPI": { divisor: 1, unit: "idx" },  // PCE Inflation Index
         "VIXCLS": { divisor: 1, unit: "idx" },  // VIX from FRED
         "BAMLH0A0HYM2": { divisor: 1, unit: "%" },  // High Yield OAS Spread
-        "MMNRNJ": { divisor: 1, unit: "idx" },  // ✅ Manufacturing PMI (index)
-        "IPMANSM": { divisor: 1, unit: "idx" },  // ✅ Services PMI (ISM Non-Mfg) (index)
-        "RSXFS": { divisor: 1, unit: "%" }      // ✅ Retail Sales ex-Auto (%)
+        "NAPM": { divisor: 1, unit: "idx" },       // ✅ Manufacturing PMI (index)
+        "NAPMNOI": { divisor: 1, unit: "idx" },    // ✅ Services PMI (index)
+        "RSAFS": { divisor: 1, unit: "$" }         // ✅ Advance Retail Sales (billions) - YoY 계산용
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
@@ -893,6 +896,44 @@ export default {
         return rawValue / conversion.divisor
       }
 
+      // ✅ Retail Sales YoY 배열 계산: 각 포인트에서 ((current - 12M ago) / 12M ago) * 100
+      function calculateRetailYoYArray(rsafsArray) {
+        if (!rsafsArray || rsafsArray.length < 13) return []
+
+        const yoyValues = []
+        const values = getValues(rsafsArray)  // 숫자 배열로 변환
+
+        for (let i = 0; i < values.length; i++) {
+          const current = values[i]
+          const lastYear = values[i - 12]  // 12개월 전 값
+
+          if (current !== null && lastYear !== null && lastYear !== 0) {
+            const yoy = ((current - lastYear) / lastYear) * 100
+            yoyValues.push(parseFloat(yoy.toFixed(2)))
+          } else {
+            yoyValues.push(null)
+          }
+        }
+
+        return yoyValues
+      }
+
+      // ✅ Retail Sales 최신 YoY 단일값 계산: ((current - 12M ago) / 12M ago) * 100
+      function calculateRetailYoY(rsafsArray) {
+        if (!rsafsArray || rsafsArray.length < 13) return null
+
+        const values = getValues(rsafsArray)
+        const current = values[values.length - 1]
+        const lastYear = values[values.length - 13]
+
+        if (current !== null && lastYear !== null && lastYear !== 0) {
+          const yoy = ((current - lastYear) / lastYear) * 100
+          return parseFloat(yoy.toFixed(2))
+        }
+
+        return null
+      }
+
       // 📦 캐싱: 60초 내 중복 호출 방지
       let cachedMarketData = null
       let cacheTimestamp = 0
@@ -974,7 +1015,8 @@ export default {
         const svcPmiDates = getDates(svcPmi)
         const svcPmiValues = getValues(svcPmi)
         const retailDates = getDates(retail)
-        const retailValues = getValues(retail)
+        // ✅ Retail Sales를 YoY%로 계산 (현재 - 12개월 전) / 12개월 전 × 100
+        const retailValues = calculateRetailYoYArray(retail)
 
         // Calculate spread (10Y - 2Y)
         const spreadDates = dgs10Dates
@@ -1244,10 +1286,10 @@ export default {
           getQuote("USDJPY"),  // USD/JPY
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),  // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
-          // ISM PMI (FRED에서 가져오기)
-          fredGet("MMNRNJ"),   // ISM Manufacturing PMI
-          fredGet("IPMANSM"),  // ✅ ISM Services (Non-Manufacturing) PMI
-          fredGet("RSXFS")     // ✅ Retail Sales ex-Auto
+          // ISM PMI & Retail (FRED에서 가져오기)
+          fredGet("NAPM"),     // ✅ Manufacturing PMI (NAPM)
+          fredGet("NAPMNOI"),  // ✅ Services PMI (NAPMNOI)
+          fredGet("RSAFS")     // ✅ Advance Retail Sales (월간) - YoY 계산용
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
@@ -1255,23 +1297,11 @@ export default {
         const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi, svcPmi, retail] = results.map(extract)
 
         // 데이터 로깅
-          // console.log(`\n📊 ===== API 호출 결과 요약 =====`)
-          // console.log(`📈 미국 주식:`)
-          // console.log(`   SPY: ${spy?.price || '⚠️ 실패'} (change: ${spy?.changePercentage || '⚠️'}%)`)
-          // console.log(`   QQQ: ${qqq?.price || '⚠️ 실패'} (change: ${qqq?.changePercentage || '⚠️'}%)`)
-          // console.log(`   DIA: ${dia?.price || '⚠️ 실패'} (change: ${dia?.changePercentage || '⚠️'}%)`)
-          // console.log(`📊 섹터:`)
-          // console.log(`   XLK: ${xlk?.price || '⚠️ 실패'}, XLF: ${xlf?.price || '⚠️'}, XLE: ${xle?.price || '⚠️'}, XLV: ${xlv?.price || '⚠️'}`)
-          // console.log(`   XLY: ${xly?.price || '⚠️ 실패'}, XLI: ${xli?.price || '⚠️'}, XLU: ${xlu?.price || '⚠️'}, XLRE: ${xlre?.price || '⚠️'}`)
-          // console.log(`💰 채권 & 광범위:`)
-          // console.log(`   HYG: ${hyg?.price || '⚠️ 실패'}, LQD: ${lqd?.price || '⚠️'}, VTI: ${vti?.price || '⚠️'}, TLT: ${tlt?.price || '⚠️'}`)
-          // console.log(`🇰🇷 한국 시장 (FMP):`)
-          // console.log(`   EWY: ${ewy?.price || '⚠️ 실패'} (change: ${ewy?.changePercentage || '⚠️'}%)`)
-          // console.log(`🪙 암호화폐 (Binance):`)
-          // console.log(`   BTC: ${btc?.price || '⚠️ 실패'}, ETH: ${eth?.price || '⚠️'}, SOL: ${sol?.price || '⚠️'}`)
-          // console.log(`📊 FRED 경제지표:`)
-          // console.log(`   WALCL: ${fed?.length > 0 ? '✅' : '⚠️ 실패'}, UNRATE: ${unrate?.length > 0 ? '✅' : '⚠️'}, CPI: ${cpi?.length > 0 ? '✅' : '⚠️'}`)
-          // console.log(`================================\n`)
+          console.log(`\n📊 ===== FRED 데이터 상태 =====`)
+          console.log(`   MFG_PMI (NAPM): ${mfgPmi?.length || 0}개 포인트`)
+          console.log(`   SVC_PMI (NAPMNOI): ${svcPmi?.length || 0}개 포인트`)
+          console.log(`   RETAIL (RSAFS): ${retail?.length || 0}개 포인트 → YoY 계산 중`)
+          console.log(`================================\n`)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
@@ -1415,9 +1445,9 @@ export default {
             INDUSTRIAL_PRODUCTION: indproVal,
             NONFARM_PAYROLLS: payelmsVal,
             PCE_INFLATION: pcepilfeVal,
-            MFG_PMI: convertFredValue("MMNRNJ", getLatestValue(mfgPmi)),  // ✅ Manufacturing PMI (출처: FRED MMNRNJ)
-            SVC_PMI: convertFredValue("IPMANSM", getLatestValue(svcPmi)),  // ✅ Services PMI (출처: FRED IPMANSM)
-            RETAIL_SALES: convertFredValue("RSXFS", getLatestValue(retail))  // ✅ Retail Sales YoY (출처: FRED RSXFS)
+            MFG_PMI: convertFredValue("NAPM", getLatestValue(mfgPmi)),      // ✅ Manufacturing PMI (출처: FRED NAPM)
+            SVC_PMI: convertFredValue("NAPMNOI", getLatestValue(svcPmi)),  // ✅ Services PMI (출처: FRED NAPMNOI)
+            RETAIL_SALES: calculateRetailYoY(retail)                       // ✅ Retail Sales YoY (출처: FRED RSAFS, YoY 계산)
           },
           // Economic Indicators with historical chart data (dates + values)
           ECONOMIC_INDICATORS: economicIndicators
