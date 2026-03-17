@@ -2800,12 +2800,20 @@ export default {
         try {
           // ✅ 최신 시총순위 (2026년 기준)
           // 출처: FMP API /stable/quote (무료 플랜 확인됨)
-          const topSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'BRK.B']
+          const topSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META']
+
+          console.log(`[/top7] 시작: ${topSymbols.length}개 종목 조회`)
 
           // 1️⃣ 실시간 가격 데이터 호출
           const quoteResults = await Promise.all(
             topSymbols.map(sym => getQuote(sym))
           )
+
+          // DEBUG: 각 종목별 결과 확인
+          quoteResults.forEach((q, idx) => {
+            const sym = topSymbols[idx]
+            console.log(`   [${sym}] ${q ? `✅ price=${q.price}` : '❌ null'}`)
+          })
 
           // 2️⃣ 데이터 변환 (null 체크)
           const data = quoteResults
@@ -2827,7 +2835,7 @@ export default {
             data: data
           }
 
-          console.log(`[/top7] ${data.length}개 종목 로드됨`)
+          console.log(`[/top7] ✅ ${data.length}/${topSymbols.length}개 종목 로드됨`)
         } catch (err) {
           console.error('[/top7] Error:', err.message)
           response = {
