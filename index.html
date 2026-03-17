@@ -5708,44 +5708,52 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 순서대로 가져옴
-            console.log('[Top7] imdLoadTop7 함수 시작!');
+            console.log('[Top7] 함수 시작');
 
-            // 임시 마커 표시
+            // Step 1: 함수 시작 표시
             var elem1 = document.getElementById('top7_rank1');
             if (elem1) {
-                elem1.textContent = '⏳'; // 로딩 중 표시
+                elem1.textContent = '⏳'; // 로딩 중
             }
 
-            console.log('[Top7] fetch 호출 직전, URL=' + WORKER_API_BASE + '/top7');
+            // Step 2: fetch 호출
+            var url = WORKER_API_BASE + '/top7';
+            console.log('[Top7] fetch URL=' + url);
 
-            fetch(WORKER_API_BASE + '/top7')
+            fetch(url, { timeout: 5000 })
                 .then(function(res) {
-                    console.log('[Top7] then1: HTTP ' + res.status);
+                    console.log('[Top7] fetch 응답: HTTP ' + res.status);
+
+                    // Step 2.5: HTTP 응답 상태 표시
+                    if (elem1) {
+                        elem1.textContent = res.status === 200 ? '📦' : '❌';
+                    }
+
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     return res.json();
                 })
                 .then(function(result) {
-                    console.log('[Top7] then2: result received', result);
+                    console.log('[Top7] JSON 파싱 완료');
 
-                    // 응답을 간단하게 표시
-                    var info = 'DT=' + (result?.dataType || '?') +
-                               ' cnt=' + (result?.count || '0');
+                    // Step 3: 응답 구조 검증
+                    var hasData = result && result.data && Array.isArray(result.data);
+                    var dataCount = (result && result.data) ? result.data.length : 0;
 
-                    console.log('[Top7] then2: info=' + info);
+                    console.log('[Top7] dataCount=' + dataCount);
 
-                    if (!result || !result.data || !Array.isArray(result.data)) {
-                        console.warn('[Top7] Invalid structure');
-                        throw new Error('Invalid response structure');
+                    if (!hasData || dataCount === 0) {
+                        // Step 3.5: 데이터 없음
+                        if (elem1) {
+                            elem1.textContent = '⚠️'; // 데이터 없음
+                        }
+                        throw new Error('No data (count=' + dataCount + ')');
                     }
 
-                    if (result.data.length === 0) {
-                        console.warn('[Top7] Empty data');
-                        throw new Error('Data array is empty');
+                    // Step 4: 데이터 처리 시작
+                    if (elem1) {
+                        elem1.textContent = '🔄'; // 처리 중
                     }
 
-                    console.log('[Top7] Processing ' + result.data.length + ' items');
-
-                    // 데이터 처리
                     var loaded = 0;
                     result.data.forEach(function(item, idx) {
                         var rank = idx + 1;
@@ -5754,8 +5762,9 @@ var ECON_DATA = {
                         var ticker = (item.symbol || '').toUpperCase();
                         var rankId = 'top7_rank' + rank;
                         var rankLabelId = rankId + '_label';
+                        var price = item.price;
 
-                        console.log('[Top7] [' + rank + '] ' + ticker + ' price=' + item.price);
+                        console.log('[Top7] [' + rank + '] ' + ticker + ' = ' + price);
 
                         // 라벨 업데이트
                         var labelElem = document.getElementById(rankLabelId);
@@ -5764,8 +5773,8 @@ var ECON_DATA = {
                         }
 
                         // 가격 설정
-                        if (item.price !== null && item.price !== undefined && !isNaN(item.price)) {
-                            imdSetValue(rankId, item.price, 2);
+                        if (price !== null && price !== undefined && !isNaN(price)) {
+                            imdSetValue(rankId, price, 2);
                             loaded++;
                         } else {
                             imdSetValue(rankId, '-', 0);
@@ -5777,15 +5786,24 @@ var ECON_DATA = {
                         }
                     });
 
-                    console.log('[Top7] Success: loaded ' + loaded + ' items');
+                    // Step 5: 완료
+                    console.log('[Top7] 완료: ' + loaded + '/' + dataCount);
+                    if (elem1) {
+                        elem1.textContent = loaded > 0 ? '✅' : '⚠️';
+                    }
                 })
                 .catch(function(err) {
-                    console.error('[Top7] CATCH ERROR:', err.message);
+                    console.error('[Top7] ERROR:', err.message);
 
-                    // ✅ 에러를 DOM에 표시
+                    // 에러 표시
+                    if (elem1) {
+                        elem1.textContent = '❌';
+                    }
+
+                    // 모든 항목에 에러 표시
                     for (var i = 1; i <= 7; i++) {
                         var elem = document.getElementById('top7_rank' + i);
-                        if (elem) {
+                        if (elem && i > 1) {
                             elem.innerText = '✗';
                         }
                     }
