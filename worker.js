@@ -2795,33 +2795,39 @@ export default {
           }
         }
       }
-      // /top7 endpoint - S&P500 시총 상위 7개 (가격 기준)
+      // /top7 endpoint - 시총 상위 7개 (실시간 가격)
       else if (pathname === "/top7") {
         try {
-          // ✅ 실시간 시가총액 상위 7개 (고정된 주요 대형주)
+          // ✅ 최신 시총순위 (2026년 기준)
           // 출처: FMP API /stable/quote (무료 플랜 확인됨)
-          const topSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META']
+          const topSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'BRK.B']
 
-          // 1️⃣ 실시간 가격 데이터만 호출
+          // 1️⃣ 실시간 가격 데이터 호출
           const quoteResults = await Promise.all(
             topSymbols.map(sym => getQuote(sym))
           )
 
-          // 2️⃣ 데이터 변환
-          const data = quoteResults.map((q, idx) => ({
-            rank: idx + 1,
-            symbol: topSymbols[idx],
-            price: q?.price || null,
-            changePercentage: q?.changePercentage || null,
-            volume: q?.volume || null
-          }))
+          // 2️⃣ 데이터 변환 (null 체크)
+          const data = quoteResults
+            .map((q, idx) => ({
+              rank: idx + 1,
+              symbol: topSymbols[idx],
+              price: q && q.price ? parseFloat(q.price.toFixed(2)) : null,
+              changePercentage: q && q.changePercentage ? parseFloat(q.changePercentage.toFixed(2)) : null,
+              volume: q?.volume || null
+            }))
+            .filter(item => item.price !== null)  // 데이터 없는 항목 제외
 
+          // 3️⃣ 응답
           response = {
             timestamp: new Date().toISOString(),
             dataType: "top7",
-            message: "S&P500 시총 상위 7개 (FMP 실시간 가격)",
+            message: "시총 상위 7개 (FMP 실시간 가격)",
+            count: data.length,
             data: data
           }
+
+          console.log(`[/top7] ${data.length}개 종목 로드됨`)
         } catch (err) {
           console.error('[/top7] Error:', err.message)
           response = {
