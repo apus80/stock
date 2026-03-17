@@ -5687,7 +5687,7 @@ var ECON_DATA = {
          * 카드 3 – 시총 Top 7 (동적 - Worker /top7 엔드포인트)
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
-            // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
+            // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴 (시총순 정렬)
             console.log('[Top7] /top7 엔드포인트 호출 시작');
             fetch(WORKER_API_BASE + '/top7')
                 .then(function(res) {
@@ -5700,10 +5700,21 @@ var ECON_DATA = {
                     console.log('[Top7] result.data 타입:', typeof result.data, '배열?', Array.isArray(result.data));
                     if (result && result.data && Array.isArray(result.data)) {
                         console.log('[Top7] 데이터 처리 시작, 항목 수:', result.data.length);
+                        // ✅ 시총순 정렬된 데이터를 HTML의 고정 순서대로 배치
+                        var htmlSlots = ['top7_msft', 'top7_aapl', 'top7_nvda', 'top7_googl', 'top7_amzn', 'top7_tsla', 'top7_meta'];
                         result.data.forEach(function(item, idx) {
-                            var ticker = (item.symbol || '').toLowerCase();
-                            var idPrefix = 'top7_' + ticker;
-                            console.log(`  [${idx}] ${ticker} - id: ${idPrefix}, price: ${item.price}`);
+                            if (idx >= htmlSlots.length) return; // 7개 초과 방지
+
+                            var idPrefix = htmlSlots[idx];
+                            var rank = idx + 1;
+                            var ticker = (item.symbol || '').toUpperCase();
+                            console.log(`  [Rank ${rank}] ${ticker} - id: ${idPrefix}, price: ${item.price}, mc: ${item.marketCap}`);
+
+                            // HTML 종목명 업데이트 (시총 기준 순서 표시)
+                            var labelElem = document.querySelector(`#${idPrefix}`).parentElement.parentElement.querySelector('span:first-child');
+                            if (labelElem) {
+                                labelElem.textContent = rank + '. ' + ticker;
+                            }
 
                             // 가격 설정
                             if (item.price !== null && item.price !== undefined) {
