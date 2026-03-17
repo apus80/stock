@@ -1810,6 +1810,180 @@ export default {
         }
       }
 
+      // =============================
+      // BREAKOUT DISCOVERY ENGINE
+      // 📍 단기 돌파 후보 발굴 (1~3주, 목표 20%)
+      // 출처: FMP API /stable/quote (무료 플랜)
+      // =============================
+
+      async function getFullQuote(sym, timeoutMs = 10000) {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), timeoutMs)
+        try {
+          const url = `https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`
+          const r = await fetch(url, { signal: controller.signal })
+          if (!r.ok) return null
+          const j = await r.json()
+          if (!j || (Array.isArray(j) && j.length === 0)) return null
+          const q = Array.isArray(j) ? j[0] : j
+          if (!q || !q.price) return null
+          return q
+        } catch (e) {
+          return null
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+
+      function calculateBreakoutScore(q) {
+        if (!q || !q.price) return null
+
+        const price = q.price
+        const yearHigh = q.yearHigh || price
+        const yearLow = q.yearLow || price * 0.7
+        const volume = q.volume || 0
+        const avgVolume = q.avgVolume || volume || 1
+        const dayLow = q.dayLow || price
+        const dayHigh = q.dayHigh || price
+        const priceAvg50 = q.priceAvg50 || price
+        const priceAvg200 = q.priceAvg200 || price
+        const changePct = q.changesPercentage || q.changePercentage || 0
+        const pe = q.pe || 0
+        const marketCap = q.marketCap || 0
+        const open = q.open || price
+        const prevClose = q.previousClose || price
+
+        // 1. 52주 고점 근접도 (20%) - 고점 대비 90%+ = 돌파 직전
+        const highPct = yearHigh > 0 ? (price / yearHigh) * 100 : 50
+        const highScore = Math.max(0, Math.min(100, (highPct - 70) * (100 / 30)))
+
+        // 2. 거래량 급증 비율 (20%) - 평균 대비 1.5배 이상이면 기관 매집
+        const volRatio = avgVolume > 0 ? volume / avgVolume : 1
+        const volScore = Math.max(0, Math.min(100, (volRatio - 0.5) * 100))
+
+        // 3. 단기 모멘텀 (15%) - 일일 변화율 기반
+        const momScore = Math.max(0, Math.min(100, (changePct + 5) * 10))
+
+        // 4. 50일 이평선 돌파 (15%) - 가격 > 50MA = 강세 추세
+        const ma50Ratio = priceAvg50 > 0 ? price / priceAvg50 : 1
+        const ma50Score = Math.max(0, Math.min(100, (ma50Ratio - 0.9) * 500))
+
+        // 5. 골든크로스 시그널 (10%) - 50MA > 200MA = 장기 강세 전환
+        const goldenRatio = priceAvg200 > 0 ? priceAvg50 / priceAvg200 : 1
+        const goldenScore = Math.max(0, Math.min(100, (goldenRatio - 0.95) * 1000))
+
+        // 6. 52주 범위 내 위치 (10%) - 연간 범위 상위권
+        const yearRange = yearHigh - yearLow
+        const yearPosition = yearRange > 0 ? (price - yearLow) / yearRange * 100 : 50
+        const rangeScore = Math.max(0, Math.min(100, yearPosition))
+
+        // 7. 일중 매수 압력 (10%) - 장중 저가 대비 현재가 위치
+        const dayRange = dayHigh - dayLow
+        const dayPosition = dayRange > 0 ? (price - dayLow) / dayRange * 100 : 50
+        const pressureScore = Math.max(0, Math.min(100, dayPosition))
+
+        // 종합 Breakout Score (가중합)
+        const totalScore =
+          highScore * 0.20 +
+          volScore * 0.20 +
+          momScore * 0.15 +
+          ma50Score * 0.15 +
+          goldenScore * 0.10 +
+          rangeScore * 0.10 +
+          pressureScore * 0.10
+
+        // 시그널 분류
+        let signal, signalLabel
+        if (totalScore >= 75) { signal = 'BREAKOUT'; signalLabel = '돌파 임박' }
+        else if (totalScore >= 60) { signal = 'ACCUMULATION'; signalLabel = '매집 단계' }
+        else if (totalScore >= 45) { signal = 'NEUTRAL'; signalLabel = '중립' }
+        else { signal = 'WEAKNESS'; signalLabel = '약세' }
+
+        return {
+          symbol: q.symbol || q.name,
+          name: q.name || q.symbol,
+          price: parseFloat(price.toFixed(2)),
+          change: parseFloat(changePct.toFixed(2)),
+          breakoutScore: parseFloat(totalScore.toFixed(1)),
+          signal,
+          signalLabel,
+          signals: {
+            highProximity: parseFloat(highPct.toFixed(1)),
+            volumeRatio: parseFloat(volRatio.toFixed(2)),
+            momentum: parseFloat(changePct.toFixed(2)),
+            ma50Above: price > priceAvg50,
+            goldenCross: priceAvg50 > priceAvg200,
+            yearRangePosition: parseFloat(yearPosition.toFixed(1)),
+            buyPressure: parseFloat(dayPosition.toFixed(1))
+          },
+          technicals: {
+            yearHigh: parseFloat(yearHigh.toFixed(2)),
+            yearLow: parseFloat(yearLow.toFixed(2)),
+            priceAvg50: parseFloat(priceAvg50.toFixed(2)),
+            priceAvg200: parseFloat(priceAvg200.toFixed(2)),
+            volume,
+            avgVolume,
+            pe: pe ? parseFloat(pe.toFixed(1)) : null,
+            marketCap
+          },
+          components: {
+            highScore: parseFloat(highScore.toFixed(1)),
+            volScore: parseFloat(volScore.toFixed(1)),
+            momScore: parseFloat(momScore.toFixed(1)),
+            ma50Score: parseFloat(ma50Score.toFixed(1)),
+            goldenScore: parseFloat(goldenScore.toFixed(1)),
+            rangeScore: parseFloat(rangeScore.toFixed(1)),
+            pressureScore: parseFloat(pressureScore.toFixed(1))
+          }
+        }
+      }
+
+      async function runBreakoutDiscovery() {
+        try {
+          const universe = await getHedgeFundUniverse()
+          const stocks = universe.slice(0, 80) // S&P500 시총 상위 80종목
+          const results = []
+          const startTime = Date.now()
+
+          for (let i = 0; i < stocks.length; i++) {
+            try {
+              const q = await getFullQuote(stocks[i])
+              if (!q) continue
+              const scored = calculateBreakoutScore(q)
+              if (scored) results.push(scored)
+            } catch (e) {
+              console.error(`❌ Breakout ${stocks[i]}: ${e.message}`)
+            }
+            // Rate limit 관리
+            if (i % 10 === 9) {
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+
+          // Breakout Score 기준 내림차순 정렬
+          results.sort((a, b) => b.breakoutScore - a.breakoutScore)
+
+          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
+
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: 'breakout_discovery',
+            universe_size: stocks.length,
+            analyzed: results.length,
+            execution_time_sec: parseFloat(elapsedTime),
+            top_15: results.slice(0, 15)
+          }
+        } catch (e) {
+          console.error(`❌ runBreakoutDiscovery:`, e.message)
+          return {
+            timestamp: new Date().toISOString(),
+            dataType: 'breakout_discovery',
+            error: e.message,
+            top_15: []
+          }
+        }
+      }
+
       /* ================================
          경로 기반 라우팅
       ================================ */
@@ -2331,6 +2505,14 @@ export default {
       } else if (pathname === "/alpha/discovery") {
         try {
           response = await runAlphaDiscovery()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
+      // /alpha/breakout - 단기 돌파 후보 발굴 (1~3주 목표)
+      } else if (pathname === "/alpha/breakout") {
+        try {
+          response = await runBreakoutDiscovery()
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }
