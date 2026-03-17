@@ -481,6 +481,24 @@
         @media (max-width: 1024px) {
             .news-sector-row {
                 grid-template-columns: 1fr;
+                flex-direction: column;
+            }
+        }
+
+        /* 모바일뷰: 실시간 뉴스 > 뉴스 브리핑 순서 보장 */
+        @media (max-width: 768px) {
+            .news-sector-row {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .news-sector-row .news-dashboard {
+                order: 1;
+            }
+
+            .news-sector-row #marketNewsCardArea {
+                order: 2;
             }
         }
 
