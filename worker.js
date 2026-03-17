@@ -508,35 +508,6 @@ export default {
           // profitScore, roiScore 제거 (기본값만 존재해서 모든 종목이 동일)
 
         return Math.max(0, Math.min(100, score))
-      // Explosive Score (7개 지표 가중합)
-      function explosiveScore(factors) {
-        if (!factors) return 0
-
-        // 성장률 정규화 (0~100%)
-        const normalizeGrowth = (g) => Math.max(0, Math.min(100, g * 100))
-        const revenueScore = normalizeGrowth(factors.revenueGrowth || 0)
-        const epsScore = normalizeGrowth(factors.epsGrowth || 0)
-        const profitScore = Math.min(100, (factors.profitMargin || 10) * 3)
-        const roiScore = Math.min(100, (factors.roe || 15) * 3)
-
-        // 밸류에이션 역정규화 (PE/PB 낮을수록 높음)
-        const peScore = Math.max(0, 100 - (factors.pe || 50) * 1.5)
-        const pbScore = Math.max(0, 100 - (factors.pb || 10) * 5)
-
-        // 모멘텀 (일일 가격 움직임)
-        const momentumScore = Math.min(100, (factors.momentum || 0) * 500)
-
-        // ✅ 최종 점수 (7개 지표 가중합)
-        const score =
-          revenueScore * 0.25 +        // 수익성장 (25%)
-          epsScore * 0.25 +            // EPS성장 (25%)
-          profitScore * 0.15 +         // 수익성 (15%)
-          roiScore * 0.15 +            // ROE (15%)
-          peScore * 0.10 +             // PE 가치 (10%)
-          pbScore * 0.05 +             // PB 가치 (5%)
-          momentumScore * 0.05         // 모멘텀 (5%)
-
-        return Math.max(0, score)
       }
 
       // 9개 인디케이터 기반 Explosive Score 계산 (가중합)
