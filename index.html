@@ -5683,28 +5683,41 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
+            console.log('[Top7] /top7 엔드포인트 호출 시작');
             fetch('/top7')
-                .then(function(res) { return res.json(); })
+                .then(function(res) {
+                    console.log('[Top7] Response status:', res.status, res.statusText);
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                })
                 .then(function(result) {
+                    console.log('[Top7] API 응답:', result);
+                    console.log('[Top7] result.data 타입:', typeof result.data, '배열?', Array.isArray(result.data));
                     if (result && result.data && Array.isArray(result.data)) {
-                        result.data.forEach(function(item) {
+                        console.log('[Top7] 데이터 처리 시작, 항목 수:', result.data.length);
+                        result.data.forEach(function(item, idx) {
                             var ticker = (item.symbol || '').toLowerCase();
                             var idPrefix = 'top7_' + ticker;
+                            console.log(`  [${idx}] ${ticker} - id: ${idPrefix}, price: ${item.price}`);
 
                             // 가격 설정
                             if (item.price !== null && item.price !== undefined) {
+                                console.log(`    ✅ 가격 설정: ${idPrefix} = ${item.price}`);
                                 imdSetValue(idPrefix, item.price, 2);
                             }
 
                             // 등락률 설정
                             if (item.changePercentage !== null && item.changePercentage !== undefined) {
+                                console.log(`    ✅ 등락률 설정: chg-${idPrefix} = ${item.changePercentage}%`);
                                 imdSetChange(idPrefix, item.changePercentage, 'pct');
                             }
                         });
+                    } else {
+                        console.warn('[Top7] result.data가 배열이 아니거나 없음:', result);
                     }
                 })
                 .catch(function(err) {
-                    console.warn('[Top7] Failed to load from /top7 endpoint:', err);
+                    console.error('[Top7] /top7 호출 실패:', err);
                     // Fallback: 개별 조회
                     var fallbackTickers = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META'];
                     fallbackTickers.forEach(function(ticker) {
