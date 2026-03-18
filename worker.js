@@ -408,8 +408,13 @@ export default {
 
         // ✅ 비율 지표
         // 우선순위: ratios (/fundamentals/ratios) > quote > 기본값
-        const pe = ratios?.priceToEarningsRatio || quote?.pe || 50
-        const pb = ratios?.priceToBookRatio || quote?.priceToBook || quote?.pb || 10
+        // ⚠️ 0 값은 무효한 데이터 → null 취급
+        const pe = (ratios?.priceToEarningsRatio && ratios.priceToEarningsRatio > 0)
+          ? ratios.priceToEarningsRatio
+          : (quote?.pe && quote.pe > 0 ? quote.pe : 50)
+        const pb = (ratios?.priceToBookRatio && ratios.priceToBookRatio > 0)
+          ? ratios.priceToBookRatio
+          : (quote?.priceToBook && quote.priceToBook > 0 ? quote.priceToBook : quote?.pb && quote.pb > 0 ? quote.pb : 10)
         const roe = (income && income.netIncome && income.shareholdersEquity)
           ? (income.netIncome / income.shareholdersEquity) * 100
           : 15  // balance sheet에서 계산, 아니면 기본값
@@ -648,9 +653,11 @@ export default {
           const growth = Array.isArray(data) ? data[0] : data
           return {
             symbol: symbol,
-            revenueGrowth: growth.revenueGrowth || null,
-            netIncomeGrowth: growth.netIncomeGrowth || null,
-            epsGrowth: growth.epsGrowth || null,
+            // ✅ 여러 필드명 지원 (API 변경에 대비)
+            revenueGrowth: growth.revenueGrowth || growth.revenuegrowth || null,
+            netIncomeGrowth: growth.netIncomeGrowth || growth.netincomegrowth || null,
+            // ⚠️ epsGrowth가 없을 수 있음 → earningsGrowth, netIncomeGrowth로 대체
+            epsGrowth: growth.epsGrowth || growth.epsgrowth || growth.earningsGrowth || growth.netIncomeGrowth || null,
             timestamp: new Date().toISOString()
           }
         } catch (e) {
@@ -816,8 +823,13 @@ export default {
           return {
             data: {
               symbol: symbol,
-              priceToEarningsRatio: ratios.priceToEarningsRatio || null,
-              priceToBookRatio: ratios.priceToBookRatio || null,
+              // ✅ 0은 invalid 데이터 → null로 처리
+              priceToEarningsRatio: (ratios.priceToEarningsRatio && ratios.priceToEarningsRatio > 0) ? ratios.priceToEarningsRatio : null,
+              priceToBookRatio: (ratios.priceToBookRatio && ratios.priceToBookRatio > 0) ? ratios.priceToBookRatio : null,
+              // ✅ 추가 필드들 (fallback용)
+              pe: (ratios.pe && ratios.pe > 0) ? ratios.pe : null,
+              pb: (ratios.pb && ratios.pb > 0) ? ratios.pb : null,
+              divYield: ratios.dividendYield || null,
               timestamp: new Date().toISOString()
             }
           }
