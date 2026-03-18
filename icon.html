@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>버튼 아이콘 디자인 - InvestFlow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        /* 신규 버튼 스타일 */
+        .icon-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            text-decoration: none;
+        }
+
+        @media (hover: hover) {
+            .icon-button:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        .icon-button:active {
+            transform: translateY(-4px);
+        }
+
+        /* 이미지 컨테이너 */
+        .icon-image-container {
+            width: 100%;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .icon-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* 텍스트 스타일 */
+        .icon-label {
+            font-size: 0.95em;
+            font-weight: 700;
+            color: #2d3748;
+            text-align: center;
+            line-height: 1.4;
+            width: 100%;
+        }
+
+        /* 버튼별 색상 테마 */
+        .btn-chart {
+            border-top: 4px solid #667eea;
+        }
+
+        .btn-macro {
+            border-top: 4px solid #764ba2;
+        }
+
+        .btn-news {
+            border-top: 4px solid #ff4757;
+        }
+
+        .btn-heatmap {
+            border-top: 4px solid #00a8e8;
+        }
+
+        .btn-schedule {
+            border-top: 4px solid #ffa502;
+        }
+
+        .btn-report {
+            border-top: 4px solid #28a745;
+        }
+
+        .btn-performance {
+            border-top: 4px solid #6c5ce7;
+        }
+
+        .btn-ai {
+            border-top: 4px solid #00b894;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .icon-button {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .icon-image-container {
+                height: 80px;
+            }
+
+            .icon-label {
+                font-size: 0.85em;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-top: 30px;
+        }
+
+        .info-box h3 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 신규 버튼 아이콘 디자인</h1>
+            <p>이미지 아이콘을 활용한 새로운 버튼 UI</p>
+        </div>
+
+        <div class="grid">
+            <!-- 1. 실시간차트 -->
+            <button class="icon-button btn-chart" onclick="alert('실시간차트 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_0000000013ac7206a9cdc28c5f737de8.png" alt="실시간차트">
+                </div>
+                <div class="icon-label">실시간차트</div>
+            </button>
+
+            <!-- 2. 거시지표 -->
+            <button class="icon-button btn-macro" onclick="alert('거시지표 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_00000000fb2c7206932464317a712a9f.png" alt="거시지표">
+                </div>
+                <div class="icon-label">거시지표</div>
+            </button>
+
+            <!-- 3. 뉴스 -->
+            <button class="icon-button btn-news" onclick="alert('뉴스 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_00000000a26071f89a836349d81657a5.png" alt="뉴스">
+                </div>
+                <div class="icon-label">뉴스</div>
+            </button>
+
+            <!-- 4. 히트맵 -->
+            <button class="icon-button btn-heatmap" onclick="alert('히트맵 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_0000000008047209b57fd0993f6d14a4.png" alt="히트맵">
+                </div>
+                <div class="icon-label">히트맵</div>
+            </button>
+
+            <!-- 5. 일정 -->
+            <button class="icon-button btn-schedule" onclick="alert('일정 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_00000000845872099df880384fc99dfb.png" alt="일정">
+                </div>
+                <div class="icon-label">일정</div>
+            </button>
+
+            <!-- 6. 보고서 -->
+            <button class="icon-button btn-report" onclick="alert('보고서 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_000000008744720988b97bb9494d2b5f.png" alt="보고서">
+                </div>
+                <div class="icon-label">보고서</div>
+            </button>
+
+            <!-- 7. 실적일정 -->
+            <button class="icon-button btn-performance" onclick="alert('실적일정 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_0000000017c07209b3deaa38ef88e335.png" alt="실적일정">
+                </div>
+                <div class="icon-label">실적일정</div>
+            </button>
+
+            <!-- 8. AI분석_1 (첫 번째 AI 분석 아이콘) -->
+            <button class="icon-button btn-ai" onclick="alert('AI분석_1 클릭')">
+                <div class="icon-image-container">
+                    <img src="icons/file_000000005e747206b7d4228fef67960e.png" alt="AI분석_1">
+                </div>
+                <div class="icon-label">AI분석<br>_1</div>
+            </button>
+        </div>
+
+        <div class="info-box">
+            <h3>✅ 신규 디자인 특징</h3>
+            <p>
+                • <strong>이미지 아이콘</strong>: 이모지 대신 고해상도 이미지 사용<br>
+                • <strong>최대화된 이미지</strong>: 버튼 공간을 최적으로 활용<br>
+                • <strong>명확한 레이블</strong>: 이름은 하단에 유지<br>
+                • <strong>색상 테마</strong>: 버튼별 상단 테두리로 카테고리 구분<br>
+                • <strong>부드러운 애니메이션</strong>: 호버 시 상승 효과
+            </p>
+        </div>
+    </div>
+</body>
+</html>
