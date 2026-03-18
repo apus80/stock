@@ -363,7 +363,7 @@
                     fields: [
                         { name: 'SP500 변화', api: '/market', field: 'US_MARKET.SP500.changePercentage', unit: '%' },
                         { name: 'VIX 수준', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
-                        { name: 'HYG 변화', api: '/market', field: 'BONDS.HYG.change', unit: '%' }
+                        { name: 'HYG 변화', api: '/market', field: 'BONDS.HYG.changePercentage', unit: '%' }
                     ]
                 },
                 {
@@ -399,7 +399,7 @@
                     fields: [
                         { name: 'HYG 가격', api: '/market', field: 'BONDS.HYG.price', unit: '$' },
                         { name: 'LQD 가격', api: '/market', field: 'BONDS.LQD.price', unit: '$' },
-                        { name: 'HYG 변화', api: '/market', field: 'BONDS.HYG.change', unit: '%' }
+                        { name: 'HYG 변화', api: '/market', field: 'BONDS.HYG.changePercentage', unit: '%' }
                     ]
                 },
                 {
@@ -416,7 +416,7 @@
                     name: 'Volatility Regime',
                     fields: [
                         { name: 'VIX', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
-                        { name: 'Put/Call Ratio', api: '/market', field: 'OPTIONS.PUT_CALL_RATIO', unit: '' },
+                        { name: 'VIX 변화', api: '/market', field: 'US_MARKET.VIX.changePercentage', unit: '%' },
                         { name: 'Total Market 가격', api: '/market', field: 'BREADTH.TOTAL_MARKET.price', unit: '$' }
                     ]
                 },
@@ -463,7 +463,7 @@
                         { name: 'Consumer Sentiment', api: '/market', field: 'MACRO_INDICATORS.CONSUMER_SENTIMENT', unit: 'idx' },
                         { name: 'Real GDP', api: '/market', field: 'MACRO_INDICATORS.REAL_GDP', unit: 'B' },
                         { name: 'Nonfarm Payrolls', api: '/market', field: 'MACRO_INDICATORS.NONFARM_PAYROLLS', unit: 'K' },
-                        { name: 'MFG PMI', api: '/market', field: 'MACRO_INDICATORS.MFG_PMI', unit: '' }
+                        { name: '산업생산', api: '/market', field: 'MACRO_INDICATORS.INDUSTRIAL_PRODUCTION', unit: 'idx' }
                     ]
                 },
                 {
@@ -484,31 +484,48 @@
             widgets: [
                 {
                     id: 'ai_2_1',
-                    name: 'Alpha Discovery Scanner',
+                    name: 'Alpha Discovery Scanner (종목)',
                     fields: [
-                        { name: '실질금리', api: '/market', field: 'MACRO_BASE.REAL_RATES', unit: '%' },
-                        { name: 'Fed 기준금리', api: '/market', field: 'MACRO_BASE.FED_RATE', unit: '%' },
-                        { name: 'Core CPI YoY', api: '/market', field: 'MACRO_BASE.CORE_CPI_YOY', unit: '%' },
-                        { name: '실업률', api: '/market', field: 'MACRO_BASE.UNEMPLOYMENT', unit: '%' },
-                        { name: '경제지표 5개', api: '/market', field: 'MACRO_INDICATORS', unit: '5' }
+                        { name: '상위 20개 종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: 'explosiveScore', api: '/alpha/discovery', field: 'top_20[].score', unit: '' },
+                        { name: '분석된 종목', api: '/alpha/discovery', field: 'analyzed', unit: '' },
+                        { name: '총 우주', api: '/alpha/discovery', field: 'universe_size', unit: '' }
                     ]
                 },
                 {
                     id: 'ai_2_2',
-                    name: 'Market Entry Gate',
+                    name: 'Market Entry Gate (시장 진입)',
                     fields: [
+                        { name: '시장 레짐', api: '/market', field: 'US_MARKET.SP500.changePercentage', unit: '%' },
                         { name: 'VIX 수준', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
-                        { name: '금리 수익률', api: '/market', field: 'RATES.YIELD_CURVE', unit: '%' },
-                        { name: 'LQD 가격', api: '/market', field: 'BONDS.LQD.price', unit: '$' }
+                        { name: '수익률곡선', api: '/market', field: 'RATES.YIELD_CURVE', unit: '%' }
                     ]
                 },
                 {
                     id: 'ai_2_3',
-                    name: 'Sector Rotation',
+                    name: '종목 깊이 분석 (선택 종목)',
+                    fields: [
+                        { name: '종목 선택', api: '/alpha?symbol=AAPL', field: 'explosiveScore', unit: '' },
+                        { name: '기본가치 계산', api: '/alpha?symbol=AAPL', field: 'factors.roe', unit: '' },
+                        { name: 'PE 비율', api: '/alpha?symbol=AAPL', field: 'factors.pe', unit: '' }
+                    ]
+                },
+                {
+                    id: 'ai_2_4',
+                    name: 'Sector Rotation (섹터 로테이션)',
                     fields: [
                         { name: '8개 섹터', api: '/market', field: 'SECTORS', unit: '8' },
                         { name: 'Technology 변화', api: '/market', field: 'SECTORS.TECHNOLOGY.changePercentage', unit: '%' },
                         { name: 'Healthcare 변화', api: '/market', field: 'SECTORS.HEALTHCARE.changePercentage', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_2_5',
+                    name: 'Breakout Radar (돌파 레이더)',
+                    fields: [
+                        { name: '돌파 신호', api: '/alpha/breakout', field: 'top_20[].symbol', unit: '' },
+                        { name: '강도점수', api: '/alpha/breakout', field: 'top_20[].score', unit: '' },
+                        { name: '분석 종목수', api: '/alpha/breakout', field: 'analyzed', unit: '' }
                     ]
                 }
             ]
@@ -519,92 +536,109 @@
             widgets: [
                 {
                     id: 'ai_3_1',
-                    name: '매크로 유동성',
+                    name: '1. 매크로 유동성 (Fed+RRP+TGA)',
                     fields: [
-                        { name: 'Fed 잔액', api: '/market', field: 'LIQUIDITY.FED_BALANCE', unit: 'M' },
-                        { name: 'Reverse Repo', api: '/market', field: 'LIQUIDITY.REVERSE_REPO', unit: 'M' },
-                        { name: 'TGA', api: '/market', field: 'LIQUIDITY.TGA', unit: 'M' }
+                        { name: 'Fed 잔액', api: '/market', field: 'LIQUIDITY.FED_BALANCE', unit: 'T' },
+                        { name: 'Reverse Repo', api: '/market', field: 'LIQUIDITY.REVERSE_REPO', unit: 'B' },
+                        { name: 'TGA', api: '/market', field: 'LIQUIDITY.TGA', unit: 'T' }
                     ]
                 },
                 {
                     id: 'ai_3_2',
-                    name: '섹터 동향',
+                    name: '2. 섹터 동향 (11개 섹터)',
                     fields: [
-                        { name: 'Technology 가격', api: '/market', field: 'SECTORS.TECHNOLOGY.price', unit: '$' },
-                        { name: 'Healthcare 가격', api: '/market', field: 'SECTORS.HEALTHCARE.price', unit: '$' },
-                        { name: 'Financials 가격', api: '/market', field: 'SECTORS.FINANCIALS.price', unit: '$' }
+                        { name: 'Technology', api: '/market', field: 'SECTORS.TECHNOLOGY.price', unit: '$' },
+                        { name: 'Healthcare', api: '/market', field: 'SECTORS.HEALTHCARE.price', unit: '$' },
+                        { name: 'Financials', api: '/market', field: 'SECTORS.FINANCIALS.price', unit: '$' }
                     ]
                 },
                 {
                     id: 'ai_3_3',
-                    name: '신용 스트레스',
+                    name: '3. 신용 스트레스 (HYG+LQD)',
                     fields: [
-                        { name: 'HYG', api: '/market', field: 'BONDS.HYG.price', unit: '$' },
-                        { name: 'LQD', api: '/market', field: 'BONDS.LQD.price', unit: '$' },
-                        { name: 'HYG 변화', api: '/market', field: 'BONDS.HYG.change', unit: '%' }
+                        { name: 'HYG 하이일드', api: '/market', field: 'BONDS.HYG.price', unit: '$' },
+                        { name: 'LQD 투자등급', api: '/market', field: 'BONDS.LQD.price', unit: '$' },
+                        { name: '신용스프레드', api: '/market', field: 'BONDS.HYG.changePercentage', unit: '%' }
                     ]
                 },
                 {
                     id: 'ai_3_4',
-                    name: '폭발적 성장 발굴',
+                    name: '4. 폭발적 성장 발굴 (상위10)',
                     fields: [
-                        { name: '소비심리', api: '/market', field: 'MACRO_INDICATORS.CONSUMER_SENTIMENT', unit: 'idx' },
-                        { name: 'Real GDP', api: '/market', field: 'MACRO_INDICATORS.REAL_GDP', unit: 'B' },
-                        { name: '산업생산', api: '/market', field: 'MACRO_INDICATORS.INDUSTRIAL_PRODUCTION', unit: 'idx' }
+                        { name: '상위종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: '종목점수', api: '/alpha/discovery', field: 'top_20[].score', unit: '' },
+                        { name: '모멘텀', api: '/alpha/discovery', field: 'top_20[].momentum', unit: '%' },
+                        { name: '분석된 종목', api: '/alpha/discovery', field: 'analyzed', unit: '' }
                     ]
                 },
                 {
                     id: 'ai_3_5',
-                    name: '궁극의 발굴 엔진',
+                    name: '5. 궁극의 발굴 엔진 (PE+수익)',
                     fields: [
-                        { name: '실업률', api: '/market', field: 'MACRO_BASE.UNEMPLOYMENT', unit: '%' },
-                        { name: 'M2 통화량', api: '/market', field: 'MACRO_BASE.M2', unit: 'M' },
-                        { name: 'PCE Inflation', api: '/market', field: 'MACRO_BASE.PCE_INFLATION', unit: '%' }
+                        { name: '상위종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: '최종점수', api: '/alpha/discovery', field: 'top_20[].score', unit: '' },
+                        { name: 'PE 비율', api: '/alpha/discovery', field: 'top_20[].pe', unit: 'x' },
+                        { name: '분석된 종목', api: '/alpha/discovery', field: 'analyzed', unit: '' }
                     ]
                 },
                 {
                     id: 'ai_3_6',
-                    name: '초고성장 발굴',
+                    name: '6. 초고성장 기업 발굴 (수익+EPS)',
                     fields: [
-                        { name: 'Total Market', api: '/market', field: 'BREADTH.TOTAL_MARKET.price', unit: '$' },
-                        { name: 'Long Treasury', api: '/market', field: 'BREADTH.LONG_TREASURY.price', unit: '$' },
-                        { name: '10Y 금리', api: '/market', field: 'RATES.US10Y', unit: '%' }
+                        { name: '상위종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: '수익성장', api: '/alpha/discovery', field: 'top_20[].revenueGrowth', unit: '%' },
+                        { name: 'EPS성장', api: '/alpha/discovery', field: 'top_20[].epsGrowth', unit: '%' },
+                        { name: '순이익마진', api: '/alpha/discovery', field: 'top_20[].profitMargin', unit: '%' }
                     ]
                 },
                 {
                     id: 'ai_3_7',
-                    name: '기관 매집 종목',
+                    name: '7. 기관 매집 종목 (섹터모멘텀)',
                     fields: [
-                        { name: '금 가격', api: '/market', field: 'COMMODITIES.GOLD.price', unit: '$' },
-                        { name: '은 가격', api: '/market', field: 'COMMODITIES.SILVER.price', unit: '$' },
-                        { name: '유 가격', api: '/market', field: 'COMMODITIES.OIL.price', unit: '$' }
+                        { name: '상위종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: '수익증가', api: '/alpha/discovery', field: 'top_20[].revenueGrowth', unit: '%' },
+                        { name: 'EPS증가', api: '/alpha/discovery', field: 'top_20[].epsGrowth', unit: '%' },
+                        { name: '섹터모멘텀', api: '/market', field: 'SECTORS[sector].changePercentage', unit: '%' }
                     ]
                 },
                 {
                     id: 'ai_3_8',
-                    name: '섹터 로테이션',
+                    name: '8. 섹터 로테이션 리더 (상대강도)',
                     fields: [
-                        { name: 'Energy 변화', api: '/market', field: 'SECTORS.ENERGY.changePercentage', unit: '%' },
-                        { name: 'Consumer Disc', api: '/market', field: 'SECTORS.CONSUMER_DISCRETIONARY.changePercentage', unit: '%' },
-                        { name: 'Utilities 변화', api: '/market', field: 'SECTORS.UTILITIES.changePercentage', unit: '%' }
+                        { name: '상위종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: '수익증가', api: '/alpha/discovery', field: 'top_20[].revenueGrowth', unit: '%' },
+                        { name: 'EPS증가', api: '/alpha/discovery', field: 'top_20[].epsGrowth', unit: '%' },
+                        { name: '상대강도', api: '/market', field: 'SECTORS[sector].changePercentage', unit: '%' }
                     ]
                 },
                 {
                     id: 'ai_3_9',
-                    name: '유동성 수혜',
+                    name: '9. 유동성 수혜 종목 (유동성지수)',
                     fields: [
-                        { name: 'USD/JPY', api: '/market', field: 'FX.USDJPY.price', unit: '' },
-                        { name: 'USD/KRW', api: '/market', field: 'FX.USDKRW.price', unit: '' },
-                        { name: 'EUR/USD', api: '/market', field: 'FX.EURUSD.price', unit: '' }
+                        { name: '상위종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: 'Fed잔액', api: '/market', field: 'LIQUIDITY.FED_BALANCE', unit: 'M' },
+                        { name: 'M2통화량', api: '/market', field: 'MACRO_BASE.M2', unit: 'M' },
+                        { name: 'VIX 리스크', api: '/market', field: 'US_MARKET.VIX.price', unit: '' }
                     ]
                 },
                 {
                     id: 'ai_3_10',
-                    name: '통합 발굴 엔진',
+                    name: '10. 통합 발굴 엔진 (거시+섹터+기본)',
                     fields: [
-                        { name: 'Korea EWY', api: '/market', field: 'KOREA_MARKET.EWY.price', unit: '$' },
-                        { name: 'EWY 변화', api: '/market', field: 'KOREA_MARKET.EWY.changePercentage', unit: '%' },
-                        { name: 'DOW 가격', api: '/market', field: 'US_MARKET.DOW.price', unit: '$' }
+                        { name: '상위종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: '' },
+                        { name: '거시점수', api: '/market', field: 'US_MARKET.SP500.changePercentage', unit: '%' },
+                        { name: '섹터강도', api: '/market', field: 'SECTORS[sector].changePercentage', unit: '%' },
+                        { name: '기본가치', api: '/alpha/discovery', field: 'top_20[].roe', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_11',
+                    name: '11. 통합 발굴 엔진 (헤지펀드급)',
+                    fields: [
+                        { name: '스캔 결과', api: '/alpha/alpha-scanner', field: 'top_20[].symbol', unit: '' },
+                        { name: '최종점수', api: '/alpha/alpha-scanner', field: 'top_20[].score', unit: '' },
+                        { name: '거시 신호', api: '/alpha/alpha-scanner', field: 'top_20[].macro_score', unit: '' },
+                        { name: '분석 종목', api: '/alpha/alpha-scanner', field: 'analyzed', unit: '' }
                     ]
                 }
             ]

@@ -691,9 +691,9 @@
                     console.log('✅ 새로운 Market 데이터 로드됨');
                 }
 
-                // 새 데이터로 모든 위젯 업데이트
+                // 새 데이터로 모든 위젯 업데이트 (1-10은 캐시된 데이터로, 11은 별도 요청)
                 if (discoveryData || marketData) {
-                    for (let i = 1; i <= 10; i++) {
+                    for (let i = 1; i <= 11; i++) {
                         loadWidgetData(i, discoveryData, marketData);
                     }
                 }
