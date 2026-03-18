@@ -341,12 +341,13 @@ export default {
 
       async function getAlphaData(symbol) {
         try {
-          // ✅ 필요한 모든 데이터 병렬 호출
-          const [quoteRes, ratiosRes, growthRes, incomeRes, profileRes] = await Promise.allSettled([
+          // ✅ 필요한 모든 데이터 병렬 호출 (Balance Sheet 추가!)
+          const [quoteRes, ratiosRes, growthRes, incomeRes, balanceRes, profileRes] = await Promise.allSettled([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
             getRatios(symbol),
             getFinancialGrowth(symbol),
             getIncomeStatement(symbol),
+            getBalanceSheet(symbol),
             getCompanyProfile(symbol)
           ])
 
@@ -359,6 +360,7 @@ export default {
 
           const growth = extract(growthRes)
           const income = extract(incomeRes)
+          const balance = extract(balanceRes)
           const profile = extract(profileRes)
 
           console.log(`\n📍 [${symbol}] getAlphaData 결과:`)
@@ -371,9 +373,10 @@ export default {
           return {
             quote: quote,
             ratios: ratios,
-            growth: growth,        // ✅ 추가
-            income: income,        // ✅ 추가
-            profile: profile       // ✅ 추가
+            growth: growth,
+            income: income,
+            balance: balance,      // ✅ 추가 (ROE 계산용)
+            profile: profile
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -386,9 +389,10 @@ export default {
 
         const quote = data.quote
         const ratios = data.ratios
-        const growth = data.growth      // ✅ 추가
-        const income = data.income      // ✅ 추가
-        const profile = data.profile    // ✅ 추가
+        const growth = data.growth
+        const income = data.income
+        const balance = data.balance    // ✅ 추가 (ROE 계산용)
+        const profile = data.profile
 
         // 🔍 DEBUG: 실제 API 응답 데이터 확인
         console.log(`\n📊 [${quote?.symbol}] === 📥 입력 데이터 (data 객체) ===`)
@@ -422,9 +426,11 @@ export default {
         const pb = (ratios?.priceToBookRatio && ratios.priceToBookRatio > 0)
           ? ratios.priceToBookRatio
           : (quote?.priceToBook && quote.priceToBook > 0 ? quote.priceToBook : quote?.pb && quote.pb > 0 ? quote.pb : 10)
-        const roe = (income && income.netIncome && income.shareholdersEquity)
-          ? (income.netIncome / income.shareholdersEquity) * 100
-          : 15  // balance sheet에서 계산, 아니면 기본값
+        // ✅ ROE = Net Income / Shareholders' Equity
+        // balance.totalStockholdersEquity 사용 (income에는 없음!)
+        const roe = (income && income.netIncome && balance && balance.totalStockholdersEquity && balance.totalStockholdersEquity > 0)
+          ? (income.netIncome / balance.totalStockholdersEquity) * 100
+          : 15  // 기본값
 
         console.log(`   📈 PE 로직: ratios.PE=${ratios?.priceToEarningsRatio} → ${pe === ratios?.priceToEarningsRatio ? '✅ ratios 사용' : pe === quote?.pe ? '⚠️ quote 사용' : '❌ 기본값 50'}`)
         console.log(`   📈 PB 로직: ratios.PB=${ratios?.priceToBookRatio} → ${pb === ratios?.priceToBookRatio ? '✅ ratios 사용' : pb === quote?.priceToBook || pb === quote?.pb ? '⚠️ quote 사용' : '❌ 기본값 10'}`)
@@ -444,10 +450,17 @@ export default {
         let grossMargin = 40  // 기본값
         let operatingMargin = 15  // 기본값
 
+        // ✅ null check 강화 - 각 필드별로 체크
         if (income && income.revenue) {
-          netMargin = (income.netIncome / income.revenue) * 100
-          grossMargin = (income.grossProfit / income.revenue) * 100
-          operatingMargin = (income.operatingIncome / income.revenue) * 100
+          if (income.netIncome) {
+            netMargin = (income.netIncome / income.revenue) * 100
+          }
+          if (income.grossProfit) {
+            grossMargin = (income.grossProfit / income.revenue) * 100
+          }
+          if (income.operatingIncome) {
+            operatingMargin = (income.operatingIncome / income.revenue) * 100
+          }
         }
 
         // ✅ 섹터 정보 (Profile에서)
@@ -457,7 +470,11 @@ export default {
         console.log(`   ℹ️  섹터: ${sector}`)
 
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
-        const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
+        // quote에 dayLow/dayHigh가 없으면 대체 계산 불가능 → 0
+        // 하지만 최소한 유효한 값이 있을 때만 계산
+        const dailyMomentum = (quote?.dayLow && quote?.dayHigh && dayHigh > dayLow)
+          ? (price - dayLow) / dayLow
+          : 0
 
         // ✅ 거래량 (quote에서)
         const volume = quote?.volume || 0
