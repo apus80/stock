@@ -1768,6 +1768,48 @@
         }
         .ml-grid-compact .ml-btn.ml-wide .ml-label { font-size: 0.68em; }
 
+        /* 3D 그라디언트 돋보기 아이콘 */
+        .search-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2em;
+            height: 2em;
+            position: relative;
+            font-size: 1em;
+            font-weight: normal;
+        }
+
+        .search-icon::before {
+            content: '';
+            width: 1.4em;
+            height: 1.4em;
+            background: linear-gradient(135deg, #5BA3D0 0%, #2E7DB3 50%, #1A4D8C 100%);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.15),
+                inset -2px -2px 6px rgba(0, 0, 0, 0.2),
+                inset 2px 2px 6px rgba(255, 255, 255, 0.3);
+            z-index: 2;
+        }
+
+        .search-icon::after {
+            content: '';
+            width: 0.35em;
+            height: 0.35em;
+            background: linear-gradient(135deg, #5BA3D0 0%, #2E7DB3 100%);
+            position: absolute;
+            right: -0.3em;
+            bottom: -0.3em;
+            transform: rotate(45deg);
+            border-radius: 2px;
+            box-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.15),
+                inset -1px -1px 3px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
     </style>
 </head>
 
@@ -1840,7 +1882,7 @@
                         <span class="ml-label">경제<br>일정</span>
                     </button>
                     <button class="ml-btn" onclick="showMobileSection('search')">
-                        <span class="ml-icon">🔍</span>
+                        <span class="ml-icon search-icon"></span>
                         <span class="ml-label">기업요약/<br>실적일정</span>
                     </button>
                     <button class="ml-btn" onclick="showMobileSection('report')">
