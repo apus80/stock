@@ -694,11 +694,11 @@ export default {
           const growth = Array.isArray(data) ? data[0] : data
           return {
             symbol: symbol,
-            // ✅ 여러 필드명 지원 (API 변경에 대비)
-            revenueGrowth: growth.revenueGrowth || growth.revenuegrowth || null,
-            netIncomeGrowth: growth.netIncomeGrowth || growth.netincomegrowth || null,
+            // ✅ FMP API는 camelCase만 지원 (소문자 fallback 제거)
+            revenueGrowth: growth.revenueGrowth || null,
+            netIncomeGrowth: growth.netIncomeGrowth || null,
             // ⚠️ epsGrowth가 없을 수 있음 → earningsGrowth, netIncomeGrowth로 대체
-            epsGrowth: growth.epsGrowth || growth.epsgrowth || growth.earningsGrowth || growth.netIncomeGrowth || null,
+            epsGrowth: growth.epsGrowth || growth.earningsGrowth || growth.netIncomeGrowth || null,
             timestamp: new Date().toISOString()
           }
         } catch (e) {
@@ -845,7 +845,8 @@ export default {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
-          const url = `https://financialmodelingprep.com/stable/ratios?symbol=${symbol}&apikey=${FMP}`
+          // 📍 출처: FMP API /fundamentals/ratios (CLAUDE.md 검증됨)
+          const url = `https://financialmodelingprep.com/fundamentals/ratios?symbol=${symbol}&apikey=${FMP}`
           // console.log(`📍 FMP Ratios 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
