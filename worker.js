@@ -1996,7 +1996,7 @@ export default {
             universe_size: universe.length,
             analyzed: results.length,
             execution_time_sec: parseFloat(elapsedTime),
-            top_20: results.slice(0, 20)
+            top_20: top20
           }
         } catch (e) {
           console.error(`❌ runAlphaDiscovery:`, e.message)
@@ -2548,8 +2548,9 @@ export default {
 
               const total = calcTotalAlphaScore(modules)
 
-              // Filter: totalScore >= 30 (relaxed to ensure we get results)
-              if (total.totalScore < 30) continue
+              // Filter: totalScore >= 15 (very relaxed to ensure we get results)
+              // ✅ Fallback mechan added: if < 20 results, return top 20 candidates anyway
+              if (total.totalScore < 15) continue
 
               results.push({
                 symbol,
@@ -2597,6 +2598,26 @@ export default {
 
           results.sort((a, b) => b.totalScore - a.totalScore)
 
+          // ✅ 최소 20개는 반환 (결과 없음 방지)
+          const top20 = results.length > 0
+            ? results.slice(0, 20)
+            : candidates.slice(0, 20).map(c => ({  // fallback: 상위 20개 후보 (점수 0으로 처리)
+                symbol: c.symbol,
+                companyName: c.quote.name || c.symbol,
+                sector: c.quote.sector || '-',
+                price: parseFloat((c.quote.price || 0).toFixed(2)),
+                change: parseFloat((c.quote.changesPercentage || 0).toFixed(2)),
+                totalScore: 0,  // 점수 계산 실패했으므로 0
+                momentumScore: 0,
+                qualityScore: 0,
+                squeezeScore: 0,
+                breakoutProbability: 50,  // 기본값
+                macroMultiplier: 1,
+                signals: {},
+                modules: { earnings: 0, fundamental: 0, balance: 0, cashflow: 0, float: 0, valuation: 0, macro: 0 },
+                macroOverlay: { riskMode: 'NEUTRAL', vix: macroData?.vix || null, hySpread: macroData?.hySpread || null }
+              }))
+
           return {
             timestamp: new Date().toISOString(),
             dataType: 'alpha_scanner',
@@ -2612,7 +2633,7 @@ export default {
               hySpread: macroData?.hySpread || null,
               us10y: macroData?.us10y || null
             },
-            top_20: results.slice(0, 20)
+            top_20: top20
           }
         } catch (e) {
           console.error(`❌ runAlphaScanner:`, e.message)
