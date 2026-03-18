@@ -886,6 +886,29 @@
         // 초기화
         // ============================================
         async function init() {
+            // 📊 AI분석 1 위젯 정보를 localStorage에 저장 (ai-widget-monitor.html 용)
+            const widgetsForMonitor = WIDGETS.map(w => ({
+                id: `analysis1-${w.id}`,
+                page: 'AI분석 1',
+                name: w.title,
+                icon: w.icon,
+                endpoint: w.endpoint,
+                pattern: w.pattern,
+                logic: w.logic,
+                meaning: w.meaning,
+                usage: w.usage,
+                description: w.description,
+                status: 'loading',
+                data: null,
+                timestamp: new Date().toISOString()
+            }));
+            window.widgetDataCache = {};
+            widgetsForMonitor.forEach(w => {
+                window.widgetDataCache[w.id] = w;
+            });
+            localStorage.setItem('widgetDataCache_analysis1', JSON.stringify(window.widgetDataCache));
+            console.log('✅ AI분석 1 위젯 정보 저장됨:', widgetsForMonitor.length + '개');
+
             renderDashboard();
             loadAllWidgets();
             updateTimestamp();
