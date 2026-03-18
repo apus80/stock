@@ -2799,61 +2799,52 @@ export default {
       else if (pathname === "/top7") {
         try {
           // ✅ 최신 시총순위 (2026년 기준)
+          // 출처: FMP API /stable/quote (무료 플랜 확인됨)
           const topSymbols = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META']
 
           console.log(`[/top7] 시작: ${topSymbols.length}개 종목 조회`)
 
-          // 1️⃣ 실시간 가격 데이터 호출 (allSettled = 일부 실패해도 진행)
+          // 1️⃣ 실시간 가격 데이터 호출 (일부 실패해도 진행)
+          // ⏱️ timeout: 8초 (클라이언트 timeout은 5초, 여유 있게)
           const quoteResults = await Promise.allSettled(
-            topSymbols.map(sym => getQuote(sym))
-          )
-
-          // 2️⃣ 시가총액 데이터 호출 (병렬 + 안정성)
-          const marketCapResults = await Promise.allSettled(
-            topSymbols.map(sym => getMarketCapData(sym))
+            topSymbols.map(sym => getQuote(sym, 8000))
           )
 
           // DEBUG: 각 종목별 결과 확인
           quoteResults.forEach((result, idx) => {
             const sym = topSymbols[idx]
             const q = result.status === 'fulfilled' ? result.value : null
-            const mcResult = marketCapResults[idx]
-            const mc = mcResult?.status === 'fulfilled' ? mcResult.value : null
-            console.log(`   [${sym}] ${q ? `✅ price=${q.price}` : '❌ null'}, marketCap=${mc?.marketCap || 'null'}`)
+            console.log(`   [${sym}] ${q ? `✅ price=${q.price}` : '❌ null'}`)
           })
 
-          // 3️⃣ 데이터 병합 (가격 + 시가총액)
+          // 2️⃣ 데이터 변환 (null 체크)
           const data = quoteResults
             .map((result, idx) => {
               const q = result.status === 'fulfilled' ? result.value : null
-              const mc = marketCapResults[idx]?.status === 'fulfilled' ? marketCapResults[idx].value : null
               return {
                 symbol: topSymbols[idx],
                 price: q && q.price ? parseFloat(q.price.toFixed(2)) : null,
                 changePercentage: q && q.changePercentage ? parseFloat(q.changePercentage.toFixed(2)) : null,
                 volume: q?.volume || null,
-                marketCap: mc?.marketCap || 0  // 시가총액 (없으면 0)
+                marketCap: q?.marketCap || 0  // 시가총액 (정렬용)
               }
             })
             .filter(item => item.price !== null)  // 데이터 없는 항목 제외
             .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))  // 시가총액 기준 내림차순 정렬
-            .map((item, idx) => {
-              const ranked = {
-                rank: idx + 1,
-                symbol: item.symbol,
-                price: item.price,
-                changePercentage: item.changePercentage,
-                volume: item.volume
-              }
-              console.log(`[Rank ${ranked.rank}] ${ranked.symbol}: marketCap=${item.marketCap}`)
-              return ranked
-            })
+            .map((item, idx) => ({
+              rank: idx + 1,
+              symbol: item.symbol,
+              price: item.price,
+              changePercentage: item.changePercentage,
+              volume: item.volume,
+              marketCap: item.marketCap
+            }))
 
-          // 4️⃣ 응답
+          // 3️⃣ 응답
           response = {
             timestamp: new Date().toISOString(),
             dataType: "top7",
-            message: "시총 상위 7개 (실시간 가격)",
+            message: "시총 상위 7개 (FMP 실시간 가격)",
             count: data.length,
             data: data
           }
@@ -2861,7 +2852,6 @@ export default {
           console.log(`[/top7] ✅ ${data.length}/${topSymbols.length}개 종목 로드됨`)
         } catch (err) {
           console.error('[/top7] Error:', err.message)
-          console.error('[/top7] Stack:', err.stack)
           response = {
             timestamp: new Date().toISOString(),
             dataType: "top7",
