@@ -1486,6 +1486,7 @@ export default {
           confidence: Math.round(confidenceScore),
           signal: regime === "Risk-On" ? "🎯 공격 모드" : regime === "Risk-Off" ? "⚠️ 방어 모드" : "➡️ 중립",
           badgeClass: regime === "Risk-On" ? "bullish" : regime === "Risk-Off" ? "bearish" : "neutral",
+          recommendation: regime === "Risk-On" ? "적극 투자" : regime === "Risk-Off" ? "현금 보유" : "균형형",
           factors: [
             { name: '추세 점수', status: trendScore >= 65 ? '강세' : '약세', strength: trendScore },
             { name: '리스크 점수', status: riskScore >= 70 ? '낮음' : '높음', strength: riskScore },
