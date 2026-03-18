@@ -427,42 +427,276 @@
                 { item: '수익률 곡선', endpoint: '/market', field: 'RATES.YIELD_CURVE', defaultValue: '+0.13%', description: '10Y - 2Y' }
             ],
             meaning: '스프레드 양수(+) → 정상 | 음수(-) → 경기침체 신호'
+        },
+
+        // ========== AI분석 2 (3개) ==========
+        {
+            category: 'analysis2',
+            id: 'ai_2_1',
+            name: '🔍 Alpha Discovery Scanner',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>Explosive Score = 100점 만점 정규화</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">공식:</div>
+                <div class="formula-line">&nbsp;&nbsp;score = revenueGrowth×0.15 + epsGrowth×0.15 + peScore×0.30 + pbScore×0.25 + momentum×0.15</div>
+                <div class="formula-line" style="margin-top: 10px;">단계:</div>
+                <div class="formula-line">&nbsp;&nbsp;1️⃣ FMP API에서 500개 미국주식 정보 로드</div>
+                <div class="formula-line">&nbsp;&nbsp;2️⃣ 9개 지표로 각 종목 점수 계산</div>
+                <div class="formula-line">&nbsp;&nbsp;3️⃣ 점수 기준 정렬</div>
+                <div class="formula-line">&nbsp;&nbsp;4️⃣ 상위 20개 선택</div>
+            `,
+            dataSource: [
+                { item: '수익 성장률', endpoint: '/fundamentals/growth?symbol=X', field: 'revenueGrowth', defaultValue: '5.8%', weight: '15%' },
+                { item: 'EPS 성장률', endpoint: '/fundamentals/growth?symbol=X', field: 'epsGrowth', defaultValue: '12.4%', weight: '15%' },
+                { item: 'PE 비율', endpoint: '/fundamentals/ratios?symbol=X', field: 'priceToEarningsRatio', defaultValue: '28.5', weight: '30%' },
+                { item: 'PB 비율', endpoint: '/fundamentals/ratios?symbol=X', field: 'priceToBookRatio', defaultValue: '42.3', weight: '25%' },
+                { item: '모멘텀', endpoint: '/stable/quote?symbol=X', field: '(dayHigh-dayLow)/dayLow', defaultValue: '3.2%', weight: '15%' }
+            ],
+            meaning: '기하급수적 성장 가능성이 높은 종목 발굴. 단기 강력한 상승 신호 🚀'
+        },
+        {
+            category: 'analysis2',
+            id: 'ai_2_2',
+            name: '🚪 Market Entry Gate',
+            endpoint: '/analysis/market-regime',
+            formula: `
+                <div class="formula-line"><strong>4가지 게이트 동시 검증</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">1. Market Regime 게이트</div>
+                <div class="formula-line">&nbsp;&nbsp;Uptrend(PASS) → Sideways(CAUTION) → Downtrend(BLOCK)</div>
+                <div class="formula-line" style="margin-top: 8px;">2. Volatility 게이트</div>
+                <div class="formula-line">&nbsp;&nbsp;VIX < 20(PASS) → 20~30(CAUTION) → > 30(BLOCK)</div>
+                <div class="formula-line" style="margin-top: 8px;">3. Credit Stress 게이트</div>
+                <div class="formula-line">&nbsp;&nbsp;HY OAS < 400(PASS) → 400~600(CAUTION) → > 600(BLOCK)</div>
+                <div class="formula-line" style="margin-top: 8px;">4. Fear & Greed 게이트</div>
+                <div class="formula-line">&nbsp;&nbsp;Score > 50(PASS) → 40~50(CAUTION) → < 40(BLOCK)</div>
+                <div class="formula-line" style="margin-top: 10px;">최종 판정: 모두 PASS → 강력한 진입신호</div>
+            `,
+            dataSource: [
+                { item: '시장 레짐', endpoint: '/analysis/market-regime', field: 'regime', defaultValue: 'Uptrend', description: 'Risk-On/Neutral/Risk-Off' },
+                { item: 'VIX', endpoint: '/market', field: 'US_MARKET.VIX.price', defaultValue: '18.45', description: '변동성 지수' },
+                { item: 'HY 스프레드', endpoint: '/market', field: 'CREDIT.HYG.changePercentage', defaultValue: '350bp', description: '신용스트레스' },
+                { item: 'Fear&Greed', endpoint: '/feargreed', field: 'score', defaultValue: '62.5', description: '시장심리 (0~100)' }
+            ],
+            meaning: '모든 게이트가 PASS → 강력한 진입신호. CAUTION 섞임 → 조심스러운 진입'
+        },
+        {
+            category: 'analysis2',
+            id: 'ai_2_3',
+            name: '🔄 Sector Rotation',
+            endpoint: '/market',
+            formula: `
+                <div class="formula-line"><strong>섹터 로테이션 신호</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">Step 1: 11개 섹터 추출</div>
+                <div class="formula-line">&nbsp;&nbsp;Technology, Healthcare, Finance, Industrials, Consumer, Energy, Utilities, Materials, Real Estate, Communication, Staples</div>
+                <div class="formula-line" style="margin-top: 10px;">Step 2: 각 섹터 수익률 계산</div>
+                <div class="formula-line">&nbsp;&nbsp;상위 섹터(녹색) | 약한 섹터(빨강)</div>
+                <div class="formula-line" style="margin-top: 10px;">Step 3: 경기 사이클별 로테이션</div>
+                <div class="formula-line">&nbsp;&nbsp;초반: Cyclical(금융,산업) | 중기: Tech | 후기: Defensive(생필)</div>
+            `,
+            dataSource: [
+                { item: '섹터 데이터', endpoint: '/market', field: 'SECTORS', defaultValue: 'XLK~XLRE', description: '11개 섹터 ETF' },
+                { item: '섹터 수익률', endpoint: '/market', field: 'SECTORS.{sector}.changePercentage', defaultValue: '+1.45%', description: '변화율' },
+                { item: '강도지수', endpoint: '/analysis/sector-rotation', field: 'rankings[i].w1', defaultValue: '+2.3', description: '상대 강도' }
+            ],
+            meaning: '경기사이클에 따라 초과 수익 가능한 섹터로 자본 이동'
         }
     ];
 
-    // ========== 나머지 위젯은 localStorage에서 로드 ==========
+    // AI분석 3 위젯들 추가
+    const analysis3Widgets = [
+        {
+            category: 'analysis3',
+            id: 'ai_3_1',
+            name: '💧 매크로 유동성 (Fed 잔액 + RRP + TGA)',
+            endpoint: '/market',
+            formula: `
+                <div class="formula-line"><strong>순 유동성 = Fed 잔액 - RRP - TGA</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">Step 1: Fed 잔액 추출 (FRED WALCL)</div>
+                <div class="formula-line">Step 2: 역레포(RRP) 추출 (FRED RRPONTSYD)</div>
+                <div class="formula-line">Step 3: TGA 추출 (FRED WTREGEN)</div>
+                <div class="formula-line">Step 4: 순 유동성 = Fed - RRP×1M - TGA 계산</div>
+                <div class="formula-line">Step 5: 단위 변환: T(조), B(십억)</div>
+            `,
+            dataSource: [
+                { item: 'Fed 잔액', endpoint: '/market', field: 'LIQUIDITY.FED_BALANCE', defaultValue: '7,234,567M', description: 'FRED WALCL (millions)' },
+                { item: '역레포(RRP)', endpoint: '/market', field: 'LIQUIDITY.REVERSE_REPO', defaultValue: '123,456M', description: 'FRED RRPONTSYD (millions)' },
+                { item: 'TGA', endpoint: '/market', field: 'LIQUIDITY.TGA', defaultValue: '567,890M', description: 'FRED WTREGEN (millions)' }
+            ],
+            meaning: '시장에 공급되는 실질 유동성. 높을수록 주가 상승 신호 📈'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_2',
+            name: '🔄 섹터 동향 (11개 섹터 데이터)',
+            endpoint: '/market',
+            formula: `
+                <div class="formula-line"><strong>섹터 분석 = 11개 섹터 수익률 계산</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">Step 1: 11개 섹터 추출 (SECTORS)</div>
+                <div class="formula-line">Step 2: 각 섹터 가격 + 변화율 계산</div>
+                <div class="formula-line">Step 3: 수익률 기준 정렬</div>
+                <div class="formula-line">Step 4: 강세/약세 섹터 구분</div>
+            `,
+            dataSource: [
+                { item: 'XLK (기술)', endpoint: '/market', field: 'SECTORS.TECHNOLOGY', defaultValue: '$230.12', description: '기술 섹터 (Technology)' },
+                { item: 'XLV (헬스)', endpoint: '/market', field: 'SECTORS.HEALTHCARE', defaultValue: '$195.45', description: '헬스케어 섹터 (Healthcare)' },
+                { item: 'XLF (금융)', endpoint: '/market', field: 'SECTORS.FINANCE', defaultValue: '$165.78', description: '금융 섹터 (Finance)' },
+                { item: '섹터 변화율', endpoint: '/market', field: 'SECTORS.{sector}.changePercentage', defaultValue: '+1.23%', description: '일일 수익률' }
+            ],
+            meaning: '경기사이클에 따른 섹터 로테이션 신호. 강세 섹터로 자본이 이동 📊'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_3',
+            name: '📊 신용 스트레스 (HYG + LQD)',
+            endpoint: '/market',
+            formula: `
+                <div class="formula-line"><strong>신용 스트레스 = HYG/LQD 비율</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">Step 1: HYG (하이일드 채권) 추출</div>
+                <div class="formula-line">Step 2: LQD (투자등급 채권) 추출</div>
+                <div class="formula-line">Step 3: 신용 스프레드 계산 (HYG-LQD)</div>
+                <div class="formula-line">Step 4: 시장 리스크 평가</div>
+            `,
+            dataSource: [
+                { item: 'HYG (하이일드)', endpoint: '/market', field: 'CREDIT.HYG.price', defaultValue: '$85.23', description: '하이일드 채권' },
+                { item: 'LQD (투자등급)', endpoint: '/market', field: 'CREDIT.LQD.price', defaultValue: '$105.67', description: '투자등급 채권' },
+                { item: 'HYG 변화율', endpoint: '/market', field: 'CREDIT.HYG.changePercentage', defaultValue: '-0.12%', description: '하이일드 변화' }
+            ],
+            meaning: '신용시장 스트레스 지수. 높을수록 리스크 증가 ⚠️'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_4',
+            name: '🚀 폭발적 성장 주식 발굴 (상위 10개)',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>종목 발굴 로직</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">Step 1: /alpha/discovery에서 상위 20개 로드</div>
+                <div class="formula-line">Step 2: 점수별 정렬</div>
+                <div class="formula-line">Step 3: 상위 10개 선택</div>
+                <div class="formula-line">Step 4: 모멘텀 + 수익률 계산</div>
+            `,
+            dataSource: [
+                { item: '종목 심볼', endpoint: '/alpha/discovery', field: 'top_20[].symbol', defaultValue: 'NVDA,AAPL', description: '상위 10개 종목' },
+                { item: '점수', endpoint: '/alpha/discovery', field: 'top_20[].score', defaultValue: '85.32', description: '100점 만점 정규화' },
+                { item: '모멘텀', endpoint: '/alpha/discovery', field: 'top_20[].momentum', defaultValue: '+3.2%', description: '일중 변동성' }
+            ],
+            meaning: '기하급수적 성장 가능성이 높은 종목. 단기 강력한 상승 신호 🚀'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_5',
+            name: '🏆 궁극의 주식 발굴 엔진 (PE + 수익률)',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>최종 발굴 = 성장성 + 밸류에이션</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">Step 1: /alpha/discovery에서 상위 20개 로드</div>
+                <div class="formula-line">Step 2: 최종점수 기준 정렬</div>
+                <div class="formula-line">Step 3: PE/PB 밸류에이션 계산</div>
+                <div class="formula-line">Step 4: 상위 10개 선택</div>
+            `,
+            dataSource: [
+                { item: '최종점수', endpoint: '/alpha/discovery', field: 'top_20[].score', defaultValue: '75.43', description: '정규화 점수' },
+                { item: 'PE 비율', endpoint: '/fundamentals/ratios?symbol=X', field: 'priceToEarningsRatio', defaultValue: '28.5', description: 'Price/Earnings' },
+                { item: '수익률', endpoint: '/alpha/discovery', field: 'top_20[].revenueGrowth', defaultValue: '+5.8%', description: '매출 성장률' }
+            ],
+            meaning: '성장성과 밸류에이션을 모두 고려한 최고 등급 발굴주 ★★★★★'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_6',
+            name: '⚡ 초고성장 기업 발굴 (수익+EPS 성장)',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>점수 = 0.25×수익성장 + 0.25×EPS성장 + 0.15×순이익마진 + 0.15×ROE + 0.10×PE + 0.05×PB + 0.05×모멘텀</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">특징: 매출/EPS 성장이 빠르면서도 수익성이 좋은 기업</div>
+            `,
+            dataSource: [
+                { item: '수익 성장', endpoint: '/fundamentals/growth?symbol=X', field: 'revenueGrowth', defaultValue: '+15.2%', weight: '25%' },
+                { item: 'EPS 성장', endpoint: '/fundamentals/growth?symbol=X', field: 'epsGrowth', defaultValue: '+22.5%', weight: '25%' },
+                { item: '순이익마진', endpoint: '/fundamentals/income?symbol=X', field: 'netIncome/revenue', defaultValue: '18.5%', weight: '15%' },
+                { item: 'ROE', endpoint: '/fundamentals/ratios?symbol=X', field: 'returnOnEquity', defaultValue: '25.3%', weight: '15%' }
+            ],
+            meaning: '매출/EPS 성장이 빠르면서도 수익성이 좋은 기업. 폭발적 성장 가능성 ⬆️'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_7',
+            name: '💰 기관 매집 종목 (섹터모멘텀 + 성장)',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>점수 = 섹터모멘텀 + 수익성장 + EPS성장 + 영업이익률</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">섹터모멘텀 = 섹터수익률 - SPY수익률</div>
+                <div class="formula-line">기관이 강세 섹터 내에서 성장성과 수익성이 우수한 종목에 매집</div>
+            `,
+            dataSource: [
+                { item: '섹터모멘텀', endpoint: '/analysis/sector-rotation', field: 'momentum', defaultValue: '+2.3%', description: '섹터 상대강도' },
+                { item: '수익 성장', endpoint: '/fundamentals/growth', field: 'revenueGrowth', defaultValue: '+10.5%', description: '매출 성장' },
+                { item: 'EPS 성장', endpoint: '/fundamentals/growth', field: 'epsGrowth', defaultValue: '+18.2%', description: 'EPS 성장' },
+                { item: '영업이익률', endpoint: '/fundamentals/income', field: 'operatingIncome/revenue', defaultValue: '22.1%', description: '영업 효율' }
+            ],
+            meaning: '기관투자가가 강세 섹터 내에서 매집할 가능성이 높은 종목 📈'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_8',
+            name: '🎯 섹터 로테이션 리더 (상대강도)',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>점수 = 섹터상대강도 + 수익성장 + EPS성장</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">섹터상대강도 = 섹터수익률 - SPY수익률</div>
+                <div class="formula-line">강세 섹터 내에서 성장성이 우수한 리더주</div>
+            `,
+            dataSource: [
+                { item: '상대강도', endpoint: '/analysis/sector-rotation', field: 'relativeStrength', defaultValue: '+1.8%', description: '섹터 대비 강도' },
+                { item: '수익 성장', endpoint: '/fundamentals/growth', field: 'revenueGrowth', defaultValue: '+12.3%', description: '매출 성장' },
+                { item: 'EPS 성장', endpoint: '/fundamentals/growth', field: 'epsGrowth', defaultValue: '+19.5%', description: 'EPS 성장' }
+            ],
+            meaning: '자본 로테이션 시 상승력이 강한 리더주. 섹터 선두 역할 📊'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_9',
+            name: '💧 유동성 수혜 종목 (유동성지수 + 리스크)',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>점수 = 유동성지수 + 리스크점수 + 수익성장</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">유동성지수 = (Fed/5T)×50% + (M2/20T)×30% + max(0,100-RRP/100)×20%</div>
+                <div class="formula-line">리스크점수 = 100 - VIX×3</div>
+            `,
+            dataSource: [
+                { item: '유동성지수', endpoint: '/market', field: 'LIQUIDITY', defaultValue: '78.5', description: 'Fed + M2 + RRP 조합' },
+                { item: 'VIX', endpoint: '/market', field: 'US_MARKET.VIX.price', defaultValue: '18.45', description: '변동성 지수' },
+                { item: '수익 성장', endpoint: '/fundamentals/growth', field: 'revenueGrowth', defaultValue: '+8.7%', description: '매출 성장' }
+            ],
+            meaning: '유동성이 풍부할 때 상승 가능성이 높은 종목. 유동성 장세 최대 수혜 🚀'
+        },
+        {
+            category: 'analysis3',
+            id: 'ai_3_10',
+            name: '🚀 통합 발굴 엔진 (거시+섹터+기본가치)',
+            endpoint: '/alpha/discovery',
+            formula: `
+                <div class="formula-line"><strong>점수 = 거시점수 + 섹터강도 + 기본가치 (정규화)</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">거시점수 = SPY수익률×60% + (100-VIX×3)×40%</div>
+                <div class="formula-line">섹터강도 = 섹터수익률 - SPY수익률</div>
+                <div class="formula-line">기본가치 = ROE × 수익성장 / PE</div>
+            `,
+            dataSource: [
+                { item: '거시점수', endpoint: '/market', field: 'US_MARKET', defaultValue: '65.3', description: 'SPY+VIX 조합' },
+                { item: '섹터강도', endpoint: '/analysis/sector-rotation', field: 'strength', defaultValue: '+1.5%', description: '섹터 상대강도' },
+                { item: '기본가치', endpoint: '/fundamentals/ratios', field: 'roe', defaultValue: '21.5%', description: 'ROE 기반' }
+            ],
+            meaning: '모든 팩터를 아우른 최고 등급 발굴주. Investflow 종합 엔진 ★★★★★'
+        }
+    ];
+
+    // ========== 대시보드 초기화 ==========
     async function initDashboard() {
-        // localStorage에서 AI분석 2, 3 정보 로드
-        const analysis2 = JSON.parse(localStorage.getItem('widgetDataCache_analysis2') || '{}');
+        // AI분석 3 위젯 추가
+        analysis3Widgets.forEach(w => ALL_WIDGETS.push(w));
+
+        // localStorage에서 정보 로드 (선택사항)
         const analysis3 = JSON.parse(localStorage.getItem('widgetDataCache_analysis3') || '{}');
-
-        // AI분석 2 추가
-        Object.values(analysis2).forEach((widget, idx) => {
-            ALL_WIDGETS.push({
-                category: 'analysis2',
-                id: widget.id,
-                name: widget.name,
-                endpoint: widget.endpoint,
-                logic: widget.logic,
-                meaning: widget.meaning,
-                metrics: widget.metrics,
-                data: widget.data
-            });
-        });
-
-        // AI분석 3 추가
-        Object.values(analysis3).forEach((widget, idx) => {
-            ALL_WIDGETS.push({
-                category: 'analysis3',
-                id: widget.id,
-                name: widget.name,
-                endpoint: widget.endpoint,
-                logic: widget.logic,
-                meaning: widget.meaning,
-                metrics: widget.metrics,
-                data: widget.data
-            });
-        });
 
         renderWidgets();
     }
