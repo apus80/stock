@@ -1052,7 +1052,7 @@
                         // 데이터 소스: Worker /alpha/alpha-scanner → FMP fundamentals + FRED macro
                         try {
                             elem.innerHTML = '<div class="loading">🔬 S&P500 Top 80 종목 딥 분석 중... (최대 60초)</div>';
-                            const scannerRes = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/alpha-scanner', { method: 'POST' });
+                            const scannerRes = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/discovery', { method: 'GET' });
                             const scannerData = await scannerRes.json();
 
                             if (scannerData && scannerData.top_20 && scannerData.top_20.length > 0) {

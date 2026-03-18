@@ -1906,13 +1906,9 @@
 
                         <div class="card">
                             <div class="title-area"><span class="title">3. 시총 Top 7</span><button class="card-rfbtn" id="rfbtn-3" onclick="imdRefreshCard(3)" title="새로고침">↻</button></div>
-                            <div class="item"><span>MSFT</span><span class="item-right"><span id="top7_msft" class="value">-</span><span id="chg-top7_msft" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_msft"></span></span></div>
-                            <div class="item"><span>AAPL</span><span class="item-right"><span id="top7_aapl" class="value">-</span><span id="chg-top7_aapl" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_aapl"></span></span></div>
-                            <div class="item"><span>NVDA</span><span class="item-right"><span id="top7_nvda" class="value">-</span><span id="chg-top7_nvda" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_nvda"></span></span></div>
-                            <div class="item"><span>GOOGL</span><span class="item-right"><span id="top7_googl" class="value">-</span><span id="chg-top7_googl" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_googl"></span></span></div>
-                            <div class="item"><span>AMZN</span><span class="item-right"><span id="top7_amzn" class="value">-</span><span id="chg-top7_amzn" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_amzn"></span></span></div>
-                            <div class="item"><span>TSLA</span><span class="item-right"><span id="top7_tsla" class="value">-</span><span id="chg-top7_tsla" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_tsla"></span></span></div>
-                            <div class="item"><span>META</span><span class="item-right"><span id="top7_meta" class="value">-</span><span id="chg-top7_meta" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-top7_meta"></span></span></div>
+                            <div id="top7-container">
+                                <div style="color:#94a3b8; font-size:0.8rem; text-align:center;">데이터 로딩중...</div>
+                            </div>
                         </div>
 
                         <div class="card">
@@ -4843,6 +4839,7 @@ var ECON_DATA = {
         /* ── Worker 마켓 데이터 (모든 자산 클래스) ────────────── */
         var workerMarketCache = null;
         var workerMarketCacheTime = 0;
+        var inflightMarketRequest = null; // 🚀 진행 중인 요청 공유 (중복 요청 방지)
         var MARKET_CACHE_KEY = 'marketData_worker';
         var MEMORY_CACHE_TTL = 30000; // 메모리 캐시: 30초
         var STORAGE_CACHE_TTL = 5 * 60000; // LocalStorage: 5분
@@ -4856,14 +4853,18 @@ var ECON_DATA = {
                 return Promise.resolve(workerMarketCache);
             }
 
-            var url = API_BASE + '/market';
-            console.log('[WORKER] 🔄 Fetching from:', url);
-            console.log('[WORKER] API_BASE:', API_BASE);
+            // 🚀 핵심: 이미 요청이 날아가고 있다면, 그 결과를 기다렸다가 공유함 (중복 요청 방지)
+            if (inflightMarketRequest) {
+                console.log('[WORKER] 🔄 진행 중인 API 요청 대기 중...');
+                return inflightMarketRequest;
+            }
 
-            return fetch(url, { credentials: 'omit' })
+            var url = API_BASE + '/market';
+            console.log('[WORKER] 🚀 실제 네트워크 Fetch 실행:', url);
+
+            inflightMarketRequest = fetch(url, { credentials: 'omit' })
                 .then(function(r) {
                     console.log('[WORKER] 📊 Response status:', r.status, r.statusText);
-                    console.log('[WORKER] Content-Type:', r.headers.get('content-type'));
                     if (!r.ok) {
                         console.error('[WORKER] ❌ HTTP Error:', r.status);
                         throw new Error('HTTP ' + r.status);
@@ -4886,15 +4887,15 @@ var ECON_DATA = {
                             console.warn('[WORKER] LocalStorage save failed:', e.message);
                         }
 
-                        console.log('[WORKER] Market data loaded successfully, keys:', Object.keys(data));
+                        console.log('[WORKER] ✅ Market data loaded successfully, keys:', Object.keys(data));
+                        inflightMarketRequest = null; // 성공 시 초기화
                         return data;
                     }
                     throw new Error('Empty response');
                 })
                 .catch(function(e) {
                     console.error('[WORKER] ❌ Fetch FAILED:', e.message);
-                    console.error('[WORKER] Error type:', e.name);
-                    console.error('[WORKER] Stack:', e.stack ? e.stack.substring(0, 200) : 'N/A');
+                    inflightMarketRequest = null; // 실패 시 초기화
 
                     // 3️⃣ API 실패 시 LocalStorage 캐시에서 로드
                     try {
@@ -4916,6 +4917,8 @@ var ECON_DATA = {
 
                     return null;
                 });
+
+            return inflightMarketRequest;
         }
 
         // 4️⃣ 페이지 로드 시 localStorage에서 캐시 복원 (화면 깜빡임 방지)
@@ -5717,25 +5720,26 @@ var ECON_DATA = {
                 })
                 .then(function(result) {
                     console.log('[Top7] API 응답:', result);
-                    console.log('[Top7] result.data 타입:', typeof result.data, '배열?', Array.isArray(result.data));
                     if (result && result.data && Array.isArray(result.data)) {
                         console.log('[Top7] 데이터 처리 시작, 항목 수:', result.data.length);
-                        result.data.forEach(function(item, idx) {
-                            var ticker = (item.symbol || '').toLowerCase();
-                            var idPrefix = 'top7_' + ticker;
-                            console.log(`  [${idx}] ${ticker} - id: ${idPrefix}, price: ${item.price}`);
+                        var container = document.getElementById('top7-container');
+                        container.innerHTML = ''; // 로딩 텍스트 제거
 
-                            // 가격 설정
-                            if (item.price !== null && item.price !== undefined) {
-                                console.log(`    ✅ 가격 설정: ${idPrefix} = ${item.price}`);
-                                imdSetValue(idPrefix, item.price, 2);
-                            }
+                        result.data.forEach(function(item) {
+                            var ticker = (item.symbol || '').toUpperCase();
+                            var priceStr = item.price !== null && item.price !== undefined ? Number(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-';
+                            var chgNum = item.changePercentage !== null && item.changePercentage !== undefined ? Number(item.changePercentage) : null;
+                            var isUp = chgNum > 0;
+                            var chgCls = isUp ? 'chg-up' : (chgNum !== null && chgNum < 0 ? 'chg-dn' : 'chg-flat');
+                            var chgStr = chgNum !== null ? (isUp ? '+' : '') + chgNum.toFixed(2) + '%' : '';
 
-                            // 등락률 설정
-                            if (item.changePercentage !== null && item.changePercentage !== undefined) {
-                                console.log(`    ✅ 등락률 설정: chg-${idPrefix} = ${item.changePercentage}%`);
-                                imdSetChange(idPrefix, item.changePercentage, 'pct');
-                            }
+                            var html = '<div class="item"><span>' + ticker + '</span>' +
+                                       '<span class="item-right"><span class="value">' + priceStr + '</span>' +
+                                       '<span class="chg-val ' + chgCls + '">' + chgStr + '</span>' +
+                                       '<span class="ns ns-online"></span></span></div>';
+
+                            container.insertAdjacentHTML('beforeend', html);
+                            console.log('  [' + ticker + '] price: ' + item.price + ', chg: ' + item.changePercentage + '%');
                         });
                     } else {
                         console.warn('[Top7] result.data가 배열이 아니거나 없음:', result);
@@ -5743,25 +5747,7 @@ var ECON_DATA = {
                 })
                 .catch(function(err) {
                     console.error('[Top7] /top7 호출 실패:', err);
-                    // Fallback: 개별 조회
-                    var fallbackTickers = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'AMZN', 'TSLA', 'META'];
-                    fallbackTickers.forEach(function(ticker) {
-                        fetch(WORKER_API_BASE + '/stock?symbol=' + ticker)
-                            .then(function(res) { return res.json(); })
-                            .then(function(result) {
-                                if (result && result.data) {
-                                    var data = result.data;
-                                    var idPrefix = 'top7_' + ticker.toLowerCase();
-                                    if (data.price) {
-                                        imdSetValue(idPrefix, data.price, 2);
-                                    }
-                                    if (data.changePercentage !== undefined) {
-                                        imdSetChange(idPrefix, data.changePercentage, 'pct');
-                                    }
-                                }
-                            })
-                            .catch(function(e) { console.warn('[Top7 Fallback] ' + ticker + ' failed:', e); });
-                    });
+                    document.getElementById('top7-container').innerHTML = '<div style="color:#ef4444; font-size:0.8rem; text-align:center;">데이터를 불러올 수 없습니다.</div>';
                 });
         }
 
