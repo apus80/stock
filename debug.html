@@ -1,571 +1,590 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InvestFlow Worker Endpoint Monitor</title>
-  <style>
-    :root {
-      --bg: #0d1117;
-      --bg2: #161b22;
-      --bg3: #1c2128;
-      --bg4: #21262d;
-      --border: #30363d;
-      --muted: #484f58;
-      --text-muted: #8b949e;
-      --text: #c9d1d9;
-      --text-bright: #e6edf3;
-      --blue: #58a6ff;
-      --green: #3fb950;
-      --red: #f85149;
-      --yellow: #d29922;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker API 디버그 대시보드</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg2: #161b22;
+            --bg3: #1c2128;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --green: #3fb950;
+            --red: #f85149;
+            --blue: #58a6ff;
+            --yellow: #d29922;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Fira Code', 'Cascadia Code', monospace;
-      font-size: 12px;
-      line-height: 1.6;
-      padding: 20px;
-    }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            padding: 20px;
+            line-height: 1.5;
+        }
 
-    .container {
-      max-width: 1600px;
-      margin: 0 auto;
-    }
+        .container { max-width: 1700px; margin: 0 auto; }
 
-    h1 {
-      color: var(--blue);
-      margin-bottom: 30px;
-      font-size: 20px;
-    }
+        h1 {
+            color: var(--blue);
+            margin-bottom: 5px;
+            font-size: 20px;
+        }
 
-    .control-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
+        .header {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+        }
 
-    button {
-      padding: 8px 16px;
-      border: 1px solid var(--border);
-      background: var(--bg4);
-      color: var(--text);
-      border-radius: 5px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 12px;
-    }
+        .subtitle {
+            color: var(--yellow);
+            font-size: 11px;
+            margin-top: 5px;
+        }
 
-    button:hover {
-      background: var(--border);
-    }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
 
-    button.active {
-      background: #1f6feb;
-      border-color: #1f6feb;
-      color: #fff;
-    }
+        button {
+            padding: 8px 16px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
 
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
+        button:hover {
+            background: var(--border);
+            color: white;
+        }
 
-    .summary-item {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      padding: 12px;
-      border-radius: 5px;
-      text-align: center;
-    }
+        button.active {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
 
-    .summary-item .label {
-      color: var(--text-muted);
-      font-size: 11px;
-    }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
 
-    .summary-item .value {
-      color: var(--blue);
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 4px;
-    }
+        .stat-item {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+        }
 
-    .endpoint-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 12px;
-      margin-bottom: 30px;
-    }
+        .stat-label {
+            color: var(--yellow);
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
 
-    .endpoint-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      overflow: hidden;
-    }
+        .stat-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--blue);
+        }
 
-    .endpoint-header {
-      background: var(--bg3);
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
+        .endpoint-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+            gap: 12px;
+            margin-bottom: 30px;
+        }
 
-    .endpoint-title {
-      font-weight: bold;
-      color: var(--text-bright);
-      font-size: 13px;
-      flex: 1;
-      word-break: break-all;
-    }
+        .category-header {
+            grid-column: 1 / -1;
+            background: var(--bg3);
+            padding: 12px;
+            border-left: 3px solid var(--blue);
+            color: var(--blue);
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
 
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
+        .endpoint-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
 
-    .status-dot.ok {
-      background: var(--green);
-    }
+        .endpoint-card:hover {
+            border-color: var(--blue);
+            background: var(--bg3);
+            transform: translateY(-2px);
+        }
 
-    .status-dot.fail {
-      background: var(--red);
-    }
+        .endpoint-header {
+            background: var(--bg3);
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--green);
+            font-weight: bold;
+            font-size: 11px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
 
-    .status-dot.loading {
-      background: var(--yellow);
-      animation: pulse 1s infinite;
-    }
+        .endpoint-body {
+            padding: 12px;
+        }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
+        .endpoint-name {
+            color: var(--text);
+            margin-bottom: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
 
-    .endpoint-body {
-      padding: 10px;
-    }
+        .endpoint-meta {
+            color: var(--yellow);
+            font-size: 10px;
+            margin-bottom: 8px;
+        }
 
-    .endpoint-input {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 8px;
-    }
+        .param-input {
+            width: 100%;
+            padding: 6px 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 11px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
 
-    .endpoint-input input {
-      flex: 1;
-      padding: 4px 6px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 3px;
-      font-family: inherit;
-      font-size: 11px;
-    }
+        .param-input:focus {
+            outline: none;
+            border-color: var(--blue);
+            background: var(--bg2);
+        }
 
-    .endpoint-input button {
-      padding: 4px 8px;
-      font-size: 11px;
-    }
+        .button-group {
+            display: flex;
+            gap: 6px;
+        }
 
-    .endpoint-result {
-      margin-top: 8px;
-      padding: 8px;
-      background: var(--bg);
-      border-radius: 3px;
-      border: 1px solid var(--border);
-      font-size: 11px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
+        .button-group button {
+            flex: 1;
+            padding: 6px;
+            font-size: 10px;
+        }
 
-    .result-ok {
-      color: var(--green);
-    }
+        .test-btn { background: var(--bg3); border-color: var(--border); }
+        .test-btn:hover { background: var(--blue); color: white; border-color: var(--blue); }
 
-    .result-fail {
-      color: var(--red);
-    }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 4px;
+            border-left: 3px solid transparent;
+            display: none;
+            font-size: 10px;
+        }
 
-    .result-info {
-      color: var(--blue);
-    }
+        .result.show {
+            display: block;
+        }
 
-    .ms-badge {
-      color: var(--yellow);
-      font-size: 10px;
-      font-weight: bold;
-    }
+        .result.success {
+            border-left-color: var(--green);
+        }
 
-    .category-title {
-      color: var(--blue);
-      font-size: 14px;
-      font-weight: bold;
-      margin-top: 30px;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid var(--border);
-    }
+        .result.error {
+            border-left-color: var(--red);
+        }
 
-    .log-section {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 15px;
-      margin-top: 30px;
-    }
+        .result-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
 
-    .log-section h2 {
-      color: var(--text-bright);
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
+        .result.success .result-header { color: var(--green); }
+        .result.error .result-header { color: var(--red); }
 
-    .log-area {
-      background: var(--bg);
-      padding: 10px;
-      border-radius: 3px;
-      max-height: 400px;
-      overflow-y: auto;
-      font-size: 11px;
-      line-height: 1.4;
-    }
+        .result-data {
+            background: var(--bg2);
+            padding: 6px;
+            border-radius: 3px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 9px;
+            word-break: break-all;
+            white-space: pre-wrap;
+            color: var(--text-muted);
+        }
 
-    .log-line {
-      padding: 2px 0;
-      border-bottom: 1px solid var(--bg3);
-    }
+        .quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px;
+            margin-bottom: 25px;
+        }
 
-    .log-ok { color: var(--green); }
-    .log-fail { color: var(--red); }
-    .log-info { color: var(--blue); }
-    .log-warn { color: var(--yellow); }
-  </style>
+        .quick-btn {
+            padding: 8px;
+            font-size: 10px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .quick-btn:hover {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .summary {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-title {
+            color: var(--blue);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .summary-item {
+            padding: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .summary-item-label {
+            color: var(--yellow);
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .summary-item-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--green);
+        }
+    </style>
 </head>
 <body>
-
-<div class="container">
-  <h1>🔍 InvestFlow Worker Endpoint Monitor</h1>
-
-  <div class="control-bar">
-    <button onclick="testAllEndpoints()">🚀 모든 엔드포인트 테스트</button>
-    <button onclick="clearLogs()">🗑 로그 지우기</button>
-    <button id="autoBtn" onclick="toggleAuto()">자동갱신 OFF</button>
-  </div>
-
-  <div class="summary" id="summary">
-    <div class="summary-item">
-      <div class="label">총 엔드포인트</div>
-      <div class="value" id="totalCount">-</div>
-    </div>
-    <div class="summary-item">
-      <div class="label">성공</div>
-      <div class="value" id="successCount" style="color: var(--green);">-</div>
-    </div>
-    <div class="summary-item">
-      <div class="label">실패</div>
-      <div class="value" id="failCount" style="color: var(--red);">-</div>
-    </div>
-    <div class="summary-item">
-      <div class="label">평균 응답시간</div>
-      <div class="value" id="avgTime">-</div>
-    </div>
-  </div>
-
-  <div id="endpointContainer"></div>
-
-  <div class="log-section">
-    <h2>📋 로그</h2>
-    <div class="log-area" id="logArea"></div>
-  </div>
-</div>
-
-<script>
-const WORKER_URL = 'https://fmp-proxy.aiinvestflow.workers.dev';
-
-const ENDPOINTS = {
-  '시장 데이터': [
-    { path: '/market', params: null, desc: '모든 시장 데이터 + 12개 경제지표' },
-    { path: '/top7', params: null, desc: '시총 상위 7개 (정확한 순위)' },
-    { path: '/feargreed', params: null, desc: '공포탐욕 지수' },
-  ],
-  '📊 경제지표 검증 (신규)': [
-    { path: '/market-indicators', params: null, desc: '12개 경제지표 전체 검증 (mfg_pmi, svc_pmi, retail 포함)' },
-  ],
-  '개별 종목 분석': [
-    { path: '/stock', params: 'symbol=AAPL', desc: '종목 분석 (symbol 필수)' },
-    { path: '/alpha', params: 'symbol=AAPL', desc: 'Alpha 분석 (symbol 필수)' },
-    { path: '/alpha/discovery', params: null, desc: 'Alpha 발굴 엔진' },
-    { path: '/earnings', params: 'symbol=AAPL', desc: '실적 발표 (symbol 필수)' },
-  ],
-  '펀더멘탈 데이터': [
-    { path: '/fundamentals/earnings', params: 'symbol=AAPL', desc: '실적 (symbol 필수)' },
-    { path: '/fundamentals/growth', params: 'symbol=AAPL', desc: '성장률 (symbol 필수)' },
-    { path: '/fundamentals/income', params: 'symbol=AAPL', desc: '손익계산서 (symbol 필수)' },
-    { path: '/fundamentals/balance', params: 'symbol=AAPL', desc: '재무상태표 (symbol 필수)' },
-    { path: '/fundamentals/cashflow', params: 'symbol=AAPL', desc: '현금흐름표 (symbol 필수)' },
-    { path: '/fundamentals/ratios', params: 'symbol=AAPL', desc: '재무비율 (symbol 필수)' },
-    { path: '/fundamentals/profile', params: 'symbol=AAPL', desc: '회사정보 (symbol 필수)' },
-    { path: '/fundamentals/shares', params: 'symbol=AAPL', desc: '주식정보 (symbol 필수)' },
-  ],
-  '시장 분석': [
-    { path: '/analysis/institutional-score', params: null, desc: '기관투자자 점수' },
-    { path: '/analysis/market-regime', params: null, desc: '시장 체제' },
-    { path: '/analysis/liquidity-pulse', params: null, desc: '유동성 맥박' },
-    { path: '/analysis/yield-curve-monitor', params: null, desc: '수익률 곡선' },
-    { path: '/analysis/inflation-pressure', params: null, desc: '인플레이션 압력' },
-    { path: '/analysis/credit-stress', params: null, desc: '신용 스트레스' },
-    { path: '/analysis/market-breadth', params: null, desc: '시장 광범위' },
-    { path: '/analysis/volatility-regime', params: null, desc: '변동성 체제' },
-    { path: '/analysis/sector-rotation', params: null, desc: '섹터 회전' },
-    { path: '/analysis/dollar-liquidity', params: null, desc: '달러 유동성' },
-    { path: '/analysis/crypto-sentiment', params: null, desc: '암호화폐 심리' },
-    { path: '/analysis/smart-money', params: null, desc: '스마트머니' },
-    { path: '/analysis/stock-ranking', params: null, desc: '종목 순위' },
-    { path: '/analysis/market-heatmap', params: null, desc: '시장 히트맵' },
-    { path: '/analysis/real-rate-monitor', params: null, desc: '실질금리 모니터' },
-    { path: '/analysis/fed-policy-impact', params: null, desc: '연준 정책 영향' },
-    { path: '/analysis/labor-market-health', params: null, desc: '노동시장 건강도' },
-    { path: '/analysis/macro-momentum', params: null, desc: '매크로 모멘텀' },
-  ]
-};
-
-let logs = [];
-let results = {};
-let autoTest = false;
-
-function addLog(msg, type = 'info') {
-  const time = new Date().toLocaleTimeString('ko-KR');
-  logs.push({ time, msg, type });
-  renderLogs();
-}
-
-function renderLogs() {
-  const logArea = document.getElementById('logArea');
-  logArea.innerHTML = logs.slice(-50).reverse().map(l =>
-    `<div class="log-line log-${l.type}">[${l.time}] ${l.msg}</div>`
-  ).join('');
-  logArea.scrollTop = 0;
-}
-
-function clearLogs() {
-  logs = [];
-  renderLogs();
-}
-
-function renderEndpoints() {
-  const container = document.getElementById('endpointContainer');
-  let html = '';
-
-  Object.entries(ENDPOINTS).forEach(([category, endpoints]) => {
-    html += `<div class="category-title">📌 ${category}</div>`;
-    html += '<div class="endpoint-grid">';
-
-    endpoints.forEach((ep, idx) => {
-      const id = `ep-${category}-${idx}`;
-      const hasParams = ep.params !== null;
-      html += `
-        <div class="endpoint-card">
-          <div class="endpoint-header">
-            <div class="endpoint-title">${ep.path}</div>
-            <div class="status-dot" id="${id}-dot"></div>
-          </div>
-          <div class="endpoint-body">
-            <div style="color: var(--text-muted); font-size: 11px; margin-bottom: 8px;">${ep.desc}</div>
-            ${hasParams ? `
-              <div class="endpoint-input">
-                <input type="text" id="${id}-input" value="${ep.params}" placeholder="params">
-                <button onclick="testEndpoint('${ep.path}', '${id}')">테스트</button>
-              </div>
-            ` : `
-              <button style="width: 100%;" onclick="testEndpoint('${ep.path}', '${id}')">테스트</button>
-            `}
-            <div class="endpoint-result" id="${id}-result">대기중...</div>
-          </div>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Worker API 디버그 대시보드</h1>
+            <div class="subtitle">35개 엔드포인트 테스트 및 모니터링</div>
         </div>
-      `;
-    });
 
-    html += '</div>';
-  });
+        <!-- 컨트롤 -->
+        <div class="controls">
+            <button onclick="testAllEndpoints()">⚡ 모든 엔드포인트 테스트</button>
+            <button onclick="clearAllResults()">🗑️ 결과 초기화</button>
+            <button onclick="exportResults()">💾 결과 저장</button>
+        </div>
 
-  container.innerHTML = html;
-  updateSummary();
-}
+        <!-- 통계 -->
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">총 엔드포인트</div>
+                <div class="stat-value" id="stat-total">35</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">테스트 완료</div>
+                <div class="stat-value" id="stat-completed">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">성공</div>
+                <div class="stat-value" style="color: var(--green);" id="stat-success">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">실패</div>
+                <div class="stat-value" style="color: var(--red);" id="stat-error">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">평균 응답시간</div>
+                <div class="stat-value" id="stat-avg">-</div>
+            </div>
+        </div>
 
-async function testEndpoint(path, id) {
-  // 경제지표 검증 특수 처리
-  if (path === '/market-indicators') {
-    return testEconomicIndicators();
-  }
+        <!-- 빠른 테스트 -->
+        <h3 style="color: var(--blue); margin-bottom: 10px; font-size: 12px;">⚡ 빠른 테스트</h3>
+        <div class="quick-buttons" id="quick-buttons"></div>
 
-  const dotEl = document.getElementById(`${id}-dot`);
-  const resultEl = document.getElementById(`${id}-result`);
-  const inputEl = document.getElementById(`${id}-input`);
+        <!-- 엔드포인트 그리드 -->
+        <div class="endpoint-grid" id="endpoints-grid"></div>
+    </div>
 
-  const params = inputEl ? inputEl.value.trim() : null;
-  const url = params ? `${WORKER_URL}${path}?${params}` : `${WORKER_URL}${path}`;
+    <script>
+        const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+        let testResults = {};
 
-  dotEl.className = 'status-dot loading';
-  resultEl.innerHTML = '⏳ 호출 중...';
+        // 모든 엔드포인트 정의 (35개)
+        const endpoints = {
+            '📊 시장 데이터': [
+                { path: '/market', name: '시장 데이터 (Market Data)', desc: 'S&P500, VIX, 환율 등', needsParam: false },
+                { path: '/stock', name: '종목 정보 (Stock Quote)', desc: '개별 종목 정보', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/top7', name: '상위 7개 지수 (Top 7)', desc: '주요 지수', needsParam: false },
+                { path: '/feargreed', name: '공포-탐욕지수 (Fear & Greed)', desc: '시장 심리', needsParam: false },
+            ],
+            '📈 재무제표': [
+                { path: '/fundamentals/earnings', name: '실적 (Earnings)', desc: '실적 발표 데이터', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/fundamentals/growth', name: '성장률 (Growth)', desc: '매출/이익 성장률', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/fundamentals/income', name: '손익계산서 (Income)', desc: '수익성 지표', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/fundamentals/balance', name: '재무상태표 (Balance)', desc: '자산/부채/자본', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/fundamentals/cashflow', name: '현금흐름표 (Cash Flow)', desc: '현금 유동성', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/fundamentals/ratios', name: '재무비율 (Ratios)', desc: 'PE, PB 등 비율', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/fundamentals/profile', name: '회사정보 (Profile)', desc: '산업, 섹터, CEO', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/fundamentals/shares', name: '주식수 (Shares)', desc: '발행주식수 변화', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+            ],
+            '🎯 알파 & 발굴': [
+                { path: '/alpha', name: '알파 분석 (Alpha)', desc: '개별 종목 알파', needsParam: true, param: 'symbol', paramDefault: 'AAPL' },
+                { path: '/alpha/discovery', name: '알파 발굴 (Discovery)', desc: '상위 20개 종목', needsParam: false },
+                { path: '/alpha/alpha-scanner', name: '알파 스캐너', desc: '스캐닝 결과', needsParam: false },
+                { path: '/alpha/breakout', name: '돌파 신호 (Breakout)', desc: '가격 돌파', needsParam: false },
+            ],
+            '📊 분석 - 거시경제': [
+                { path: '/analysis/institutional-score', name: '제도권 점수', desc: '기관투자자 건강도', needsParam: false },
+                { path: '/analysis/market-regime', name: '시장 레짐', desc: 'Risk-On/Off', needsParam: false },
+                { path: '/analysis/liquidity-pulse', name: '유동성 펄스', desc: 'Fed 자산/유동성', needsParam: false },
+                { path: '/analysis/yield-curve-monitor', name: '수익률곡선', desc: '금리곡선 분석', needsParam: false },
+                { path: '/analysis/inflation-pressure', name: '인플레이션 압력', desc: 'CPI/PCE', needsParam: false },
+                { path: '/analysis/credit-stress', name: '신용 스트레스', desc: '신용스프레드', needsParam: false },
+                { path: '/analysis/real-rate-monitor', name: '실질금리', desc: '실질 금리 수준', needsParam: false },
+                { path: '/analysis/fed-policy-impact', name: 'Fed 정책 영향', desc: '연준 정책 분석', needsParam: false },
+                { path: '/analysis/labor-market-health', name: '노동시장', desc: '고용률/임금', needsParam: false },
+                { path: '/analysis/macro-momentum', name: '거시 모멘텀', desc: '경제 추진력', needsParam: false },
+            ],
+            '📈 분석 - 시장': [
+                { path: '/analysis/market-breadth', name: '시장 광도', desc: '상승/하락 종목 비율', needsParam: false },
+                { path: '/analysis/volatility-regime', name: '변동성 레짐', desc: 'VIX 수준 분석', needsParam: false },
+                { path: '/analysis/sector-rotation', name: '섹터 로테이션', desc: '섹터 강도 분석', needsParam: false },
+                { path: '/analysis/dollar-liquidity', name: '달러 유동성', desc: '달러 지수/자금', needsParam: false },
+                { path: '/analysis/stock-ranking', name: '종목 랭킹', desc: '성과 순위', needsParam: false },
+            ],
+            '💭 분석 - 심리': [
+                { path: '/analysis/crypto-sentiment', name: '암호 심리', desc: '암호화폐 심리', needsParam: false },
+                { path: '/analysis/smart-money', name: '기관 자금', desc: '스마트 머니 추적', needsParam: false },
+                { path: '/analysis/market-heatmap', name: '시장 히트맵', desc: '섹터 히트맵', needsParam: false },
+            ],
+            '📢 기타': [
+                { path: '/earnings', name: '실적 발표', desc: '실적 발표 캘린더', needsParam: false },
+            ]
+        };
 
-  const t0 = Date.now();
+        // UI 초기화
+        function initUI() {
+            const grid = document.getElementById('endpoints-grid');
+            const quickButtons = document.getElementById('quick-buttons');
 
-  try {
-    const res = await fetch(url);
-    const ms = Date.now() - t0;
-    const data = await res.json();
+            Object.entries(endpoints).forEach(([category, items]) => {
+                // 카테고리 헤더
+                const header = document.createElement('div');
+                header.className = 'category-header';
+                header.textContent = `${category} (${items.length})`;
+                grid.appendChild(header);
 
-    results[path] = { ok: res.ok, ms, data };
+                // 엔드포인트 카드
+                items.forEach(endpoint => {
+                    const card = createCard(endpoint);
+                    grid.appendChild(card);
+                });
+            });
 
-    if (res.ok) {
-      dotEl.className = 'status-dot ok';
-      const keys = Object.keys(data).length;
-      resultEl.innerHTML = `<span class="result-ok">✅ 성공</span> <span class="ms-badge">${ms}ms</span><br/>필드: ${keys}개`;
-      addLog(`✅ ${path}: ${ms}ms (필드: ${keys})`, 'ok');
-    } else {
-      dotEl.className = 'status-dot fail';
-      resultEl.innerHTML = `<span class="result-fail">❌ HTTP ${res.status}</span>`;
-      addLog(`❌ ${path}: HTTP ${res.status}`, 'fail');
-    }
-  } catch (e) {
-    dotEl.className = 'status-dot fail';
-    resultEl.innerHTML = `<span class="result-fail">❌ ${e.message}</span>`;
-    addLog(`❌ ${path}: ${e.message}`, 'fail');
-  }
+            // 빠른 테스트 버튼
+            const quickEndpoints = [
+                '/market', '/feargreed', '/alpha/discovery',
+                '/analysis/market-regime', '/analysis/institutional-score'
+            ];
+            quickEndpoints.forEach(path => {
+                const btn = document.createElement('button');
+                btn.className = 'quick-btn';
+                btn.textContent = path.split('/').pop();
+                btn.onclick = () => testEndpoint(path);
+                quickButtons.appendChild(btn);
+            });
+        }
 
-  updateSummary();
-}
+        function createCard(endpoint) {
+            const card = document.createElement('div');
+            card.className = 'endpoint-card';
+            const cardId = endpoint.path.replace(/\//g, '-');
+            card.id = `card-${cardId}`;
 
-// 경제지표 상세 검증
-async function testEconomicIndicators() {
-  addLog('🔍 경제지표 검증 시작...', 'info');
+            let html = `
+                <div class="endpoint-header">${endpoint.path}</div>
+                <div class="endpoint-body">
+                    <div class="endpoint-name">${endpoint.name}</div>
+                    <div class="endpoint-meta">💡 ${endpoint.desc}</div>
+            `;
 
-  try {
-    const t0 = Date.now();
-    const res = await fetch(`${WORKER_URL}/market`);
-    const ms = Date.now() - t0;
-    const data = await res.json();
+            if (endpoint.needsParam) {
+                html += `
+                    <input type="text" class="param-input" value="${endpoint.paramDefault}" placeholder="${endpoint.param}">
+                `;
+            }
 
-    if (!res.ok) {
-      addLog(`❌ /market 호출 실패: HTTP ${res.status}`, 'fail');
-      return;
-    }
+            html += `
+                <div class="button-group">
+                    <button class="test-btn" onclick="testEndpoint('${endpoint.path}', this)">테스트</button>
+                </div>
+                <div class="result" id="result-${cardId}"></div>
+                </div>
+            `;
 
-    const indicators = data.ECONOMIC_INDICATORS;
-    if (!indicators) {
-      addLog(`❌ ECONOMIC_INDICATORS 필드 없음`, 'fail');
-      return;
-    }
+            card.innerHTML = html;
+            return card;
+        }
 
-    // 12개 지표 검증
-    const requiredIndicators = ['fedfunds', 'cpi', 'core_cpi', 'core_pce', 'payems', 'unrate', 'dgs10', 'spread', 'umcsent', 'mfg_pmi', 'svc_pmi', 'retail'];
-    const checkResults = {};
+        async function testEndpoint(path, btnElement = null) {
+            const cardId = path.replace(/\//g, '-');
+            const card = document.querySelector(`#card-${cardId}`);
+            const resultDiv = document.getElementById(`result-${cardId}`);
+            const paramInput = card?.querySelector('.param-input');
 
-    requiredIndicators.forEach(ind => {
-      const exists = ind in indicators;
-      const hasData = exists && indicators[ind] && typeof indicators[ind] === 'object';
-      const hasDates = hasData && Array.isArray(indicators[ind].dates) && indicators[ind].dates.length > 0;
-      const hasValues = hasData && Array.isArray(indicators[ind].values) && indicators[ind].values.length > 0;
-      const hasCurrent = hasData && indicators[ind].current !== null && indicators[ind].current !== undefined;
+            let url = API_BASE + path;
+            if (paramInput && paramInput.value) {
+                url += `?symbol=${paramInput.value}`;
+            }
 
-      checkResults[ind] = { exists, hasData, hasDates, hasValues, hasCurrent };
+            resultDiv.classList.add('show');
+            resultDiv.innerHTML = '<div class="result-header"><span>⏳ 테스트 중...</span></div>';
 
-      const status = exists && hasData && hasDates && hasValues ? '✅' : '⚠️';
-      addLog(`${status} ${ind}: ${indicators[ind]?.label || '-'} (dates: ${hasDates ? '✓' : '✗'}, values: ${hasValues ? '✓' : '✗'}, current: ${hasCurrent ? '✓' : '✗'})`, hasData ? 'ok' : 'fail');
-    });
+            const startTime = Date.now();
 
-    // 특별히 신규 3개 지표 강조
-    addLog('', 'info');
-    addLog('🆕 신규 경제지표 (3개):', 'info');
-    ['mfg_pmi', 'svc_pmi', 'retail'].forEach(ind => {
-      const result = checkResults[ind];
-      if (result.exists && result.hasData && result.hasDates && result.hasValues) {
-        addLog(`✅ ${ind}: ${indicators[ind].label} - 완벽하게 로드됨`, 'ok');
-      } else {
-        addLog(`❌ ${ind}: 데이터 불완전`, 'fail');
-      }
-    });
+            try {
+                const response = await fetch(url, { timeout: 10000 });
+                const endTime = Date.now();
+                const duration = endTime - startTime;
 
-    addLog(``, 'info');
-    addLog(`✅ 경제지표 검증 완료 (${ms}ms) - 12개 지표 모두 확인됨`, 'ok');
+                const data = await response.json();
+                const fieldCount = Object.keys(data?.data || data || {}).length;
+                const dataStr = JSON.stringify(data, null, 2).substring(0, 400);
 
-  } catch (e) {
-    addLog(`❌ 경제지표 검증 실패: ${e.message}`, 'fail');
-  }
+                resultDiv.className = `result show success`;
+                resultDiv.innerHTML = `
+                    <div class="result-header">
+                        <span>✅ ${duration}ms</span>
+                        <span>${fieldCount} 필드</span>
+                    </div>
+                    <div class="result-data">${dataStr}${dataStr.length === 400 ? '\n... (생략)' : ''}</div>
+                `;
 
-  updateSummary();
-}
+                testResults[path] = { status: 'success', time: duration, fields: fieldCount };
+                updateStats();
+            } catch (error) {
+                const endTime = Date.now();
+                const duration = endTime - startTime;
 
-async function testAllEndpoints() {
-  addLog('═══ 모든 엔드포인트 테스트 시작 ═══', 'info');
+                resultDiv.className = 'result show error';
+                resultDiv.innerHTML = `
+                    <div class="result-header">
+                        <span>❌ ${duration}ms</span>
+                        <span>${error.message}</span>
+                    </div>
+                `;
 
-  let count = 0;
-  for (const category of Object.values(ENDPOINTS)) {
-    for (const ep of category) {
-      const id = `ep-${count}`;
-      // ID 다시 구성
-      const categoryKey = Object.keys(ENDPOINTS).find(k => ENDPOINTS[k].includes(ep));
-      const idx = ENDPOINTS[categoryKey].indexOf(ep);
-      const realId = `ep-${categoryKey}-${idx}`;
+                testResults[path] = { status: 'error', time: duration };
+                updateStats();
+            }
 
-      await testEndpoint(ep.path, realId);
-      await new Promise(r => setTimeout(r, 200)); // 요청 간격
-      count++;
-    }
-  }
+            if (btnElement) {
+                btnElement.style.background = 'var(--green)';
+                setTimeout(() => { btnElement.style.background = ''; }, 500);
+            }
+        }
 
-  addLog('═══ 테스트 완료 ═══', 'info');
-}
+        async function testAllEndpoints() {
+            console.log('🚀 모든 엔드포인트 테스트 시작...');
+            const allEndpoints = Object.values(endpoints).flat();
 
-function updateSummary() {
-  const ok = Object.values(results).filter(r => r.ok).length;
-  const fail = Object.values(results).filter(r => !r.ok).length;
-  const total = Object.keys(ENDPOINTS).reduce((sum, cat) => sum + ENDPOINTS[cat].length, 0);
-  const times = Object.values(results).map(r => r.ms).filter(m => m);
-  const avg = times.length > 0 ? Math.round(times.reduce((a,b)=>a+b,0)/times.length) : 0;
+            for (const endpoint of allEndpoints) {
+                await testEndpoint(endpoint.path);
+                await new Promise(r => setTimeout(r, 200)); // 요청 간 딜레이
+            }
 
-  document.getElementById('totalCount').textContent = total;
-  document.getElementById('successCount').textContent = ok;
-  document.getElementById('failCount').textContent = fail;
-  document.getElementById('avgTime').textContent = avg + 'ms';
-}
+            console.log('✅ 모든 테스트 완료');
+        }
 
-function toggleAuto() {
-  autoTest = !autoTest;
-  const btn = document.getElementById('autoBtn');
-  if (autoTest) {
-    btn.classList.add('active');
-    btn.textContent = '자동갱신 ON';
-    const interval = setInterval(() => {
-      if (!autoTest) clearInterval(interval);
-      testAllEndpoints();
-    }, 300000); // 5분
-  } else {
-    btn.classList.remove('active');
-    btn.textContent = '자동갱신 OFF';
-  }
-}
+        function updateStats() {
+            const results = Object.values(testResults);
+            const success = results.filter(r => r.status === 'success').length;
+            const error = results.filter(r => r.status === 'error').length;
+            const times = results.filter(r => r.time).map(r => r.time);
+            const avgTime = times.length > 0 ? Math.round(times.reduce((a,b) => a+b) / times.length) : 0;
 
-// 초기화
-window.addEventListener('load', () => {
-  renderEndpoints();
-  addLog('페이지 로드 완료. 테스트를 시작하세요.', 'info');
-});
-</script>
+            document.getElementById('stat-completed').textContent = results.length;
+            document.getElementById('stat-success').textContent = success;
+            document.getElementById('stat-error').textContent = error;
+            document.getElementById('stat-avg').textContent = avgTime + 'ms';
+        }
 
+        function clearAllResults() {
+            document.querySelectorAll('.result').forEach(r => {
+                r.classList.remove('show');
+                r.innerHTML = '';
+            });
+            testResults = {};
+            updateStats();
+        }
+
+        function exportResults() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                results: testResults,
+                summary: {
+                    total: Object.keys(testResults).length,
+                    success: Object.values(testResults).filter(r => r.status === 'success').length,
+                    error: Object.values(testResults).filter(r => r.status === 'error').length
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `worker-debug-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        // 초기화
+        window.addEventListener('load', initUI);
+    </script>
 </body>
 </html>
