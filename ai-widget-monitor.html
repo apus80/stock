@@ -348,6 +348,17 @@
             console.log('📊 데이터 새로고침 시작...');
             allWidgets = [];
 
+            // 각 HTML을 iframe으로 로드하여 강제로 초기화
+            console.log('🔄 AI분석 페이지들 강제 로드 중...');
+
+            // AI분석 1 로드 (iframe)
+            await loadPageViaIframe('ai-analysis.html');
+            await new Promise(r => setTimeout(r, 500));
+
+            // AI분석 3 로드 (iframe)
+            await loadPageViaIframe('ai-analysis-3.html');
+            await new Promise(r => setTimeout(r, 500));
+
             // AI분석 1 로드
             loadAnalysis1Data();
 
@@ -358,6 +369,44 @@
             loadAnalysis3Data();
 
             updateUI();
+        }
+
+        // iframe으로 페이지 로드 (DOMContentLoaded 발생 시키기)
+        function loadPageViaIframe(url) {
+            return new Promise((resolve) => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = url;
+
+                    iframe.onload = () => {
+                        console.log(`✅ ${url} 로드됨`);
+                        document.body.removeChild(iframe);
+                        resolve();
+                    };
+
+                    iframe.onerror = () => {
+                        console.warn(`⚠️ ${url} 로드 실패`);
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                        resolve();
+                    };
+
+                    document.body.appendChild(iframe);
+
+                    // 타임아웃: 5초 후 강제 완료
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                        resolve();
+                    }, 5000);
+                } catch (e) {
+                    console.error('iframe 로드 에러:', e);
+                    resolve();
+                }
+            });
         }
 
         function loadAnalysis1Data() {
