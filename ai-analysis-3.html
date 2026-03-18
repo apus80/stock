@@ -1247,6 +1247,37 @@
         // 페이지 로드 시 실행
         window.addEventListener('DOMContentLoaded', () => {
             console.log('✅ AI분석_3 페이지 로드 완료');
+
+            // 📊 AI분석 3 위젯 정보를 localStorage에 저장 (ai-widget-monitor.html 용)
+            const widgetTitles = [
+                '유동성 분석',
+                '섹터 동향',
+                '거시지표 요약',
+                '기술적 신호',
+                '시장 심리',
+                '경제 캘린더',
+                '투자 신호',
+                '위험도 지수',
+                '자산 배분',
+                '성과 분석'
+            ];
+
+            window.widgetDataCache3 = {};
+            widgetTitles.forEach((title, idx) => {
+                const widgetId = `analysis3-${idx + 1}`;
+                window.widgetDataCache3[widgetId] = {
+                    id: widgetId,
+                    page: 'AI분석 3',
+                    name: title,
+                    icon: ['💧', '🔄', '📊', '📈', '😨', '📅', '🎯', '⚠️', '🎲', '📉'][idx],
+                    status: 'loading',
+                    data: null,
+                    timestamp: new Date().toISOString()
+                };
+            });
+            localStorage.setItem('widgetDataCache_analysis3', JSON.stringify(window.widgetDataCache3));
+            console.log('✅ AI분석 3 위젯 정보 저장됨:', widgetTitles.length + '개');
+
             loadAllWidgets();
 
             // 5분마다 자동 갱신

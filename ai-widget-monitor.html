@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 위젯 모니터 - 실시간 분석</title>
+    <title>AI 위젯 모니터 - 완전한 추적 대시보드</title>
     <style>
         :root {
             --bg: #0d1117;
@@ -15,6 +15,7 @@
             --red: #f85149;
             --blue: #58a6ff;
             --yellow: #d29922;
+            --orange: #fb8500;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,17 +26,21 @@
             font-family: 'Fira Code', monospace;
             font-size: 12px;
             padding: 20px;
+            line-height: 1.6;
         }
 
-        .container {
-            max-width: 2000px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1900px; margin: 0 auto; }
 
         h1 {
             color: var(--blue);
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             font-size: 22px;
+        }
+
+        .subtitle {
+            color: var(--yellow);
+            margin-bottom: 20px;
+            font-size: 11px;
         }
 
         .header {
@@ -64,6 +69,7 @@
             cursor: pointer;
             font-size: 11px;
             transition: all 0.2s;
+            font-family: inherit;
         }
 
         button:hover {
@@ -100,8 +106,9 @@
         }
 
         .status-value {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
+            color: var(--blue);
         }
 
         .pages-grid {
@@ -124,11 +131,12 @@
             border-bottom: 1px solid var(--border);
             font-weight: bold;
             color: var(--blue);
+            font-size: 13px;
         }
 
         .page-content {
             padding: 15px;
-            max-height: 400px;
+            max-height: 500px;
             overflow-y: auto;
         }
 
@@ -145,6 +153,7 @@
         .widget-item:hover {
             background: var(--bg3);
             border-color: var(--blue);
+            transform: translateX(4px);
         }
 
         .widget-name {
@@ -154,33 +163,21 @@
         }
 
         .widget-status {
-            font-size: 10px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 8px;
+            font-size: 10px;
         }
 
         .status-badge {
             padding: 3px 8px;
             border-radius: 3px;
-            font-size: 9px;
             font-weight: bold;
         }
 
-        .status-loading {
-            background: var(--yellow);
-            color: black;
-        }
-
-        .status-success {
-            background: var(--green);
-            color: white;
-        }
-
-        .status-error {
-            background: var(--red);
-            color: white;
-        }
+        .status-completed { background: var(--green); color: white; }
+        .status-loading { background: var(--yellow); color: black; }
+        .status-error { background: var(--red); color: white; }
 
         .detail-panel {
             display: none;
@@ -189,11 +186,11 @@
             border-radius: 8px;
             margin-top: 20px;
             overflow: hidden;
+            max-height: 800px;
+            overflow-y: auto;
         }
 
-        .detail-panel.active {
-            display: block;
-        }
+        .detail-panel.active { display: block; }
 
         .detail-header {
             background: var(--bg3);
@@ -202,9 +199,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .detail-title {
             font-weight: bold;
             color: var(--blue);
         }
@@ -215,13 +209,11 @@
             color: var(--text);
             cursor: pointer;
             font-size: 16px;
+            padding: 0;
         }
 
         .detail-content {
             padding: 20px;
-            overflow-x: auto;
-            max-height: 600px;
-            overflow-y: auto;
         }
 
         .section {
@@ -234,11 +226,12 @@
             margin-bottom: 10px;
             padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
+            font-size: 12px;
         }
 
         .data-row {
             display: grid;
-            grid-template-columns: 200px 1fr;
+            grid-template-columns: 150px 1fr;
             gap: 15px;
             padding: 8px;
             margin-bottom: 5px;
@@ -254,6 +247,7 @@
         .data-value {
             color: var(--text);
             word-break: break-all;
+            font-family: 'Courier New', monospace;
         }
 
         .json-block {
@@ -263,7 +257,10 @@
             border-left: 3px solid var(--blue);
             overflow-x: auto;
             font-size: 10px;
-            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
 
         .timestamp {
@@ -271,52 +268,29 @@
             font-size: 10px;
             text-align: right;
             margin-top: 10px;
+            color: var(--yellow);
         }
 
-        .iframe-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-            z-index: 10000;
-            background: rgba(0,0,0,0.9);
+        .logic-steps {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid var(--yellow);
+            line-height: 1.8;
         }
 
-        .iframe-container.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .logic-step {
+            margin-bottom: 8px;
         }
 
-        .iframe-wrapper {
-            width: 90%;
-            height: 90%;
-            border: 2px solid var(--blue);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
+        .loading-spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
         }
 
-        .iframe-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--red);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 10001;
-            font-weight: bold;
-        }
-
-        #ai-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -324,23 +298,23 @@
     <div class="container">
         <div class="header">
             <div>
-                <h1>🚀 AI 위젯 모니터</h1>
-                <div style="color: var(--text); font-size: 11px;">AI분석 1, 2, 3의 모든 위젯 결과를 실시간으로 추적합니다</div>
+                <h1>🚀 AI 위젯 모니터 - 완전한 추적 대시보드</h1>
+                <div class="subtitle">AI분석 1, 2, 3의 모든 위젯을 실시간으로 모니터링하고 상세 데이터 확인</div>
             </div>
             <div class="controls">
-                <button onclick="loadAllAnalysisPages()">🔄 새로고침</button>
-                <button onclick="clearAllData()">🗑️ 데이터 초기화</button>
-                <button onclick="exportReport()">📊 리포트 내보내기</button>
+                <button onclick="refreshData()">🔄 새로고침</button>
+                <button onclick="autoRefreshToggle()">⏰ 자동갱신</button>
+                <button onclick="exportData()">💾 내보내기</button>
             </div>
         </div>
 
         <div class="status-bar">
             <div class="status-item">
                 <div class="status-label">총 위젯</div>
-                <div class="status-value" id="total-widgets">0</div>
+                <div class="status-value" id="total-widgets">29</div>
             </div>
             <div class="status-item">
-                <div class="status-label">완료됨</div>
+                <div class="status-label">로드 완료</div>
                 <div class="status-value" style="color: var(--green);" id="completed-widgets">0</div>
             </div>
             <div class="status-item">
@@ -357,318 +331,139 @@
 
         <div class="detail-panel" id="detail-panel">
             <div class="detail-header">
-                <div class="detail-title" id="detail-title"></div>
+                <div id="detail-title"></div>
                 <button class="close-btn" onclick="closeDetail()">✕</button>
             </div>
             <div class="detail-content" id="detail-content"></div>
         </div>
     </div>
 
-    <div class="iframe-container" id="iframe-container">
-        <div class="iframe-wrapper">
-            <button class="iframe-close" onclick="closeIframe()">닫기</button>
-            <iframe id="ai-iframe"></iframe>
-        </div>
-    </div>
-
     <script>
-        const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
-        let widgetDatabase = {
-            'ai-analysis-1': [],
-            'ai-analysis-2': [],
-            'ai-analysis-3': []
-        };
+        let autoRefreshEnabled = false;
+        let autoRefreshTimer = null;
+        let allWidgets = [];
 
-        async function loadAllAnalysisPages() {
-            console.log('📊 AI분석 페이지 데이터 로드 중...');
+        // 데이터 로드 및 렌더링
+        async function refreshData() {
+            console.log('📊 데이터 새로고침 시작...');
+            allWidgets = [];
 
-            try {
-                // localStorage에서 각 페이지의 캐시된 데이터 로드
-                const cache1 = localStorage.getItem('widgetDataCache_analysis1');
-                if (cache1) {
-                    const widgets = Object.values(JSON.parse(cache1));
-                    widgetDatabase['ai-analysis-1'] = widgets;
-                    console.log(`✅ AI분석 1: ${widgets.length}개 위젯 로드됨`);
+            // AI분석 1 로드
+            loadAnalysis1Data();
+
+            // AI분석 2 로드
+            await loadAnalysis2Data();
+
+            // AI분석 3 로드
+            loadAnalysis3Data();
+
+            updateUI();
+        }
+
+        function loadAnalysis1Data() {
+            const cached = localStorage.getItem('widgetDataCache_analysis1');
+            if (cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    Object.values(data).forEach(widget => {
+                        allWidgets.push(widget);
+                    });
+                    console.log(`✅ AI분석 1: ${Object.keys(data).length}개 위젯 로드`);
+                } catch (e) {
+                    console.error('❌ AI분석 1 로드 실패:', e);
                 }
-
-                const cache3 = localStorage.getItem('widgetDataCache_analysis3');
-                if (cache3) {
-                    const widgets = Object.values(JSON.parse(cache3));
-                    widgetDatabase['ai-analysis-3'] = widgets;
-                    console.log(`✅ AI분석 3: ${widgets.length}개 위젯 로드됨`);
-                }
-
-                // AI분석 2는 별도 처리
-                await loadAnalysis2Data();
-
-                updateUI();
-            } catch (e) {
-                console.error('❌ 페이지 로드 실패:', e);
-                updateUI();
             }
         }
 
         async function loadAnalysis2Data() {
-            // AI분석 2: 실시간 API에서 데이터 로드
-            console.log('📍 AI분석 2 위젯 데이터 로드 중...');
             const widgets = [];
+            const apiBase = 'https://fmp-proxy.aiinvestflow.workers.dev';
 
             try {
-                // 1️⃣ Alpha Discovery Scanner
-                const startTime1 = Date.now();
-                const res1 = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/discovery').catch(() => null);
-                const time1 = Date.now() - startTime1;
+                // Alpha Discovery
+                const res1 = await fetch(apiBase + '/alpha/discovery').catch(() => null);
                 const data1 = res1?.ok ? await res1.json() : null;
-
                 widgets.push({
-                    id: 'Analysis-2-1',
+                    id: 'analysis2-1',
                     page: 'AI분석 2',
-                    name: 'Alpha Discovery Scanner',
-                    icon: '🔍',
+                    name: '🔍 Alpha Discovery Scanner',
                     endpoint: '/alpha/discovery',
-                    logic: '📊 단계별 계산:\n1️⃣ 500개 종목 로드\n2️⃣ 9개 지표 계산 (모멘텀, 수익률, 거래량, PE, PB)\n3️⃣ explosiveScore 생성\n4️⃣ 상위 20개 선택\n5️⃣ 상세 정보 가공',
-                    meaning: '기하급수적 성장 가능성이 높은 숨겨진 종목을 AI가 자동으로 발굴하는 엔진',
-                    usage: '▪️ 강한 신호(90+): 진입 검토\n▪️ 보통 신호(70-89): 추가 분석 필요\n▪️ 약한 신호(-70): 회피 권장',
+                    logic: '📊 단계별 계산:\n1️⃣ 500개 종목 로드\n2️⃣ 9개 지표 계산\n3️⃣ Alpha Score 생성\n4️⃣ 상위 20개 선택',
+                    meaning: '기하급수적 성장 가능성이 높은 종목 발굴',
                     status: data1 ? 'completed' : 'error',
                     metrics: data1 ? {
-                        itemsAnalyzed: data1.analyzed || 0,
-                        universeSize: data1.universe_size || 0,
-                        topStocksFound: data1.top_20?.length || 0,
-                        executionTime: `${time1}ms`,
-                        bestScore: data1.top_20?.[0]?.explosiveScore?.toFixed(2) || '-'
+                        '분석 종목': data1.analyzed || 0,
+                        '유니버스': data1.universe_size || 0,
+                        '발견 종목': data1.top_20?.length || 0,
+                        '최고 점수': data1.top_20?.[0]?.explosiveScore?.toFixed(2) || '-'
                     } : {},
                     data: data1,
                     timestamp: new Date().toISOString()
                 });
 
-                // 2️⃣ Market Entry Gate
-                const startTime2 = Date.now();
-                const res2 = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/analysis/market-regime').catch(() => null);
-                const time2 = Date.now() - startTime2;
+                // Market Regime
+                const res2 = await fetch(apiBase + '/analysis/market-regime').catch(() => null);
                 const data2 = res2?.ok ? await res2.json() : null;
-
                 widgets.push({
-                    id: 'Analysis-2-2',
+                    id: 'analysis2-2',
                     page: 'AI분석 2',
-                    name: 'Market Entry Gate',
-                    icon: '🚪',
+                    name: '🚪 Market Entry Gate',
                     endpoint: '/analysis/market-regime',
-                    logic: '📊 단계별 계산:\n1️⃣ 시장 레짐 분석 (가격, VIX, 거시지표)\n2️⃣ Risk-On/Neutral/Risk-Off 판정\n3️⃣ 진입신호 생성\n4️⃣ 신뢰도 점수 계산',
-                    meaning: '강세장, 약세장, 보합장을 구분하여 포트폴리오 배치 결정하는 게이트',
-                    usage: '▪️ Risk-On: 공격적 (주식 80%)\n▪️ Neutral: 균형형 (주식 50%)\n▪️ Risk-Off: 방어적 (현금 60%)',
+                    logic: '📊 단계별 계산:\n1️⃣ 시장 레짐 분석\n2️⃣ Risk-On/Neutral/Risk-Off 판정\n3️⃣ 신뢰도 계산\n4️⃣ 진입신호 생성',
+                    meaning: '강세장/약세장 구분하여 포트폴리오 배치',
                     status: data2 ? 'completed' : 'error',
                     metrics: data2 ? {
-                        marketRegime: data2.regime || '-',
-                        confidence: data2.confidence ? `${(data2.confidence*100).toFixed(1)}%` : '-',
-                        vixLevel: data2.vix || '-',
-                        executionTime: `${time2}ms`
+                        '시장상태': data2.regime || '-',
+                        '신뢰도': data2.confidence ? `${(data2.confidence*100).toFixed(0)}%` : '-',
+                        'VIX': data2.vix || '-'
                     } : {},
                     data: data2,
                     timestamp: new Date().toISOString()
                 });
 
-                // 3️⃣ Sector Rotation
-                const startTime3 = Date.now();
-                const res3 = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/market').catch(() => null);
-                const time3 = Date.now() - startTime3;
+                // Sector Rotation
+                const res3 = await fetch(apiBase + '/market').catch(() => null);
                 const data3 = res3?.ok ? await res3.json() : null;
+                const sectors = data3?.SECTORS || {};
+                const bestSector = Object.entries(sectors).sort((a, b) => (b[1]?.changePercentage || 0) - (a[1]?.changePercentage || 0))[0];
 
                 widgets.push({
-                    id: 'Analysis-2-3',
+                    id: 'analysis2-3',
                     page: 'AI분석 2',
-                    name: 'Sector Rotation',
-                    icon: '🔄',
-                    endpoint: '/market (SECTORS)',
-                    logic: '📊 단계별 계산:\n1️⃣ 11개 섹터 수익률 추출\n2️⃣ 모멘텀 점수 계산\n3️⃣ 상대 강도 지수(RSI) 생성\n4️⃣ 로테이션 신호 판정\n5️⃣ 최강 / 최약 섹터 선정',
-                    meaning: '경기 사이클에 따라 초과 수익이 가능한 섹터로 자동 전환하는 로테이션 엔진',
-                    usage: '▪️ 기술주 강세: XLK, NVDA 집중\n▪️ 경기 약세: XLV, XLU 방어전환\n▪️ 인플레이션: XLE (에너지) 강화',
+                    name: '🔄 Sector Rotation',
+                    endpoint: '/market',
+                    logic: '📊 단계별 계산:\n1️⃣ 11개 섹터 추출\n2️⃣ 수익률 정렬\n3️⃣ 로테이션 신호\n4️⃣ 최강/최약 선정',
+                    meaning: '경기사이클에 따라 초과 수익 가능한 섹터로 전환',
                     status: data3?.SECTORS ? 'completed' : 'error',
                     metrics: data3?.SECTORS ? {
-                        activeSectors: Object.keys(data3.SECTORS || {}).length,
-                        bestSector: Object.entries(data3.SECTORS || {}).sort((a,b) => (b[1]?.changePercentage||0) - (a[1]?.changePercentage||0))[0]?.[0] || '-',
-                        bestReturn: Object.entries(data3.SECTORS || {}).sort((a,b) => (b[1]?.changePercentage||0) - (a[1]?.changePercentage||0))[0]?.[1]?.changePercentage?.toFixed(2) + '%' || '-',
-                        executionTime: `${time3}ms`
+                        '활성섹터': Object.keys(sectors).length,
+                        '최강섹터': bestSector?.[0] || '-',
+                        '수익률': bestSector?.[1]?.changePercentage?.toFixed(2) + '%' || '-'
                     } : {},
                     data: data3?.SECTORS,
                     timestamp: new Date().toISOString()
                 });
 
-                // 4️⃣ Breakout Radar
-                widgets.push({
-                    id: 'Analysis-2-4',
-                    page: 'AI분석 2',
-                    name: 'Breakout Radar',
-                    icon: '📡',
-                    logic: '📊 단계별 계산:\n1️⃣ 52주 고가/저가 추출\n2️⃣ 돌파 거리 계산\n3️⃣ 거래량 확인\n4️⃣ 모멘텀 검증\n5️⃣ 돌파 강도 점수화',
-                    meaning: '주가가 중요한 저항선을 돌파할 때 조기에 신호를 감지하는 레이더',
-                    usage: '▪️ 강한 돌파 (Volume↑): 진입 신호\n▪️ 약한 돌파 (Volume↓): 거짓 신호 경계\n▪️ Confirmation: 3일 이상 유지 필요',
-                    status: 'pending',
-                    timestamp: new Date().toISOString()
-                });
-
-                // 5️⃣ Deep Dive Analysis
-                widgets.push({
-                    id: 'Analysis-2-5',
-                    page: 'AI분석 2',
-                    name: 'Deep Dive Analysis',
-                    icon: '🔎',
-                    endpoint: '/alpha',
-                    logic: '📊 단계별 계산:\n1️⃣ 실시간 가격 데이터 로드\n2️⃣ 9개 지표 병렬 계산 (PE, PB, 모멘텀, 거래량, 기관투자자 활동도, 기술적 신호, 심리 지표, 매크로 환경, 산업 평가)\n3️⃣ 지표별 가중치 적용\n4️⃣ 최종 종목 점수 산출\n5️⃣ 매수/매도/보유 신호 생성',
-                    meaning: '개별 종목의 강점과 약점을 9개의 다차원 지표로 수치화하여 투자 신호 생성',
-                    usage: '▪️ 85+ Points: 강한 매수 신호\n▪️ 50-84 Points: 매수 검토\n▪️ 15-49 Points: 보유/관관\n▪️ 0-14 Points: 매도 신호',
-                    status: 'pending',
-                    timestamp: new Date().toISOString()
-                });
-
-                widgetDatabase['ai-analysis-2'] = widgets;
-                console.log(`✅ AI분석 2: ${widgets.length}개 위젯 로드됨`);
+                console.log(`✅ AI분석 2: ${widgets.length}개 위젯 로드`);
             } catch (e) {
                 console.error('❌ AI분석 2 로드 실패:', e);
             }
+
+            allWidgets = allWidgets.concat(widgets);
         }
 
-        async function loadPageData(pageUrl, pageKey) {
-            return new Promise((resolve) => {
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.onload = () => {
-                    try {
-                        // iframe에서 윈도우 객체 접근
-                        const iframeWindow = iframe.contentWindow;
-
-                        // 데이터 수집 (페이지별로 다른 방식)
-                        if (pageKey === 'ai-analysis-1') {
-                            collectAnalysis1Data(iframeWindow);
-                        } else if (pageKey === 'ai-analysis-2') {
-                            collectAnalysis2Data(iframeWindow);
-                        } else if (pageKey === 'ai-analysis-3') {
-                            collectAnalysis3Data(iframeWindow);
-                        }
-                    } catch (e) {
-                        console.warn(`⚠️ ${pageKey} 데이터 수집 실패 (CORS):`, e);
-                        // CORS 오류인 경우 localStorage에서 데이터 로드
-                        loadFromLocalStorage(pageKey);
-                    }
-
-                    setTimeout(() => {
-                        document.body.removeChild(iframe);
-                        resolve();
-                    }, 500);
-                };
-
-                iframe.onerror = () => {
-                    console.warn(`⚠️ ${pageKey} 로드 실패`);
-                    loadFromLocalStorage(pageKey);
-                    document.body.removeChild(iframe);
-                    resolve();
-                };
-
-                iframe.src = pageUrl;
-                document.body.appendChild(iframe);
-            });
-        }
-
-        function collectAnalysis1Data(iframeWindow) {
-            const widgets = [];
-
-            // WIDGETS 배열에서 데이터 추출
-            if (iframeWindow.WIDGETS) {
-                iframeWindow.WIDGETS.forEach(widget => {
-                    widgets.push({
-                        id: `Analysis-1-${widget.id}`,
-                        page: 'AI분석 1',
-                        name: widget.title,
-                        icon: widget.icon,
-                        endpoint: widget.endpoint,
-                        logic: widget.logic,
-                        meaning: widget.meaning,
-                        status: 'pending',
-                        data: null,
-                        timestamp: new Date().toISOString()
+        function loadAnalysis3Data() {
+            const cached = localStorage.getItem('widgetDataCache_analysis3');
+            if (cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    Object.values(data).forEach(widget => {
+                        allWidgets.push(widget);
                     });
-                });
-            }
-
-            widgetDatabase['ai-analysis-1'] = widgets;
-        }
-
-        function collectAnalysis2Data(iframeWindow) {
-            const widgets = [
-                {
-                    id: 'Analysis-2-1',
-                    page: 'AI분석 2',
-                    name: 'Alpha Discovery Scanner',
-                    icon: '🔍',
-                    status: 'pending',
-                    data: iframeWindow.alphaDiscoveryData || null,
-                    timestamp: new Date().toISOString()
-                },
-                {
-                    id: 'Analysis-2-2',
-                    page: 'AI분석 2',
-                    name: 'Breakout Radar',
-                    icon: '📡',
-                    status: 'pending',
-                    data: iframeWindow.breakoutRadarData || null,
-                    timestamp: new Date().toISOString()
-                },
-                {
-                    id: 'Analysis-2-3',
-                    page: 'AI분석 2',
-                    name: 'Market Entry Gate',
-                    icon: '🚪',
-                    status: 'pending',
-                    data: iframeWindow.marketEntryGateData || null,
-                    timestamp: new Date().toISOString()
-                },
-                {
-                    id: 'Analysis-2-4',
-                    page: 'AI분석 2',
-                    name: 'Sector Rotation Drill Down',
-                    icon: '🔄',
-                    status: 'pending',
-                    data: iframeWindow.sectorRotationData || null,
-                    timestamp: new Date().toISOString()
-                },
-                {
-                    id: 'Analysis-2-5',
-                    page: 'AI분석 2',
-                    name: 'Single Stock Deep Dive',
-                    icon: '🔎',
-                    status: 'pending',
-                    data: iframeWindow.singleStockData || null,
-                    timestamp: new Date().toISOString()
+                    console.log(`✅ AI분석 3: ${Object.keys(data).length}개 위젯 로드`);
+                } catch (e) {
+                    console.error('❌ AI분석 3 로드 실패:', e);
                 }
-            ];
-
-            widgetDatabase['ai-analysis-2'] = widgets;
-        }
-
-        function collectAnalysis3Data(iframeWindow) {
-            const widgets = [];
-
-            // AI분석 3의 위젯 데이터 수집
-            if (iframeWindow.WIDGETS) {
-                iframeWindow.WIDGETS.forEach((widget, idx) => {
-                    widgets.push({
-                        id: `Analysis-3-${idx + 1}`,
-                        page: 'AI분석 3',
-                        name: widget.title || `Widget ${idx + 1}`,
-                        status: 'pending',
-                        data: null,
-                        timestamp: new Date().toISOString()
-                    });
-                });
-            }
-
-            widgetDatabase['ai-analysis-3'] = widgets;
-        }
-
-        function loadFromLocalStorage(pageKey) {
-            // localStorage에서 데이터 로드 (각 페이지가 저장한 데이터)
-            const stored = localStorage.getItem(`widgetData_${pageKey}`);
-            if (stored) {
-                widgetDatabase[pageKey] = JSON.parse(stored);
             }
         }
 
@@ -676,55 +471,57 @@
             const container = document.getElementById('pages-container');
             container.innerHTML = '';
 
+            const pages = {
+                'AI분석 1': allWidgets.filter(w => w.page === 'AI분석 1'),
+                'AI분석 2': allWidgets.filter(w => w.page === 'AI분석 2'),
+                'AI분석 3': allWidgets.filter(w => w.page === 'AI분석 3')
+            };
+
             let totalCount = 0;
             let completedCount = 0;
             let loadingCount = 0;
             let errorCount = 0;
 
-            Object.entries(widgetDatabase).forEach(([pageKey, widgets]) => {
-                const pageCard = document.createElement('div');
-                pageCard.className = 'page-card';
+            Object.entries(pages).forEach(([pageName, widgets]) => {
+                if (widgets.length === 0) return;
 
-                const pageTitle = pageKey === 'ai-analysis-1' ? 'AI분석 1'
-                                : pageKey === 'ai-analysis-2' ? 'AI분석 2'
-                                : 'AI분석 3';
+                const card = document.createElement('div');
+                card.className = 'page-card';
 
-                pageCard.innerHTML = `
-                    <div class="page-header">
-                        ${pageTitle} (${widgets.length}개 위젯)
-                    </div>
-                    <div class="page-content" id="widgets-${pageKey}"></div>
-                `;
+                const header = document.createElement('div');
+                header.className = 'page-header';
+                header.textContent = `${pageName} (${widgets.length}개)`;
+                card.appendChild(header);
 
-                const contentDiv = pageCard.querySelector(`#widgets-${pageKey}`);
+                const content = document.createElement('div');
+                content.className = 'page-content';
 
                 widgets.forEach(widget => {
                     totalCount++;
-                    const status = widget.status || 'pending';
+                    const status = widget.status || 'loading';
 
                     if (status === 'completed') completedCount++;
                     else if (status === 'loading') loadingCount++;
                     else if (status === 'error') errorCount++;
 
-                    const widgetItem = document.createElement('div');
-                    widgetItem.className = 'widget-item';
-                    widgetItem.innerHTML = `
-                        <div class="widget-name">${widget.icon} ${widget.name}</div>
+                    const item = document.createElement('div');
+                    item.className = 'widget-item';
+                    item.innerHTML = `
+                        <div class="widget-name">${widget.name}</div>
                         <div class="widget-status">
-                            <span class="status-badge status-${status || 'loading'}">
-                                ${status === 'completed' ? '✓ 완료' : status === 'error' ? '✗ 에러' : '⏳ 대기'}
+                            <span class="status-badge status-${status}">
+                                ${status === 'completed' ? '✓ 완료' : status === 'error' ? '✗ 에러' : '⏳ 로딩'}
                             </span>
                         </div>
                     `;
-
-                    widgetItem.onclick = () => showDetail(widget);
-                    contentDiv.appendChild(widgetItem);
+                    item.onclick = () => showDetail(widget);
+                    content.appendChild(item);
                 });
 
-                container.appendChild(pageCard);
+                card.appendChild(content);
+                container.appendChild(card);
             });
 
-            // 상태 바 업데이트
             document.getElementById('total-widgets').textContent = totalCount;
             document.getElementById('completed-widgets').textContent = completedCount;
             document.getElementById('loading-widgets').textContent = loadingCount;
@@ -736,12 +533,9 @@
             const title = document.getElementById('detail-title');
             const content = document.getElementById('detail-content');
 
-            title.textContent = `${widget.icon} ${widget.name}`;
+            title.textContent = widget.name;
 
-            let html = '';
-
-            // 기본 정보
-            html += `
+            let html = `
                 <div class="section">
                     <div class="section-title">📋 기본 정보</div>
                     <div class="data-row">
@@ -756,122 +550,83 @@
                         <div class="data-label">상태</div>
                         <div class="data-value">
                             <span class="status-badge status-${widget.status || 'loading'}">
-                                ${widget.status === 'completed' ? '✓ 완료' : widget.status === 'error' ? '✗ 에러' : '⏳ 대기'}
+                                ${widget.status === 'completed' ? '✓ 완료' : widget.status === 'error' ? '✗ 에러' : '⏳ 로딩'}
                             </span>
                         </div>
                     </div>
                     ${widget.endpoint ? `
                         <div class="data-row">
-                            <div class="data-label">API 엔드포인트</div>
+                            <div class="data-label">엔드포인트</div>
                             <div class="data-value"><code>${widget.endpoint}</code></div>
                         </div>
                     ` : ''}
                 </div>
             `;
 
-            // 단계별 계산 과정 (NEW)
-            if (widget.logic && widget.logic.includes('1️⃣')) {
-                html += `
-                    <div class="section">
-                        <div class="section-title">🔍 단계별 계산 과정</div>
-                        <div style="background: var(--bg); padding: 15px; border-radius: 4px; border-left: 3px solid var(--yellow); line-height: 1.8;">
-                            ${widget.logic.split('\n').map(line => `<div>${line}</div>`).join('')}
+            if (widget.logic) {
+                if (widget.logic.includes('1️⃣')) {
+                    html += `
+                        <div class="section">
+                            <div class="section-title">🔍 단계별 계산 과정</div>
+                            <div class="logic-steps">
+                                ${widget.logic.split('\n').map(line => `<div class="logic-step">${line}</div>`).join('')}
+                            </div>
                         </div>
-                    </div>
-                `;
-            } else if (widget.logic) {
-                html += `
-                    <div class="section">
-                        <div class="section-title">⚙️ 계산 로직</div>
-                        <div style="background: var(--bg); padding: 12px; border-radius: 4px; border-left: 3px solid var(--yellow);">
-                            ${widget.logic}
+                    `;
+                } else {
+                    html += `
+                        <div class="section">
+                            <div class="section-title">⚙️ 계산 로직</div>
+                            <div class="logic-steps">${widget.logic}</div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
 
-            // 의미
             if (widget.meaning) {
                 html += `
                     <div class="section">
-                        <div class="section-title">💡 의미 / 해석</div>
-                        <div style="background: var(--bg); padding: 12px; border-radius: 4px; border-left: 3px solid var(--blue);">
+                        <div class="section-title">💡 의미</div>
+                        <div style="background: var(--bg); padding: 12px; border-radius: 4px;">
                             ${widget.meaning}
                         </div>
                     </div>
                 `;
             }
 
-            // 사용 방법
-            if (widget.usage) {
-                html += `
-                    <div class="section">
-                        <div class="section-title">📌 사용 방법 / 해석</div>
-                        <div style="background: var(--bg); padding: 12px; border-radius: 4px; border-left: 3px solid var(--green);">
-                            ${widget.usage.split('\n').map(line => `<div>${line}</div>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-
-            // 실행 메트릭스 (NEW)
             if (widget.metrics && Object.keys(widget.metrics).length > 0) {
                 html += `
                     <div class="section">
-                        <div class="section-title">⏱️ 실행 메트릭</div>
-                        <div style="background: var(--bg); padding: 12px; border-radius: 4px;">
+                        <div class="section-title">⏱️ 성능 메트릭</div>
                 `;
                 Object.entries(widget.metrics).forEach(([key, value]) => {
-                    const label = key.replace(/([A-Z])/g, ' $1').trim();
-                    const capitalLabel = label.charAt(0).toUpperCase() + label.slice(1);
                     html += `
                         <div class="data-row">
-                            <div class="data-label">${capitalLabel}</div>
+                            <div class="data-label">${key}</div>
                             <div class="data-value"><strong>${value}</strong></div>
                         </div>
                     `;
                 });
-                html += `
-                        </div>
-                    </div>
-                `;
+                html += `</div>`;
             }
 
-            // 데이터
             if (widget.data) {
-                // 데이터 요약 (첫 3개 항목만 표시)
-                const dataKeys = Object.keys(widget.data || {});
-                const isArray = Array.isArray(widget.data);
-                const summary = isArray ?
-                    `배열: ${widget.data.length}개 항목` :
-                    `객체: ${dataKeys.length}개 필드`;
-
+                const dataStr = JSON.stringify(widget.data, null, 2);
+                const preview = dataStr.length > 1000 ? dataStr.substring(0, 1000) + '\n... (생략)' : dataStr;
                 html += `
                     <div class="section">
                         <div class="section-title">📊 API 응답 데이터</div>
-                        <div style="margin-bottom: 12px; font-size: 11px; color: var(--text-muted);">
-                            ${summary} | 크기: ${JSON.stringify(widget.data).length} bytes
+                        <div style="font-size: 10px; color: var(--yellow); margin-bottom: 8px;">
+                            크기: ${dataStr.length} bytes
                         </div>
-                        <div style="max-height: 300px; overflow-y: auto;">
-                            <div class="json-block">${JSON.stringify(widget.data, null, 2).substring(0, 2000)}${JSON.stringify(widget.data).length > 2000 ? '\n... (이하 생략)' : ''}</div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="section">
-                        <div class="section-title">📊 API 응답 데이터</div>
-                        <div style="color: var(--text-muted); font-style: italic; padding: 10px; background: var(--bg); border-radius: 4px;">
-                            ℹ️ 아직 데이터를 수집하지 못했습니다. 이 위젯이 로드될 때까지 기다려주세요.
-                        </div>
+                        <div class="json-block">${preview}</div>
                     </div>
                 `;
             }
 
-            // 시간 정보
             html += `
                 <div class="timestamp">
-                    ⏰ 마지막 업데이트: ${new Date(widget.timestamp).toLocaleString('ko-KR')}
+                    ⏰ ${new Date(widget.timestamp).toLocaleString('ko-KR')}
                 </div>
             `;
 
@@ -883,44 +638,37 @@
             document.getElementById('detail-panel').classList.remove('active');
         }
 
-        function closeIframe() {
-            document.getElementById('iframe-container').classList.remove('active');
-        }
-
-        function clearAllData() {
-            if (confirm('모든 위젯 데이터를 초기화하시겠습니까?')) {
-                widgetDatabase = {
-                    'ai-analysis-1': [],
-                    'ai-analysis-2': [],
-                    'ai-analysis-3': []
-                };
-                updateUI();
-                localStorage.clear();
+        function autoRefreshToggle() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            if (autoRefreshEnabled) {
+                autoRefreshTimer = setInterval(() => refreshData(), 30000);
+                console.log('✅ 자동 갱신 활성화 (30초)');
+            } else {
+                clearInterval(autoRefreshTimer);
+                console.log('⏹️ 자동 갱신 비활성화');
             }
         }
 
-        function exportReport() {
+        function exportData() {
             const report = {
                 timestamp: new Date().toISOString(),
-                summary: {
-                    totalWidgets: Object.values(widgetDatabase).flat().length,
-                    pages: widgetDatabase
-                }
+                totalWidgets: allWidgets.length,
+                widgets: allWidgets
             };
-
-            const dataStr = JSON.stringify(report, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `ai-widget-report-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `widget-report-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
         }
 
-        // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 AI Widget Monitor 초기화 중...');
-            loadAllAnalysisPages();
+        // 초기 로드
+        window.addEventListener('load', () => {
+            console.log('🚀 AI Widget Monitor 초기화...');
+            refreshData();
+            // 1초마다 확인 (localStorage 업데이트 감지)
+            setInterval(refreshData, 3000);
         });
     </script>
 </body>
