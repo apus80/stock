@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test /market Endpoint</title>
+    <style>
+        body { background: #222; color: #ccc; font-family: monospace; padding: 20px; }
+        pre { background: #1a1a1a; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .ok { background: #2d5a2d; }
+        .error { background: #5a2d2d; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Worker /market 엔드포인트 테스트</h1>
+    
+    <div id="status" class="status error">⏳ 테스트 중...</div>
+    
+    <h2>응답 데이터:</h2>
+    <pre id="output">로딩 중...</pre>
+    
+    <script>
+        async function test() {
+            const statusEl = document.getElementById('status');
+            const outputEl = document.getElementById('output');
+            
+            try {
+                const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+                console.log('📍 요청:', API_BASE + '/market');
+                
+                const response = await fetch(API_BASE + '/market', {
+                    timeout: 10000
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // 데이터 검증
+                const keys = Object.keys(data);
+                const status = {
+                    ok: keys.length > 0 && data.dataType === 'market',
+                    fields: keys.length,
+                    hasUSMarket: !!data.US_MARKET,
+                    hasLiquidity: !!data.LIQUIDITY,
+                    hasMacroBase: !!data.MACRO_BASE
+                };
+                
+                statusEl.className = 'status ' + (status.ok ? 'ok' : 'error');
+                statusEl.innerHTML = status.ok ? '✅ 성공!' : '❌ 데이터 구조 이상';
+                
+                outputEl.textContent = JSON.stringify(data, null, 2).substring(0, 3000) + '\n\n... (생략)';
+                
+                console.log('✅ 성공:', data);
+            } catch (e) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ 에러: ' + e.message;
+                outputEl.textContent = e.stack;
+                console.error('❌ 에러:', e);
+            }
+        }
+        
+        test();
+    </script>
+</body>
+</html>
