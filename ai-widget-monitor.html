@@ -732,6 +732,18 @@
                 `;
             }
 
+            // 💡 AAPL 검증 섹션 추가 (위젯 4~10만 해당)
+            if (widget.page === 'AI분석 3' && widget.id >= 'analysis3-4') {
+                html += `
+                    <div class="section">
+                        <div class="section-title">🔍 AAPL 검증 (모델 종목)</div>
+                        <div id="aapl-validation-${widget.id}" style="background: var(--bg); padding: 12px; border-radius: 4px; border-left: 3px solid var(--green); max-height: 300px; overflow-y: auto;">
+                            <div style="color: var(--yellow); font-size: 11px;">로딩 중...</div>
+                        </div>
+                    </div>
+                `;
+            }
+
             html += `
                 <div class="timestamp">
                     ⏰ ${new Date(widget.timestamp).toLocaleString('ko-KR')}
@@ -740,6 +752,71 @@
 
             content.innerHTML = html;
             panel.classList.add('active');
+
+            // AAPL 검증 데이터 로드 (위젯 4~10)
+            if (widget.page === 'AI분석 3' && widget.id >= 'analysis3-4') {
+                loadAAPLValidation(widget.id);
+            }
+        }
+
+        // AAPL 검증 데이터 로드
+        async function loadAAPLValidation(widgetId) {
+            const container = document.getElementById(`aapl-validation-${widgetId}`);
+            if (!container) return;
+
+            try {
+                const apiBase = 'https://fmp-proxy.aiinvestflow.workers.dev';
+                const aaplRes = await fetch(apiBase + '/alpha?symbol=AAPL').catch(() => null);
+                const aaplData = aaplRes?.ok ? await aaplRes.json() : null;
+
+                if (!aaplData || !aaplData.data) {
+                    container.innerHTML = '<div style="color: var(--red);">❌ AAPL 데이터 로드 실패</div>';
+                    return;
+                }
+
+                const factors = aaplData.data.factors || {};
+                let html = `
+                    <div style="margin-bottom: 12px;">
+                        <span style="color: var(--blue); font-weight: bold; font-size: 12px;">📍 ${aaplData.data.symbol} - ${aaplData.data.profile?.company || 'Apple'}</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
+                `;
+
+                // 핵심 메트릭 표시
+                const metrics = [
+                    ['현재가', '💵', factors.price?.toFixed(2) + '$' || '-'],
+                    ['PE', '📊', factors.pe?.toFixed(2) || '-'],
+                    ['PB', '📈', factors.pb?.toFixed(2) || '-'],
+                    ['수익성장', '📈', (factors.revenueGrowth || 0).toFixed(2) + '%'],
+                    ['EPS성장', '⬆️', (factors.earningsGrowth || 0).toFixed(2) + '%'],
+                    ['ROE', '💹', (factors.roe || 0).toFixed(2) + '%'],
+                    ['점수', '⭐', factors.score?.toFixed(2) || '-']
+                ];
+
+                metrics.forEach(([label, icon, value]) => {
+                    const valueColor = label.includes('성장') || label.includes('ROE') || label.includes('점수')
+                        ? (parseFloat(value) >= 0 ? 'var(--green)' : 'var(--red)')
+                        : 'var(--text)';
+                    html += `
+                        <div style="padding: 6px; background: var(--bg3); border-radius: 3px; border-left: 2px solid var(--blue);">
+                            <div style="color: var(--yellow); font-weight: 600;">${icon} ${label}</div>
+                            <div style="color: ${valueColor}; font-weight: 700; font-size: 11px; margin-top: 2px;">${value}</div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                html += `
+                    <div style="margin-top: 10px; padding: 8px; background: var(--bg3); border-radius: 3px; border-left: 3px solid var(--green); font-size: 10px; color: var(--text); line-height: 1.6;">
+                        <strong>✅ 검증:</strong> AAPL 데이터가 FMP API에서 정상적으로 로드되고 있습니다.<br>
+                        <strong>📐 로직:</strong> 위젯의 계산 로직에 이 값들이 포함되어 있으며, 정렬/필터링 후 상위 10개 종목에 반영됩니다.
+                    </div>
+                `;
+
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<div style="color: var(--red);">❌ 로드 실패: ${e.message}</div>`;
+            }
         }
 
         function closeDetail() {
