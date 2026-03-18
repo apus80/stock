@@ -965,6 +965,24 @@
 
                 const data = await response.json();
 
+                // 📊 위젯 데이터 추적 저장 (ai-widget-monitor.html에서 수집용)
+                window.widgetDataCache = window.widgetDataCache || {};
+                window.widgetDataCache[`analysis1-${widgetId}`] = {
+                    id: `analysis1-${widgetId}`,
+                    page: 'AI분석 1',
+                    title: widget.title,
+                    icon: widget.icon,
+                    endpoint: widget.endpoint,
+                    logic: widget.logic,
+                    meaning: widget.meaning,
+                    usage: widget.usage,
+                    status: 'completed',
+                    data: data,
+                    timestamp: new Date().toISOString()
+                };
+                // localStorage에도 저장
+                localStorage.setItem('widgetDataCache_analysis1', JSON.stringify(window.widgetDataCache));
+
                 // 패턴별 렌더링
                 switch (widget.pattern) {
                     case 'gauge':

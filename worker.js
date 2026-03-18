@@ -341,12 +341,13 @@ export default {
 
       async function getAlphaData(symbol) {
         try {
-          // ✅ 필요한 모든 데이터 병렬 호출
-          const [quoteRes, ratiosRes, growthRes, incomeRes, profileRes] = await Promise.allSettled([
+          // ✅ 필요한 모든 데이터 병렬 호출 (Balance Sheet 추가!)
+          const [quoteRes, ratiosRes, growthRes, incomeRes, balanceRes, profileRes] = await Promise.allSettled([
             fetchFMP(`/stable/quote?symbol=${symbol}`),
             getRatios(symbol),
             getFinancialGrowth(symbol),
             getIncomeStatement(symbol),
+            getBalanceSheet(symbol),
             getCompanyProfile(symbol)
           ])
 
@@ -359,6 +360,7 @@ export default {
 
           const growth = extract(growthRes)
           const income = extract(incomeRes)
+          const balance = extract(balanceRes)
           const profile = extract(profileRes)
 
           console.log(`\n📍 [${symbol}] getAlphaData 결과:`)
@@ -371,9 +373,10 @@ export default {
           return {
             quote: quote,
             ratios: ratios,
-            growth: growth,        // ✅ 추가
-            income: income,        // ✅ 추가
-            profile: profile       // ✅ 추가
+            growth: growth,
+            income: income,
+            balance: balance,      // ✅ 추가 (ROE 계산용)
+            profile: profile
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -386,17 +389,25 @@ export default {
 
         const quote = data.quote
         const ratios = data.ratios
-        const growth = data.growth      // ✅ 추가
-        const income = data.income      // ✅ 추가
-        const profile = data.profile    // ✅ 추가
+        const growth = data.growth
+        const income = data.income
+        const balance = data.balance    // ✅ 추가 (ROE 계산용)
+        const profile = data.profile
 
         // 🔍 DEBUG: 실제 API 응답 데이터 확인
-        console.log(`\n📊 [${quote?.symbol}] === API 응답 데이터 ===`)
-        console.log(`Quote: price=${quote?.price}, dayLow=${quote?.dayLow}, dayHigh=${quote?.dayHigh}`)
-        console.log(`Ratios: pe=${ratios?.priceToEarningsRatio}, pb=${ratios?.priceToBookRatio}`)
-        console.log(`Growth: revGrowth=${growth?.revenueGrowth}, epsGrowth=${growth?.epsGrowth}`)
-        console.log(`Income: revenue=${income?.revenue}, netIncome=${income?.netIncome}, eps=${income?.eps}`)
-        console.log(`Profile: sector=${profile?.sector}`)
+        console.log(`\n📊 [${quote?.symbol}] === 📥 입력 데이터 (data 객체) ===`)
+        console.log(`Quote fields: ${Object.keys(quote || {}).slice(0,15).join(', ')}`)
+        console.log(`Ratios fields: ${Object.keys(ratios || {}).slice(0,10).join(', ')}`)
+        console.log(`Growth fields: ${Object.keys(growth || {}).slice(0,10).join(', ')}`)
+        console.log(`Income fields: ${Object.keys(income || {}).slice(0,10).join(', ')}`)
+        console.log(`Profile fields: ${Object.keys(profile || {}).slice(0,10).join(', ')}`)
+
+        console.log(`\n📊 [${quote?.symbol}] === 🔢 실제 값들 ===`)
+        console.log(`Quote: price=${quote?.price}, pe=${quote?.pe}, pb=${quote?.pb}, dayLow=${quote?.dayLow}, dayHigh=${quote?.dayHigh}`)
+        console.log(`Ratios: priceToEarningsRatio=${ratios?.priceToEarningsRatio}, priceToBookRatio=${ratios?.priceToBookRatio}`)
+        console.log(`Growth: revenueGrowth=${growth?.revenueGrowth}, epsGrowth=${growth?.epsGrowth}, netIncomeGrowth=${growth?.netIncomeGrowth}`)
+        console.log(`Income: revenue=${income?.revenue}, netIncome=${income?.netIncome}, grossProfit=${income?.grossProfit}, operatingIncome=${income?.operatingIncome}`)
+        console.log(`Profile: sector=${profile?.sector}, industry=${profile?.industry}`)
 
         // ✅ 기본 정보 (quote에서)
         const price = quote?.price || 0
@@ -408,29 +419,48 @@ export default {
 
         // ✅ 비율 지표
         // 우선순위: ratios (/fundamentals/ratios) > quote > 기본값
-        const pe = ratios?.priceToEarningsRatio || quote?.pe || 50
-        const pb = ratios?.priceToBookRatio || quote?.priceToBook || quote?.pb || 10
-        const roe = (income && income.netIncome && income.shareholdersEquity)
-          ? (income.netIncome / income.shareholdersEquity) * 100
-          : 15  // balance sheet에서 계산, 아니면 기본값
+        // ⚠️ 0 값은 무효한 데이터 → null 취급
+        const pe = (ratios?.priceToEarningsRatio && ratios.priceToEarningsRatio > 0)
+          ? ratios.priceToEarningsRatio
+          : (quote?.pe && quote.pe > 0 ? quote.pe : 50)
+        const pb = (ratios?.priceToBookRatio && ratios.priceToBookRatio > 0)
+          ? ratios.priceToBookRatio
+          : (quote?.priceToBook && quote.priceToBook > 0 ? quote.priceToBook : quote?.pb && quote.pb > 0 ? quote.pb : 10)
+        // ✅ ROE = Net Income / Shareholders' Equity
+        // balance.totalStockholdersEquity 사용 (income에는 없음!)
+        const roe = (income && income.netIncome && balance && balance.totalStockholdersEquity && balance.totalStockholdersEquity > 0)
+          ? (income.netIncome / balance.totalStockholdersEquity) * 100
+          : 15  // 기본값
 
-        console.log(`   ✅ 비율지표: pe=${pe}, pb=${pb}, roe=${roe}`)
+        console.log(`   📈 PE 로직: ratios.PE=${ratios?.priceToEarningsRatio} → ${pe === ratios?.priceToEarningsRatio ? '✅ ratios 사용' : pe === quote?.pe ? '⚠️ quote 사용' : '❌ 기본값 50'}`)
+        console.log(`   📈 PB 로직: ratios.PB=${ratios?.priceToBookRatio} → ${pb === ratios?.priceToBookRatio ? '✅ ratios 사용' : pb === quote?.priceToBook || pb === quote?.pb ? '⚠️ quote 사용' : '❌ 기본값 10'}`)
+        console.log(`   ✅ 최종 비율지표: pe=${pe}, pb=${pb}, roe=${roe}`)
 
         // ✅ 성장률 지표 (Financial Growth API에서 가져옴)
         let revenueGrowth = growth?.revenueGrowth ?? 0
-        let epsGrowth = growth?.epsGrowth ?? 0
+        let epsGrowth = growth?.epsGrowth ?? growth?.earningsGrowth ?? growth?.netIncomeGrowth ?? 0
 
-        console.log(`   ✅ 성장률: revenueGrowth=${revenueGrowth}, epsGrowth=${epsGrowth}`)
+        console.log(`   📈 Growth 로직:`)
+        console.log(`      - revenueGrowth: growth.revenueGrowth=${growth?.revenueGrowth} → 최종값=${revenueGrowth}`)
+        console.log(`      - epsGrowth: growth.epsGrowth=${growth?.epsGrowth}, earningsGrowth=${growth?.earningsGrowth}, netIncomeGrowth=${growth?.netIncomeGrowth} → 최종값=${epsGrowth}`)
+        console.log(`   ✅ 최종 성장률: revenueGrowth=${revenueGrowth}, epsGrowth=${epsGrowth}`)
 
         // ✅ 수익성 지표 (Income Statement에서 계산)
         let netMargin = 10    // 기본값
         let grossMargin = 40  // 기본값
         let operatingMargin = 15  // 기본값
 
+        // ✅ null check 강화 - 각 필드별로 체크
         if (income && income.revenue) {
-          netMargin = (income.netIncome / income.revenue) * 100
-          grossMargin = (income.grossProfit / income.revenue) * 100
-          operatingMargin = (income.operatingIncome / income.revenue) * 100
+          if (income.netIncome) {
+            netMargin = (income.netIncome / income.revenue) * 100
+          }
+          if (income.grossProfit) {
+            grossMargin = (income.grossProfit / income.revenue) * 100
+          }
+          if (income.operatingIncome) {
+            operatingMargin = (income.operatingIncome / income.revenue) * 100
+          }
         }
 
         // ✅ 섹터 정보 (Profile에서)
@@ -440,7 +470,11 @@ export default {
         console.log(`   ℹ️  섹터: ${sector}`)
 
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
-        const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
+        // quote에 dayLow/dayHigh가 없으면 대체 계산 불가능 → 0
+        // 하지만 최소한 유효한 값이 있을 때만 계산
+        const dailyMomentum = (quote?.dayLow && quote?.dayHigh && dayHigh > dayLow)
+          ? (price - dayLow) / dayLow
+          : 0
 
         // ✅ 거래량 (quote에서)
         const volume = quote?.volume || 0
@@ -526,13 +560,20 @@ export default {
       // 9개 인디케이터 기반 Explosive Score 계산 (가중합)
       async function getAlphaScore(symbol) {
         try {
-          // console.log(`🔍 Alpha Score 계산 시작: ${symbol}`)
+          console.log(`\n🔍 ===== Alpha Score 계산: ${symbol} =====`)
 
           const data = await getAlphaData(symbol)
           if (!data) {
-            console.warn(`⚠️ ${symbol}: 데이터 수집 실패`)
+            console.warn(`⚠️ ${symbol}: getAlphaData() 반환값 null`)
             return null
           }
+
+          console.log(`\n📊 1️⃣ getAlphaData() 결과:`)
+          console.log(`   Quote: symbol=${data.quote?.symbol}, price=${data.quote?.price}, pe=${data.quote?.pe}, pb=${data.quote?.pb}`)
+          console.log(`   Ratios: pe=${data.ratios?.priceToEarningsRatio}, pb=${data.ratios?.priceToBookRatio}`)
+          console.log(`   Growth: revGrowth=${data.growth?.revenueGrowth}, epsGrowth=${data.growth?.epsGrowth}`)
+          console.log(`   Income: revenue=${data.income?.revenue}, netIncome=${data.income?.netIncome}`)
+          console.log(`   Profile: sector=${data.profile?.sector}`)
 
           const factors = calculateFactors(data)
           if (!factors) {
@@ -540,10 +581,15 @@ export default {
             return null
           }
 
+          console.log(`\n📊 2️⃣ calculateFactors() 결과:`)
+          console.log(`   pe=${factors.pe}, pb=${factors.pb}`)
+          console.log(`   revenueGrowth=${factors.revenueGrowth}, epsGrowth=${factors.epsGrowth}`)
+          console.log(`   profitMargin=${factors.profitMargin}, sector=${factors.sector}`)
+
           // ✅ Explosive Score 계산 (7개 지표 가중합)
           const score = explosiveScore(factors)
 
-          // console.log(`✅ Alpha Score 계산 완료: ${symbol} = ${score.toFixed(4)}`)
+          console.log(`\n📊 3️⃣ explosiveScore() 결과: ${score.toFixed(2)}`)
 
           return {
             symbol,
@@ -555,7 +601,7 @@ export default {
               floatShares: factors.float,
               marketCap: factors.marketCap,
               revenueGrowth: factors.revenueGrowth,
-              earningsGrowth: factors.epsGrowth,  // ✅ epsGrowth를 earningsGrowth로 매핑
+              earningsGrowth: factors.epsGrowth,
               analystScore: factors.analystScore,
               insiderActivity: factors.insiderActivity
             },
@@ -648,9 +694,11 @@ export default {
           const growth = Array.isArray(data) ? data[0] : data
           return {
             symbol: symbol,
+            // ✅ FMP API는 camelCase만 지원 (소문자 fallback 제거)
             revenueGrowth: growth.revenueGrowth || null,
             netIncomeGrowth: growth.netIncomeGrowth || null,
-            epsGrowth: growth.epsGrowth || null,
+            // ⚠️ epsGrowth가 없을 수 있음 → earningsGrowth, netIncomeGrowth로 대체
+            epsGrowth: growth.epsGrowth || growth.earningsGrowth || growth.netIncomeGrowth || null,
             timestamp: new Date().toISOString()
           }
         } catch (e) {
@@ -797,6 +845,8 @@ export default {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
+          // 📍 출처: FMP API /stable/ratios (무료 플랜 동작 확인)
+          // ✅ /fundamentals/ratios는 작동 안함 → /stable/ratios 사용
           const url = `https://financialmodelingprep.com/stable/ratios?symbol=${symbol}&apikey=${FMP}`
           // console.log(`📍 FMP Ratios 호출: ${symbol}`)
 
@@ -816,8 +866,13 @@ export default {
           return {
             data: {
               symbol: symbol,
-              priceToEarningsRatio: ratios.priceToEarningsRatio || null,
-              priceToBookRatio: ratios.priceToBookRatio || null,
+              // ✅ 0은 invalid 데이터 → null로 처리
+              priceToEarningsRatio: (ratios.priceToEarningsRatio && ratios.priceToEarningsRatio > 0) ? ratios.priceToEarningsRatio : null,
+              priceToBookRatio: (ratios.priceToBookRatio && ratios.priceToBookRatio > 0) ? ratios.priceToBookRatio : null,
+              // ✅ 추가 필드들 (fallback용)
+              pe: (ratios.pe && ratios.pe > 0) ? ratios.pe : null,
+              pb: (ratios.pb && ratios.pb > 0) ? ratios.pb : null,
+              divYield: ratios.dividendYield || null,
               timestamp: new Date().toISOString()
             }
           }
