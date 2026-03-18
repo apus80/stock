@@ -845,8 +845,9 @@ export default {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), timeoutMs)
         try {
-          // 📍 출처: FMP API /fundamentals/ratios (CLAUDE.md 검증됨)
-          const url = `https://financialmodelingprep.com/fundamentals/ratios?symbol=${symbol}&apikey=${FMP}`
+          // 📍 출처: FMP API /stable/ratios (무료 플랜 동작 확인)
+          // ✅ /fundamentals/ratios는 작동 안함 → /stable/ratios 사용
+          const url = `https://financialmodelingprep.com/stable/ratios?symbol=${symbol}&apikey=${FMP}`
           // console.log(`📍 FMP Ratios 호출: ${symbol}`)
 
           const r = await fetch(url, { signal: controller.signal })
