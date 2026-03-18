@@ -1810,6 +1810,22 @@
             z-index: 1;
         }
 
+        /* 3D 분석 리포트 아이콘 */
+        .report-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2em;
+            height: 2em;
+            position: relative;
+        }
+
+        .report-icon svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+        }
+
     </style>
 </head>
 
@@ -1886,7 +1902,88 @@
                         <span class="ml-label">기업요약/<br>실적일정</span>
                     </button>
                     <button class="ml-btn" onclick="showMobileSection('report')">
-                        <span class="ml-icon">📄</span>
+                        <span class="ml-icon report-icon">
+                            <svg viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg">
+                                <!-- 3D 폴더 바닥 -->
+                                <defs>
+                                    <linearGradient id="folderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+                                        <stop offset="50%" style="stop-color:#357ABD;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#1E5BA6;stop-opacity:1" />
+                                    </linearGradient>
+                                    <linearGradient id="topGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#5BA3D0;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#2E7DB3;stop-opacity:1" />
+                                    </linearGradient>
+                                    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#90CAF9;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#42A5F5;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+
+                                <!-- 폴더 바닥 -->
+                                <path d="M 20 150 L 220 150 L 220 240 Q 220 255 205 255 L 35 255 Q 20 255 20 240 Z" fill="url(#folderGrad)" stroke="#1E5BA6" stroke-width="1"/>
+
+                                <!-- 폴더 앞면 -->
+                                <path d="M 30 80 L 210 80 L 210 160 L 30 160 Z" fill="url(#topGrad)" stroke="#1E5BA6" stroke-width="1.5"/>
+
+                                <!-- 폴더 옆면 -->
+                                <path d="M 210 80 L 220 90 L 220 150 L 210 160 Z" fill="#1A4D8C" opacity="0.8"/>
+
+                                <!-- 중앙 차트 영역 -->
+                                <rect x="50" y="100" width="140" height="100" fill="white" stroke="#E3F2FD" stroke-width="1" rx="3"/>
+
+                                <!-- 차트 바 -->
+                                <rect x="60" y="155" width="12" height="35" fill="#2196F3" rx="2"/>
+                                <rect x="80" y="145" width="12" height="45" fill="#42A5F5" rx="2"/>
+                                <rect x="100" y="130" width="12" height="60" fill="#64B5F6" rx="2"/>
+                                <rect x="120" y="115" width="12" height="75" fill="#90CAF9" rx="2"/>
+                                <rect x="140" y="100" width="12" height="90" fill="#BBDEFB" rx="2"/>
+
+                                <!-- 상향 화살표 -->
+                                <polyline points="75,120 100,85 125,120" fill="none" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+                                <!-- 텍스트 라인 -->
+                                <line x1="60" y1="175" x2="150" y2="175" stroke="#90CAF9" stroke-width="1.5"/>
+                                <line x1="60" y1="182" x2="130" y2="182" stroke="#90CAF9" stroke-width="1"/>
+                                <line x1="60" y1="189" x2="110" y2="189" stroke="#E3F2FD" stroke-width="1"/>
+
+                                <!-- 상단 아이콘 배지들 -->
+                                <g>
+                                    <!-- 막대그래프 -->
+                                    <rect x="48" y="50" width="20" height="20" fill="#2196F3" rx="3"/>
+                                    <rect x="53" y="58" width="3" height="8" fill="white"/>
+                                    <rect x="59" y="55" width="3" height="11" fill="white"/>
+
+                                    <!-- 리스트 -->
+                                    <rect x="78" y="50" width="20" height="20" fill="#4CAF50" rx="3"/>
+                                    <line x1="83" y1="55" x2="93" y2="55" stroke="white" stroke-width="1.5"/>
+                                    <line x1="83" y1="60" x2="93" y2="60" stroke="white" stroke-width="1.5"/>
+                                    <line x1="83" y1="65" x2="88" y2="65" stroke="white" stroke-width="1.5"/>
+
+                                    <!-- 문서 -->
+                                    <rect x="108" y="50" width="20" height="20" fill="#FF9800" rx="3"/>
+                                    <line x1="113" y1="56" x2="123" y2="56" stroke="white" stroke-width="1" opacity="0.7"/>
+                                    <line x1="113" y1="60" x2="123" y2="60" stroke="white" stroke-width="1" opacity="0.7"/>
+                                    <line x1="113" y1="64" x2="120" y2="64" stroke="white" stroke-width="1" opacity="0.7"/>
+
+                                    <!-- ETF -->
+                                    <rect x="138" y="50" width="20" height="20" fill="#4CAF50" rx="3"/>
+                                    <text x="145" y="62" font-size="9" font-weight="bold" fill="white" text-anchor="middle">E</text>
+
+                                    <!-- 사용자 -->
+                                    <rect x="168" y="50" width="20" height="20" fill="#2196F3" rx="3"/>
+                                    <circle cx="178" cy="56" r="3" fill="white"/>
+                                    <path d="M 173 62 Q 173 60 178 60 Q 183 60 183 62 Z" fill="white" opacity="0.8"/>
+                                </g>
+
+                                <!-- 다운로드 화살표 (우측 하단) -->
+                                <g>
+                                    <circle cx="200" cy="210" r="18" fill="#42A5F5" stroke="white" stroke-width="2"/>
+                                    <path d="M 200 200 L 200 218 M 195 213 L 200 218 L 205 213" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                </g>
+                            </svg>
+                        </span>
                         <span class="ml-label">분석<br>보고서</span>
                     </button>
                     <button class="ml-btn" onclick="window.location.href='ai-analysis.html'">
