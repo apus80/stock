@@ -1609,7 +1609,7 @@
         body.mobile-view .header { padding: max(65px, calc(env(safe-area-inset-top, 0px) + 55px)) 15px 30px !important; }
         body.mobile-view .header h1 { font-size: 1.5em !important; }
         body.mobile-view .header p { font-size: 0.9em !important; }
-        body.mobile-view #pwaInstallBtn { display: none !important; }
+        /* PWA 버튼은 모바일에서도 표시 필요 */
         body.mobile-view .grid-dashboard { grid-template-columns: 1fr !important; padding: 10px !important; }
         body.mobile-view .grid-top-row,
         body.mobile-view .grid-bottom-row { grid-template-columns: 1fr !important; }
@@ -4538,9 +4538,36 @@ var ECON_DATA = {
     (function() {
         var STORAGE_KEY = 'investflow-view-mode';
 
-        // 항상 모바일 뷰로 통일
-        document.body.classList.add('mobile-view');
-        localStorage.setItem(STORAGE_KEY, 'mobile');
+        // localStorage에서 저장된 뷰 모드 확인
+        var savedMode = localStorage.getItem(STORAGE_KEY);
+
+        // 저장된 값이 있으면 그것을 사용, 없으면 기본값은 mobile
+        var viewMode = savedMode || 'mobile';
+
+        // 뷰 모드 적용
+        if (viewMode === 'mobile') {
+            document.body.classList.add('mobile-view');
+        } else {
+            document.body.classList.remove('mobile-view');
+        }
+
+        // localStorage에 저장 (기본값도 저장)
+        localStorage.setItem(STORAGE_KEY, viewMode);
+
+        // 토글 함수 제공
+        window.toggleViewMode = function() {
+            var current = document.body.classList.contains('mobile-view') ? 'mobile' : 'desktop';
+            var newMode = current === 'mobile' ? 'desktop' : 'mobile';
+
+            if (newMode === 'mobile') {
+                document.body.classList.add('mobile-view');
+            } else {
+                document.body.classList.remove('mobile-view');
+            }
+
+            localStorage.setItem(STORAGE_KEY, newMode);
+            console.log('뷰 모드 변경:', current, '→', newMode);
+        };
 
     })();
     </script>
