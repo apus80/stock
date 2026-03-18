@@ -696,6 +696,25 @@
                 console.error('데이터 로드 실패:', e);
             }
 
+            // 📊 위젯 데이터 추적 저장 (ai-widget-monitor.html에서 수집용)
+            if (discoveryData || marketData) {
+                window.widgetDataCache3 = {};
+                for (let i = 1; i <= 10; i++) {
+                    window.widgetDataCache3[`analysis3-${i}`] = {
+                        id: `analysis3-${i}`,
+                        page: 'AI분석 3',
+                        title: `Widget ${i}`,
+                        status: 'completed',
+                        data: {
+                            discovery: discoveryData,
+                            market: marketData
+                        },
+                        timestamp: new Date().toISOString()
+                    };
+                }
+                localStorage.setItem('widgetDataCache_analysis3', JSON.stringify(window.widgetDataCache3));
+            }
+
             updateTimestamp();
         }
 
