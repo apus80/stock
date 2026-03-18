@@ -1439,7 +1439,7 @@ export default {
       // 1. Institutional Market Score
       async function getInstitutionalScore() {
         const data = await getMarketDataCached()
-        const liquidityScore = (data.fed && data.fed > 7000) ? 18 : 15
+        const liquidityScore = (data.fed && data.fed > 7) ? 18 : 15
         const volatilityScore = (data.vix && data.vix < 15) ? 18 : (data.vix < 20 ? 14 : 10)
         const creditScore = (data.hyg && data.lqd && (data.hyg / data.lqd) > 0.98) ? 18 : 15
         const breadthScore = 18
@@ -1503,7 +1503,7 @@ export default {
       // 3. Liquidity Pulse
       async function getLiquidityPulse() {
         const data = await getMarketDataCached()
-        const liquidityScore = (data.fed > 7000) ? 85 : (data.fed > 6000) ? 70 : 50
+        const liquidityScore = (data.fed > 7) ? 85 : (data.fed > 6) ? 70 : 50
 
         return {
           timestamp: new Date().toISOString(),
