@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>위젯 데이터 감시 - AI분석 1,2,3 필드값 통계</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg2: #161b22;
+            --bg3: #1c2128;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --blue: #58a6ff;
+            --green: #3fb950;
+            --red: #f85149;
+            --yellow: #d29922;
+            --orange: #fb8500;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container { max-width: 1900px; margin: 0 auto; }
+
+        h1 {
+            color: var(--blue);
+            margin-bottom: 5px;
+            font-size: 22px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+        }
+
+        button:hover {
+            background: var(--border);
+        }
+
+        .analysis-section {
+            margin-bottom: 30px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .analysis-header {
+            background: var(--bg3);
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            color: var(--blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analysis-title {
+            font-size: 14px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+
+        .stat-value.total { background: var(--bg); color: var(--blue); }
+        .stat-value.complete { background: rgba(63, 185, 80, 0.2); color: var(--green); }
+        .stat-value.loading { background: rgba(210, 153, 34, 0.2); color: var(--yellow); }
+        .stat-value.error { background: rgba(248, 81, 73, 0.2); color: var(--red); }
+
+        .widget-list {
+            padding: 15px;
+        }
+
+        .widget-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            border-left: 3px solid var(--blue);
+        }
+
+        .widget-item.error {
+            border-left-color: var(--red);
+        }
+
+        .widget-item.success {
+            border-left-color: var(--green);
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .widget-name {
+            font-weight: bold;
+            color: var(--blue);
+            font-size: 12px;
+        }
+
+        .widget-id {
+            background: var(--bg3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .fields-container {
+            display: grid;
+            gap: 12px;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto auto;
+            gap: 12px;
+            padding: 10px;
+            background: var(--bg3);
+            border-radius: 4px;
+            align-items: center;
+            font-size: 11px;
+        }
+
+        .field-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 80px;
+        }
+
+        .status-icon {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            font-size: 0;
+        }
+
+        .status-icon.complete {
+            background: var(--green);
+        }
+
+        .status-icon.loading {
+            background: var(--yellow);
+            animation: pulse 1s infinite;
+        }
+
+        .status-icon.error {
+            background: var(--red);
+        }
+
+        .status-text {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .status-text.complete { color: var(--green); font-weight: bold; }
+        .status-text.loading { color: var(--yellow); font-weight: bold; }
+        .status-text.error { color: var(--red); font-weight: bold; }
+
+        .field-name {
+            color: var(--blue);
+            font-weight: bold;
+        }
+
+        .field-api {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        .field-value {
+            color: var(--green);
+            font-weight: bold;
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .field-value.none {
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .summary-card-title {
+            color: var(--blue);
+            font-weight: bold;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+        .summary-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin-bottom: 4px;
+            background: var(--bg3);
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .summary-label {
+            color: var(--text-muted);
+        }
+
+        .summary-value {
+            font-weight: bold;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: var(--bg3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+            display: flex;
+        }
+
+        .progress-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+            flex-direction: column;
+        }
+
+        .progress-segment.complete {
+            background: var(--green);
+        }
+
+        .progress-segment.loading {
+            background: var(--yellow);
+        }
+
+        .progress-segment.error {
+            background: var(--red);
+        }
+
+        .no-data {
+            color: var(--text-muted);
+            padding: 20px;
+            text-align: center;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📊 위젯 데이터 감시 대시보드</h1>
+    <p class="subtitle">AI분석 1,2,3 모든 위젯의 필드값 로드 상태를 실시간으로 추적합니다</p>
+
+    <div class="controls">
+        <button onclick="auditAllWidgets()">🔍 전체 감시 시작</button>
+        <button onclick="location.reload()">🔄 새로고침</button>
+    </div>
+
+    <div class="summary-grid" id="summary-grid"></div>
+
+    <div id="analysis-container"></div>
+</div>
+
+<script>
+    const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+
+    // AI분석 위젯 정의
+    const ANALYSIS_DATA = {
+        analysis1: {
+            title: 'AI분석 1',
+            icon: '1️⃣',
+            widgets: [
+                {
+                    id: 'ai_1_1',
+                    name: 'Institutional Market Score',
+                    fields: [
+                        { name: 'S&P500 가격', api: '/market', field: 'US_MARKET.SP500.price', unit: '$' },
+                        { name: 'VIX', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
+                        { name: '신용스프레드', api: '/market', field: 'MARKET_RISK 또는 CREDIT', unit: 'bp' },
+                        { name: 'Fed 잔액', api: '/market', field: 'LIQUIDITY.FED_BALANCE', unit: 'T' }
+                    ]
+                },
+                {
+                    id: 'ai_1_2',
+                    name: 'Market Regime Engine',
+                    fields: [
+                        { name: '가격 추세', api: '/market', field: 'US_MARKET.SP500.changePercentage', unit: '%' },
+                        { name: 'VIX 수준', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
+                        { name: '신용스프레드', api: '/market', field: 'CREDIT.HYG.changePercentage', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_1_3',
+                    name: 'Liquidity Pulse Indicator',
+                    fields: [
+                        { name: 'Fed 잔액', api: '/market', field: 'LIQUIDITY.FED_BALANCE', unit: 'M' },
+                        { name: 'M2 통화량', api: '/market', field: 'MACRO_BASE.M2', unit: 'M' },
+                        { name: 'Reverse Repo', api: '/market', field: 'LIQUIDITY.REVERSE_REPO', unit: 'M' }
+                    ]
+                },
+                {
+                    id: 'ai_1_4',
+                    name: 'Yield Curve Monitor',
+                    fields: [
+                        { name: '10년물 금리', api: '/market', field: 'RATES.US10Y', unit: '%' },
+                        { name: '2년물 금리', api: '/market', field: 'RATES.US2Y', unit: '%' },
+                        { name: '수익률 곡선', api: '/market', field: 'RATES.YIELD_CURVE', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_1_5',
+                    name: 'Inflation Pressure Monitor',
+                    fields: [
+                        { name: 'CPI', api: '/market', field: 'MACRO_BASE.CPI', unit: 'idx' },
+                        { name: 'PCE 인플레이션', api: '/market', field: 'MACRO_BASE.PCE_INFLATION', unit: '%' },
+                        { name: '10Y 기대인플레이션', api: '/market', field: 'MACRO_BASE.INFLATION_EXPECTATION', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_1_6',
+                    name: 'Credit Stress Monitor',
+                    fields: [
+                        { name: 'HYG 가격', api: '/market', field: 'CREDIT.HYG.price', unit: '$' },
+                        { name: 'LQD 가격', api: '/market', field: 'CREDIT.LQD.price', unit: '$' },
+                        { name: 'HYG/LQD 변화', api: '/market', field: 'CREDIT.HYG.changePercentage', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_1_7',
+                    name: 'Market Breadth Analyzer',
+                    fields: [
+                        { name: '상승 종목 비율', api: '/analysis/market-breadth', field: 'advanceDeclineRatio', unit: '%' },
+                        { name: '신규 고가', api: '/analysis/market-breadth', field: 'newHighs', unit: 'cnt' },
+                        { name: '신규 저가', api: '/analysis/market-breadth', field: 'newLows', unit: 'cnt' }
+                    ]
+                },
+                {
+                    id: 'ai_1_8',
+                    name: 'Volatility Regime',
+                    fields: [
+                        { name: 'VIX', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
+                        { name: 'ATR', api: '/analysis/volatility-regime', field: 'atr', unit: '' },
+                        { name: '호가스프레드', api: '/analysis/volatility-regime', field: 'spread', unit: 'bp' }
+                    ]
+                },
+                {
+                    id: 'ai_1_9',
+                    name: 'Sector Rotation Tracker',
+                    fields: [
+                        { name: '11개 섹터 데이터', api: '/market', field: 'SECTORS', unit: 'cnt' },
+                        { name: '섹터 모멘텀', api: '/analysis/sector-rotation', field: 'momentum', unit: '%' },
+                        { name: '자금 흐름', api: '/analysis/sector-rotation', field: 'flow', unit: 'ratio' }
+                    ]
+                },
+                {
+                    id: 'ai_1_10',
+                    name: 'Dollar Liquidity Impact',
+                    fields: [
+                        { name: 'DXY (달러지수)', api: '/market', field: 'FX.DXY.price', unit: '' },
+                        { name: '신흥국 상관계수', api: '/analysis/dollar-liquidity', field: 'correlation', unit: '' },
+                        { name: '원자재 상관계수', api: '/analysis/dollar-liquidity', field: 'commodityCorr', unit: '' }
+                    ]
+                },
+                {
+                    id: 'ai_1_11',
+                    name: 'Crypto Risk Sentiment',
+                    fields: [
+                        { name: 'BTC 가격', api: '/market', field: 'CRYPTO.BTC.price', unit: '$' },
+                        { name: 'ETH 가격', api: '/market', field: 'CRYPTO.ETH.price', unit: '$' },
+                        { name: 'Fear&Greed', api: '/analysis/crypto-sentiment', field: 'score', unit: 'idx' }
+                    ]
+                },
+                {
+                    id: 'ai_1_12',
+                    name: 'Smart Money Signal',
+                    fields: [
+                        { name: 'ETF 거래량', api: '/analysis/smart-money', field: 'etfVolume', unit: 'M' },
+                        { name: '기관 포지셔닝', api: '/analysis/smart-money', field: 'positioning', unit: 'ratio' },
+                        { name: '옵션 포지션', api: '/analysis/smart-money', field: 'optionPosition', unit: 'ratio' }
+                    ]
+                },
+                {
+                    id: 'ai_1_13',
+                    name: 'AI Stock Ranking Engine',
+                    fields: [
+                        { name: '모멘텀', api: '/analysis/stock-ranking', field: 'momentum', unit: 'score' },
+                        { name: '밸류', api: '/analysis/stock-ranking', field: 'value', unit: 'score' },
+                        { name: '퀄리티', api: '/analysis/stock-ranking', field: 'quality', unit: 'score' },
+                        { name: '성장성', api: '/analysis/stock-ranking', field: 'growth', unit: 'score' }
+                    ]
+                },
+                {
+                    id: 'ai_1_14',
+                    name: 'Market Heatmap Engine',
+                    fields: [
+                        { name: '주식', api: '/market', field: 'US_MARKET', unit: 'cnt' },
+                        { name: '채권', api: '/market', field: 'CREDIT', unit: 'cnt' },
+                        { name: '원자재', api: '/market', field: 'COMMODITIES', unit: 'cnt' },
+                        { name: 'FX', api: '/market', field: 'FX', unit: 'cnt' }
+                    ]
+                }
+            ]
+        },
+        analysis2: {
+            title: 'AI분석 2',
+            icon: '2️⃣',
+            widgets: [
+                {
+                    id: 'ai_2_1',
+                    name: 'Alpha Discovery Scanner',
+                    fields: [
+                        { name: '수익 성장률', api: '/alpha/discovery', field: 'top_20[].revenueGrowth', unit: '%' },
+                        { name: 'EPS 성장률', api: '/alpha/discovery', field: 'top_20[].epsGrowth', unit: '%' },
+                        { name: 'PE 비율', api: '/fundamentals/ratios', field: 'priceToEarningsRatio', unit: 'x' },
+                        { name: 'PB 비율', api: '/fundamentals/ratios', field: 'priceToBookRatio', unit: 'x' },
+                        { name: '모멘텀', api: '/stable/quote', field: 'momentum', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_2_2',
+                    name: 'Market Entry Gate',
+                    fields: [
+                        { name: '시장 레짐', api: '/analysis/market-regime', field: 'regime', unit: '' },
+                        { name: 'VIX', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
+                        { name: 'HY 스프레드', api: '/market', field: 'CREDIT.HYG', unit: 'bp' },
+                        { name: 'Fear&Greed', api: '/feargreed', field: 'score', unit: 'idx' }
+                    ]
+                },
+                {
+                    id: 'ai_2_3',
+                    name: 'Sector Rotation',
+                    fields: [
+                        { name: '11개 섹터', api: '/market', field: 'SECTORS', unit: 'cnt' },
+                        { name: '섹터 수익률', api: '/market', field: 'SECTORS[].changePercentage', unit: '%' },
+                        { name: '상대 강도', api: '/analysis/sector-rotation', field: 'relativeStrength', unit: '%' }
+                    ]
+                }
+            ]
+        },
+        analysis3: {
+            title: 'AI분석 3',
+            icon: '3️⃣',
+            widgets: [
+                {
+                    id: 'ai_3_1',
+                    name: '매크로 유동성',
+                    fields: [
+                        { name: 'Fed 잔액', api: '/market', field: 'LIQUIDITY.FED_BALANCE', unit: 'M' },
+                        { name: 'Reverse Repo', api: '/market', field: 'LIQUIDITY.REVERSE_REPO', unit: 'M' },
+                        { name: 'TGA', api: '/market', field: 'LIQUIDITY.TGA', unit: 'M' }
+                    ]
+                },
+                {
+                    id: 'ai_3_2',
+                    name: '섹터 동향',
+                    fields: [
+                        { name: 'XLK 기술', api: '/market', field: 'SECTORS.TECHNOLOGY', unit: '$' },
+                        { name: 'XLV 헬스', api: '/market', field: 'SECTORS.HEALTHCARE', unit: '$' },
+                        { name: '섹터 수익률', api: '/market', field: 'SECTORS[].changePercentage', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_3',
+                    name: '신용 스트레스',
+                    fields: [
+                        { name: 'HYG', api: '/market', field: 'CREDIT.HYG.price', unit: '$' },
+                        { name: 'LQD', api: '/market', field: 'CREDIT.LQD.price', unit: '$' },
+                        { name: 'HYG 변화', api: '/market', field: 'CREDIT.HYG.changePercentage', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_4',
+                    name: '폭발적 성장 발굴',
+                    fields: [
+                        { name: '상위 20개 종목', api: '/alpha/discovery', field: 'top_20[].symbol', unit: 'cnt' },
+                        { name: '점수', api: '/alpha/discovery', field: 'top_20[].score', unit: 'pt' },
+                        { name: '모멘텀', api: '/alpha/discovery', field: 'top_20[].momentum', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_5',
+                    name: '궁극의 발굴 엔진',
+                    fields: [
+                        { name: '최종점수', api: '/alpha/discovery', field: 'top_20[].score', unit: 'pt' },
+                        { name: 'PE 비율', api: '/fundamentals/ratios', field: 'priceToEarningsRatio', unit: 'x' },
+                        { name: '수익률', api: '/alpha/discovery', field: 'top_20[].revenueGrowth', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_6',
+                    name: '초고성장 발굴',
+                    fields: [
+                        { name: '수익 성장', api: '/fundamentals/growth', field: 'revenueGrowth', unit: '%' },
+                        { name: 'EPS 성장', api: '/fundamentals/growth', field: 'epsGrowth', unit: '%' },
+                        { name: '순이익마진', api: '/fundamentals/income', field: 'netIncome/revenue', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_7',
+                    name: '기관 매집 종목',
+                    fields: [
+                        { name: '섹터모멘텀', api: '/analysis/sector-rotation', field: 'momentum', unit: '%' },
+                        { name: '수익 성장', api: '/fundamentals/growth', field: 'revenueGrowth', unit: '%' },
+                        { name: '영업이익률', api: '/fundamentals/income', field: 'operatingMargin', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_8',
+                    name: '섹터 로테이션',
+                    fields: [
+                        { name: '상대강도', api: '/analysis/sector-rotation', field: 'relativeStrength', unit: '%' },
+                        { name: '수익 성장', api: '/fundamentals/growth', field: 'revenueGrowth', unit: '%' },
+                        { name: 'EPS 성장', api: '/fundamentals/growth', field: 'epsGrowth', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_9',
+                    name: '유동성 수혜',
+                    fields: [
+                        { name: '유동성지수', api: '/market', field: 'LIQUIDITY', unit: 'idx' },
+                        { name: 'VIX', api: '/market', field: 'US_MARKET.VIX.price', unit: '' },
+                        { name: '수익 성장', api: '/fundamentals/growth', field: 'revenueGrowth', unit: '%' }
+                    ]
+                },
+                {
+                    id: 'ai_3_10',
+                    name: '통합 발굴 엔진',
+                    fields: [
+                        { name: '거시점수', api: '/market', field: 'US_MARKET', unit: 'pt' },
+                        { name: '섹터강도', api: '/analysis/sector-rotation', field: 'strength', unit: '%' },
+                        { name: '기본가치', api: '/fundamentals/ratios', field: 'roe', unit: '%' }
+                    ]
+                }
+            ]
+        }
+    };
+
+    async function auditAllWidgets() {
+        const container = document.getElementById('analysis-container');
+        container.innerHTML = '';
+
+        const summaries = {
+            analysis1: { total: 0, complete: 0, loading: 0, error: 0 },
+            analysis2: { total: 0, complete: 0, loading: 0, error: 0 },
+            analysis3: { total: 0, complete: 0, loading: 0, error: 0 }
+        };
+
+        for (const [analysisKey, analysisData] of Object.entries(ANALYSIS_DATA)) {
+            const section = document.createElement('div');
+            section.className = 'analysis-section';
+
+            const widgets = analysisData.widgets;
+            const totalFields = widgets.reduce((sum, w) => sum + w.fields.length, 0);
+            let completeCount = 0;
+            let errorCount = 0;
+
+            // 분석 헤더
+            const header = document.createElement('div');
+            header.className = 'analysis-header';
+            header.innerHTML = `
+                <div class="analysis-title">${analysisData.icon} ${analysisData.title} (${widgets.length}개 위젯)</div>
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <span class="stat-label">총 필드:</span>
+                        <span class="stat-value total">${totalFields}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">완료:</span>
+                        <span class="stat-value complete" id="complete-${analysisKey}">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">진행중:</span>
+                        <span class="stat-value loading" id="loading-${analysisKey}">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">에러:</span>
+                        <span class="stat-value error" id="error-${analysisKey}">0</span>
+                    </div>
+                </div>
+            `;
+            section.appendChild(header);
+
+            // 위젯 리스트
+            const list = document.createElement('div');
+            list.className = 'widget-list';
+
+            for (const widget of widgets) {
+                const widgetDiv = document.createElement('div');
+                widgetDiv.className = 'widget-item';
+                widgetDiv.id = `widget-${widget.id}`;
+
+                const widgetHeader = document.createElement('div');
+                widgetHeader.className = 'widget-header';
+                widgetHeader.innerHTML = `
+                    <div class="widget-name">${widget.name}</div>
+                    <div class="widget-id">${widget.id}</div>
+                `;
+                widgetDiv.appendChild(widgetHeader);
+
+                const fieldsDiv = document.createElement('div');
+                fieldsDiv.className = 'fields-container';
+
+                for (const field of widget.fields) {
+                    const fieldRow = document.createElement('div');
+                    fieldRow.className = 'field-row';
+                    fieldRow.id = `field-${widget.id}-${field.name.replace(/\s+/g, '-')}`;
+                    fieldRow.innerHTML = `
+                        <div class="field-status">
+                            <span class="status-icon loading"></span>
+                            <span class="status-text loading">로딩중</span>
+                        </div>
+                        <div class="field-name">${field.name}</div>
+                        <div class="field-api">${field.api} → ${field.field}</div>
+                        <div class="field-value none">-</div>
+                    `;
+                    fieldsDiv.appendChild(fieldRow);
+                }
+
+                widgetDiv.appendChild(fieldsDiv);
+                list.appendChild(widgetDiv);
+            }
+
+            section.appendChild(list);
+            container.appendChild(section);
+
+            // 실제 데이터 로드
+            await loadWidgetData(analysisKey, widgets);
+
+            // 통계 업데이트
+            summaries[analysisKey].total = totalFields;
+        }
+
+        updateSummary(summaries);
+    }
+
+    async function loadWidgetData(analysisKey, widgets) {
+        // /market 데이터 한 번만 로드
+        const marketData = await fetch(API_BASE + '/market').then(r => r.json()).catch(() => null);
+        const discoveryData = await fetch(API_BASE + '/alpha/discovery').then(r => r.json()).catch(() => null);
+
+        for (const widget of widgets) {
+            for (const field of widget.fields) {
+                const fieldId = `field-${widget.id}-${field.name.replace(/\s+/g, '-')}`;
+                const fieldElement = document.getElementById(fieldId);
+                if (!fieldElement) continue;
+
+                try {
+                    let value = null;
+                    let status = 'error';
+
+                    if (field.api === '/market' && marketData) {
+                        value = getNestedValue(marketData, field.field);
+                        if (value !== null && value !== undefined) status = 'complete';
+                    } else if (field.api === '/alpha/discovery' && discoveryData) {
+                        value = getNestedValue(discoveryData, field.field);
+                        if (value !== null && value !== undefined) status = 'complete';
+                    } else {
+                        status = 'loading'; // API 미지원
+                    }
+
+                    // UI 업데이트
+                    const statusIcon = fieldElement.querySelector('.status-icon');
+                    const statusText = fieldElement.querySelector('.status-text');
+                    const valueDiv = fieldElement.querySelector('.field-value');
+
+                    statusIcon.className = `status-icon ${status}`;
+                    statusText.className = `status-text ${status}`;
+                    statusText.textContent = status === 'complete' ? '✅ 완료' : status === 'error' ? '❌ 에러' : '⏳ 진행중';
+
+                    if (value !== null && value !== undefined) {
+                        valueDiv.className = 'field-value';
+                        valueDiv.textContent = typeof value === 'object' ? `[${Object.keys(value).length}개]` : `${value}${field.unit ? ' ' + field.unit : ''}`;
+                    }
+
+                    // 위젯 상태 업데이트
+                    updateWidgetStatus(widget.id);
+
+                } catch (e) {
+                    const statusIcon = fieldElement.querySelector('.status-icon');
+                    statusIcon.className = 'status-icon error';
+                }
+            }
+        }
+    }
+
+    function getNestedValue(obj, path) {
+        const keys = path.replace(/\[\]/g, '').split(/[\.\[\]]/).filter(k => k);
+        let current = obj;
+        for (const key of keys) {
+            if (current && typeof current === 'object') {
+                current = current[key];
+            } else {
+                return null;
+            }
+        }
+        return current;
+    }
+
+    function updateWidgetStatus(widgetId) {
+        const widget = document.getElementById(`widget-${widgetId}`);
+        if (!widget) return;
+
+        const rows = widget.querySelectorAll('.field-row');
+        const statuses = Array.from(rows).map(r => r.querySelector('.status-text').textContent);
+
+        if (statuses.every(s => s.includes('완료'))) {
+            widget.className = 'widget-item success';
+        } else if (statuses.some(s => s.includes('에러'))) {
+            widget.className = 'widget-item error';
+        }
+    }
+
+    function updateSummary(summaries) {
+        const grid = document.getElementById('summary-grid');
+        grid.innerHTML = '';
+
+        for (const [key, stats] of Object.entries(summaries)) {
+            const card = document.createElement('div');
+            card.className = 'summary-card';
+
+            const title = ANALYSIS_DATA[key].title;
+            const completePercent = stats.total > 0 ? ((stats.complete / stats.total) * 100).toFixed(1) : 0;
+
+            card.innerHTML = `
+                <div class="summary-card-title">${ANALYSIS_DATA[key].icon} ${title}</div>
+                <div class="summary-stat">
+                    <span class="summary-label">총 필드</span>
+                    <span class="summary-value">${stats.total}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="summary-label">완료</span>
+                    <span class="summary-value" style="color: var(--green);">${stats.complete}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="summary-label">진행중</span>
+                    <span class="summary-value" style="color: var(--yellow);">${stats.loading}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="summary-label">에러</span>
+                    <span class="summary-value" style="color: var(--red);">${stats.error}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-segment complete" style="width: ${completePercent}%;">${completePercent}%</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        }
+    }
+
+    // 자동 시작
+    window.addEventListener('load', auditAllWidgets);
+</script>
+
+</body>
+</html>
