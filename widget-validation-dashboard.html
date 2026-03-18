@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>위젯 계산 로직 검증 - AI분석 1,2,3 통합</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg2: #161b22;
+            --bg3: #1c2128;
+            --bg4: #21262d;
+            --border: #30363d;
+            --muted: #484f58;
+            --text-muted: #8b949e;
+            --text: #c9d1d9;
+            --text-bright: #e6edf3;
+            --blue: #58a6ff;
+            --green: #3fb950;
+            --red: #f85149;
+            --yellow: #d29922;
+            --purple: #bc8ef9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container { max-width: 1800px; margin: 0 auto; }
+
+        h1 {
+            color: var(--purple);
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 13px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg4);
+            color: var(--text);
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--border);
+            color: var(--text-bright);
+        }
+
+        button.active {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+        }
+
+        .filter-btn.active {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .widget-section {
+            margin-bottom: 40px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .widget-header {
+            background: var(--bg3);
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .widget-id {
+            background: var(--blue);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .widget-title {
+            flex: 1;
+            color: var(--text-bright);
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .widget-page {
+            color: var(--text-muted);
+            font-size: 11px;
+            background: var(--bg4);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .widget-body {
+            padding: 20px;
+        }
+
+        .logic-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            color: var(--green);
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .formula {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid var(--yellow);
+            margin-bottom: 15px;
+            font-size: 11px;
+            overflow-x: auto;
+        }
+
+        .formula-line {
+            margin: 4px 0;
+            color: var(--text);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: 15px;
+        }
+
+        .data-table th {
+            background: var(--bg3);
+            color: var(--blue);
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+            font-weight: bold;
+        }
+
+        .data-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table tr:hover {
+            background: var(--bg3);
+        }
+
+        .field-name {
+            color: var(--blue);
+            font-weight: bold;
+        }
+
+        .value-actual {
+            color: var(--green);
+        }
+
+        .value-default {
+            color: var(--yellow);
+            font-weight: bold;
+        }
+
+        .status-icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-icon.actual {
+            background: var(--green);
+        }
+
+        .status-icon.default {
+            background: var(--yellow);
+        }
+
+        .warning {
+            background: rgba(217, 119, 6, 0.1);
+            border-left: 3px solid var(--yellow);
+            padding: 12px;
+            border-radius: 4px;
+            color: var(--yellow);
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+
+        .success {
+            background: rgba(52, 168, 83, 0.1);
+            border-left: 3px solid var(--green);
+            padding: 12px;
+            border-radius: 4px;
+            color: var(--green);
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+
+        .timestamp {
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .no-data {
+            color: var(--text-muted);
+            padding: 20px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .data-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 10px;
+            background: var(--bg);
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border-left: 3px solid var(--blue);
+        }
+
+        .data-label {
+            color: var(--yellow);
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .data-value {
+            color: var(--green);
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .category-badge.cat1 {
+            background: rgba(88, 166, 255, 0.2);
+            color: var(--blue);
+        }
+
+        .category-badge.cat2 {
+            background: rgba(63, 185, 80, 0.2);
+            color: var(--green);
+        }
+
+        .category-badge.cat3 {
+            background: rgba(210, 153, 34, 0.2);
+            color: var(--yellow);
+        }
+
+        @media (max-width: 1200px) {
+            .data-table { font-size: 10px; }
+            .data-table th, .data-table td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📊 위젯 계산 로직 검증 대시보드</h1>
+    <p class="subtitle">AI분석 1, 2, 3 모든 위젯의 계산 로직, API 엔드포인트, 실제 데이터를 검증합니다</p>
+
+    <div class="controls">
+        <button onclick="refreshAll()">🔄 모두 새로고침</button>
+        <button onclick="exportData()">💾 데이터 내보내기</button>
+    </div>
+
+    <div class="filter-tabs">
+        <button class="filter-btn active" onclick="filterWidgets('all')">📊 전체</button>
+        <button class="filter-btn" onclick="filterWidgets('analysis1')">1️⃣ AI분석 1 (14개)</button>
+        <button class="filter-btn" onclick="filterWidgets('analysis2')">2️⃣ AI분석 2 (3개)</button>
+        <button class="filter-btn" onclick="filterWidgets('analysis3')">3️⃣ AI분석 3 (11개)</button>
+    </div>
+
+    <div id="widgets-container"></div>
+
+</div>
+
+<script>
+    const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+
+    // 모든 위젯 정의
+    const ALL_WIDGETS = [
+        // ========== AI분석 1 (14개) ==========
+        {
+            category: 'analysis1',
+            id: 'ai_1_1',
+            name: 'Institutional Market Score',
+            description: '기관 투자자 시장 건강도 (0-100점)',
+            endpoint: '/analysis/institutional-score',
+            formula: `
+                <div class="formula-line"><strong>종합 점수 = 가중평균 정규화</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">구성 요소:</div>
+                <div class="formula-line">&nbsp;&nbsp;• S&P500 가격추세: 30%</div>
+                <div class="formula-line">&nbsp;&nbsp;• VIX 변동성: 25%</div>
+                <div class="formula-line">&nbsp;&nbsp;• 신용스프레드: 20%</div>
+                <div class="formula-line">&nbsp;&nbsp;• Fed Balance Sheet: 15%</div>
+                <div class="formula-line">&nbsp;&nbsp;• 수익률곡선: 10%</div>
+            `,
+            dataSource: [
+                { item: 'S&P500 가격', endpoint: '/market', field: 'US_MARKET.SP500.price', defaultValue: '5000', weight: '30%' },
+                { item: 'VIX', endpoint: '/market', field: 'US_MARKET.VIX.price', defaultValue: '20', weight: '25%' },
+                { item: '신용스프레드', endpoint: '/market', field: 'CREDIT 또는 MARKET_RISK', defaultValue: '350', weight: '20%' },
+                { item: 'Fed 잔액', endpoint: '/market', field: 'LIQUIDITY.FED_BALANCE', defaultValue: '7T', weight: '15%' },
+                { item: '10Y-2Y 스프레드', endpoint: '/market', field: 'RATES.YIELD_CURVE', defaultValue: '+130bp', weight: '10%' }
+            ],
+            meaning: '기관투자자가 평가하는 시장 건강도. 75점↑ 강세, 25점↓ 약세신호'
+        },
+        {
+            category: 'analysis1',
+            id: 'ai_1_2',
+            name: 'Market Regime Engine',
+            description: '현재 시장 레짐 및 위험도 판단',
+            endpoint: '/analysis/market-regime',
+            formula: `
+                <div class="formula-line"><strong>시장상태 분류 = 다중조건 판정</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">IF 가격추세 ↑ AND VIX < 20 AND 신용스프레드 < 400bp → Risk-ON</div>
+                <div class="formula-line">ELSE IF 가격추세 ↓ OR VIX > 25 OR 신용스프레드 > 500bp → Risk-OFF</div>
+                <div class="formula-line">ELSE → NEUTRAL</div>
+            `,
+            dataSource: [
+                { item: '가격 추세 (SPY)', endpoint: '/market', field: 'US_MARKET.SP500.changePercentage', defaultValue: '+0.45%', description: '일일 변화율' },
+                { item: 'VIX 수준', endpoint: '/market', field: 'US_MARKET.VIX.price', defaultValue: '18.5', description: 'VIX < 15 저, 20~30 중, > 30 고' },
+                { item: '신용스프레드', endpoint: '/market', field: 'CREDIT.HYG.changePercentage', defaultValue: '-0.12%', description: 'HYG/LQD 비율' }
+            ],
+            meaning: 'Risk-On(강세) → 공격적 포트폴리오 | Neutral → 균형형 | Risk-Off(약세) → 방어적 전환'
+        },
+        {
+            category: 'analysis1',
+            id: 'ai_1_3',
+            name: 'Liquidity Pulse Indicator',
+            description: '글로벌 금융 유동성 지표',
+            endpoint: '/analysis/liquidity-pulse',
+            formula: `
+                <div class="formula-line"><strong>유동성지수 = (Fed + M2 + -RRP) / 기준값</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">계산:</div>
+                <div class="formula-line">&nbsp;&nbsp;Fed Balance: 7.23T → 50점 기준</div>
+                <div class="formula-line">&nbsp;&nbsp;M2: 21.5T → 30점 기준</div>
+                <div class="formula-line">&nbsp;&nbsp;Reverse Repo: 123.4B → 20점 감점</div>
+            `,
+            dataSource: [
+                { item: 'Fed Balance Sheet', endpoint: '/market', field: 'LIQUIDITY.FED_BALANCE', defaultValue: '7,234,567M', description: '연방준비 자산 (millions)' },
+                { item: 'M2 Money Supply', endpoint: '/market', field: 'MACRO_BASE.M2', defaultValue: '21,500,000M', description: 'M2 통화량 (millions)' },
+                { item: 'Reverse Repo', endpoint: '/market', field: 'LIQUIDITY.REVERSE_REPO', defaultValue: '123,456M', description: '역레포 규모' }
+            ],
+            meaning: '유동성 풍부(↑) → 위험자산 선호 | 부족(↓) → 현금/채권 선호'
+        },
+        {
+            category: 'analysis1',
+            id: 'ai_1_4',
+            name: 'Yield Curve Recession Monitor',
+            description: '수익률곡선 역전 및 경기침체 확률',
+            endpoint: '/analysis/yield-curve-monitor',
+            formula: `
+                <div class="formula-line"><strong>경기침체 신호 = 2Y - 10Y 스프레드</strong></div>
+                <div class="formula-line" style="margin-top: 10px;">IF 10Y수익률 > 2Y수익률 → 정상 (스프레드 +)</div>
+                <div class="formula-line">IF 10Y수익률 < 2Y수익률 → 역전 (스프레드 -) → 경기침체 신호</div>
+                <div class="formula-line">역사 정확도: 70~80% (경기침체 선행 6~12개월)</div>
+            `,
+            dataSource: [
+                { item: '10년물 금리', endpoint: '/market', field: 'RATES.US10Y', defaultValue: '4.28%', description: 'FRED DGS10' },
+                { item: '2년물 금리', endpoint: '/market', field: 'RATES.US2Y', defaultValue: '4.15%', description: 'FRED DGS2' },
+                { item: '수익률 곡선', endpoint: '/market', field: 'RATES.YIELD_CURVE', defaultValue: '+0.13%', description: '10Y - 2Y' }
+            ],
+            meaning: '스프레드 양수(+) → 정상 | 음수(-) → 경기침체 신호'
+        }
+    ];
+
+    // ========== 나머지 위젯은 localStorage에서 로드 ==========
+    async function initDashboard() {
+        // localStorage에서 AI분석 2, 3 정보 로드
+        const analysis2 = JSON.parse(localStorage.getItem('widgetDataCache_analysis2') || '{}');
+        const analysis3 = JSON.parse(localStorage.getItem('widgetDataCache_analysis3') || '{}');
+
+        // AI분석 2 추가
+        Object.values(analysis2).forEach((widget, idx) => {
+            ALL_WIDGETS.push({
+                category: 'analysis2',
+                id: widget.id,
+                name: widget.name,
+                endpoint: widget.endpoint,
+                logic: widget.logic,
+                meaning: widget.meaning,
+                metrics: widget.metrics,
+                data: widget.data
+            });
+        });
+
+        // AI분석 3 추가
+        Object.values(analysis3).forEach((widget, idx) => {
+            ALL_WIDGETS.push({
+                category: 'analysis3',
+                id: widget.id,
+                name: widget.name,
+                endpoint: widget.endpoint,
+                logic: widget.logic,
+                meaning: widget.meaning,
+                metrics: widget.metrics,
+                data: widget.data
+            });
+        });
+
+        renderWidgets();
+    }
+
+    function renderWidgets(filter = 'all') {
+        const container = document.getElementById('widgets-container');
+        container.innerHTML = '';
+
+        const filtered = filter === 'all'
+            ? ALL_WIDGETS
+            : ALL_WIDGETS.filter(w => w.category === filter);
+
+        filtered.forEach((widget, idx) => {
+            const categoryLabel = widget.category === 'analysis1' ? 'AI_1' : widget.category === 'analysis2' ? 'AI_2' : 'AI_3';
+            const categoryNum = widget.category === 'analysis1' ? 1 : widget.category === 'analysis2' ? 2 : 3;
+
+            const html = `
+                <div class="widget-section">
+                    <div class="widget-header">
+                        <div class="widget-id">${categoryLabel}-${idx + 1}</div>
+                        <div class="widget-title">${widget.name}</div>
+                        <div class="widget-page">AI분석 ${categoryNum}</div>
+                    </div>
+                    <div class="widget-body">
+                        <div class="logic-section">
+                            <div class="section-title">📐 계산 로직</div>
+                            <div class="formula">${widget.formula || widget.logic || '-'}</div>
+                        </div>
+
+                        <div class="logic-section">
+                            <div class="section-title">💡 의미</div>
+                            <div style="padding: 12px; background: var(--bg); border-radius: 4px; border-left: 3px solid var(--green);">
+                                ${widget.meaning || '-'}
+                            </div>
+                        </div>
+
+                        ${widget.dataSource ? `
+                            <div class="logic-section">
+                                <div class="section-title">🔗 API 엔드포인트 & 필드</div>
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>항목</th>
+                                            <th>API 엔드포인트</th>
+                                            <th>필드명</th>
+                                            <th>기본값</th>
+                                            <th>비고</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${widget.dataSource.map(ds => `
+                                            <tr>
+                                                <td class="field-name">${ds.item}</td>
+                                                <td><code>${ds.endpoint}</code></td>
+                                                <td><code>${ds.field}</code></td>
+                                                <td><span class="value-default">${ds.defaultValue}</span></td>
+                                                <td>${ds.weight || ds.description || '-'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : ''}
+
+                        <div class="logic-section">
+                            <div class="section-title">🔍 실시간 데이터 (AAPL)</div>
+                            <div id="sample-${widget.id}" class="no-data">데이터 로드 중...</div>
+                        </div>
+
+                        <div class="timestamp">
+                            마지막 업데이트: <span id="time-${widget.id}">-</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const section = document.createElement('div');
+            section.innerHTML = html;
+            container.appendChild(section);
+
+            // AAPL 데이터 로드
+            loadAAPLSample(widget);
+        });
+    }
+
+    async function loadAAPLSample(widget) {
+        try {
+            const res = await fetch(API_BASE + '/alpha?symbol=AAPL').catch(() => null);
+            const data = res?.ok ? await res.json() : null;
+
+            if (!data?.data?.factors) throw new Error('No data');
+
+            const factors = data.data.factors;
+            const html = `
+                <div class="data-row">
+                    <div><div class="data-label">현재가</div><div class="data-value">$${(factors.price || 0).toFixed(2)}</div></div>
+                    <div><div class="data-label">PE</div><div class="data-value">${(factors.pe || 0).toFixed(2)}</div></div>
+                </div>
+                <div class="data-row">
+                    <div><div class="data-label">PB</div><div class="data-value">${(factors.pb || 0).toFixed(2)}</div></div>
+                    <div><div class="data-label">수익성장</div><div class="data-value">${(factors.revenueGrowth || 0).toFixed(2)}%</div></div>
+                </div>
+                <div class="data-row">
+                    <div><div class="data-label">EPS성장</div><div class="data-value">${(factors.earningsGrowth || 0).toFixed(2)}%</div></div>
+                    <div><div class="data-label">점수</div><div class="data-value">${(factors.score || 0).toFixed(2)}</div></div>
+                </div>
+            `;
+            document.getElementById(`sample-${widget.id}`)?.innerHTML = html;
+        } catch (e) {
+            document.getElementById(`sample-${widget.id}`)?.innerHTML = '⚠️ 데이터 로드 실패';
+        }
+
+        document.getElementById(`time-${widget.id}`)?.textContent = new Date().toLocaleString('ko-KR');
+    }
+
+    function filterWidgets(category) {
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        renderWidgets(category);
+    }
+
+    function refreshAll() {
+        location.reload();
+    }
+
+    function exportData() {
+        const json = JSON.stringify(ALL_WIDGETS, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `widget-validation-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+    }
+
+    // 초기화
+    window.addEventListener('load', initDashboard);
+</script>
+
+</body>
+</html>
