@@ -445,13 +445,16 @@ export default {
         // ✅ 거래량 (quote에서)
         const volume = quote?.volume || 0
 
+        // ✅ Float 및 Market Cap (quote에서)
+        const float = quote?.sharesFloat || quote?.floatShares || null
+        const marketCap = quote?.marketCap || null
+
         return {
           symbol,
           price,
           pe,
           pb,
           roe,
-          debtToEquity,
           revenueGrowth,
           epsGrowth,
           profitMargin: netMargin,
@@ -460,7 +463,11 @@ export default {
           momentum: dailyMomentum,
           volume: volume,
           dayLow,
-          dayHigh
+          dayHigh,
+          float: float,
+          marketCap: marketCap,
+          analystScore: 0,
+          insiderActivity: 0
         }
       }
 
@@ -548,7 +555,7 @@ export default {
               floatShares: factors.float,
               marketCap: factors.marketCap,
               revenueGrowth: factors.revenueGrowth,
-              earningsGrowth: factors.earningsGrowth,
+              earningsGrowth: factors.epsGrowth,  // ✅ epsGrowth를 earningsGrowth로 매핑
               analystScore: factors.analystScore,
               insiderActivity: factors.insiderActivity
             },
@@ -557,8 +564,8 @@ export default {
               volume: factors.volume ? parseFloat(factors.volume.toFixed(2)) : 0
             },
             profile: {
-              company: data.quote?.symbol || symbol,
-              sector: data.quote?.sector || null,
+              company: factors.symbol,
+              sector: factors.sector || data.quote?.sector || null,
               industry: data.quote?.industry || null
             }
           }
