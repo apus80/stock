@@ -2053,6 +2053,7 @@ export default {
           }
 
           results.sort((a, b) => b.score - a.score)
+          const top20 = results.slice(0, 20)  // ✅ top_20 정의 추가
 
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
           // console.log(`✅ Alpha Discovery 완료: ${results.length}개 종목, ${elapsedTime}초`)
