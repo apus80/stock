@@ -5298,7 +5298,7 @@ var ECON_DATA = {
         async function imdLoadEconFromWorker() {
             try {
                 // worker /market 엔드포인트에서 데이터 가져오기
-                const response = await fetch(WORKER_API_BASE + '/market');
+                const response = await fetch(API_BASE + '/market');
                 if (!response.ok) {
                     console.warn('[ECON] Worker /market 요청 실패:', response.status);
                     return;
@@ -5712,7 +5712,7 @@ var ECON_DATA = {
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
             console.log('[Top7] /top7 엔드포인트 호출 시작');
-            fetch(WORKER_API_BASE + '/top7')
+            fetch(API_BASE + '/top7')
                 .then(function(res) {
                     console.log('[Top7] Response status:', res.status, res.statusText);
                     if (!res.ok) throw new Error('HTTP ' + res.status);
