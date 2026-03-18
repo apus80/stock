@@ -1249,34 +1249,86 @@
             console.log('✅ AI분석_3 페이지 로드 완료');
 
             // 📊 AI분석 3 위젯 정보를 localStorage에 저장 (ai-widget-monitor.html 용)
-            const widgetTitles = [
-                '유동성 분석',
-                '섹터 동향',
-                '거시지표 요약',
-                '기술적 신호',
-                '시장 심리',
-                '경제 캘린더',
-                '투자 신호',
-                '위험도 지수',
-                '자산 배분',
-                '성과 분석'
+            const widgetInfo = [
+                {
+                    name: '💧 매크로 유동성 (Fed 잔액 + RRP + TGA)',
+                    logic: '📊 단계별 계산:\n1️⃣ Fed 잔액 추출 (FRED WALCL)\n2️⃣ 역레포(RRP) 추출 (FRED RRPONTSYD)\n3️⃣ TGA 추출 (FRED WTREGEN)\n4️⃣ 순 유동성 = Fed - RRP - TGA\n5️⃣ 단위 변환: T(조), B(십억)',
+                    meaning: '시장에 공급되는 실질 유동성. 높을수록 주가 상승 신호 📈',
+                    endpoint: '/market'
+                },
+                {
+                    name: '🔄 섹터 동향 (11개 섹터 데이터)',
+                    logic: '📊 단계별 계산:\n1️⃣ 11개 섹터 추출 (SECTORS)\n2️⃣ 각 섹터 가격 + 변화율 계산\n3️⃣ 수익률 기준 정렬\n4️⃣ 강세/약세 섹터 구분',
+                    meaning: '경기사이클에 따른 섹터 로테이션 신호. 강세 섹터로 자본이 이동 📊',
+                    endpoint: '/market'
+                },
+                {
+                    name: '📊 신용 스트레스 (HYG + LQD)',
+                    logic: '📊 단계별 계산:\n1️⃣ HYG (하이일드) 추출\n2️⃣ LQD (투자등급) 추출\n3️⃣ 신용 스프레드 계산\n4️⃣ 시장 리스크 평가',
+                    meaning: '신용시장 스트레스 지수. 높을수록 리스크 증가 ⚠️',
+                    endpoint: '/market'
+                },
+                {
+                    name: '🚀 폭발적 성장 주식 발굴 (상위 10개)',
+                    logic: '📊 단계별 계산:\n1️⃣ /alpha/discovery에서 상위 20개 로드\n2️⃣ 점수별 정렬\n3️⃣ 상위 10개 선택\n4️⃣ 모멘텀 + 수익률 계산',
+                    meaning: '기하급수적 성장 가능성이 높은 종목 발굴. 단기 강력한 상승 신호 🚀',
+                    endpoint: '/alpha/discovery'
+                },
+                {
+                    name: '🏆 궁극의 주식 발굴 엔진 (PE + 수익률)',
+                    logic: '📊 단계별 계산:\n1️⃣ /alpha/discovery에서 상위 20개 로드\n2️⃣ 최종점수 기준 정렬\n3️⃣ PE/PB 밸류에이션 계산\n4️⃣ 상위 10개 선택',
+                    meaning: '성장성과 밸류에이션을 모두 고려한 최고 등급 발굴주 ★★★★★',
+                    endpoint: '/alpha/discovery'
+                },
+                {
+                    name: '⚡ 초고성장 기업 발굴 (수익+EPS 성장)',
+                    logic: '📊 단계별 계산:\n1️⃣ /alpha/discovery 상위 20개 로드\n2️⃣ 수익 성장률 계산\n3️⃣ EPS 성장률 계산\n4️⃣ 순이익마진 계산\n5️⃣ 0.25×수익성장 + 0.25×EPS성장 + 0.15×순이익마진 + 0.15×ROE + 0.10×PE + 0.05×PB + 0.05×모멘텀',
+                    meaning: '매출/EPS 성장이 빠르면서도 수익성이 좋은 기업. 폭발적 성장 가능성 ⬆️',
+                    endpoint: '/alpha/discovery'
+                },
+                {
+                    name: '💰 기관 매집 종목 (섹터모멘텀 + 성장)',
+                    logic: '📊 단계별 계산:\n1️⃣ /alpha/discovery 상위 20개 로드\n2️⃣ 시장 대비 섹터 모멘텀 계산\n3️⃣ 수익성장 + EPS성장 계산\n4️⃣ 영업이익률 계산\n5️⃣ 가중평균 점수 산출',
+                    meaning: '기관투자가가 강세 섹터 내에서 성장성과 수익성이 우수한 종목에 매집 📈',
+                    endpoint: '/alpha/discovery'
+                },
+                {
+                    name: '🎯 섹터 로테이션 리더 (상대강도)',
+                    logic: '📊 단계별 계산:\n1️⃣ /alpha/discovery 상위 20개 로드\n2️⃣ 섹터 상대강도 = 섹터수익률 - SPY수익률\n3️⃣ 수익성장 + EPS성장 계산\n4️⃣ 강세 섹터 내 리더주 선정',
+                    meaning: '자본 로테이션 시 상승력이 강한 리더주. 섹터 선두 역할 📊',
+                    endpoint: '/alpha/discovery'
+                },
+                {
+                    name: '💧 유동성 수혜 종목 (유동성지수 + 리스크)',
+                    logic: '📊 단계별 계산:\n1️⃣ Fed 잔액 / M2 유동성지수 계산\n2️⃣ VIX 기반 리스크점수 계산\n3️⃣ 수익성장 추출\n4️⃣ 유동성 장세 수혜도 평가',
+                    meaning: '연준 자산증가, M2 성장, 낮은 VIX 등 유동성이 풍부할 때 최대 수혜 🚀',
+                    endpoint: '/alpha/discovery'
+                },
+                {
+                    name: '🚀 통합 발굴 엔진 (거시+섹터+기본가치)',
+                    logic: '📊 단계별 계산:\n1️⃣ 거시점수 = SPY수익률×60% + (100-VIX×3)×40%\n2️⃣ 섹터강도 = 섹터수익률 - SPY수익률\n3️⃣ 기본가치 = ROE × 수익성장 / PE\n4️⃣ 최종점수 = 거시점수 + 섹터강도 + 기본가치 정규화',
+                    meaning: '모든 팩터를 아우른 최고 등급 발굴주. Investflow 종합 엔진 ★★★★★',
+                    endpoint: '/alpha/discovery'
+                }
             ];
 
             window.widgetDataCache3 = {};
-            widgetTitles.forEach((title, idx) => {
+            widgetInfo.forEach((info, idx) => {
                 const widgetId = `analysis3-${idx + 1}`;
                 window.widgetDataCache3[widgetId] = {
                     id: widgetId,
                     page: 'AI분석 3',
-                    name: title,
-                    icon: ['💧', '🔄', '📊', '📈', '😨', '📅', '🎯', '⚠️', '🎲', '📉'][idx],
+                    name: info.name,
+                    logic: info.logic,
+                    meaning: info.meaning,
+                    endpoint: info.endpoint,
                     status: 'loading',
                     data: null,
                     timestamp: new Date().toISOString()
                 };
             });
             localStorage.setItem('widgetDataCache_analysis3', JSON.stringify(window.widgetDataCache3));
-            console.log('✅ AI분석 3 위젯 정보 저장됨:', widgetTitles.length + '개');
+            console.log('✅ AI분석 3 위젯 정보 저장됨:', widgetInfo.length + '개');
 
             loadAllWidgets();
 
