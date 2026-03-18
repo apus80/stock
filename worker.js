@@ -2617,9 +2617,8 @@ export default {
 
               const total = calcTotalAlphaScore(modules)
 
-              // Filter: totalScore >= 15 (very relaxed to ensure we get results)
-              // ✅ Fallback mechan added: if < 20 results, return top 20 candidates anyway
-              if (total.totalScore < 15) continue
+              // Filter: totalScore >= 5 (very relaxed to ensure we get results)
+              if (total.totalScore < 5) continue
 
               results.push({
                 symbol,
