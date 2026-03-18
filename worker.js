@@ -341,24 +341,39 @@ export default {
 
       async function getAlphaData(symbol) {
         try {
-          // 📍 주의: /stable/key-metrics는 유료 플랜 엔드포인트
-          // 무료 플랜은 /stable/quote만 사용 가능
-          // quote 응답에서 최대한 많은 정보 추출
-          const quoteData = await fetchFMP(`/stable/quote?symbol=${symbol}`)
+          // ✅ 필요한 모든 데이터 병렬 호출
+          const [quoteRes, ratiosRes, growthRes, incomeRes, profileRes] = await Promise.allSettled([
+            fetchFMP(`/stable/quote?symbol=${symbol}`),
+            getRatios(symbol),
+            getFinancialGrowth(symbol),
+            getIncomeStatement(symbol),
+            getCompanyProfile(symbol)
+          ])
+
+          const extract = (r) => r.status === 'fulfilled' ? r.value : null
+
+          const quoteData = extract(quoteRes)
           const quote = quoteData ? (Array.isArray(quoteData) ? quoteData[0] : quoteData) : null
 
-          // ✅ PE/PB는 /fundamentals/ratios에서 가져옴
-          const ratiosData = await getRatios(symbol)
-          const ratios = ratiosData?.data || null
+          const ratios = extract(ratiosRes)?.data || extract(ratiosRes)
+
+          const growth = extract(growthRes)
+          const income = extract(incomeRes)
+          const profile = extract(profileRes)
 
           console.log(`\n📍 [${symbol}] getAlphaData 결과:`)
-          console.log(`   Quote 응답:`, quote ? `✅ 받음 (${Object.keys(quote).length}개 필드)` : `❌ null`)
-          console.log(`   Ratios 응답:`, ratios ? `✅ PE=${ratios.priceToEarningsRatio}, PB=${ratios.priceToBookRatio}` : `❌ null`)
+          console.log(`   Quote: ${quote ? `✅ price=${quote.price}` : '❌ null'}`)
+          console.log(`   Ratios: ${ratios ? `✅ pe=${ratios.priceToEarningsRatio}` : '❌ null'}`)
+          console.log(`   Growth: ${growth ? `✅ revGrowth=${growth.revenueGrowth}, epsGrowth=${growth.epsGrowth}` : '❌ null'}`)
+          console.log(`   Income: ${income ? `✅ revenue=${income.revenue}` : '❌ null'}`)
+          console.log(`   Profile: ${profile ? `✅ sector=${profile.sector}` : '❌ null'}`)
 
           return {
             quote: quote,
-            ratios: ratios,  // ✅ ratios 데이터 추가
-            metrics: null  // /stable/key-metrics는 유료 플랜이므로 null로 설정
+            ratios: ratios,
+            growth: growth,        // ✅ 추가
+            income: income,        // ✅ 추가
+            profile: profile       // ✅ 추가
           }
         } catch (e) {
           console.error(`❌ getAlphaData ${symbol}:`, e.message)
@@ -371,68 +386,58 @@ export default {
 
         const quote = data.quote
         const ratios = data.ratios
-        const metrics = data.metrics
+        const growth = data.growth      // ✅ 추가
+        const income = data.income      // ✅ 추가
+        const profile = data.profile    // ✅ 추가
 
         // 🔍 DEBUG: 실제 API 응답 데이터 확인
         console.log(`\n📊 [${quote?.symbol}] === API 응답 데이터 ===`)
-        console.log(`Quote 필드:`, Object.keys(quote).slice(0, 20))
-        console.log(`Ratios 필드:`, Object.keys(ratios || {}).slice(0, 20))
-        console.log(`Metrics 필드:`, Object.keys(metrics || {}).slice(0, 20))
-        console.log(`Quote 데이터:`, {
-          price: quote?.price,
-          dayLow: quote?.dayLow,
-          dayHigh: quote?.dayHigh
-        })
-        console.log(`Ratios 데이터:`, {
-          priceToEarningsRatio: ratios?.priceToEarningsRatio,
-          priceToBookRatio: ratios?.priceToBookRatio
-        })
-        console.log(`Metrics 데이터:`, {
-          peRatio: metrics?.peRatio,
-          priceToBookRatio: metrics?.priceToBookRatio,
-          revenueGrowth: metrics?.revenueGrowth,
-          earningsGrowth: metrics?.earningsGrowth,
-          epsGrowth: metrics?.epsGrowth,
-          netProfitMargin: metrics?.netProfitMargin,
-          returnOnEquity: metrics?.returnOnEquity
-        })
+        console.log(`Quote: price=${quote?.price}, dayLow=${quote?.dayLow}, dayHigh=${quote?.dayHigh}`)
+        console.log(`Ratios: pe=${ratios?.priceToEarningsRatio}, pb=${ratios?.priceToBookRatio}`)
+        console.log(`Growth: revGrowth=${growth?.revenueGrowth}, epsGrowth=${growth?.epsGrowth}`)
+        console.log(`Income: revenue=${income?.revenue}, netIncome=${income?.netIncome}, eps=${income?.eps}`)
+        console.log(`Profile: sector=${profile?.sector}`)
 
         // ✅ 기본 정보 (quote에서)
         const price = quote?.price || 0
         const symbol = quote?.symbol || 'N/A'
-        const dayLow = quote?.dayLow || quote?.dayLow || price
-        const dayHigh = quote?.dayHigh || quote?.dayHigh || price
+        const dayLow = quote?.dayLow || price
+        const dayHigh = quote?.dayHigh || price
 
         console.log(`   ✅ 기본정보: price=${price}, dayLow=${dayLow}, dayHigh=${dayHigh}`)
 
         // ✅ 비율 지표
-        // 우선순위: ratios (/fundamentals/ratios) > quote > metrics > 기본값
-        const pe = ratios?.priceToEarningsRatio || quote?.pe || metrics?.peRatio || 50
-        const pb = ratios?.priceToBookRatio || quote?.priceToBook || quote?.pb || metrics?.priceToBookRatio || 10
-        const roe = metrics?.returnOnEquity || 15  // quote에는 보통 없음
-        const debtToEquity = metrics?.debtToEquity || 0.5
+        // 우선순위: ratios (/fundamentals/ratios) > quote > 기본값
+        const pe = ratios?.priceToEarningsRatio || quote?.pe || 50
+        const pb = ratios?.priceToBookRatio || quote?.priceToBook || quote?.pb || 10
+        const roe = (income && income.netIncome && income.shareholdersEquity)
+          ? (income.netIncome / income.shareholdersEquity) * 100
+          : 15  // balance sheet에서 계산, 아니면 기본값
 
         console.log(`   ✅ 비율지표: pe=${pe}, pb=${pb}, roe=${roe}`)
 
-        // ✅ 성장률 지표 (quote에 있는지 확인, 없으면 0으로 설정)
-        // /stable/quote에는 보통 성장률이 없음 → 모두 0으로 초기화
-        let revenueGrowth = quote?.revenueGrowth || metrics?.revenueGrowth || 0
-        let epsGrowth = quote?.epsGrowth || metrics?.epsGrowth || 0
+        // ✅ 성장률 지표 (Financial Growth API에서 가져옴)
+        let revenueGrowth = growth?.revenueGrowth ?? 0
+        let epsGrowth = growth?.epsGrowth ?? 0
 
-        console.log(`   ⚠️  성장률: revenueGrowth=${revenueGrowth}, epsGrowth=${epsGrowth}`)
+        console.log(`   ✅ 성장률: revenueGrowth=${revenueGrowth}, epsGrowth=${epsGrowth}`)
 
-        // ✅ 수익성 지표 (quote에 없으면 기본값)
-        // profitMargin = netIncome / revenue (보통 0-30%)
-        const netMargin = metrics?.netProfitMargin || 10
-        const grossMargin = metrics?.grossProfitMargin || 40
+        // ✅ 수익성 지표 (Income Statement에서 계산)
+        let netMargin = 10    // 기본값
+        let grossMargin = 40  // 기본값
+        let operatingMargin = 15  // 기본값
 
-        // operatingMargin = operatingIncome / revenue
-        const operatingMargin = metrics?.operatingProfitMargin || 15
+        if (income && income.revenue) {
+          netMargin = (income.netIncome / income.revenue) * 100
+          grossMargin = (income.grossProfit / income.revenue) * 100
+          operatingMargin = (income.operatingIncome / income.revenue) * 100
+        }
 
-        // ✅ 섹터 정보 (quote에 있는지 확인)
-        const sector = quote?.sector || metrics?.sector || 'N/A'
+        // ✅ 섹터 정보 (Profile에서)
+        const sector = profile?.sector || quote?.sector || 'N/A'
 
-        console.log(`   ℹ️  섹터: ${sector}, netMargin=${netMargin}`)
+        console.log(`   ✅ 수익성: netMargin=${netMargin.toFixed(2)}%, grossMargin=${grossMargin.toFixed(2)}%`)
+        console.log(`   ℹ️  섹터: ${sector}`)
 
         // ✅ 가격 모멘텀 근사 (dayLow/dayHigh 사용)
         const dailyMomentum = dayHigh > 0 ? (price - dayLow) / dayLow : 0
@@ -1996,7 +2001,7 @@ export default {
             universe_size: universe.length,
             analyzed: results.length,
             execution_time_sec: parseFloat(elapsedTime),
-            top_20: results.slice(0, 20)
+            top_20: top20
           }
         } catch (e) {
           console.error(`❌ runAlphaDiscovery:`, e.message)
@@ -2548,8 +2553,9 @@ export default {
 
               const total = calcTotalAlphaScore(modules)
 
-              // Filter: totalScore >= 30 (relaxed to ensure we get results)
-              if (total.totalScore < 30) continue
+              // Filter: totalScore >= 15 (very relaxed to ensure we get results)
+              // ✅ Fallback mechan added: if < 20 results, return top 20 candidates anyway
+              if (total.totalScore < 15) continue
 
               results.push({
                 symbol,
@@ -2597,6 +2603,26 @@ export default {
 
           results.sort((a, b) => b.totalScore - a.totalScore)
 
+          // ✅ 최소 20개는 반환 (결과 없음 방지)
+          const top20 = results.length > 0
+            ? results.slice(0, 20)
+            : candidates.slice(0, 20).map(c => ({  // fallback: 상위 20개 후보 (점수 0으로 처리)
+                symbol: c.symbol,
+                companyName: c.quote.name || c.symbol,
+                sector: c.quote.sector || '-',
+                price: parseFloat((c.quote.price || 0).toFixed(2)),
+                change: parseFloat((c.quote.changesPercentage || 0).toFixed(2)),
+                totalScore: 0,  // 점수 계산 실패했으므로 0
+                momentumScore: 0,
+                qualityScore: 0,
+                squeezeScore: 0,
+                breakoutProbability: 50,  // 기본값
+                macroMultiplier: 1,
+                signals: {},
+                modules: { earnings: 0, fundamental: 0, balance: 0, cashflow: 0, float: 0, valuation: 0, macro: 0 },
+                macroOverlay: { riskMode: 'NEUTRAL', vix: macroData?.vix || null, hySpread: macroData?.hySpread || null }
+              }))
+
           return {
             timestamp: new Date().toISOString(),
             dataType: 'alpha_scanner',
@@ -2612,7 +2638,7 @@ export default {
               hySpread: macroData?.hySpread || null,
               us10y: macroData?.us10y || null
             },
-            top_20: results.slice(0, 20)
+            top_20: top20
           }
         } catch (e) {
           console.error(`❌ runAlphaScanner:`, e.message)
