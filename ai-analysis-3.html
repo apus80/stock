@@ -638,6 +638,11 @@
         }
 
         // ═══════════════════════════════════════════════════════
+        // API 설정
+        // ═══════════════════════════════════════════════════════
+        const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+
+        // ═══════════════════════════════════════════════════════
         // 글로벌 Discovery 데이터
         // ═══════════════════════════════════════════════════════
         let discoveryData = null;
@@ -671,8 +676,8 @@
             // Step 2: 백그라운드에서 새로운 데이터 로드 (병렬)
             try {
                 const [discoveryResponse, marketResponse] = await Promise.all([
-                    fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/discovery'),
-                    fetch('https://fmp-proxy.aiinvestflow.workers.dev/market')
+                    fetch(API_BASE + '/alpha/discovery'),
+                    fetch(API_BASE + '/market')
                 ]);
 
                 if (discoveryResponse.ok) {
@@ -729,7 +734,7 @@
                 switch (widgetId) {
                     case 1:
                         // 매크로 유동성 데이터
-                        const marketData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/market').then(r => r.json()).catch(() => null);
+                        const marketData = await fetch(API_BASE + '/market').then(r => r.json()).catch(() => null);
                         if (marketData && marketData.LIQUIDITY) {
                             const fed = marketData.LIQUIDITY.FED_BALANCE || 0;
                             const rrp = marketData.LIQUIDITY.REVERSE_REPO || 0;
@@ -763,7 +768,7 @@
 
                     case 2:
                         // 섹터 데이터
-                        const sectorData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/market').then(r => r.json()).catch(() => null);
+                        const sectorData = await fetch(API_BASE + '/market').then(r => r.json()).catch(() => null);
                         if (sectorData && sectorData.SECTORS) {
                             const sectors = sectorData.SECTORS;
                             html = '<table><thead><tr><th>섹터</th><th>가격</th><th>변화율</th></tr></thead><tbody>';
@@ -782,7 +787,7 @@
 
                     case 3:
                         // 신용 스트레스 (HYG, LQD)
-                        const creditData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/market').then(r => r.json()).catch(() => null);
+                        const creditData = await fetch(API_BASE + '/market').then(r => r.json()).catch(() => null);
                         if (creditData && creditData.BONDS) {
                             const hyg = creditData.BONDS.HYG || {};
                             const lqd = creditData.BONDS.LQD || {};
@@ -810,7 +815,7 @@
 
                     case 4:
                         // 폭발적 성장 주식 탐색 (Alpha Discovery)
-                        const alphaData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/discovery').then(r => r.json()).catch(() => null);
+                        const alphaData = await fetch(API_BASE + '/alpha/discovery').then(r => r.json()).catch(() => null);
                         if (alphaData && alphaData.top_20 && alphaData.top_20.length > 0) {
                             const stocks = alphaData.top_20.slice(0, 10); // 상위 10개 표시
                             html = '<table><thead><tr><th>종목</th><th>점수</th><th>가격</th><th>모멘텀</th><th>수익률</th></tr></thead><tbody>';
@@ -833,7 +838,7 @@
 
                     case 5:
                         // 궁극의 주식 발굴 엔진 (Alpha Discovery)
-                        const ultimateData = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/discovery').then(r => r.json()).catch(() => null);
+                        const ultimateData = await fetch(API_BASE + '/alpha/discovery').then(r => r.json()).catch(() => null);
                         if (ultimateData && ultimateData.top_20 && ultimateData.top_20.length > 0) {
                             const stocks = ultimateData.top_20.slice(0, 10); // 상위 10개 표시
                             html = '<table><thead><tr><th>종목</th><th>최종점수</th><th>가격</th><th>PE</th><th>수익률</th></tr></thead><tbody>';
@@ -1071,7 +1076,7 @@
                         // 데이터 소스: Worker /alpha/alpha-scanner → FMP fundamentals + FRED macro
                         try {
                             elem.innerHTML = '<div class="loading">🔬 S&P500 Top 80 종목 딥 분석 중... (최대 60초)</div>';
-                            const scannerRes = await fetch('https://fmp-proxy.aiinvestflow.workers.dev/alpha/alpha-scanner', { method: 'POST', signal: AbortSignal.timeout(60000) });
+                            const scannerRes = await fetch(API_BASE + '/alpha/alpha-scanner', { method: 'POST', signal: AbortSignal.timeout(60000) });
 
                             if (!scannerRes.ok) throw new Error(`HTTP ${scannerRes.status}`);
 
