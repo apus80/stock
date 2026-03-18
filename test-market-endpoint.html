@@ -3,65 +3,170 @@
 <head>
     <title>Test /market Endpoint</title>
     <style>
-        body { background: #222; color: #ccc; font-family: monospace; padding: 20px; }
-        pre { background: #1a1a1a; padding: 15px; border-radius: 5px; overflow-x: auto; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .ok { background: #2d5a2d; }
-        .error { background: #5a2d2d; }
+        body {
+            background: #222;
+            color: #ccc;
+            font-family: monospace;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { color: #58a6ff; margin-top: 0; }
+        h2 { color: #3fb950; margin-top: 30px; }
+        pre {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #444;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border: 1px solid #555;
+            font-weight: bold;
+        }
+        .ok {
+            background: #2d5a2d;
+            border-color: #3fb950;
+            color: #3fb950;
+        }
+        .error {
+            background: #5a2d2d;
+            border-color: #f85149;
+            color: #f85149;
+        }
+        .info {
+            background: #1c2b3f;
+            border-color: #58a6ff;
+            color: #58a6ff;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        button:hover {
+            background: #1c2128;
+        }
     </style>
 </head>
 <body>
     <h1>🧪 Worker /market 엔드포인트 테스트</h1>
-    
-    <div id="status" class="status error">⏳ 테스트 중...</div>
-    
-    <h2>응답 데이터:</h2>
-    <pre id="output">로딩 중...</pre>
-    
+
+    <div class="info">
+        📍 API: <strong>https://fmp-proxy.aiinvestflow.workers.dev/market</strong>
+    </div>
+
+    <button onclick="test()">🔄 다시 테스트</button>
+
+    <div id="status" class="status error">⏳ 페이지 로드 중... 버튼을 클릭하세요!</div>
+
+    <h2>📊 응답 데이터:</h2>
+    <pre id="output">아직 테스트하지 않았습니다. 버튼을 클릭하세요!</pre>
+
+    <h2>🔍 상세 정보:</h2>
+    <pre id="details">아직 정보가 없습니다.</pre>
+
     <script>
         async function test() {
             const statusEl = document.getElementById('status');
             const outputEl = document.getElementById('output');
-            
+            const detailsEl = document.getElementById('details');
+
+            statusEl.className = 'status error';
+            statusEl.textContent = '⏳ 요청 중...';
+            outputEl.textContent = '로딩 중...';
+            detailsEl.textContent = '요청을 보내는 중입니다...';
+
             try {
                 const API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
-                console.log('📍 요청:', API_BASE + '/market');
-                
-                const response = await fetch(API_BASE + '/market', {
-                    timeout: 10000
+                const url = API_BASE + '/market';
+
+                console.log('📍 요청:', url);
+                detailsEl.textContent = '요청 URL: ' + url + '\n\n타임아웃: 15초';
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                const response = await fetch(url, {
+                    signal: controller.signal
                 });
-                
+                clearTimeout(timeoutId);
+
+                console.log('✅ 응답 받음 - 상태:', response.status);
+                detailsEl.textContent = 'HTTP 상태: ' + response.status + '\nContent-Type: ' + response.headers.get('content-type');
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
+
                 const data = await response.json();
-                
+                console.log('✅ JSON 파싱 성공');
+
                 // 데이터 검증
                 const keys = Object.keys(data);
-                const status = {
-                    ok: keys.length > 0 && data.dataType === 'market',
-                    fields: keys.length,
-                    hasUSMarket: !!data.US_MARKET,
-                    hasLiquidity: !!data.LIQUIDITY,
-                    hasMacroBase: !!data.MACRO_BASE
+                const checks = {
+                    'dataType === "market"': data.dataType === 'market',
+                    'US_MARKET 필드': !!data.US_MARKET,
+                    'LIQUIDITY 필드': !!data.LIQUIDITY,
+                    'MACRO_BASE 필드': !!data.MACRO_BASE,
+                    'KOREA_MARKET 필드': !!data.KOREA_MARKET,
+                    'RATES 필드': !!data.RATES,
+                    'FX 필드': !!data.FX
                 };
-                
-                statusEl.className = 'status ' + (status.ok ? 'ok' : 'error');
-                statusEl.innerHTML = status.ok ? '✅ 성공!' : '❌ 데이터 구조 이상';
-                
-                outputEl.textContent = JSON.stringify(data, null, 2).substring(0, 3000) + '\n\n... (생략)';
-                
-                console.log('✅ 성공:', data);
+
+                const allOk = Object.values(checks).every(v => v);
+
+                statusEl.className = 'status ' + (allOk ? 'ok' : 'error');
+                statusEl.innerHTML = (allOk ? '✅ 성공!' : '⚠️ 부분 성공') + ' - ' + keys.length + '개 필드';
+
+                // 응답 데이터 (처음 3000자)
+                const responseStr = JSON.stringify(data, null, 2);
+                outputEl.textContent = responseStr.substring(0, 3000) + (responseStr.length > 3000 ? '\n\n... (생략됨, 총 ' + responseStr.length + '자)' : '');
+
+                // 검증 상세
+                let detailsText = '필드 검증 결과:\n\n';
+                for (const [check, passed] of Object.entries(checks)) {
+                    detailsText += (passed ? '✅' : '❌') + ' ' + check + '\n';
+                }
+                detailsEl.textContent = detailsText;
+
+                console.log('✅ 테스트 완료:', data);
             } catch (e) {
                 statusEl.className = 'status error';
                 statusEl.textContent = '❌ 에러: ' + e.message;
-                outputEl.textContent = e.stack;
+
+                let errorText = '에러 발생:\n\n';
+                errorText += '이름: ' + e.name + '\n';
+                errorText += '메시지: ' + e.message + '\n\n';
+                if (e.message.includes('AbortError')) {
+                    errorText += '원인: 요청 타임아웃 (15초)\n';
+                    errorText += '=> Worker가 응답하지 않는 것 같습니다.\n';
+                } else {
+                    errorText += '스택:\n' + (e.stack ? e.stack.split('\n').slice(0, 5).join('\n') : '없음');
+                }
+                detailsEl.textContent = errorText;
+                outputEl.textContent = e.toString();
+
                 console.error('❌ 에러:', e);
             }
         }
-        
-        test();
+
+        // 페이지 로드 시 자동 테스트
+        window.addEventListener('load', function() {
+            console.log('페이지 로드됨. 자동 테스트 시작...');
+            test();
+        });
     </script>
 </body>
 </html>
