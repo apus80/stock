@@ -5711,43 +5711,72 @@ var ECON_DATA = {
          * ══════════════════════════════════════════════════════ */
         function imdLoadTop7() {
             // Worker /top7 엔드포인트에서 시총 상위 7개를 동적으로 가져옴
-            console.log('[Top7] /top7 엔드포인트 호출 시작');
-            fetch(API_BASE + '/top7')
+            var container = document.getElementById('top7-container');
+
+            // 함수 정의: HTML 생성
+            function renderTop7(data) {
+                if (!data || !Array.isArray(data)) {
+                    container.innerHTML = '<div style="color:#ef4444; font-size:0.8rem; text-align:center;">데이터를 불러올 수 없습니다.</div>';
+                    return;
+                }
+                container.innerHTML = '';
+                data.forEach(function(item) {
+                    var ticker = (item.symbol || '').toUpperCase();
+                    var priceStr = item.price !== null && item.price !== undefined ? Number(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-';
+                    var chgNum = item.changePercentage !== null && item.changePercentage !== undefined ? Number(item.changePercentage) : null;
+                    var isUp = chgNum > 0;
+                    var chgCls = isUp ? 'chg-up' : (chgNum !== null && chgNum < 0 ? 'chg-dn' : 'chg-flat');
+                    var chgStr = chgNum !== null ? (isUp ? '+' : '') + chgNum.toFixed(2) + '%' : '';
+
+                    var html = '<div class="item"><span>' + ticker + '</span>' +
+                               '<span class="item-right"><span class="value">' + priceStr + '</span>' +
+                               '<span class="chg-val ' + chgCls + '">' + chgStr + '</span>' +
+                               '<span class="ns ns-online"></span></span></div>';
+
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            // 시도 1: API_BASE + '/top7'
+            fetch(API_BASE + '/top7', { credentials: 'omit', timeout: 8000 })
                 .then(function(res) {
-                    console.log('[Top7] Response status:', res.status, res.statusText);
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     return res.json();
                 })
                 .then(function(result) {
-                    console.log('[Top7] API 응답:', result);
-                    if (result && result.data && Array.isArray(result.data)) {
-                        console.log('[Top7] 데이터 처리 시작, 항목 수:', result.data.length);
-                        var container = document.getElementById('top7-container');
-                        container.innerHTML = ''; // 로딩 텍스트 제거
-
-                        result.data.forEach(function(item) {
-                            var ticker = (item.symbol || '').toUpperCase();
-                            var priceStr = item.price !== null && item.price !== undefined ? Number(item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-';
-                            var chgNum = item.changePercentage !== null && item.changePercentage !== undefined ? Number(item.changePercentage) : null;
-                            var isUp = chgNum > 0;
-                            var chgCls = isUp ? 'chg-up' : (chgNum !== null && chgNum < 0 ? 'chg-dn' : 'chg-flat');
-                            var chgStr = chgNum !== null ? (isUp ? '+' : '') + chgNum.toFixed(2) + '%' : '';
-
-                            var html = '<div class="item"><span>' + ticker + '</span>' +
-                                       '<span class="item-right"><span class="value">' + priceStr + '</span>' +
-                                       '<span class="chg-val ' + chgCls + '">' + chgStr + '</span>' +
-                                       '<span class="ns ns-online"></span></span></div>';
-
-                            container.insertAdjacentHTML('beforeend', html);
-                            console.log('  [' + ticker + '] price: ' + item.price + ', chg: ' + item.changePercentage + '%');
-                        });
+                    if (result && result.data) {
+                        renderTop7(result.data);
                     } else {
-                        console.warn('[Top7] result.data가 배열이 아니거나 없음:', result);
+                        throw new Error('No data in response');
                     }
                 })
-                .catch(function(err) {
-                    console.error('[Top7] /top7 호출 실패:', err);
-                    document.getElementById('top7-container').innerHTML = '<div style="color:#ef4444; font-size:0.8rem; text-align:center;">데이터를 불러올 수 없습니다.</div>';
+                .catch(function(err1) {
+                    // 시도 2: HTTPS 재시도 (CORS 문제 가능성)
+                    var fallbackUrl = 'https://fmp-proxy.aiinvestflow.workers.dev/top7';
+                    fetch(fallbackUrl, { credentials: 'omit', timeout: 8000 })
+                        .then(function(res) {
+                            if (!res.ok) throw new Error('HTTP ' + res.status);
+                            return res.json();
+                        })
+                        .then(function(result) {
+                            if (result && result.data) {
+                                renderTop7(result.data);
+                            } else {
+                                throw new Error('No data in fallback response');
+                            }
+                        })
+                        .catch(function(err2) {
+                            // 시도 3: /market에서 데이터 추출
+                            workerFetchMarket().then(function(mktData) {
+                                if (mktData && mktData.top_7_stocks && Array.isArray(mktData.top_7_stocks)) {
+                                    renderTop7(mktData.top_7_stocks);
+                                } else {
+                                    throw new Error('No top7 data in /market');
+                                }
+                            }).catch(function(err3) {
+                                container.innerHTML = '<div style="color:#ef4444; font-size:0.8rem; text-align:center;">시총 데이터를 불러올 수 없습니다.</div>';
+                            });
+                        });
                 });
         }
 
@@ -6381,27 +6410,50 @@ var ECON_DATA = {
                 itemIds.forEach(function(id) {
                     imdSetStatus(id, 'sync');
                 });
+            } else {
+                // 캐시 없을 때 초기 값 표시
+                itemIds.forEach(function(id) {
+                    imdSetValue(id, '-', 2);
+                    imdSetStatus(id, 'sync');
+                });
             }
 
-            // Step 2: 백그라운드에서 새로운 데이터 로드
-            workerFetchMarket().then(function(data) {
-                if (data && data.MACRO_BASE) {
-                    imdDisplayMacroBase(data);
-                    imdSaveCache('MACRO_BASE', data);
-                    itemIds.forEach(function(id) {
-                        imdSetStatus(id, 'ok');
+            // Step 2: 백그라운드에서 새로운 데이터 로드 (재시도 로직 포함)
+            var retries = 3;
+            function fetchWithRetry() {
+                workerFetchMarket()
+                    .then(function(data) {
+                        if (data && data.MACRO_BASE) {
+                            // 최소 1개 필드라도 있으면 표시
+                            var macro = data.MACRO_BASE;
+                            if (macro.FED_RATE || macro.CPI_YOY || macro.CORE_CPI_YOY ||
+                                macro.UNEMPLOYMENT || macro.INFLATION_EXPECTATION || macro.REAL_RATES) {
+                                imdDisplayMacroBase(data);
+                                imdSaveCache('MACRO_BASE', data);
+                                itemIds.forEach(function(id) {
+                                    imdSetStatus(id, 'ok');
+                                });
+                                return;
+                            }
+                        }
+                        throw new Error('Incomplete MACRO_BASE data');
+                    })
+                    .catch(function(err) {
+                        retries--;
+                        if (retries > 0) {
+                            // 지수 백오프: 1초, 2초, 4초
+                            setTimeout(fetchWithRetry, (4 - retries) * 1000);
+                        } else {
+                            console.error('[ERROR] imdLoadMacroBase:', err);
+                            if (!cached) {
+                                itemIds.forEach(function(id) {
+                                    imdSetStatus(id, 'warning');
+                                });
+                            }
+                        }
                     });
-                    return;
-                }
-                throw new Error('No MACRO_BASE data');
-            }).catch(function(err) {
-                console.error('[ERROR] imdLoadMacroBase:', err);
-                if (!cached) {
-                    itemIds.forEach(function(id) {
-                        imdSetStatus(id, 'error');
-                    });
-                }
-            });
+            }
+            fetchWithRetry();
         }
 
         function imdDisplayMacroBase(data) {
@@ -6418,11 +6470,24 @@ var ECON_DATA = {
             ];
 
             items.forEach(function(item) {
-                if (item.value !== null && item.value !== undefined) {
-                    imdSetValue(item.id, item.value, 2, item.unit);
+                // null/undefined 체크 강화
+                if (item.value !== null && item.value !== undefined && item.value !== '') {
+                    try {
+                        var numVal = parseFloat(item.value);
+                        if (!isNaN(numVal)) {
+                            imdSetValue(item.id, numVal, 2, item.unit);
+                            imdSetStatus(item.id, 'ok');
+                        } else {
+                            imdSetValue(item.id, '-', 2, item.unit);
+                            imdSetStatus(item.id, 'warning');
+                        }
+                    } catch(e) {
+                        imdSetValue(item.id, '-', 2, item.unit);
+                        imdSetStatus(item.id, 'error');
+                    }
                 } else {
-                    imdSetValue(item.id, '-', 2, item.unit);  // 값 없을 때 기본값 "-"
-                    imdSetStatus(item.id, 'error');
+                    imdSetValue(item.id, '-', 2, item.unit);
+                    imdSetStatus(item.id, 'warning');
                 }
             });
         }
