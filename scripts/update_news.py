@@ -1479,11 +1479,6 @@ def update_index_html(data):
     new_card_html = f'''
             <div id="marketNewsCardArea">
                 <div class="news-card-wrapper">
-                    <div class="news-card-column" id="left-card-column">
-                        <!-- LEFT_CARD_START -->
-                        {left_html_to_use}
-                        <!-- LEFT_CARD_END -->
-                    </div>
                     <div class="news-card-column" id="right-card-column">
                         <!-- RIGHT_CARD_START -->
                         {right_card_content}
@@ -1680,11 +1675,6 @@ def update_index_html(data):
     new_card_html = f'''
             <div id="marketNewsCardArea">
                 <div class="news-card-wrapper">
-                    <div class="news-card-column" id="left-card-column">
-                        <!-- LEFT_CARD_START -->
-                        {left_html_to_use}
-                        <!-- LEFT_CARD_END -->
-                    </div>
                     <div class="news-card-column" id="right-card-column">
                         <!-- RIGHT_CARD_START -->
                         {right_card_content}
