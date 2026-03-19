@@ -1462,15 +1462,12 @@
         #viewToggleBtn:hover { background: rgba(102,126,234,1); transform: scale(1.05); }
         }
 
-        /* ── 모바일 섹션 내비게이션 ────────────────────────────────── */
-        /* 모바일뷰: ms-active가 없는 섹션은 모두 숨김 (display:none 대신 :not으로 자연 display 보존) */
-        body.mobile-view [data-ms]:not(.ms-active) { display: none !important; }
+        /* ── 모바일 섹션 내비게이션 (데스크탑/모바일 공통 적용) ────────────────────────────────── */
+        /* ms-active가 없는 섹션은 모두 숨김 (display:none 대신 :not으로 자연 display 보존) */
+        [data-ms]:not(.ms-active) { display: none !important; }
 
         /* 뒤로가기 버튼 */
         .ms-back-btn {
-            display: none;
-        }
-        body.mobile-view .ms-back-btn {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -1486,12 +1483,11 @@
             text-align: left;
             -webkit-tap-highlight-color: transparent;
         }
-        body.mobile-view .ms-back-btn.ms-hidden { display: none !important; }
+        .ms-back-btn.ms-hidden { display: none !important; }
 
-        /* 모바일 랜딩 그리드 */
-        .mobile-landing { display: none; }
-        body.mobile-view .mobile-landing { display: block; padding: 20px 14px 24px; }
-        body.mobile-view .mobile-landing.ms-hidden { display: none !important; }
+        /* 모바일 랜딩 그리드 (이제 데스크탑도 첫화면으로 사용) */
+        .mobile-landing { display: block; padding: 20px 14px 24px; margin: 0 auto; max-width: 1200px;}
+        .mobile-landing.ms-hidden { display: none !important; }
         .mobile-landing h2 {
             font-size: 1em; font-weight: 700; color: var(--text-muted);
             margin-bottom: 14px; text-align: center; letter-spacing: 0.03em;
