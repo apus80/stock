@@ -250,7 +250,7 @@
         /* 레이아웃 시스템 */
         .grid-dashboard {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
             gap: 20px;
             padding: 20px;
             width: 100%;
@@ -1486,7 +1486,7 @@
         .ms-back-btn.ms-hidden { display: none !important; }
 
         /* 모바일 랜딩 그리드 (이제 데스크탑도 첫화면으로 사용) */
-        .mobile-landing { display: block; padding: 20px 14px 24px; margin: 0 auto; max-width: 1200px;}
+        .mobile-landing { display: block; padding: 20px 14px 24px; margin: 0 auto; max-width: 100%;}
         .mobile-landing.ms-hidden { display: none !important; }
         .mobile-landing h2 {
             font-size: 1em; font-weight: 700; color: var(--text-muted);
@@ -1853,7 +1853,7 @@
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">5. 미국 선물</span><button class="card-rfbtn" id="rfbtn-5" onclick="imdRefreshCard(5)" title="새로고침">↻</button></div>
+                            <div class="title-area"><span class="title">4. 미국 선물</span><button class="card-rfbtn" id="rfbtn-4" onclick="imdRefreshCard(4)" title="새로고침">↻</button></div>
                             <div class="item"><span>S&amp;P500 Fut</span><span class="item-right"><span id="spfuture" class="value">-</span><span id="chg-spfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-spfuture"></span></span></div>
                             <div class="item"><span>Nasdaq Fut</span><span class="item-right"><span id="nasfuture" class="value">-</span><span id="chg-nasfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-nasfuture"></span></span></div>
                             <div class="item"><span>Russell Fut</span><span class="item-right"><span id="rtyfuture" class="value">-</span><span id="chg-rtyfuture" class="chg-val chg-flat"></span><span class="ns ns-offline" id="ns-rtyfuture"></span></span></div>
@@ -1945,7 +1945,7 @@
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">14. AI Market Score<span class="help-icon">?<span class="tooltip"><strong>시장 종합 점수 계산:</strong><br><br><strong>기초 데이터:</strong><br>순유동성 = Fed잔액 - 역레포 - TGA<br><br><strong>7가지 평가 요소:</strong><br>① 주식모멘텀 (SP500, QQQ)<br>② 변동성 (VIX)<br>③ 수익률곡선 (10Y-2Y)<br>④ 달러지수 (DXY)<br>⑤ 금리압력 (US10Y)<br>⑥ 에너지가격 (WTI Oil)<br>⑦ 유동성상황<br><br><strong>최종:</strong> 종합점수 0-100<br>Green(≥75) Neutral(50-75)<br>Orange(30-50) Red(&lt;30)</span></span></span><button class="card-rfbtn" id="rfbtn-14" onclick="imdRefreshCard(14)" title="새로고침">↻</button></div>
+                            <div class="title-area"><span class="title">15. AI Market Score<span class="help-icon">?<span class="tooltip"><strong>시장 종합 점수 계산:</strong><br><br><strong>기초 데이터:</strong><br>순유동성 = Fed잔액 - 역레포 - TGA<br><br><strong>7가지 평가 요소:</strong><br>① 주식모멘텀 (SP500, QQQ)<br>② 변동성 (VIX)<br>③ 수익률곡선 (10Y-2Y)<br>④ 달러지수 (DXY)<br>⑤ 금리압력 (US10Y)<br>⑥ 에너지가격 (WTI Oil)<br>⑦ 유동성상황<br><br><strong>최종:</strong> 종합점수 0-100<br>Green(≥75) Neutral(50-75)<br>Orange(30-50) Red(&lt;30)</span></span></span><button class="card-rfbtn" id="rfbtn-15" onclick="imdRefreshCard(15)" title="새로고침">↻</button></div>
                             <div style="margin-top: 12px;">
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                                     <div style="padding: 14px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 10px; border-left: 3px solid #667eea;">
@@ -1971,7 +1971,7 @@
                         </div>
 
                         <div class="card">
-                            <div class="title-area"><span class="title">15. Macro Risk Radar<span class="help-icon">?<span class="tooltip"><strong>거시경제 4대 위험 지표:</strong><br><br><strong>1️⃣ 인플레 위험:</strong><br>기초값: 40점<br>+ 10년금리/유가/달러지수<br><br><strong>2️⃣ 유동성 위험:</strong><br>기초값: 40점<br>+ 순유동성/달러변화<br><br><strong>3️⃣ 경기침체 위험:</strong><br>기초값: 30점<br>+ 수익률곡선/SP500신호<br><br><strong>4️⃣ 시장 위험:</strong><br>기초값: 35점<br>+ VIX/주식약세신호<br><br><strong>등급:</strong> 초록(Low:0-30)<br>주황(Moderate:30-60)<br>빨강(High:60-100)</span></span></span><button class="card-rfbtn" id="rfbtn-15" onclick="imdRefreshCard(15)" title="새로고침">↻</button></div>
+                            <div class="title-area"><span class="title">16. Macro Risk Radar<span class="help-icon">?<span class="tooltip"><strong>거시경제 4대 위험 지표:</strong><br><br><strong>1️⃣ 인플레 위험:</strong><br>기초값: 40점<br>+ 10년금리/유가/달러지수<br><br><strong>2️⃣ 유동성 위험:</strong><br>기초값: 40점<br>+ 순유동성/달러변화<br><br><strong>3️⃣ 경기침체 위험:</strong><br>기초값: 30점<br>+ 수익률곡선/SP500신호<br><br><strong>4️⃣ 시장 위험:</strong><br>기초값: 35점<br>+ VIX/주식약세신호<br><br><strong>등급:</strong> 초록(Low:0-30)<br>주황(Moderate:30-60)<br>빨강(High:60-100)</span></span></span><button class="card-rfbtn" id="rfbtn-16" onclick="imdRefreshCard(16)" title="새로고침">↻</button></div>
                             <div style="margin-top: 12px;">
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                                     <div style="padding: 12px; background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.05)); border-radius: 8px; border-left: 3px solid #667eea;">
@@ -3797,7 +3797,8 @@
             }
 
             
-            })();
+
+
 
             // ── MK RSS 카테고리별 URL ──────────────────────────────────
             var MK_RSS_URLS = {
@@ -6500,6 +6501,13 @@
         // Auto-refresh market data every 30 seconds (Worker API - near real-time)
         setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 30000);
 
+        // 뉴스 및 히트맵 초기화 보강
+        setTimeout(function(){
+            if(typeof refreshNews === 'function') refreshNews();
+            if(typeof updateTradingViewMap === 'function') updateTradingViewMap();
+        }, 1000);
+
+
         // 경제지표 대시보드 – Worker에서 동적 갱신 (별도 주기: 5분)
         // DOMContentLoaded 이후 비동기 실행 보장
         // Worker /market 엔드포인트에서 FRED 데이터를 가져와 업데이트
@@ -6511,7 +6519,8 @@
     <script>
     // 모바일: 특정 섹션만 보이기 (랜딩 → 섹션)
     window.showMobileSection = function(sectionId) {
-        if (!document.body.classList.contains('mobile-view')) return;
+        // 데스크탑에서도 작동하도록 mobile-view 체크 제거 (유동적인 뷰 지원)
+
         // 랜딩 숨김
         var landing = document.getElementById('mobileLanding');
         if (landing) landing.classList.add('ms-hidden');
