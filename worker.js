@@ -11,6 +11,19 @@ export default {
           // console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
           // console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
 
+      // CORS preflight (POST 엔드포인트용)
+      if (request.method === 'OPTIONS') {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '86400',
+          }
+        })
+      }
+
       // URL 파싱
       const url = new URL(request.url)
       const pathname = url.pathname.toLowerCase()
@@ -1525,6 +1538,174 @@ export default {
             }
           }
         }
+      }
+
+      // ── /metricz-all: 퀀트 종목 발굴 (유저 가중치 → TOP 종목 스코어링) ──────
+      async function getMetriczAll(request) {
+        // POST body 파싱
+        let body
+        try { body = await request.json() } catch(e) { return { error: 'Invalid JSON body' } }
+        const { userLogic } = body || {}
+        if (!Array.isArray(userLogic) || userLogic.length === 0) {
+          return { error: 'userLogic array is required' }
+        }
+
+        // 각 지표의 FMP 소스 매핑
+        const METRIC_SOURCE = {
+          returnOnEquityTTM:            'ratios',
+          operatingProfitMarginTTM:     'ratios',
+          returnOnAssetsTTM:            'ratios',
+          netProfitMarginTTM:           'ratios',
+          peRatioTTM:                   'ratios',
+          priceToBookRatioTTM:          'ratios',
+          priceToSalesRatioTTM:         'ratios',
+          dividendYieldTTM:             'ratios',
+          payoutRatioTTM:               'ratios',
+          debtEquityRatioTTM:           'ratios',
+          currentRatioTTM:              'ratios',
+          enterpriseValueOverEBITDATTM: 'keymetrics',
+          freeCashFlowYieldTTM:         'keymetrics',
+          revenueGrowth:                'growth',
+          epsgrowth:                    'growth',
+          operatingIncomeGrowth:        'growth',
+          assetGrowth:                  'growth',
+          beta:                         'quote',
+        }
+
+        // 낮을수록 좋은 지표 (역산 적용)
+        const LOWER_IS_BETTER = new Set([
+          'peRatioTTM', 'priceToBookRatioTTM', 'priceToSalesRatioTTM',
+          'enterpriseValueOverEBITDATTM', 'debtEquityRatioTTM',
+        ])
+
+        // 필요한 소스만 추출
+        const needed = new Set(userLogic.map(l => METRIC_SOURCE[l.metric]).filter(Boolean))
+
+        // S&P500 대표 40개 종목 유니버스 (섹터 분산)
+        const UNIVERSE = [
+          // 메가캡·테크
+          'AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','AVGO','ORCL','ADBE',
+          // 헬스케어
+          'LLY','UNH','JNJ','MRK','ABBV','TMO','AMGN',
+          // 금융
+          'JPM','V','MA','BAC','GS','WFC',
+          // 소비재·유통
+          'WMT','COST','MCD','HD','NKE','PG','KO','PEP',
+          // 에너지·산업
+          'XOM','CVX','CAT','RTX',
+          // 반도체·IT
+          'AMD','QCOM','TXN','CSCO','ACN',
+        ]
+
+        // 개별 종목 데이터 수집 헬퍼 (AbortController + timeout)
+        async function fmpFetch(url, timeoutMs = 9000) {
+          const ctrl = new AbortController()
+          const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+          try {
+            const r = await fetch(url, { signal: ctrl.signal })
+            if (!r.ok) return null
+            return await r.json()
+          } catch(e) {
+            return null
+          } finally {
+            clearTimeout(timer)
+          }
+        }
+
+        async function fetchRatiosTTM(sym) {
+          const d = await fmpFetch(`https://financialmodelingprep.com/stable/ratios-ttm?symbol=${sym}&apikey=${FMP}`)
+          if (!d) return {}
+          const o = Array.isArray(d) ? d[0] : d
+          if (!o) return {}
+          return {
+            returnOnEquityTTM:        o.returnOnEquityTTM        ?? null,
+            operatingProfitMarginTTM: o.operatingProfitMarginTTM ?? null,
+            returnOnAssetsTTM:        o.returnOnAssetsTTM        ?? null,
+            netProfitMarginTTM:       o.netProfitMarginTTM       ?? null,
+            peRatioTTM:               (o.peRatioTTM && o.peRatioTTM > 0) ? o.peRatioTTM : null,
+            priceToBookRatioTTM:      (o.priceToBookRatioTTM && o.priceToBookRatioTTM > 0) ? o.priceToBookRatioTTM : null,
+            priceToSalesRatioTTM:     (o.priceToSalesRatioTTM && o.priceToSalesRatioTTM > 0) ? o.priceToSalesRatioTTM : null,
+            dividendYieldTTM:         o.dividendYieldTTM  ?? null,
+            payoutRatioTTM:           o.payoutRatioTTM    ?? null,
+            debtEquityRatioTTM:       (o.debtEquityRatioTTM && o.debtEquityRatioTTM > 0) ? o.debtEquityRatioTTM : null,
+            currentRatioTTM:          o.currentRatioTTM   ?? null,
+          }
+        }
+
+        async function fetchKeyMetricsTTM(sym) {
+          const d = await fmpFetch(`https://financialmodelingprep.com/stable/key-metrics-ttm?symbol=${sym}&apikey=${FMP}`)
+          if (!d) return {}
+          const o = Array.isArray(d) ? d[0] : d
+          if (!o) return {}
+          return {
+            enterpriseValueOverEBITDATTM: (o.enterpriseValueOverEBITDATTM && o.enterpriseValueOverEBITDATTM > 0) ? o.enterpriseValueOverEBITDATTM : null,
+            freeCashFlowYieldTTM:          o.freeCashFlowYieldTTM ?? null,
+          }
+        }
+
+        async function fetchGrowthData(sym) {
+          const d = await fmpFetch(`https://financialmodelingprep.com/stable/financial-growth?symbol=${sym}&apikey=${FMP}`)
+          if (!d) return {}
+          const o = Array.isArray(d) ? d[0] : d
+          if (!o) return {}
+          return {
+            revenueGrowth:         o.revenueGrowth         ?? null,
+            epsgrowth:             o.epsgrowth ?? o.epsGrowth ?? o.earningsGrowth ?? null,
+            operatingIncomeGrowth: o.operatingIncomeGrowth ?? null,
+            assetGrowth:           o.assetGrowth           ?? null,
+          }
+        }
+
+        async function fetchQuoteData(sym) {
+          const d = await fmpFetch(`https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${FMP}`)
+          if (!d) return {}
+          const o = Array.isArray(d) ? d[0] : d
+          if (!o) return {}
+          return { beta: o.beta ?? null, name: o.name ?? sym }
+        }
+
+        // 종목별 병렬 수집
+        const rawResults = await Promise.allSettled(
+          UNIVERSE.map(async sym => {
+            const tasks = []
+            if (needed.has('ratios'))     tasks.push(fetchRatiosTTM(sym))
+            if (needed.has('keymetrics')) tasks.push(fetchKeyMetricsTTM(sym))
+            if (needed.has('growth'))     tasks.push(fetchGrowthData(sym))
+            if (needed.has('quote'))      tasks.push(fetchQuoteData(sym))
+            // name이 필요한데 quote를 안 쓸 경우 경량 quote 추가
+            if (!needed.has('quote'))     tasks.push(fetchQuoteData(sym))
+
+            const parts = await Promise.allSettled(tasks)
+            let merged = {}
+            parts.forEach(p => { if (p.status === 'fulfilled' && p.value) Object.assign(merged, p.value) })
+            return { symbol: sym, ...merged }
+          })
+        )
+
+        const stocks = rawResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean)
+
+        // 퍼센타일 기반 스코어링
+        function percentileRank(val, allVals) {
+          const below = allVals.filter(v => v < val).length
+          return allVals.length > 1 ? below / (allVals.length - 1) * 100 : 50
+        }
+
+        const scored = stocks.map(stock => {
+          let totalScore = 0
+          userLogic.forEach(({ metric, weight }) => {
+            if (!weight) return
+            const val = stock[metric]
+            if (val === null || val === undefined || !isFinite(val)) return
+            const allVals = stocks.map(s => s[metric]).filter(v => v !== null && v !== undefined && isFinite(v))
+            if (allVals.length < 2) return
+            const pct = percentileRank(val, allVals)
+            const score = LOWER_IS_BETTER.has(metric) ? 100 - pct : pct
+            totalScore += score * (weight / 100)
+          })
+          return { symbol: stock.symbol, name: stock.name || stock.symbol, score: parseFloat(totalScore.toFixed(2)) }
+        })
+
+        return scored.sort((a, b) => b.score - a.score)
       }
 
       // ── /macroindex: macro-index.html 용 FRED 시계열 (기본 3년) ──────────
@@ -3495,6 +3676,14 @@ export default {
       } else if (pathname === "/macroindex") {
         try {
           response = await getMacroIndexHistory(url)
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
+      // /metricz-all - 퀀트 종목 발굴 (POST, userLogic 가중치 기반 스코어링)
+      } else if (pathname === "/metricz-all") {
+        try {
+          response = await getMetriczAll(request)
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }
