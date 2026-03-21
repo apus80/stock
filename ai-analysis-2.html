@@ -1152,9 +1152,9 @@
                     <div className="widget-header">
                         <div>
                             <div className="widget-title">🔍 Alpha Discovery Scanner
-                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>모멘텀 + 수익률 성장 + 거래량 기반 종목 발굴</span>
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>당일등락률×30% + MA50추세×25% + 52주강도×25% + 거래량급증×20%</span>
                             </div>
-                            <div className="widget-subtitle">전체 시장 유니버스에서 explosiveScore 상위 종목 자동 발굴</div>
+                            <div className="widget-subtitle">S&P500 유니버스 80종목 스캔 (KV 캐시 8h, 실시간 Top10 폴백)</div>
                         </div>
                         <button
                             className={`btn-refresh ${loading ? 'loading' : ''}`}
@@ -1216,14 +1216,15 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Rank</th>
-                                        <th>Symbol</th>
-                                        <th>Score</th>
-                                        <th>Momentum%</th>
-                                        <th>Volume배수</th>
-                                        <th>PE</th>
-                                        <th>Revenue%</th>
-                                        <th>등급</th>
+                                        <th>순위</th>
+                                        <th>종목</th>
+                                        <th>점수</th>
+                                        <th>당일등락률</th>
+                                        <th>MA50추세</th>
+                                        <th>52주강도</th>
+                                        <th>거래량급증</th>
+                                        <th>PER</th>
+                                        <th>매수 추천강도</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1239,11 +1240,16 @@
                                                     </span>
                                                 </td>
                                                 <td className={changeColor(stock.momentum)}>
-                                                    {fmt.pct(stock.momentum * 100)}
+                                                    {fmt.pct(stock.momentum)}
                                                 </td>
-                                                <td>{stock.volume ? fmt.mult(stock.volume) : '-'}</td>
-                                                <td>{fmt.num(stock.pe)}</td>
-                                                <td className="value-positive">{fmt.pct(stock.revenueGrowth * 100)}</td>
+                                                <td className={changeColor(stock.ma50trend)}>
+                                                    {stock.ma50trend != null ? fmt.pct(stock.ma50trend) : '-'}
+                                                </td>
+                                                <td>{stock.str52w != null ? stock.str52w.toFixed(1) + '%' : '-'}</td>
+                                                <td className={changeColor(stock.volSurge)}>
+                                                    {stock.volSurge != null ? fmt.pct(stock.volSurge) : '-'}
+                                                </td>
+                                                <td>{stock.pe > 0 ? fmt.num(stock.pe) : '-'}</td>
                                                 <td>{grade.icon} {grade.label}</td>
                                             </tr>
                                         )

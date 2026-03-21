@@ -343,11 +343,15 @@ function calculateATR(data) {
   return { atrPct: (atr / price) * 100 }
 }
 
+// CSS 최대값: C(21)×0.4 + T(50)×0.35 + S(12)×0.25 = 28.9
+const CSS_MAX = 21 * 0.4 + 50 * 0.35 + 12 * 0.25
+
+// css: 0~100 정규화 값 (raw / CSS_MAX * 100) 기준 등급 반환
 function csGetGrade(css) {
-  if (css >= 80) return "🔥 STRONG BUY"
-  if (css >= 70) return "✅ BUY"
-  if (css >= 60) return "⚡ WATCH"
-  if (css >= 50) return "⚠️ HOLD"
+  if (css >= 75) return "🔥 STRONG BUY"
+  if (css >= 55) return "✅ BUY"
+  if (css >= 40) return "⚡ WATCH"
+  if (css >= 25) return "⚠️ HOLD"
   return "❌ AVOID"
 }
 
@@ -379,7 +383,7 @@ async function csGetTechnical(symbol, env) {
     if (q.price > (q.priceAvg50 || 0)) score += 5
     if (q.price > (q.priceAvg200 || 0)) score += 5
     if (volRatio > 2) score += 6
-    if ((q.changesPercentage || 0) > 1) score += 5
+    if ((q.changePercentage || 0) > 1) score += 5   // fix: changesPercentage → changePercentage
     if (isBreakout) score += 10
     return { rsi, atr_pct: 2, volumeRatio: volRatio, isBreakout, total: Math.min(score, 50) }
   }
@@ -3513,10 +3517,8 @@ export default {
             const cached = await kv.get(DISCOVERY_KV_KEY)
             if (cached) {
               const parsed = JSON.parse(cached)
-              // 스테일 캐시 감지: ma50trend 필드가 없거나 모든 score가 0이면 구버전 캐시 → 무시
-              const hasValidData = parsed.top_20?.some(s =>
-                s.ma50trend !== undefined || Math.abs(s.score || 0) > 0.5
-              )
+              // 스테일 캐시 감지: ma50trend 필드가 없으면 구버전 캐시 → 무시
+              const hasValidData = parsed.top_20?.some(s => s.ma50trend !== undefined)
               if (!hasValidData) {
                 console.warn('⚠️ Discovery KV 캐시가 구버전 (ma50trend 없음) - 실시간 폴백으로 전환')
                 // fall through to real-time fetch
@@ -4265,18 +4267,21 @@ export default {
             if (!csApplyFilters({ tech: technical, catalyst })) {
               response = { symbol, status: "REJECTED" }
             } else {
-              const css =
+              const css_raw =
                 catalyst.total * 0.4 +
                 technical.total * 0.35 +
                 smartMoney.total * 0.25
+              // 0~100 정규화: raw / 28.9 × 100
+              const css = parseFloat((css_raw / CSS_MAX * 100).toFixed(1))
               response = {
                 symbol,
                 css,
+                css_raw: parseFloat(css_raw.toFixed(2)),
                 grade: csGetGrade(css),
                 breakdown: {
-                  catalyst: catalyst.total,
-                  technical: technical.total,
-                  smartMoney: smartMoney.total
+                  catalyst: catalyst.total,  // 최대 21
+                  technical: technical.total, // 최대 50
+                  smartMoney: smartMoney.total // 최대 12
                 },
                 detail: { technical, smartMoney, catalyst }
               }
@@ -4310,13 +4315,13 @@ export default {
               const smartMoney = await csGetSmartMoney(stock.symbol, technical, env)
               const catalyst = await csGetCatalyst(stock.symbol, env)
               if (!csApplyFilters({ tech: technical, catalyst })) continue
-              const css =
-                catalyst.total * 0.4 +
-                technical.total * 0.35 +
-                smartMoney.total * 0.25
+              const css_raw = catalyst.total * 0.4 + technical.total * 0.35 + smartMoney.total * 0.25
+              // 0~100 정규화: raw / CSS_MAX * 100
+              const css = parseFloat((css_raw / CSS_MAX * 100).toFixed(1))
               stage2.push({
                 symbol: stock.symbol,
                 css,
+                css_raw: parseFloat(css_raw.toFixed(2)),
                 grade: csGetGrade(css),
                 breakdown: {
                   catalyst: catalyst.total,
