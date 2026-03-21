@@ -344,7 +344,8 @@ function csGetGrade(css) {
 }
 
 async function csGetTop80(env) {
-  return await fetchFMP(`/stable/stock-screener?marketCapMoreThan=10000000000&limit=80`, env)
+  // stock-screener는 유료 플랜 전용 → SP500_UNIVERSE 상위 80개 사용
+  return SP500_UNIVERSE.slice(0, 80).map(s => ({ symbol: s }))
 }
 
 async function csGetTechnical(symbol, env) {
@@ -362,7 +363,7 @@ async function csGetTechnical(symbol, env) {
     const q = Array.isArray(quoteRaw) ? quoteRaw[0] : quoteRaw
     if (!q?.price) return { total: 0 }
     const volRatio = q.volume / (q.avgVolume || q.volume || 1)
-    const isBreakout = (q.changesPercentage || 0) > 1.5
+    const isBreakout = (q.changePercentage || 0) > 1.5   // fix: changesPercentage → changePercentage
                     && volRatio > 1.5
                     && q.price > (q.priceAvg50 || 0)
     const rsi = 50 // 중립 기본값 (RSI 계산 불가)
@@ -447,7 +448,7 @@ async function csGetSmartMoney(symbol, tech, env) {
 }
 
 async function csGetCatalyst(symbol, env) {
-  const [earnings, income, ratios, balance, cashflow, quote] = await Promise.all([
+  const [earningsRaw, incomeRaw, ratiosRaw, balanceRaw, cashflowRaw, quoteRaw] = await Promise.all([
     fetchFMP(`/stable/earnings?symbol=${symbol}`, env),
     fetchFMP(`/stable/income-statement?symbol=${symbol}&limit=5`, env),
     fetchFMP(`/stable/ratios-ttm?symbol=${symbol}`, env),
@@ -456,38 +457,52 @@ async function csGetCatalyst(symbol, env) {
     fetchFMP(`/stable/quote?symbol=${symbol}`, env)
   ])
 
-  if (!earnings?.[0] || !income?.[1]) return { total: 0, de: 1, revGrowth: 0 }
+  // 배열/객체 모두 정규화
+  const norm = (v) => Array.isArray(v) ? v : (v ? [v] : [])
+  const earnings  = norm(earningsRaw)
+  const income    = norm(incomeRaw)
+  const balance   = norm(balanceRaw)
+  const cashflow  = norm(cashflowRaw)
+  const quote     = norm(quoteRaw)
+  // ratios-ttm은 배열 또는 객체 → 첫 번째 요소로 통일
+  const ratios = Array.isArray(ratiosRaw) ? (ratiosRaw[0] || {}) : (ratiosRaw || {})
 
-  const epsSurprise =
-    (earnings[0].epsActual - earnings[0].epsEstimated) /
-    Math.abs(earnings[0].epsEstimated || 1)
+  // earnings/income 없으면 재무 점수 0으로 반환 (필터 탈락하지 않도록 de/revGrowth 중립값)
+  if (!earnings[0]) return { total: 0, de: 1, revGrowth: 0 }
 
-  const revGrowth =
-    (income[0].revenue - income[1].revenue) / income[1].revenue
+  const epsSurprise = earnings[0].epsActual != null && earnings[0].epsEstimated != null
+    ? (earnings[0].epsActual - earnings[0].epsEstimated) / Math.abs(earnings[0].epsEstimated || 1)
+    : 0
 
-  const pe = ratios?.[0]?.priceToEarningsRatioTTM || 30
+  const revGrowth = income[0]?.revenue && income[1]?.revenue
+    ? (income[0].revenue - income[1].revenue) / Math.abs(income[1].revenue)
+    : 0
 
-  const fcfYield =
-    cashflow?.[0]?.freeCashFlow / (quote?.[0]?.marketCap || 1)
+  const pe = ratios.priceToEarningsRatioTTM || 30
 
-  const de =
-    balance?.[0]?.totalDebt / balance?.[0]?.totalStockholdersEquity
+  const fcfYield = cashflow[0]?.freeCashFlow && quote[0]?.marketCap
+    ? cashflow[0].freeCashFlow / quote[0].marketCap
+    : 0
+
+  const de = balance[0]?.totalDebt && balance[0]?.totalStockholdersEquity
+    ? balance[0].totalDebt / balance[0].totalStockholdersEquity
+    : 1
 
   let score = 0
-  if (epsSurprise > 0.1) score += 6
-  if (revGrowth > 0.1) score += 5
-  if (pe < 25) score += 3
-  if (fcfYield > 0.03) score += 3
-  if (de < 0.6) score += 4
+  if (epsSurprise > 0.05) score += 6   // EPS beat > 5%
+  if (revGrowth > 0.05) score += 5     // 수익 성장 > 5%
+  if (pe < 30) score += 3              // PE < 30
+  if (fcfYield > 0.02) score += 3      // FCF 수익률 > 2%
+  if (de < 1.0) score += 4             // D/E < 1.0
 
   return { epsSurprise, revGrowth, fcfYield, de, total: score }
 }
 
 function csApplyFilters({ tech, catalyst }) {
-  if (tech.rsi > 70 || tech.rsi < 30) return false
-  if (catalyst.de > 1.5) return false
-  if (catalyst.revGrowth < 0) return false
-  if (!tech.isBreakout) return false
+  if (tech.rsi > 80 || tech.rsi < 20) return false           // 극단적 과매수/과매도만 제외
+  if ((catalyst.de || 0) > 3.0) return false                 // 극단적 레버리지만 제외
+  if ((catalyst.revGrowth || 0) < -0.20) return false        // 20% 이상 매출 급감만 제외
+  // isBreakout 하드게이트 제거 → 횡보/하락장에서도 분석 가능
   return true
 }
 
@@ -4261,48 +4276,46 @@ export default {
           const universe = await csGetTop80(env)
           const safeUniverse = Array.isArray(universe) ? universe : []
           const stage1 = []
+          // Stage 1: 기술적 점수 10 이상인 종목만 진행 (isBreakout 하드게이트 제거)
           for (const stock of safeUniverse) {
             try {
               const tech = await csGetTechnical(stock.symbol, env)
-              if (!tech.isBreakout) continue
+              if ((tech.total || 0) < 10) continue
               stage1.push({ symbol: stock.symbol, quickScore: tech.total })
             } catch (e) {}
           }
           const shortlist = stage1
             .sort((a, b) => b.quickScore - a.quickScore)
-            .slice(0, 15)
+            .slice(0, 20)
           const stage2 = []
+          // Stage 2: 필터 통과 + CSS 점수 계산
           for (const stock of shortlist) {
-            const technical = await csGetTechnical(stock.symbol, env)
-            const smartMoney = await csGetSmartMoney(stock.symbol, technical, env)
-            const catalyst = await csGetCatalyst(stock.symbol, env)
-            if (!csApplyFilters({ tech: technical, catalyst })) continue
-            const css =
-              catalyst.total * 0.4 +
-              technical.total * 0.35 +
-              smartMoney.total * 0.25
-            stage2.push({
-              symbol: stock.symbol,
-              css,
-              grade: csGetGrade(css),
-              breakdown: {
-                catalyst: catalyst.total,
-                technical: technical.total,
-                smartMoney: smartMoney.total
-              },
-              isBreakout: technical.isBreakout
-            })
+            try {
+              const technical = await csGetTechnical(stock.symbol, env)
+              const smartMoney = await csGetSmartMoney(stock.symbol, technical, env)
+              const catalyst = await csGetCatalyst(stock.symbol, env)
+              if (!csApplyFilters({ tech: technical, catalyst })) continue
+              const css =
+                catalyst.total * 0.4 +
+                technical.total * 0.35 +
+                smartMoney.total * 0.25
+              stage2.push({
+                symbol: stock.symbol,
+                css,
+                grade: csGetGrade(css),
+                breakdown: {
+                  catalyst: catalyst.total,
+                  technical: technical.total,
+                  smartMoney: smartMoney.total
+                },
+                isBreakout: technical.isBreakout
+              })
+            } catch (e) {}
           }
-          const finalCandidates = stage2
+          // Stage 3: 백테스트 제거 → CSS 상위 5개 직접 반환
+          const final = stage2
             .sort((a, b) => b.css - a.css)
             .slice(0, 5)
-          const final = []
-          for (const stock of finalCandidates) {
-            const bt = await csGetBacktest(stock.symbol, env)
-            if (bt.winRate >= 55 && bt.avgReturn > 1) {
-              final.push({ ...stock, backtest: bt })
-            }
-          }
           response = final
         } catch(e) {
           response = { error: e.message, endpoint: pathname }
