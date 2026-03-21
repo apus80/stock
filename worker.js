@@ -1527,6 +1527,82 @@ export default {
         }
       }
 
+      // ── /macroindex: macro-index.html 용 FRED 시계열 (기본 3년) ──────────
+      async function getMacroIndexHistory(reqUrl) {
+        // obs_start 파라미터 (기본: 3년 전)
+        const startParam = reqUrl.searchParams.get('start')
+        let obsStart = startParam
+        if (!obsStart) {
+          const d = new Date()
+          d.setFullYear(d.getFullYear() - 3)
+          obsStart = d.toISOString().split('T')[0]
+        }
+
+        // [code, units, divisor]  divisor: 1 = 그대로, 1e6 = millions→T, 1e3 = millions→B
+        const SERIES = [
+          // 1. 통화 정책 및 시장 금리
+          ['DFEDTARU',           'lin', 1],
+          ['DFEDTARL',           'lin', 1],
+          ['EFFR',               'lin', 1],
+          ['DGS10',              'lin', 1],
+          ['DGS2',               'lin', 1],
+          ['REAINTRATREARAT10Y', 'lin', 1],
+          ['MORTGAGE30US',       'lin', 1],
+          // 2. 물가 및 인플레이션
+          ['CPIAUCSL',           'pc1', 1],
+          ['CPILFESL',           'pc1', 1],
+          ['PCEPILFE',           'pc1', 1],
+          ['MICH',               'lin', 1],
+          // 3. 경제 성장
+          ['GDPC1',              'lin', 1],
+          ['UNRATE',             'lin', 1],
+          ['PAYEMS',             'chg', 1],   // 월간 변화 (thousands)
+          ['INDPRO',             'lin', 1],
+          ['IPMAN',              'lin', 1],
+          ['HOUST',              'lin', 1],
+          ['UMCSENT',            'lin', 1],
+          // 4. 유동성
+          ['WALCL',              'lin', 1e6], // millions → T
+          ['M2SL',               'pc1', 1],
+          ['DTWEXAFEGS',         'lin', 1],
+          ['RRPONTSYD',          'lin', 1e3], // millions → B
+          ['WTREGEN',            'lin', 1e6], // millions → T
+          // 5. 리스크
+          ['T10Y2Y',             'lin', 1],
+          ['SAHMREALTIME',       'lin', 1],
+          ['BAMLH0A0HYM2',       'lin', 1],
+          ['CP',                 'pc1', 1],
+        ]
+
+        // 병렬 FRED 호출
+        const results = await Promise.allSettled(
+          SERIES.map(([code, units]) => fredGet(code, units === 'lin' ? null : units))
+        )
+
+        const out = { timestamp: new Date().toISOString() }
+
+        SERIES.forEach(([code, , divisor], i) => {
+          const obs = results[i].status === 'fulfilled' ? results[i].value : []
+          // obsStart 이후 데이터만 필터 + '.' 값 제거
+          const filtered = obs.filter(o => o.date >= obsStart && o.value !== '.' && o.value !== '')
+          const dates  = filtered.map(o => o.date)
+          const values = filtered.map(o => {
+            const raw = parseFloat(o.value)
+            return divisor !== 1 ? parseFloat((raw / divisor).toFixed(4)) : raw
+          })
+          const latest = values.length ? values[values.length - 1] : null
+          const prev   = values.length > 1 ? values[values.length - 2] : null
+          out[code] = {
+            value:  latest,
+            change: (latest !== null && prev !== null) ? parseFloat((latest - prev).toFixed(4)) : null,
+            dates,
+            values,
+          }
+        })
+
+        return out
+      }
+
       // 1. Institutional Market Score
       async function getInstitutionalScore() {
         const data = await getMarketDataCached()
@@ -3411,6 +3487,14 @@ export default {
       } else if (pathname === "/alpha/breakout") {
         try {
           response = await runBreakoutDiscovery()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
+      // /macroindex - macro-index.html 용 FRED 시계열 (3년 히스토리)
+      } else if (pathname === "/macroindex") {
+        try {
+          response = await getMacroIndexHistory(url)
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }

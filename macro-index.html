@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>거시지표 대시보드</title>
+<meta name="theme-color" content="#667eea">
+<style>
+:root {
+    --primary: #667eea;
+    --primary-dark: #5a67d8;
+    --secondary: #764ba2;
+    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --card-bg: #ffffff;
+    --shadow-main: 0 4px 15px rgba(0,0,0,0.10);
+    --shadow-float: 0 10px 25px rgba(0,0,0,0.15);
+    --radius-main: 15px;
+    --radius-small: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg-gradient);
+    min-height: 100vh;
+    padding: 20px;
+    color: #2d3748;
+    line-height: 1.6;
+}
+
+/* ── 상단 헤더 ── */
+.page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+}
+.back-btn {
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+    color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    font-size: 0.85rem; text-decoration: none; transition: background 0.2s;
+    touch-action: manipulation;
+}
+.back-btn:hover { background: rgba(255,255,255,0.3); }
+.page-title {
+    color: white; font-size: 1.15rem; font-weight: 700;
+    text-align: center; flex: 1;
+}
+.source-note { color: rgba(255,255,255,0.65); font-size: 0.7rem; text-align: right; }
+
+/* ── 섹션 래퍼 ── */
+.section-wrap {
+    background: var(--card-bg); border-radius: var(--radius-main);
+    padding: 20px 22px; margin-bottom: 18px; box-shadow: var(--shadow-main);
+}
+.section-title {
+    font-size: 0.95rem; font-weight: 700; color: var(--primary-dark);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+}
+
+/* ── 카드 그리드 ── */
+.econ-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 920px) { .econ-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 620px) { .econ-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.econ-card {
+    background: #f8faff; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 12px 14px 10px; cursor: pointer;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, background 0.18s;
+    touch-action: manipulation;
+}
+@media (hover: hover) {
+    .econ-card:hover {
+        transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+        border-color: #93c5fd; background: #eff6ff;
+    }
+}
+.econ-card-hd   { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.econ-card-lbl  { font-size: 0.72rem; color: #64748b; font-weight: 600; }
+.econ-card-ico  { font-size: 1.05em; }
+.econ-card-val  { font-size: 1.26em; font-weight: 800; color: #0f172a; line-height: 1.1; margin: 3px 0; }
+.econ-card-chg  { font-size: 0.7em; font-weight: 600; }
+.econ-card-chg.pos { color: #16a34a; } .econ-card-chg.neg { color: #dc2626; } .econ-card-chg.neu { color: #94a3b8; }
+.econ-card-desc { font-size: 0.62em; color: #94a3b8; margin-top: 3px; }
+.econ-sparksvg  { display: block; width: 100%; height: 32px; margin-top: 6px; overflow: visible; }
+
+/* ── 모달 ── */
+.econ-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 9000;
+    align-items: center; justify-content: center;
+}
+.econ-overlay.open { display: flex; }
+.econ-modal {
+    background: #fff; border-radius: 16px; padding: 26px 28px;
+    width: min(720px, 94vw); max-height: 88vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+}
+.econ-modal-hdr {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;
+}
+.econ-modal-hdr h2 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0; }
+.econ-modal-close {
+    background: #f1f5f9; border: none; border-radius: 50%;
+    width: 30px; height: 30px; font-size: 0.9rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: manipulation;
+}
+@media (hover: hover) { .econ-modal-close:hover { background: #e2e8f0; } }
+.econ-chart-wrap  { height: 260px; position: relative; margin-bottom: 16px; }
+.econ-modal-note  { font-size: 0.7em; color: #94a3b8; margin-top: 6px; text-align: right; }
+.econ-stats       { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+.econ-stat        { background: #f8faff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; text-align: center; }
+.econ-stat-lbl    { font-size: 0.65em; color: #94a3b8; text-transform: uppercase; }
+.econ-stat-val    { font-size: 1em; font-weight: 700; color: #1e293b; margin-top: 3px; }
+@media (max-width: 400px) { .econ-stats { grid-template-columns: repeat(2, 1fr); } }
+
+/* ── 로딩 / 에러 ── */
+.loading-msg { text-align: center; color: rgba(255,255,255,0.8); padding: 40px 0; font-size: 1rem; }
+.error-msg   { text-align: center; color: #fca5a5; padding: 30px; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+    <a class="back-btn" href="index.html">← 메인</a>
+    <div class="page-title">📊 거시지표 대시보드</div>
+    <div class="source-note">Data: FRED (Delayed)</div>
+</div>
+
+<div id="container">
+    <div class="loading-msg">⏳ FRED 데이터 불러오는 중…</div>
+</div>
+
+<!-- 모달 -->
+<div class="econ-overlay" id="econOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="econ-modal">
+        <div class="econ-modal-hdr">
+            <h2 id="modalTitle">지표 상세</h2>
+            <button class="econ-modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="econ-chart-wrap">
+            <canvas id="modalCanvas"></canvas>
+        </div>
+        <div class="econ-modal-note" id="modalNote"></div>
+        <div class="econ-stats" id="modalStats"></div>
+    </div>
+</div>
+
+<script>
+/* ================================================================
+   설정
+================================================================ */
+var API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+
+// 3년 전 날짜
+var startD = new Date();
+startD.setFullYear(startD.getFullYear() - 3);
+var OBS_START = startD.toISOString().split('T')[0];
+
+/* ================================================================
+   구조 정의 (유저 제공 STRUCTURE 기반)
+   [이름, FRED코드, units타입, 설명, 아이콘, 임계값, 임계값설명, 단위, isHighGood, 색상]
+================================================================ */
+var STRUCTURE = [
+  {
+    title: '1. 통화 정책 및 시장 금리',
+    items: [
+      ['Fed 금리 (상단)', 'DFEDTARU',           'lin', '뉴스 기준금리 상단', '🏦', 2.0,  '중립금리 추정', '%', false, '#3b82f6'],
+      ['Fed 금리 (하단)', 'DFEDTARL',           'lin', '기준금리 하단',     '🏦', 2.0,  '중립금리 추정', '%', false, '#60a5fa'],
+      ['실효연방기금금리', 'EFFR',               'lin', '실제 거래 금리',    '💱', 2.0,  '중립금리',     '%', false, '#818cf8'],
+      ['국채 10년물',     'DGS10',              'lin', '장기 금리 기준',    '🏛️', 4.5,  '주의 구간',    '%', null,  '#6366f1'],
+      ['국채 2년물',      'DGS2',               'lin', '단기 금리',         '📋', 4.5,  '주의 구간',    '%', null,  '#a78bfa'],
+      ['실질 금리',       'REAINTRATREARAT10Y', 'lin', '인플레 제외 금리',  '🎯', 0,    '0% 기준',      '%', null,  '#c084fc'],
+      ['30년 모기지',     'MORTGAGE30US',       'lin', '주택 대출 기준',    '🏠', 6.0,  '부담 기준',    '%', false, '#e879f9'],
+    ]
+  },
+  {
+    title: '2. 물가 및 인플레이션',
+    items: [
+      ['CPI (YoY)',        'CPIAUCSL', 'pc1', '전년 대비 물가 상승률',  '📈', 2.0, 'Fed 목표 2%', '%', false, '#ef4444'],
+      ['Core CPI (YoY)',   'CPILFESL', 'pc1', '근원 물가',              '🎯', 2.0, 'Fed 목표 2%', '%', false, '#f97316'],
+      ['Core PCE (YoY)',   'PCEPILFE', 'pc1', '연준 핵심 물가지표',     '💰', 2.0, 'Fed 핵심목표','%', false, '#a855f7'],
+      ['기대 인플레이션',  'MICH',     'lin', '소비자 기대 인플레이션', '🌡️', 3.0, '안정 기준',   '%', false, '#f59e0b'],
+    ]
+  },
+  {
+    title: '3. 경제 성장 및 고용',
+    items: [
+      ['실질 GDP',    'GDPC1',    'lin', '실질 경제 규모',  '🌐', null, '',            'B$', true,  '#10b981'],
+      ['실업률',      'UNRATE',   'lin', '고용 상태',       '📉', 4.0,  '자연실업률',  '%',  false, '#f59e0b'],
+      ['비농업 고용', 'PAYEMS',   'chg', '월간 고용 증가',  '👷', 100,  '정상 수준',   'K',  true,  '#10b981'],
+      ['산업 생산',   'INDPRO',   'lin', '공장 생산 지수',  '🏭', null, '',            '',   true,  '#14b8a6'],
+      ['제조업 생산', 'IPMAN',    'lin', '제조 흐름 지수',  '⚙️', null, '',            '',   true,  '#06b6d4'],
+      ['주택착공',    'HOUST',    'lin', '경기 선행 지표',  '🏗️', null, '',            'K',  true,  '#84cc16'],
+      ['소비심리',    'UMCSENT',  'lin', '소비 심리 지수',  '😊', 80,   '낙관 기준',   '',   true,  '#f472b6'],
+    ]
+  },
+  {
+    title: '4. 유동성 및 통화',
+    items: [
+      ['연준 자산',   'WALCL',      'lin', 'QE 규모 (T$)',      '🏦', null, '',          'T$', null, '#3b82f6'],
+      ['M2 (YoY)',   'M2SL',       'pc1', '통화량 증가율',     '💹', 0,    '성장 기준',  '%',  true, '#8b5cf6'],
+      ['달러 인덱스', 'DTWEXAFEGS', 'lin', '달러 실효환율',     '💵', null, '',           '',   null, '#0ea5e9'],
+      ['역레포(RRP)', 'RRPONTSYD',  'lin', '유동성 흡수 규모',  '🔄', null, '',           'B$', null, '#6366f1'],
+      ['TGA',        'WTREGEN',    'lin', '정부 현금 잔고',    '🏛️', null, '',           'T$', null, '#a78bfa'],
+    ]
+  },
+  {
+    title: '5. 경기 침체 및 신용 위험',
+    items: [
+      ['장단기 금리차', 'T10Y2Y',        'lin', '10Y-2Y 침체 신호',   '📊', 0,    '역전=침체 신호', '%', true,  '#0ea5e9'],
+      ['샴 지표',       'SAHMREALTIME',  'lin', '실시간 침체 판독기', '⚠️', 0.5,  '0.5% 이상=침체', '',  false, '#ef4444'],
+      ['하이일드 스프레드','BAMLH0A0HYM2','lin', '하이일드 신용 위험','💣', 4.0,  '주의 구간',      '%', false, '#f97316'],
+      ['기업 이익 (YoY)','CP',           'pc1', '기업 이익 성장률',  '📈', 0,    '성장 기준',      '%', true,  '#22c55e'],
+    ]
+  }
+];
+
+/* ================================================================
+   포맷 헬퍼
+================================================================ */
+function fmtVal(v, units, unit) {
+    if (v === null || v === undefined || isNaN(v)) return '-';
+    if (units === 'pc1') return v.toFixed(2) + '%';
+    if (units === 'chg') {
+        if (unit === 'K') return (v / 1000).toFixed(1) + 'K';
+        return v.toFixed(1) + (unit || '');
+    }
+    // lin
+    if (unit === '%') return v.toFixed(2) + '%';
+    if (unit === 'T$') return v.toFixed(2) + 'T';
+    if (unit === 'B$') return v.toFixed(1) + 'B';
+    if (unit === 'K')  return (v / 1000).toFixed(0) + 'K';
+    if (unit === 'B$' || unit === 'B') return v.toFixed(1) + 'B';
+    return v.toFixed(2) + (unit ? ' ' + unit : '');
+}
+
+/* ================================================================
+   SVG 스파크라인
+================================================================ */
+var _sparkCache = {};
+function sparkSvg(values, threshold, color) {
+    var key = (values || []).join(',') + '|' + threshold + '|' + color;
+    if (_sparkCache[key]) return _sparkCache[key];
+    var w = 120, h = 32, pad = 3;
+    if (!values || values.length < 2) {
+        var r = '<svg class="econ-sparksvg" viewBox="0 0 ' + w + ' ' + h + '"><text x="50%" y="55%" text-anchor="middle" fill="#e2e8f0" font-size="9">N/A</text></svg>';
+        _sparkCache[key] = r; return r;
+    }
+    var allV = values.concat(threshold !== null && threshold !== undefined ? [threshold] : []);
+    var mn = Math.min.apply(null, allV), mx = Math.max.apply(null, allV);
+    var rng = (mx - mn) || 1;
+    var uw = (w - pad * 2) / (values.length - 1);
+    function fx(i) { return (pad + i * uw).toFixed(1); }
+    function fy(v) { return (h - pad - ((v - mn) / rng) * (h - pad * 2)).toFixed(1); }
+    var pts = values.map(function(v, i) { return fx(i) + ',' + fy(v); }).join(' ');
+    var lx = fx(values.length - 1), ly = fy(values[values.length - 1]);
+    var area = pad + ',' + h + ' ' + pts + ' ' + lx + ',' + h;
+    var tLine = '';
+    if (threshold !== null && threshold !== undefined) {
+        var ty = fy(threshold);
+        tLine = '<line x1="' + pad + '" y1="' + ty + '" x2="' + (w - pad) + '" y2="' + ty + '" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="3,2"/>';
+    }
+    var svg = '<svg class="econ-sparksvg" viewBox="0 0 ' + w + ' ' + h + '">'
+        + '<polygon points="' + area + '" fill="' + color + '22"/>'
+        + tLine
+        + '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round"/>'
+        + '<circle cx="' + lx + '" cy="' + ly + '" r="2.5" fill="' + color + '"/>'
+        + '</svg>';
+    _sparkCache[key] = svg;
+    return svg;
+}
+
+/* ================================================================
+   렌더링
+================================================================ */
+var _apiData = null; // 로드된 데이터 전역 저장
+
+function render(data) {
+    _apiData = data;
+    var container = document.getElementById('container');
+    container.innerHTML = '';
+
+    STRUCTURE.forEach(function(section) {
+        var wrap = document.createElement('div');
+        wrap.className = 'section-wrap';
+
+        var titleEl = document.createElement('div');
+        titleEl.className = 'section-title';
+        titleEl.textContent = section.title;
+        wrap.appendChild(titleEl);
+
+        var grid = document.createElement('div');
+        grid.className = 'econ-grid';
+
+        section.items.forEach(function(item) {
+            var name = item[0], code = item[1], units = item[2], desc = item[3],
+                icon = item[4], threshold = item[5], thrLabel = item[6],
+                unit = item[7], isHighGood = item[8], color = item[9];
+
+            var d = data[code] || {};
+            var val = d.value;
+            var chg = d.change;
+
+            var valStr = fmtVal(val, units, unit);
+            var chgStr = '-';
+            var chgCls = 'neu';
+            if (chg !== null && chg !== undefined && !isNaN(chg)) {
+                var arrow = chg > 0 ? '▲' : chg < 0 ? '▼' : '─';
+                chgStr = arrow + Math.abs(chg).toFixed(2) + (unit || '');
+                if (isHighGood !== null) {
+                    chgCls = chg > 0 ? (isHighGood ? 'pos' : 'neg') : (chg < 0 ? (isHighGood ? 'neg' : 'pos') : 'neu');
+                }
+            }
+
+            var card = document.createElement('div');
+            card.className = 'econ-card';
+            card.innerHTML =
+                '<div class="econ-card-hd">' +
+                  '<span class="econ-card-lbl">' + name + '</span>' +
+                  '<span class="econ-card-ico">' + icon + '</span>' +
+                '</div>' +
+                '<div class="econ-card-val">' + valStr + '</div>' +
+                '<div class="econ-card-chg ' + chgCls + '">' + chgStr + '</div>' +
+                sparkSvg(d.values, threshold, color) +
+                '<div class="econ-card-desc">' + desc + '</div>';
+
+            (function(n, c, u, t, tl, co, vs, ds) {
+                card.addEventListener('click', function() {
+                    openModal(n, c, u, t, tl, co, vs, ds);
+                });
+            })(name, code, unit, threshold, thrLabel, color, d.values || [], d.dates || []);
+
+            grid.appendChild(card);
+        });
+
+        wrap.appendChild(grid);
+        container.appendChild(wrap);
+    });
+
+    // 마지막 업데이트 표시
+    var footerEl = document.createElement('div');
+    footerEl.style.cssText = 'text-align:center;color:rgba(255,255,255,0.55);font-size:0.7rem;padding:10px 0 20px';
+    var ts = data.timestamp ? data.timestamp.substring(0, 10) : '-';
+    footerEl.textContent = '업데이트: ' + ts + ' | 출처: FRED (Federal Reserve)';
+    container.appendChild(footerEl);
+}
+
+/* ================================================================
+   데이터 로드
+================================================================ */
+async function load() {
+    try {
+        var url = API_BASE + '/macroindex?start=' + OBS_START;
+        var res = await fetch(url, { credentials: 'omit' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        if (data.error) throw new Error(data.error);
+        render(data);
+    } catch (e) {
+        document.getElementById('container').innerHTML =
+            '<div class="error-msg">❌ 데이터 로드 실패: ' + e.message + '<br><button onclick="load()" style="margin-top:12px;padding:6px 16px;border-radius:8px;border:none;background:#667eea;color:white;cursor:pointer">다시 시도</button></div>';
+    }
+}
+
+/* ================================================================
+   모달 + Chart.js
+================================================================ */
+var _chartInst = null;
+
+function openModal(name, code, unit, threshold, thrLabel, color, values, dates) {
+    document.getElementById('modalTitle').textContent = name + ' (' + code + ')';
+    var noteEl = document.getElementById('modalNote');
+    noteEl.textContent = thrLabel ? '기준선: ' + thrLabel + ' | 출처: FRED' : '출처: FRED';
+    document.getElementById('econOverlay').classList.add('open');
+
+    // 통계
+    var cur  = values.length ? values[values.length - 1] : null;
+    var mn   = values.length ? Math.min.apply(null, values) : null;
+    var mx   = values.length ? Math.max.apply(null, values) : null;
+    var avg  = values.length ? (values.reduce(function(a,b){return a+b;},0) / values.length) : null;
+    function sf(v) { return v !== null ? v.toFixed(2) + (unit || '') : 'N/A'; }
+    document.getElementById('modalStats').innerHTML =
+        '<div class="econ-stat"><div class="econ-stat-lbl">현재</div><div class="econ-stat-val">' + sf(cur) + '</div></div>' +
+        '<div class="econ-stat"><div class="econ-stat-lbl">' + values.length + '개월 평균</div><div class="econ-stat-val">' + sf(avg) + '</div></div>' +
+        '<div class="econ-stat"><div class="econ-stat-lbl">최고</div><div class="econ-stat-val">' + sf(mx) + '</div></div>' +
+        '<div class="econ-stat"><div class="econ-stat-lbl">최저</div><div class="econ-stat-val">' + sf(mn) + '</div></div>';
+
+    function drawChart() {
+        var canvas = document.getElementById('modalCanvas');
+        if (_chartInst) { _chartInst.destroy(); _chartInst = null; }
+        var datasets = [{
+            label: name,
+            data: values,
+            borderColor: color,
+            backgroundColor: color + '22',
+            borderWidth: 2, pointRadius: 2, fill: true, tension: 0.3
+        }];
+        if (threshold !== null && threshold !== undefined) {
+            datasets.push({
+                label: thrLabel || '기준선',
+                data: dates.map(function() { return threshold; }),
+                borderColor: '#94a3b8', borderDash: [5,5],
+                borderWidth: 1, pointRadius: 0, fill: false
+            });
+        }
+        _chartInst = new Chart(canvas, {
+            type: 'line',
+            data: { labels: dates, datasets: datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 16 } } },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } },
+                    y: { ticks: { font: { size: 10 } } }
+                }
+            }
+        });
+    }
+
+    if (typeof Chart !== 'undefined') {
+        drawChart();
+    } else {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js';
+        s.onload = drawChart;
+        document.head.appendChild(s);
+    }
+}
+
+function closeModal() {
+    document.getElementById('econOverlay').classList.remove('open');
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+}, { passive: true });
+
+/* 실행 */
+load();
+</script>
+</body>
+</html>
