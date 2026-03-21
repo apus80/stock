@@ -4098,12 +4098,12 @@
                 ttl: 1 * 60 * 60 * 1000  // 1시간
             },
             MACRO_BASE: {
-                key: 'cache_macro_base_card12',
-                ttl: 4 * 60 * 60 * 1000  // 4시간
+                key: 'cache_macro_base_card13',
+                ttl: 6 * 60 * 60 * 1000  // 6시간
             },
             MACRO_INDICATORS: {
-                key: 'cache_macro_indicators_card13',
-                ttl: 4 * 60 * 60 * 1000  // 4시간
+                key: 'cache_macro_indicators_card14',
+                ttl: 6 * 60 * 60 * 1000  // 6시간
             }
         };
 
@@ -4440,6 +4440,64 @@
                 });
 
             return inflightMarketRequest;
+        }
+
+        /* ── /macroindex 전용 fetch (카드 13, 14용) ──────────── */
+        var macroIndexCache = null;
+        var macroIndexCacheTime = 0;
+        var inflightMacroIndexRequest = null;
+        var MACRO_INDEX_CACHE_KEY = 'cache_macroindex_v1';
+        var MACRO_INDEX_MEMORY_TTL = 6 * 60 * 60 * 1000; // 메모리 캐시 6시간
+
+        function workerFetchMacroIndex() {
+            var now = Date.now();
+            // 메모리 캐시 확인 (6시간)
+            if (macroIndexCache && (now - macroIndexCacheTime) < MACRO_INDEX_MEMORY_TTL) {
+                return Promise.resolve(macroIndexCache);
+            }
+            // 중복 요청 방지
+            if (inflightMacroIndexRequest) {
+                return inflightMacroIndexRequest;
+            }
+            // 1년 전부터 요청 (월간 시리즈 최신값 확보용)
+            var d = new Date();
+            d.setFullYear(d.getFullYear() - 1);
+            var start = d.toISOString().split('T')[0];
+            var url = API_BASE + '/macroindex?start=' + start;
+
+            inflightMacroIndexRequest = fetch(url, { credentials: 'omit' })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(data) {
+                    if (data) {
+                        macroIndexCache = data;
+                        macroIndexCacheTime = now;
+                        try {
+                            localStorage.setItem(MACRO_INDEX_CACHE_KEY, JSON.stringify({ data: data, timestamp: now }));
+                        } catch(e) {}
+                        inflightMacroIndexRequest = null;
+                        return data;
+                    }
+                    throw new Error('Empty response');
+                })
+                .catch(function(e) {
+                    console.error('[MACROINDEX] Fetch failed:', e.message);
+                    inflightMacroIndexRequest = null;
+                    // localStorage fallback
+                    try {
+                        var cached = localStorage.getItem(MACRO_INDEX_CACHE_KEY);
+                        if (cached) {
+                            var obj = JSON.parse(cached);
+                            macroIndexCache = obj.data;
+                            macroIndexCacheTime = now;
+                            return obj.data;
+                        }
+                    } catch(se) {}
+                    return null;
+                });
+            return inflightMacroIndexRequest;
         }
 
         // 4️⃣ 페이지 로드 시 localStorage에서 캐시 복원 (화면 깜빡임 방지)
@@ -5690,155 +5748,124 @@
         }
 
         /* ══════════════════════════════════════════════════════
-         * 카드 12 – 거시 기초 (Macro Base)
-         * Worker API → FRED
+         * 카드 13 – 거시 기초 (Macro Base)
+         * 출처: FRED via /macroindex endpoint
          * ══════════════════════════════════════════════════════ */
         function imdLoadMacroBase() {
             var itemIds = ['fed_rate','cpi','core_cpi_yoy','unemployment','inflation_exp','real_rates'];
 
             // Step 1: 캐시된 값 즉시 표시
             var cached = imdLoadCache('MACRO_BASE');
-            if (cached && cached.MACRO_BASE) {
+            if (cached) {
                 imdDisplayMacroBase(cached);
-                itemIds.forEach(function(id) {
-                    imdSetStatus(id, 'sync');
-                });
+                itemIds.forEach(function(id) { imdSetStatus(id, 'sync'); });
             } else {
-                // 캐시 없을 때 초기 값 표시
                 itemIds.forEach(function(id) {
                     imdSetValue(id, '-', 2);
                     imdSetStatus(id, 'sync');
                 });
             }
 
-            // Step 2: 백그라운드에서 새로운 데이터 로드 (재시도 로직 포함)
-            var retries = 3;
-            function fetchWithRetry() {
-                workerFetchMarket()
-                    .then(function(data) {
-                        if (data && data.MACRO_BASE) {
-                            // 최소 1개 필드라도 있으면 표시
-                            var macro = data.MACRO_BASE;
-                            if (macro.FED_RATE || macro.CPI_YOY || macro.CORE_CPI_YOY ||
-                                macro.UNEMPLOYMENT || macro.INFLATION_EXPECTATION || macro.REAL_RATES) {
-                                imdDisplayMacroBase(data);
-                                imdSaveCache('MACRO_BASE', data);
-                                itemIds.forEach(function(id) {
-                                    imdSetStatus(id, 'ok');
-                                });
-                                return;
-                            }
-                        }
-                        throw new Error('Incomplete MACRO_BASE data');
-                    })
-                    .catch(function(err) {
-                        retries--;
-                        if (retries > 0) {
-                            // 지수 백오프: 1초, 2초, 4초
-                            setTimeout(fetchWithRetry, (4 - retries) * 1000);
-                        } else {
-                            console.error('[ERROR] imdLoadMacroBase:', err);
-                            if (!cached) {
-                                itemIds.forEach(function(id) {
-                                    imdSetStatus(id, 'warning');
-                                });
-                            }
-                        }
-                    });
-            }
-            fetchWithRetry();
+            // Step 2: /macroindex에서 실시간 데이터 로드
+            workerFetchMacroIndex()
+                .then(function(data) {
+                    if (data && data.DFEDTARU) {
+                        imdDisplayMacroBase(data);
+                        imdSaveCache('MACRO_BASE', data);
+                        itemIds.forEach(function(id) { imdSetStatus(id, 'ok'); });
+                    } else {
+                        throw new Error('No DFEDTARU in macroindex');
+                    }
+                })
+                .catch(function(err) {
+                    console.error('[ERROR] imdLoadMacroBase:', err);
+                    if (!cached) {
+                        itemIds.forEach(function(id) { imdSetStatus(id, 'warning'); });
+                    }
+                });
         }
 
         function imdDisplayMacroBase(data) {
-            if (!data || !data.MACRO_BASE) return;
-
-            var macro = data.MACRO_BASE;
+            // 출처: FRED via /macroindex → { "DFEDTARU": { value, change }, ... }
             var items = [
-                {id: 'fed_rate',     value: macro.FED_RATE,      unit: '%'},
-                {id: 'cpi',          value: macro.CPI_YOY,       unit: '%'},
-                {id: 'core_cpi_yoy', value: macro.CORE_CPI_YOY,  unit: '%'},
-                {id: 'unemployment', value: macro.UNEMPLOYMENT,   unit: '%'},
-                {id: 'inflation_exp',value: macro.INFLATION_EXPECTATION, unit: '%'},
-                {id: 'real_rates',   value: macro.REAL_RATES,    unit: '%'}
+                { id: 'fed_rate',     series: 'DFEDTARU',           unit: '%', dec: 2 },
+                { id: 'cpi',          series: 'CPIAUCSL',            unit: '%', dec: 1 },
+                { id: 'core_cpi_yoy', series: 'CPILFESL',            unit: '%', dec: 1 },
+                { id: 'unemployment', series: 'UNRATE',               unit: '%', dec: 1 },
+                { id: 'inflation_exp',series: 'MICH',                 unit: '%', dec: 1 },
+                { id: 'real_rates',   series: 'REAINTRATREARAT10Y',   unit: '%', dec: 2 }
             ];
 
             items.forEach(function(item) {
-                // null/undefined 체크 강화
-                if (item.value !== null && item.value !== undefined && item.value !== '') {
-                    try {
-                        var numVal = parseFloat(item.value);
-                        if (!isNaN(numVal)) {
-                            imdSetValue(item.id, numVal, 2, item.unit);
-                            imdSetStatus(item.id, 'ok');
-                        } else {
-                            imdSetValue(item.id, '-', 2, item.unit);
-                            imdSetStatus(item.id, 'warning');
-                        }
-                    } catch(e) {
-                        imdSetValue(item.id, '-', 2, item.unit);
-                        imdSetStatus(item.id, 'error');
-                    }
+                var entry = data[item.series];
+                var val = entry ? entry.value : null;
+                var chg = entry ? entry.change : null;
+                if (val !== null && val !== undefined && !isNaN(val)) {
+                    imdSetValue(item.id, val, item.dec, item.unit);
+                    imdSetChange(item.id, chg, 'val', item.dec);
+                    imdSetStatus(item.id, 'ok');
                 } else {
-                    imdSetValue(item.id, '-', 2, item.unit);
+                    imdSetValue(item.id, '-', 2);
                     imdSetStatus(item.id, 'warning');
                 }
             });
         }
 
         /* ══════════════════════════════════════════════════════
-         * 카드 13 – 거시 지표 (Macro Indicators)
-         * Worker API → FRED
+         * 카드 14 – 거시 지표 (Macro Indicators)
+         * 출처: FRED via /macroindex endpoint
          * ══════════════════════════════════════════════════════ */
         function imdLoadMacroIndicators() {
             var itemIds = ['sentiment','gdp','indpro','payems','pce_inf'];
 
             // Step 1: 캐시된 값 즉시 표시
             var cached = imdLoadCache('MACRO_INDICATORS');
-            if (cached && cached.MACRO_INDICATORS) {
+            if (cached) {
                 imdDisplayMacroIndicators(cached);
-                itemIds.forEach(function(id) {
-                    imdSetStatus(id, 'sync');
-                });
+                itemIds.forEach(function(id) { imdSetStatus(id, 'sync'); });
+            } else {
+                itemIds.forEach(function(id) { imdSetStatus(id, 'sync'); });
             }
 
-            // Step 2: 백그라운드에서 새로운 데이터 로드
-            workerFetchMarket().then(function(data) {
-                if (data && data.MACRO_INDICATORS) {
-                    imdDisplayMacroIndicators(data);
-                    imdSaveCache('MACRO_INDICATORS', data);
-                    itemIds.forEach(function(id) {
-                        imdSetStatus(id, 'ok');
-                    });
-                    return;
-                }
-                throw new Error('No MACRO_INDICATORS data');
-            }).catch(function(err) {
-                console.error('[ERROR] imdLoadMacroIndicators:', err);
-                if (!cached) {
-                    itemIds.forEach(function(id) {
-                        imdSetStatus(id, 'error');
-                    });
-                }
-            });
+            // Step 2: /macroindex에서 실시간 데이터 로드
+            workerFetchMacroIndex()
+                .then(function(data) {
+                    if (data && data.UMCSENT) {
+                        imdDisplayMacroIndicators(data);
+                        imdSaveCache('MACRO_INDICATORS', data);
+                        itemIds.forEach(function(id) { imdSetStatus(id, 'ok'); });
+                    } else {
+                        throw new Error('No UMCSENT in macroindex');
+                    }
+                })
+                .catch(function(err) {
+                    console.error('[ERROR] imdLoadMacroIndicators:', err);
+                    if (!cached) {
+                        itemIds.forEach(function(id) { imdSetStatus(id, 'error'); });
+                    }
+                });
         }
 
         function imdDisplayMacroIndicators(data) {
-            if (!data || !data.MACRO_INDICATORS) return;
-
-            var indicators = data.MACRO_INDICATORS;
+            // 출처: FRED via /macroindex → { "UMCSENT": { value, change }, ... }
             var items = [
-                {id: 'sentiment', value: indicators.CONSUMER_SENTIMENT, unit: 'idx'},
-                {id: 'gdp', value: indicators.REAL_GDP ? (indicators.REAL_GDP / 1000) : null, unit: 'B'},
-                {id: 'indpro', value: indicators.INDUSTRIAL_PRODUCTION, unit: 'idx'},
-                {id: 'payems', value: indicators.NONFARM_PAYROLLS ? (indicators.NONFARM_PAYROLLS / 1000) : null, unit: 'K'},
-                {id: 'pce_inf', value: indicators.PCE_INFLATION, unit: '%'}
+                { id: 'sentiment', series: 'UMCSENT',  unit: 'idx', dec: 1 },
+                { id: 'gdp',       series: 'GDPC1',    unit: 'B',   dec: 1 },  // billions
+                { id: 'indpro',    series: 'INDPRO',   unit: 'idx', dec: 1 },
+                { id: 'payems',    series: 'PAYEMS',   unit: 'K',   dec: 0 },  // chg (thousands/month)
+                { id: 'pce_inf',   series: 'PCEPILFE', unit: '%',   dec: 1 }   // pc1 YoY%
             ];
 
             items.forEach(function(item) {
-                if (item.value !== null && item.value !== undefined) {
-                    imdSetValue(item.id, item.value, 2, item.unit);
+                var entry = data[item.series];
+                var val = entry ? entry.value : null;
+                var chg = entry ? entry.change : null;
+                if (val !== null && val !== undefined && !isNaN(val)) {
+                    imdSetValue(item.id, val, item.dec, item.unit);
+                    imdSetChange(item.id, chg, 'val', item.dec);
+                    imdSetStatus(item.id, 'ok');
                 } else {
-                    imdSetValue(item.id, '-', 2, item.unit);  // 값 없을 때 기본값 "-"
+                    imdSetValue(item.id, '-', 2);
                     imdSetStatus(item.id, 'error');
                 }
             });
@@ -6447,8 +6474,6 @@
                 imdLoadSentiment();
                 imdLoadSectors();
                 imdLoadCreditBreadth();
-                imdLoadMacroBase();
-                imdLoadMacroIndicators();
                 imdLoadAIMarketScore();
                 imdLoadMacroRiskRadar();
                 imdLoadUSExtended();
@@ -6470,8 +6495,8 @@
             10: { fn: imdLoadSentiment,       ids: ['fear','putcall'] },
             11: { fn: imdLoadSectors,         ids: ['xlk','xlf','xle','xlv','xly','xli','xlu','xlre'] },
             12: { fn: imdLoadCreditBreadth,   ids: ['hyg','lqd','vti','tlt'] },
-            13: { fn: imdLoadMacroBase,       ids: ['cpi','inflation_exp','unemployment','m2_macro','real_rates'] },
-            14: { fn: imdLoadMacroIndicators, ids: ['sentiment','gdp','indpro','payems','pce_inf'] },
+            13: { fn: function(){ macroIndexCache = null; macroIndexCacheTime = 0; imdLoadMacroBase(); },       ids: ['fed_rate','cpi','core_cpi_yoy','unemployment','inflation_exp','real_rates'] },
+            14: { fn: function(){ macroIndexCache = null; macroIndexCacheTime = 0; imdLoadMacroIndicators(); }, ids: ['sentiment','gdp','indpro','payems','pce_inf'] },
             15: { fn: imdLoadAIMarketScore,   ids: ['ai-score-value','ai-market-state','ai-score-signals','ai-score-time'] },
             16: { fn: imdLoadMacroRiskRadar,  ids: ['macro-risk-inflation','macro-risk-liquidity','macro-risk-recession','macro-risk-market','macro-risk-time'] }
         };
@@ -6504,6 +6529,18 @@
         imdLoadAll();
         // Auto-refresh market data every 30 seconds (Worker API - near real-time)
         setInterval(function(){ imdSetAllSync(); imdLoadAll(); }, 30000);
+
+        // 카드 13 (Macro Base), 14 (Macro Indicators): FRED 데이터 – 6시간마다 갱신
+        // 출처: /macroindex endpoint (FRED 시계열)
+        imdLoadMacroBase();
+        imdLoadMacroIndicators();
+        setInterval(function() {
+            // 메모리 캐시 무효화 후 재로드
+            macroIndexCache = null;
+            macroIndexCacheTime = 0;
+            imdLoadMacroBase();
+            imdLoadMacroIndicators();
+        }, 6 * 60 * 60 * 1000);
 
         // 뉴스 및 히트맵 초기화 보강
         setTimeout(function(){

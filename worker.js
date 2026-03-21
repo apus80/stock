@@ -1,3 +1,209 @@
+/* ============================================================
+   METRICZ 모듈 (모듈 레벨 상수 및 캐시 갱신 로직)
+   - SP500_UNIVERSE: S&P500 대표 180개 종목
+   - cron으로 6시간마다 KV에 갱신 (20종목 × 4배치 = 80 call/wave)
+   - /metricz-all 엔드포인트에서 KV 캐시를 읽어 스코어링
+============================================================ */
+
+// ── S&P500 대표 유니버스 (180종목, 섹터 분산) ──────────────────
+const SP500_UNIVERSE = [
+  // 메가캡·테크 (30)
+  'AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','AVGO','ORCL','ADBE',
+  'AMD','QCOM','TXN','INTC','AMAT','LRCX','MU','CRM','NOW','INTU',
+  'PANW','PLTR','DDOG','ZS','TTD','SNOW','MRVL','KLAC','FTNT','ON',
+  // 헬스케어 (20)
+  'LLY','UNH','JNJ','MRK','ABBV','TMO','ABT','DHR','BMY','AMGN',
+  'GILD','ISRG','VRTX','REGN','BSX','CI','CVS','ELV','HCA','BIIB',
+  // 금융 (20)
+  'JPM','BAC','WFC','GS','MS','C','AXP','BLK','V','MA',
+  'SCHW','CME','COF','USB','PNC','TFC','CB','MMC','AON','ICE',
+  // 소비재 임의 (20)
+  'HD','MCD','NKE','SBUX','LOW','BKNG','TJX','ROST','ULTA','DHI',
+  'LEN','YUM','DRI','ABNB','MGM','HLT','MAR','RCL','GM','F',
+  // 소비재 필수 (15)
+  'WMT','COST','PG','KO','PEP','MO','PM','CL','KMB','GIS',
+  'MDLZ','STZ','HRL','SYY','TSN',
+  // 에너지 (15)
+  'XOM','CVX','COP','EOG','SLB','MPC','VLO','PSX','OXY','DVN',
+  'HAL','BKR','HES','MRO','FANG',
+  // 산업재 (20)
+  'CAT','DE','RTX','BA','HON','GE','LMT','NOC','GD','UPS',
+  'FDX','CSX','NSC','UNP','WM','RSG','EMR','ETN','PH','ROK',
+  // 소재 (10)
+  'LIN','APD','NEM','FCX','NUE','STLD','DOW','DD','PPG','SHW',
+  // 유틸리티 (10)
+  'NEE','DUK','SO','D','AEP','SRE','XEL','WEC','ES','ETR',
+  // 부동산 REIT (10)
+  'PLD','AMT','CCI','EQIX','SPG','O','WELL','AVB','EQR','DLR',
+  // 커뮤니케이션 (10)
+  'NFLX','DIS','CMCSA','T','VZ','TMUS','CHTR','WBD','EA','TTWO',
+]
+
+const METRICZ_KV_KEY = 'metricz_universe_cache'
+
+// 낮을수록 좋은 지표 (퍼센타일 역산)
+const LOWER_IS_BETTER = new Set([
+  'peRatioTTM', 'priceToBookRatioTTM', 'priceToSalesRatioTTM',
+  'enterpriseValueOverEBITDATTM', 'debtEquityRatioTTM',
+])
+
+// 지표 → 소스 엔드포인트 매핑
+const METRIC_SOURCE_MAP = {
+  returnOnEquityTTM:            'ratios',
+  operatingProfitMarginTTM:     'ratios',
+  returnOnAssetsTTM:            'ratios',
+  netProfitMarginTTM:           'ratios',
+  peRatioTTM:                   'ratios',
+  priceToBookRatioTTM:          'ratios',
+  priceToSalesRatioTTM:         'ratios',
+  dividendYieldTTM:             'ratios',
+  payoutRatioTTM:               'ratios',
+  debtEquityRatioTTM:           'ratios',
+  currentRatioTTM:              'ratios',
+  enterpriseValueOverEBITDATTM: 'keymetrics',
+  freeCashFlowYieldTTM:         'keymetrics',
+  revenueGrowth:                'growth',
+  epsgrowth:                    'growth',
+  operatingIncomeGrowth:        'growth',
+  assetGrowth:                  'growth',
+  beta:                         'quote',
+}
+
+// 배치 헬퍼: items를 batchSize 단위로 나눠 순차 실행 (wave당 80 calls 제한)
+async function batchProcess(items, batchSize, fn) {
+  const results = []
+  for (let i = 0; i < items.length; i += batchSize) {
+    const wave = items.slice(i, i + batchSize)
+    const waveResults = await Promise.allSettled(wave.map(fn))
+    results.push(...waveResults)
+  }
+  return results
+}
+
+// 단일 종목 FMP fetch 헬퍼 (타임아웃 9초)
+async function fmpGet(url) {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 9000)
+  try {
+    const r = await fetch(url, { signal: ctrl.signal })
+    if (!r.ok) return null
+    return await r.json()
+  } catch(e) {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+// 종목 전체 지표 fetch (ratios-ttm + key-metrics-ttm + financial-growth + quote)
+async function fetchAllMetricz(sym, apiKey) {
+  const BASE = 'https://financialmodelingprep.com/stable'
+  const [rd, kmd, gd, qd] = await Promise.allSettled([
+    fmpGet(`${BASE}/ratios-ttm?symbol=${sym}&apikey=${apiKey}`),
+    fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),
+    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`),
+    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),
+  ])
+
+  const r  = rd.status  === 'fulfilled' ? (rd.value  ? (Array.isArray(rd.value)  ? rd.value[0]  : rd.value)  : null) : null
+  const km = kmd.status === 'fulfilled' ? (kmd.value ? (Array.isArray(kmd.value) ? kmd.value[0] : kmd.value) : null) : null
+  const g  = gd.status  === 'fulfilled' ? (gd.value  ? (Array.isArray(gd.value)  ? gd.value[0]  : gd.value)  : null) : null
+  const q  = qd.status  === 'fulfilled' ? (qd.value  ? (Array.isArray(qd.value)  ? qd.value[0]  : qd.value)  : null) : null
+
+  return {
+    symbol: sym,
+    name:   q?.name ?? sym,
+    // 수익성
+    returnOnEquityTTM:            r?.returnOnEquityTTM            ?? null,
+    operatingProfitMarginTTM:     r?.operatingProfitMarginTTM     ?? null,
+    returnOnAssetsTTM:            r?.returnOnAssetsTTM            ?? null,
+    netProfitMarginTTM:           r?.netProfitMarginTTM           ?? null,
+    // 밸류에이션 (ratios)
+    peRatioTTM:                   (r?.peRatioTTM    && r.peRatioTTM    > 0) ? r.peRatioTTM    : null,
+    priceToBookRatioTTM:          (r?.priceToBookRatioTTM && r.priceToBookRatioTTM > 0) ? r.priceToBookRatioTTM : null,
+    priceToSalesRatioTTM:         (r?.priceToSalesRatioTTM && r.priceToSalesRatioTTM > 0) ? r.priceToSalesRatioTTM : null,
+    // 배당·건전성
+    dividendYieldTTM:             r?.dividendYieldTTM  ?? null,
+    payoutRatioTTM:               r?.payoutRatioTTM    ?? null,
+    debtEquityRatioTTM:           (r?.debtEquityRatioTTM && r.debtEquityRatioTTM > 0) ? r.debtEquityRatioTTM : null,
+    currentRatioTTM:              r?.currentRatioTTM   ?? null,
+    // 밸류에이션 (key-metrics)
+    enterpriseValueOverEBITDATTM: (km?.enterpriseValueOverEBITDATTM && km.enterpriseValueOverEBITDATTM > 0) ? km.enterpriseValueOverEBITDATTM : null,
+    freeCashFlowYieldTTM:          km?.freeCashFlowYieldTTM ?? null,
+    // 성장성
+    revenueGrowth:                g?.revenueGrowth         ?? null,
+    epsgrowth:                    g?.epsgrowth ?? g?.epsGrowth ?? g?.earningsGrowth ?? null,
+    operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? null,
+    assetGrowth:                  g?.assetGrowth           ?? null,
+    // 리스크
+    beta:                         q?.beta ?? null,
+  }
+}
+
+// ── KV 캐시 갱신 (cron용) ───────────────────────────────────────
+// 20종목씩 묶어 병렬 fetch → wave당 최대 80 API call
+async function refreshMetriczCache(env) {
+  const apiKey = env.FMP_API_KEY
+  const kv     = env.METRICZ_KV
+  if (!apiKey || !kv) {
+    console.error('❌ refreshMetriczCache: FMP_API_KEY 또는 METRICZ_KV 없음')
+    return
+  }
+
+  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 20종목(80 calls)`)
+  const startTime = Date.now()
+
+  // 20종목/wave: 20 × 4 endpoints = 80 FMP 호출/wave
+  const results = await batchProcess(SP500_UNIVERSE, 20, sym => fetchAllMetricz(sym, apiKey))
+
+  const stocks = {}
+  let successCount = 0
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && r.value) {
+      stocks[SP500_UNIVERSE[i]] = r.value
+      successCount++
+    }
+  })
+
+  const payload = {
+    timestamp: new Date().toISOString(),
+    count: successCount,
+    stocks,
+  }
+
+  // KV 저장: TTL 8시간 (6시간 cron + 2시간 여유)
+  await kv.put(METRICZ_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+  console.log(`✅ metricz 캐시 갱신 완료: ${successCount}/${SP500_UNIVERSE.length}종목, ${elapsed}s 소요`)
+}
+
+// ── 퍼센타일 스코어링 ────────────────────────────────────────────
+function metriczScore(stocksArray, userLogic) {
+  return stocksArray.map(stock => {
+    let totalScore = 0
+    userLogic.forEach(({ metric, weight }) => {
+      if (!weight) return
+      const val = stock[metric]
+      if (val === null || val === undefined || !isFinite(val)) return
+
+      const allVals = stocksArray
+        .map(s => s[metric])
+        .filter(v => v !== null && v !== undefined && isFinite(v))
+      if (allVals.length < 2) return
+
+      const below = allVals.filter(v => v < val).length
+      const pct   = below / (allVals.length - 1) * 100
+      const score = LOWER_IS_BETTER.has(metric) ? 100 - pct : pct
+      totalScore += score * (weight / 100)
+    })
+    return {
+      symbol: stock.symbol,
+      name:   stock.name,
+      score:  parseFloat(totalScore.toFixed(2)),
+    }
+  })
+}
+
 export default {
   async fetch(request, env) {
     try {
@@ -10,6 +216,19 @@ export default {
           // console.log(`   FMP_API_KEY: ${FMP ? '✅ 설정됨' : '❌ 없음'}`)
           // console.log(`   FRED_KEY: ${FRED ? '✅ 설정됨' : '❌ 없음'}`)
           // console.log(`   ITICK_TOKEN: ${ITICK ? '✅ 설정됨' : '❌ 없음'}`)
+
+      // CORS preflight (POST 엔드포인트용)
+      if (request.method === 'OPTIONS') {
+        return new Response(null, {
+          status: 204,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '86400',
+          }
+        })
+      }
 
       // URL 파싱
       const url = new URL(request.url)
@@ -1527,6 +1746,57 @@ export default {
         }
       }
 
+      // ── /metricz-all: KV 캐시 기반 퀀트 스코어링 ──────────────────────────
+      // POST { userLogic: [{ metric, weight }] }
+      // → KV에서 180종목 데이터 로드 → 퍼센타일 스코어링 → 내림차순 반환
+      // KV 미준비 시 SP500_UNIVERSE 중 40종목 실시간 폴백
+      async function getMetriczAll(request) {
+        let body
+        try { body = await request.json() } catch(e) { return { error: 'Invalid JSON body' } }
+        const { userLogic } = body || {}
+        if (!Array.isArray(userLogic) || userLogic.length === 0) {
+          return { error: 'userLogic array is required' }
+        }
+
+        // 1️⃣ KV에서 캐시 로드
+        let stocksArray = null
+        let cacheInfo   = { source: 'kv', timestamp: null, count: 0 }
+        const kv = env.METRICZ_KV
+
+        if (kv) {
+          try {
+            const cached = await kv.get(METRICZ_KV_KEY)
+            if (cached) {
+              const parsed = JSON.parse(cached)
+              stocksArray  = Object.values(parsed.stocks || {})
+              cacheInfo    = { source: 'kv', timestamp: parsed.timestamp, count: stocksArray.length }
+            }
+          } catch(e) {
+            console.warn('⚠️ KV 읽기 실패, 실시간 폴백:', e.message)
+          }
+        }
+
+        // 2️⃣ KV 없으면 상위 40종목 실시간 폴백 (wave당 20×4=80 calls)
+        if (!stocksArray || stocksArray.length === 0) {
+          const FALLBACK = SP500_UNIVERSE.slice(0, 40)
+          const results = await batchProcess(FALLBACK, 20, sym => fetchAllMetricz(sym, FMP))
+          stocksArray = results
+            .map((r, i) => r.status === 'fulfilled' ? r.value : { symbol: FALLBACK[i], name: FALLBACK[i] })
+            .filter(Boolean)
+          cacheInfo = { source: 'live_fallback', timestamp: new Date().toISOString(), count: stocksArray.length }
+        }
+
+        // 3️⃣ 스코어링 및 반환
+        const scored = metriczScore(stocksArray, userLogic)
+        scored.sort((a, b) => b.score - a.score)
+
+        return {
+          cache:    cacheInfo,
+          universe: stocksArray.length,
+          results:  scored,
+        }
+      }
+
       // ── /macroindex: macro-index.html 용 FRED 시계열 (기본 3년) ──────────
       async function getMacroIndexHistory(reqUrl) {
         // obs_start 파라미터 (기본: 3년 전)
@@ -1574,9 +1844,27 @@ export default {
           ['CP',                 'pc1', 1],
         ]
 
-        // 병렬 FRED 호출
+        // 병렬 FRED 호출 (observation_start 포함 → 3년치만 요청, 응답 수십배 축소)
+        // fredGet 대신 직접 URL 빌드: 전체 히스토리 호출 시 일별 시리즈 수만 관측치 반환 → Worker 타임아웃 원인
+        async function fredHistGet(series, units) {
+          const ctrl  = new AbortController()
+          const timer = setTimeout(() => ctrl.abort(), 12000)
+          try {
+            const unitsParam = (units && units !== 'lin') ? `&units=${units}` : ''
+            const u = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json&observation_start=${obsStart}${unitsParam}`
+            const r = await fetch(u, { signal: ctrl.signal })
+            if (!r.ok) return []
+            const j = await r.json()
+            return j.observations || []
+          } catch(e) {
+            return []
+          } finally {
+            clearTimeout(timer)
+          }
+        }
+
         const results = await Promise.allSettled(
-          SERIES.map(([code, units]) => fredGet(code, units === 'lin' ? null : units))
+          SERIES.map(([code, units]) => fredHistGet(code, units))
         )
 
         const out = { timestamp: new Date().toISOString() }
@@ -3499,6 +3787,14 @@ export default {
           response = {error: e.message, endpoint: pathname}
         }
 
+      // /metricz-all - 퀀트 종목 발굴 (POST, userLogic 가중치 기반 스코어링)
+      } else if (pathname === "/metricz-all") {
+        try {
+          response = await getMetriczAll(request)
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
       } else if (action === 'metadata') {
         response = {
           timestamp: new Date().toISOString(),
@@ -3634,5 +3930,10 @@ export default {
         }
       )
     }
+  },
+
+  // ── Cron 핸들러: 6시간마다 metricz 유니버스 캐시 갱신 ──────────
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(refreshMetriczCache(env))
   }
 }

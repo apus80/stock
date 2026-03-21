@@ -5,58 +5,243 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>개인맞춤종목</title>
 <meta name="theme-color" content="#667eea">
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
-:root {
-    --primary: #667eea;
-    --secondary: #764ba2;
-    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    background: var(--bg-gradient);
-    min-height: 100vh;
-    padding: 20px;
-    color: #2d3748;
-}
-.page-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 30px;
-}
-.back-btn {
-    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-    color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer;
-    font-size: 0.85rem; text-decoration: none; transition: background 0.2s;
-    touch-action: manipulation;
-}
-.back-btn:hover { background: rgba(255,255,255,0.3); }
-.page-title {
-    color: white; font-size: 1.15rem; font-weight: 700;
-    text-align: center; flex: 1;
-}
-.content {
-    background: white; border-radius: 15px;
-    padding: 40px 30px; text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.content-icon { font-size: 3rem; margin-bottom: 16px; }
-.content-title { font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
-.content-desc  { font-size: 0.9rem; color: #64748b; line-height: 1.6; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    :root { --primary:#667eea; --secondary:#764ba2; }
+    body {
+        font-family: 'Inter', 'Pretendard', -apple-system, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 16px;
+    }
+    /* 페이지 헤더 */
+    .page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    .back-btn {
+        background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+        color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer;
+        font-size: 0.8rem; text-decoration: none; transition: background 0.2s;
+        white-space: nowrap;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.3); }
+    .page-title {
+        color: white; font-size: 1.05rem; font-weight: 700;
+        text-align: center; flex: 1;
+    }
+    /* 위젯 카드 컴팩트 */
+    .logic-item { transition: transform 0.15s, box-shadow 0.15s; }
+    .logic-item:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.06); }
+    /* 모바일에서 select 길어지지 않게 */
+    select, input[type=number] { -webkit-appearance: none; appearance: none; }
 </style>
 </head>
 <body>
 
+<!-- 페이지 헤더 -->
 <div class="page-header">
     <a class="back-btn" href="index.html">← 메인</a>
     <div class="page-title">🎯 개인맞춤종목</div>
     <div style="width:60px"></div>
 </div>
 
-<div class="content">
-    <div class="content-icon">🚧</div>
-    <div class="content-title">준비 중입니다</div>
-    <div class="content-desc">개인 맞춤 종목 추천 기능을<br>곧 제공할 예정입니다.</div>
+<!-- 위젯 -->
+<div id="quant-widget" class="max-w-2xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-slate-200">
+
+    <!-- Header -->
+    <div class="bg-slate-900 px-6 py-4 text-white">
+        <h2 class="text-base font-bold flex items-center gap-2">
+            <span class="text-blue-400">⚡</span> 나만의 종목 발굴 로직 빌더
+        </h2>
+        <p class="text-slate-400 text-xs mt-0.5">지표와 가중치를 설정하면 S&P 500 내 TOP 5 종목을 추출합니다.</p>
+    </div>
+
+    <div class="px-5 py-4">
+
+        <!-- Logic Builder -->
+        <div id="logic-list" class="space-y-2">
+            <!-- Row -->
+            <div class="logic-item p-3 rounded-xl border border-slate-100 bg-slate-50/60">
+                <div class="flex items-center gap-2">
+                    <!-- 지표 선택 -->
+                    <div class="flex-1 min-w-0">
+                        <select class="metric-select w-full px-2 py-1.5 text-xs border-none rounded-lg bg-white shadow-sm ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 truncate" onchange="updateRowInfo(this)">
+                            <option value="" disabled selected>지표 선택</option>
+                            <optgroup label="1. 수익성">
+                                <option value="returnOnEquityTTM"        data-desc="ROE: 자본 대비 이익률. 높을수록 효율적 경영.">ROE 자기자본이익률</option>
+                                <option value="operatingProfitMarginTTM" data-desc="영업이익률: 매출 대비 본업 이익 비중. 높을수록 독점력 강함.">영업이익률</option>
+                                <option value="returnOnAssetsTTM"        data-desc="ROA: 총자산 대비 수익성. 은행·제조업 분석에 유용.">ROA 총자산이익률</option>
+                                <option value="netProfitMarginTTM"       data-desc="순이익률: 비용·세금 후 최종 남은 이익 비율.">순이익률</option>
+                            </optgroup>
+                            <optgroup label="2. 밸류에이션">
+                                <option value="peRatioTTM"                   data-desc="PER: 이익 대비 주가. 낮을수록 저평가. (역산 적용)">PER 주가수익비율</option>
+                                <option value="priceToBookRatioTTM"           data-desc="PBR: 자산가치 대비 주가. 1배 미만=청산가 이하. (역산 적용)">PBR 주가순자산비율</option>
+                                <option value="priceToSalesRatioTTM"          data-desc="PSR: 매출액 대비 주가. 성장주 가치 평가에 유용. (역산 적용)">PSR 주가매출비율</option>
+                                <option value="enterpriseValueOverEBITDATTM"  data-desc="EV/EBITDA: 기업가치 대비 현금창출력. 낮을수록 저평가. (역산 적용)">EV/EBITDA</option>
+                                <option value="freeCashFlowYieldTTM"          data-desc="FCF 수익률: 시총 대비 실제 현금 비율. 높을수록 안전.">FCF 수익률</option>
+                            </optgroup>
+                            <optgroup label="3. 성장성">
+                                <option value="revenueGrowth"        data-desc="매출 성장률: 전년 대비 매출 증가율. 외형 확장 속도.">매출 성장률</option>
+                                <option value="epsgrowth"            data-desc="EPS 성장률: 주당순이익 증가율. 주가 상승의 핵심 동력.">EPS 성장률</option>
+                                <option value="operatingIncomeGrowth" data-desc="영업이익 성장률: 본업 이익의 성장 속도. 질적 성장 확인.">영업이익 성장률</option>
+                            </optgroup>
+                            <optgroup label="4. 배당·안전성">
+                                <option value="dividendYieldTTM"  data-desc="배당 수익률: 주가 대비 연간 배당금. 높을수록 배당 매력.">배당 수익률</option>
+                                <option value="debtEquityRatioTTM" data-desc="부채 비율: 자본 대비 부채. 100% 미만이 안정적. (역산 적용)">부채 비율</option>
+                                <option value="currentRatioTTM"   data-desc="유동 비율: 단기 부채 대비 현금화 가능 자산. 높을수록 안전.">유동 비율</option>
+                                <option value="payoutRatioTTM"    data-desc="배당 성향: 이익 중 배당 비중. 너무 높으면 성장 정체.">배당 성향</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- 가중치 -->
+                    <div class="w-20 flex-shrink-0">
+                        <div class="flex items-center bg-white ring-1 ring-slate-200 rounded-lg px-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
+                            <input type="number" class="weight-input w-full py-1.5 text-right text-xs outline-none bg-transparent font-semibold text-slate-700" placeholder="0" min="0" max="100" oninput="updateTotalWeight()">
+                            <span class="text-slate-300 text-xs ml-0.5">%</span>
+                        </div>
+                    </div>
+
+                    <!-- 삭제 -->
+                    <button onclick="removeMetricRow(this)" class="flex-shrink-0 p-1 text-slate-300 hover:text-red-400 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+                <!-- 지표 설명 -->
+                <p class="metric-info text-[10px] text-blue-500 mt-1.5 px-2 leading-tight">지표를 선택하면 설명이 표시됩니다.</p>
+            </div>
+        </div>
+
+        <!-- 행 추가 버튼 -->
+        <button onclick="addMetricRow()" class="mt-3 w-full py-2.5 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition-all font-semibold text-xs">
+            + 지표 추가 (최대 10개)
+        </button>
+
+        <!-- 하단 컨트롤 -->
+        <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
+            <div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase">가중치 합계</p>
+                <div class="flex items-baseline gap-0.5">
+                    <span id="weight-total" class="text-3xl font-black text-slate-300">0</span>
+                    <span class="text-slate-400 text-xs font-bold">% / 100%</span>
+                </div>
+            </div>
+
+            <button onclick="submitScreener()" id="submit-btn"
+                class="px-8 py-2.5 bg-slate-200 text-slate-400 rounded-xl font-bold shadow transition-all cursor-not-allowed text-sm uppercase tracking-wider" disabled>
+                TOP 5 추출
+            </button>
+        </div>
+
+        <!-- 결과 -->
+        <div id="result-container" class="hidden mt-5 space-y-2">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span class="w-1.5 h-5 bg-blue-600 rounded-full"></span> 검색 결과 TOP 5
+            </h3>
+            <div id="result-list" class="grid gap-2"></div>
+        </div>
+
+    </div>
 </div>
+
+<script>
+var API_BASE = 'https://fmp-proxy.aiinvestflow.workers.dev';
+
+function addMetricRow() {
+    var container = document.getElementById('logic-list');
+    if (container.children.length >= 10) { alert('최대 10개까지 추가 가능합니다.'); return; }
+    var newRow = container.children[0].cloneNode(true);
+    newRow.querySelector('.metric-select').value = '';
+    newRow.querySelector('.weight-input').value = '';
+    newRow.querySelector('.metric-info').textContent = '지표를 선택하면 설명이 표시됩니다.';
+    container.appendChild(newRow);
+    updateTotalWeight();
+}
+
+function removeMetricRow(btn) {
+    var container = document.getElementById('logic-list');
+    if (container.children.length > 1) {
+        btn.closest('.logic-item').remove();
+        updateTotalWeight();
+    }
+}
+
+function updateRowInfo(select) {
+    var desc = select.options[select.selectedIndex].getAttribute('data-desc') || '';
+    select.closest('.logic-item').querySelector('.metric-info').textContent = desc;
+}
+
+function updateTotalWeight() {
+    var inputs = document.querySelectorAll('.weight-input');
+    var sum = 0;
+    inputs.forEach(function(inp) { sum += parseInt(inp.value) || 0; });
+
+    var label = document.getElementById('weight-total');
+    var btn   = document.getElementById('submit-btn');
+    label.textContent = sum;
+
+    if (sum === 100) {
+        label.className = 'text-3xl font-black text-blue-600';
+        btn.disabled = false;
+        btn.className = 'px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all text-sm uppercase tracking-wider';
+    } else {
+        label.className = 'text-3xl font-black text-slate-300';
+        btn.disabled = true;
+        btn.className = 'px-8 py-2.5 bg-slate-200 text-slate-400 rounded-xl font-bold shadow transition-all cursor-not-allowed text-sm uppercase tracking-wider';
+    }
+}
+
+async function submitScreener() {
+    var list      = document.getElementById('result-list');
+    var container = document.getElementById('result-container');
+    container.classList.remove('hidden');
+    list.innerHTML = '<div class="py-8 text-center text-slate-400 text-sm">📡 데이터 분석 중…</div>';
+
+    var rows = document.querySelectorAll('.logic-item');
+    var userLogic = Array.from(rows).map(function(row) {
+        return {
+            metric: row.querySelector('.metric-select').value,
+            weight: parseInt(row.querySelector('.weight-input').value) || 0
+        };
+    }).filter(function(l) { return l.metric; });
+
+    try {
+        var res = await fetch(API_BASE + '/metricz-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userLogic: userLogic })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        // TOP 5만 표시
+        var top5 = data.slice(0, 5);
+        list.innerHTML = top5.map(function(item, idx) {
+            var rankColor = idx < 3 ? 'text-blue-600' : 'text-slate-300';
+            return '<div class="flex items-center justify-between px-4 py-2.5 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-blue-200 transition-all">' +
+                '<div class="flex items-center gap-3">' +
+                    '<span class="text-lg font-black ' + rankColor + ' w-6 text-center">' + (idx + 1) + '</span>' +
+                    '<div>' +
+                        '<div class="font-bold text-slate-900 text-sm">' + (item.symbol || '-') + '</div>' +
+                        '<div class="text-[10px] text-slate-400 uppercase tracking-tight">' + (item.name || '') + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="text-right">' +
+                    '<div class="text-sm font-mono font-bold text-slate-700">' + (item.score !== undefined ? parseFloat(item.score).toFixed(2) : '-') + ' <span class="text-[10px] text-slate-300 font-normal">pts</span></div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+    } catch (e) {
+        list.innerHTML = '<div class="py-6 text-center text-red-400 text-xs">❌ 오류: ' + e.message + '</div>';
+    }
+}
+</script>
 
 </body>
 </html>
