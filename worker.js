@@ -2954,7 +2954,9 @@ export default {
           MACRO_BASE: marketData.MACRO_BASE || {},
           MACRO_INDICATORS: marketData.MACRO_INDICATORS || {},
           // 경제 지표 (dates + values 포함 차트용)
-          ECONOMIC_INDICATORS: marketData.ECONOMIC_INDICATORS || {}
+          ECONOMIC_INDICATORS: marketData.ECONOMIC_INDICATORS || {},
+          // macro-index.html 용 신규 FRED 지표 (5개 카테고리)
+          MACRO_INDEX: marketData.MACRO_INDEX || {}
         }
       }
       // /stock endpoint - 개별 주식 데이터
