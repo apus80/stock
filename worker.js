@@ -347,8 +347,32 @@ async function csGetTop80(env) {
 }
 
 async function csGetTechnical(symbol, env) {
-  const hist = await fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env)
-  if (!hist || hist.length < 60) return { total: 0 }
+  const [histRaw, quoteRaw] = await Promise.all([
+    fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env),
+    fetchFMP(`/stable/quote?symbol=${symbol}`, env)
+  ])
+
+  // FMP 응답 형식 정규화: 직접 배열 or {historical: [...]}
+  const hist = Array.isArray(histRaw) ? histRaw
+    : (Array.isArray(histRaw?.historical) ? histRaw.historical : null)
+
+  // historical 데이터 부족 시 quote 기반 간이 기술 분석 fallback
+  if (!hist || hist.length < 60) {
+    const q = Array.isArray(quoteRaw) ? quoteRaw[0] : quoteRaw
+    if (!q?.price) return { total: 0 }
+    const volRatio = q.volume / (q.avgVolume || q.volume || 1)
+    const isBreakout = (q.changesPercentage || 0) > 1.5
+                    && volRatio > 1.5
+                    && q.price > (q.priceAvg50 || 0)
+    const rsi = 50 // 중립 기본값 (RSI 계산 불가)
+    let score = 0
+    if (q.price > (q.priceAvg50 || 0)) score += 5
+    if (q.price > (q.priceAvg200 || 0)) score += 5
+    if (volRatio > 2) score += 6
+    if ((q.changesPercentage || 0) > 1) score += 5
+    if (isBreakout) score += 10
+    return { rsi, atr_pct: 2, volumeRatio: volRatio, isBreakout, total: Math.min(score, 50) }
+  }
 
   const closes = hist.map(d => d.close).reverse()
   const volumes = hist.map(d => d.volume).reverse()
@@ -467,7 +491,9 @@ function csApplyFilters({ tech, catalyst }) {
 }
 
 async function csGetBacktest(symbol, env) {
-  const hist = await fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env)
+  const histRaw = await fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env)
+  const hist = Array.isArray(histRaw) ? histRaw
+    : (Array.isArray(histRaw?.historical) ? histRaw.historical : null)
   if (!hist || !hist.length) return { trades: 0, winRate: 0, avgReturn: 0 }
 
   let wins = 0, total = 0, totalReturn = 0
