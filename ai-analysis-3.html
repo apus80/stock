@@ -875,9 +875,10 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>🏆 밸류에이션 전략:</strong> 저평가(낮은 PE/PB)이면서 성장성과 수익성이 우수한 종목을 찾습니다.<br>
-                                <strong>📐 계산:</strong> 0.35×PE가치 + 0.25×PB가치 + 0.20×수익성장 + 0.20×ROE<br>
-                                발굴: ${data.analyzed || '-'}개
+                                <strong>🏆 위젯5 · 저평가 가치주 발굴</strong><br>
+                                PER이 낮을수록(= 1/PE × 100), PBR이 낮을수록(= 1/PB × 100) 높은 점수를 줍니다.
+                                매출성장률과 ROE는 0~100으로 정규화(norm = 값×100, 최대 100)한 뒤 가중합산합니다.<br>
+                                <strong>점수 = (1/PE)×100×35% + (1/PB)×100×25% + norm(매출성장)×20% + norm(ROE)×20%</strong>
                             </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
@@ -915,9 +916,10 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>📊 초고성장 기업 발굴:</strong> 매출/EPS 성장이 빠르면서도 수익성이 좋은 기업을 찾아냅니다.<br>
-                                <strong>📐 계산:</strong> 0.25×수익성장 + 0.25×EPS성장 + 0.15×순이익마진 + 0.15×ROE + 0.10×PE가치 + 0.05×PB가치 + 0.05×모멘텀<br>
-                                높은 점수일수록 폭발적 성장 가능성 ⬆️
+                                <strong>📊 위젯6 · 초고성장 기업 발굴</strong><br>
+                                매출성장·EPS성장·순이익마진·ROE·모멘텀은 모두 norm(값×100, 최대 100)으로 정규화합니다.
+                                PE·PB는 역수×100으로 변환해 저평가일수록 유리하게 계산합니다.<br>
+                                <strong>점수 = norm(매출성장)×25% + norm(EPS성장)×25% + norm(순이익마진)×15% + norm(ROE)×15% + (1/PE)×100×10% + (1/PB)×100×5% + norm(모멘텀)×5%</strong>
                             </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
@@ -955,9 +957,10 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>💰 기관 매집 종목:</strong> 강세 섹터 내에서 수익성과 성장성이 우수한 종목을 찾습니다.<br>
-                                <strong>📐 계산:</strong> 0.30×섹터모멘텀 + 0.25×영업이익률 + 0.20×수익성장 + 0.15×EPS성장 + 0.10×모멘텀<br>
-                                섹터 강세 구간의 핵심 매집 대상 📈
+                                <strong>💰 위젯7 · 기관 매집 종목 탐지</strong><br>
+                                해당 종목의 섹터 등락률(%)을 그대로 섹터모멘텀으로 씁니다.
+                                영업이익률·매출성장·EPS성장·모멘텀은 norm(값×100, 최대 100)으로 정규화합니다.<br>
+                                <strong>점수 = 섹터변화율×30% + norm(영업이익률)×25% + norm(매출성장)×20% + norm(EPS성장)×15% + norm(모멘텀)×10%</strong>
                             </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
@@ -993,9 +996,10 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>🎯 섹터 로테이션 리더:</strong> 강세 섹터 내에서 성장성이 우수한 리더 종목을 찾습니다.<br>
-                                <strong>📐 계산:</strong> 0.40×섹터상대강도 + 0.25×수익성장 + 0.20×EPS성장 + 0.15×모멘텀<br>
-                                자본 로테이션 시 상승력이 강한 리더주 📊
+                                <strong>🎯 위젯8 · 섹터 로테이션 리더</strong><br>
+                                섹터 등락률(%)을 상대강도로 직접 사용합니다(높을수록 강세섹터).
+                                매출성장·EPS성장·모멘텀은 norm(값×100, 최대 100)으로 정규화합니다.<br>
+                                <strong>점수 = 섹터변화율×40% + norm(매출성장)×25% + norm(EPS성장)×20% + norm(모멘텀)×15%</strong>
                             </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
@@ -1038,9 +1042,11 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>💧 유동성 수혜 종목:</strong> 유동성 환경에 따라 모멘텀과 성장 가중치를 동적 조절합니다.<br>
-                                <strong>📐 계산:</strong> 0.30×유동성보정모멘텀 + 0.25×리스크보정성장 + 0.20×재무안정성 + 0.15×EPS성장 + 0.10×PB가치<br>
-                                유동성 장세의 최대 수혜주 🚀
+                                <strong>💧 위젯9 · 유동성 장세 수혜주</strong><br>
+                                유동성지수 = (Fed잔액/5조)×50 + (M2/20조)×30 + (100 - RRP/100)×20 으로 거시 유동성을 계량화합니다.
+                                리스크점수 = 100 - VIX×3 (VIX가 낮을수록 위험선호).
+                                두 값을 각각 모멘텀·매출성장에 곱해 유동성 환경을 점수에 반영합니다.<br>
+                                <strong>점수 = (유동성×모멘텀)×30% + (리스크×매출성장)×25% + (1/부채비율)×20 + norm(EPS성장)×15% + (1/PB)×10</strong>
                             </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
@@ -1084,9 +1090,11 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>🚀 통합 발굴 엔진:</strong> 거시환경 + 섹터로테이션 + 기본가치를 균등 종합평가합니다.<br>
-                                <strong>📐 계산:</strong> 0.15×거시환경 + 0.15×섹터강도 + 0.15×수익성장 + 0.15×EPS성장 + 0.10×ROE + 0.10×PE가치 + 0.10×영업이익률 + 0.10×모멘텀<br>
-                                모든 팩터를 아우른 최고 등급 발굴주 ★★★★★
+                                <strong>🚀 위젯10 · Investflow 통합 발굴 엔진</strong><br>
+                                거시점수 = 100 - VIX×3 (VIX가 낮을수록 시장 우호적). 섹터강도는 해당 섹터 등락률(%)을 그대로 사용합니다.
+                                나머지 팩터(매출성장·EPS성장·ROE·영업이익률·모멘텀)는 norm(값×100, 최대 100)으로 정규화합니다.
+                                PE는 역수(1/PE)를 사용해 저평가일수록 유리하게 반영합니다.<br>
+                                <strong>점수 = 거시점수×15% + 섹터변화율×15% + norm(매출성장)×15% + norm(EPS성장)×15% + norm(ROE)×10% + (1/PE)×10% + norm(영업이익률)×10% + norm(모멘텀)×10%</strong>
                             </div>`;
                         } else {
                             html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
@@ -1124,6 +1132,9 @@
                                 });
                                 html += '</tbody></table>';
                                 html += `<div class="status" style="margin-top:10px; font-size:11px; color:#718096;">
+                                    <strong>🔬 Alpha Scanner · 7모듈 헤지펀드 스코어링</strong><br>
+                                    실적모멘텀(25%) · 펀더멘털가속(20%) · 현금흐름품질(15%) · 재무건전성(10%) · 유통주식압축(10%) · 밸류에이션(10%) · 매크로오버레이(10%) 7개 모듈을 FMP 재무데이터 + FRED 거시지표로 계산합니다.
+                                    RISK-OFF 시 전체 점수에 ×0.7 배율을 적용합니다.<br>
                                     분석: ${scannerData.deep_analyzed || scannerData.analyzed || '-'}종목 | 소요: ${scannerData.execution_time_sec || '-'}초
                                 </div>`;
 
