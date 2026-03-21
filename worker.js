@@ -197,8 +197,8 @@ async function refreshDiscoveryCache(env) {
       try {
         const [qr, mr, rr, gr] = await Promise.allSettled([
           fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`),
-          fmpGet(`${BASE}/key-metrics?symbol=${symbol}&limit=1&apikey=${apiKey}`),
-          fmpGet(`${BASE}/ratios?symbol=${symbol}&limit=1&apikey=${apiKey}`),
+          fmpGet(`${BASE}/key-metrics-ttm?symbol=${symbol}&apikey=${apiKey}`),
+          fmpGet(`${BASE}/ratios-ttm?symbol=${symbol}&apikey=${apiKey}`),
           fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${apiKey}`)
         ])
         const ext = r => r.status === 'fulfilled' && r.value
@@ -206,25 +206,25 @@ async function refreshDiscoveryCache(env) {
           : {}
         const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
         const rev = g.revenueGrowth || 0
-        const eps = g.epsGrowth ?? g.epsgrowth ?? 0
-        const roe = m.roe || 0
+        const eps = g.epsGrowth ?? g.epsgrowth ?? g.earningsGrowth ?? 0
+        const roe = m.returnOnEquityTTM || 0
         const mom = (q.changesPercentage || 0) / 100
-        const pe  = m.peRatio || 0
+        const pe  = m.peRatioTTM || 0
         const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
         return {
           symbol,
-          price:           q.price              || 0,
-          volume:          q.volume             || 0,
+          price:           q.price                    || 0,
+          volume:          q.volume                   || 0,
           revenueGrowth:   rev,
           epsGrowth:       eps,
           roe:             roe,
           pe:              pe,
-          pb:              m.pbRatio             || 0,
-          profitMargin:    r.netProfitMargin      || 0,
-          operatingMargin: r.operatingMargin      || 0,
-          debtToEquity:    r.debtEquityRatio      || 0,
+          pb:              m.priceToBookRatioTTM       || 0,
+          profitMargin:    r.netProfitMarginTTM        || 0,
+          operatingMargin: r.operatingProfitMarginTTM  || 0,
+          debtToEquity:    r.debtEquityRatioTTM        || 0,
           momentum:        mom,
-          sector:          q.sector              || 'Unknown',
+          sector:          q.sector                   || 'Unknown',
           score:           parseFloat(score.toFixed(2))
         }
       } catch {
@@ -3482,8 +3482,8 @@ export default {
             try {
               const [qr, mr, rr, gr] = await Promise.allSettled([
                 fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${FMP}`),
-                fmpGet(`${BASE}/key-metrics?symbol=${symbol}&limit=1&apikey=${FMP}`),
-                fmpGet(`${BASE}/ratios?symbol=${symbol}&limit=1&apikey=${FMP}`),
+                fmpGet(`${BASE}/key-metrics-ttm?symbol=${symbol}&apikey=${FMP}`),
+                fmpGet(`${BASE}/ratios-ttm?symbol=${symbol}&apikey=${FMP}`),
                 fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${FMP}`)
               ])
               const ext = r => r.status === 'fulfilled' && r.value
@@ -3491,25 +3491,25 @@ export default {
                 : {}
               const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
               const rev = g.revenueGrowth || 0
-              const eps = g.epsGrowth ?? g.epsgrowth ?? 0
-              const roe = m.roe || 0
+              const eps = g.epsGrowth ?? g.epsgrowth ?? g.earningsGrowth ?? 0
+              const roe = m.returnOnEquityTTM || 0
               const mom = (q.changesPercentage || 0) / 100
-              const pe  = m.peRatio || 0
+              const pe  = m.peRatioTTM || 0
               const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
               return {
                 symbol,
-                price:           q.price              || 0,
-                volume:          q.volume             || 0,
+                price:           q.price                    || 0,
+                volume:          q.volume                   || 0,
                 revenueGrowth:   rev,
                 epsGrowth:       eps,
                 roe:             roe,
                 pe:              pe,
-                pb:              m.pbRatio             || 0,
-                profitMargin:    r.netProfitMargin      || 0,
-                operatingMargin: r.operatingMargin      || 0,
-                debtToEquity:    r.debtEquityRatio      || 0,
+                pb:              m.priceToBookRatioTTM       || 0,
+                profitMargin:    r.netProfitMarginTTM        || 0,
+                operatingMargin: r.operatingProfitMarginTTM  || 0,
+                debtToEquity:    r.debtEquityRatioTTM        || 0,
                 momentum:        mom,
-                sector:          q.sector              || 'Unknown',
+                sector:          q.sector                   || 'Unknown',
                 score:           parseFloat(score.toFixed(2))
               }
             } catch {
