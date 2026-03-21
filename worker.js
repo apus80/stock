@@ -268,7 +268,20 @@ export default {
         "BAMLH0A0HYM2": { divisor: 1, unit: "%" },  // High Yield OAS Spread
         "NAPM": { divisor: 1, unit: "idx" },       // ✅ Manufacturing PMI (index)
         "NAPMNOI": { divisor: 1, unit: "idx" },    // ✅ Services PMI (index)
-        "RSAFS": { divisor: 1, unit: "$" }         // ✅ Advance Retail Sales (billions) - YoY 계산용
+        "RSAFS": { divisor: 1, unit: "$" },        // ✅ Advance Retail Sales (billions) - YoY 계산용
+        // macro-index.html 신규 FRED 지표
+        "DFEDTARU": { divisor: 1, unit: "%" },     // Fed 금리 상단
+        "DFEDTARL": { divisor: 1, unit: "%" },     // Fed 금리 하단
+        "EFFR": { divisor: 1, unit: "%" },          // 실효연방기금금리
+        "REAINTRATREAAT10Y": { divisor: 1, unit: "%" }, // 실질 금리 10년물
+        "MORTGAGE30US": { divisor: 1, unit: "%" }, // 30년 고정 모기지 금리
+        "MICH": { divisor: 1, unit: "%" },          // 기대 인플레이션 (미시간대 1년)
+        "IPMAN": { divisor: 1, unit: "idx" },       // 제조업 생산 지수
+        "HOUST": { divisor: 1, unit: "K" },         // 신규 주택착공건수 (천 건)
+        "DTWEXAFEGS": { divisor: 1, unit: "idx" }, // 달러 인덱스 (FRED)
+        "T10Y2Y": { divisor: 1, unit: "%" },        // 장단기 금리차 (10Y-2Y)
+        "SAHMREALTIME": { divisor: 1, unit: "%" }, // 샴 법칙 침체 지표
+        "CP": { divisor: 1, unit: "B" }             // 기업 이익 (YoY%로 pc1 사용)
       }
 
       // 📍 Alpha Discovery Engine - 9개 인디케이터 기반 점수 계산
@@ -1280,12 +1293,28 @@ export default {
           getQuote("EURUSD"),  // EUR/USD
           yahooFinanceDXY(),  // 달러 인덱스 DXY (Yahoo Finance DX-Y.NYB)
           // ISM PMI & Retail (FRED에서 가져오기)
-          fredGet("NAPM")      // ✅ Manufacturing PMI (NAPM)
+          fredGet("NAPM"),     // ✅ Manufacturing PMI (NAPM)
+          // macro-index.html 용 신규 FRED 지표
+          fredGet("DFEDTARU"),             // 1-1) Fed 금리 상단 (lin)
+          fredGet("DFEDTARL"),             // 1-2) Fed 금리 하단 (lin)
+          fredGet("EFFR"),                 // 1-3) 실효연방기금금리 (lin)
+          fredGet("REAINTRATREAAT10Y"),    // 1-6) 실질 금리 10년물 (lin)
+          fredGet("MORTGAGE30US"),         // 1-7) 30년 고정 모기지 금리 (lin)
+          fredGet("MICH"),                 // 2-4) 기대 인플레이션 미시간대 1년 (lin)
+          fredGet("PCEPILFE", "pc1"),      // 2-3) 근원 PCE YoY% (pc1)
+          fredGet("PAYEMS", "chg"),        // 3-3) 비농업 고용 전월 대비 변화 (chg)
+          fredGet("IPMAN"),                // 3-5) 제조업 생산 지수 (lin)
+          fredGet("HOUST"),                // 3-6) 신규 주택착공건수 (lin)
+          fredGet("DTWEXAFEGS"),           // 4-3) 달러 인덱스 FRED (lin)
+          fredGet("M2SL", "pc1"),          // 4-2) M2 YoY% (pc1)
+          fredGet("T10Y2Y"),               // 5-1) 장단기 금리차 FRED (lin)
+          fredGet("SAHMREALTIME"),         // 5-2) 샴 법칙 침체 지표 (lin)
+          fredGet("CP", "pc1")             // 5-4) 기업 이익 YoY% (pc1)
         ])
 
         // allSettled 결과에서 fulfilled된 것만 추출
         const extract = (result) => result.status === 'fulfilled' ? result.value : null
-        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi] = results.map(extract)
+        const [spy, qqq, dia, soxx, iwm, vix, hyg, lqd, vti, tlt, xlk, xlf, xle, xlv, xly, xli, xlu, xlre, ewy, btc, eth, sol, fed, rp, dgs10, dgs2, cpi, unrate, umcsent, gdpc1, indpro, payems, pcepilfe, tga, m2sl, t10yie, fedfunds, coreCpiYoyData, cpiYoyData, pcepi, vixcls, hyOas, goldQ, silverQ, oilQ, usdKrwQ, usdJpyQ, eurUsdQ, dxyQ, mfgPmi, dfedtaru, dfedtarl, effr, reaintrate, mortgage30, mich, pcepilfeYoy, payemsChg, ipman, houst, dtwexafegs, m2slYoy, t10y2y, sahmrealtime, cpYoy] = results.map(extract)
 
         const fedVal = convertFredValue("WALCL", getLatestValue(fed))
         const rpVal = convertFredValue("RRPONTSYD", getLatestValue(rp))
@@ -1315,6 +1344,23 @@ export default {
         const pcepiVal = convertFredValue("PCEPI", getLatestValue(pcepi))     // PCE Inflation Index
         const vixclsVal = convertFredValue("VIXCLS", getLatestValue(vixcls))  // VIX from FRED
         const hyOasVal = convertFredValue("BAMLH0A0HYM2", getLatestValue(hyOas)) // High Yield OAS Spread
+
+        // macro-index.html 용 신규 FRED 지표 처리
+        const dfedtaruVal = getLatestValue(dfedtaru)      // Fed 금리 상단 (%)
+        const dfedtarlVal = getLatestValue(dfedtarl)      // Fed 금리 하단 (%)
+        const effrVal = getLatestValue(effr)              // 실효연방기금금리 (%)
+        const reaintrateVal = getLatestValue(reaintrate)  // 실질 금리 10년물 (%)
+        const mortgage30Val = getLatestValue(mortgage30)  // 30년 고정 모기지 금리 (%)
+        const michVal = getLatestValue(mich)              // 기대 인플레이션 미시간대 1년 (%)
+        const pcepilfeYoyVal = getLatestValue(pcepilfeYoy) // 근원 PCE YoY% (pc1)
+        const payemsChgVal = getLatestValue(payemsChg)   // 비농업 고용 전월 대비 변화 (chg)
+        const ipmanVal = getLatestValue(ipman)            // 제조업 생산 지수
+        const houstVal = getLatestValue(houst)            // 신규 주택착공건수 (K)
+        const dtwexafegsVal = getLatestValue(dtwexafegs)  // 달러 인덱스 FRED
+        const m2slYoyVal = getLatestValue(m2slYoy)        // M2 YoY% (pc1)
+        const t10y2yVal = getLatestValue(t10y2y)          // 장단기 금리차 (10Y-2Y)
+        const sahmVal = getLatestValue(sahmrealtime)      // 샴 법칙 침체 지표
+        const cpYoyVal = getLatestValue(cpYoy)            // 기업 이익 YoY% (pc1)
 
         // EWY 가격 처리
         const ewyPrice = ewy?.price
@@ -1432,7 +1478,52 @@ export default {
             MFG_PMI: convertFredValue("NAPM", getLatestValue(mfgPmi))      // ✅ Manufacturing PMI (출처: FRED NAPM)
           },
           // Economic Indicators with historical chart data (dates + values)
-          ECONOMIC_INDICATORS: economicIndicators
+          ECONOMIC_INDICATORS: economicIndicators,
+          // macro-index.html 용 MACRO_INDEX 데이터 (5개 카테고리)
+          MACRO_INDEX: {
+            // 1. 통화 정책 및 시장 금리
+            RATES: {
+              FED_UPPER: dfedtaruVal,       // DFEDTARU (lin)
+              FED_LOWER: dfedtarlVal,       // DFEDTARL (lin)
+              EFFR: effrVal,               // EFFR (lin)
+              US10Y: us10y,                // DGS10 (lin)
+              US2Y: us2y,                  // DGS2 (lin)
+              REAL_RATE_10Y: reaintrateVal, // REAINTRATREAAT10Y (lin)
+              MORTGAGE30: mortgage30Val    // MORTGAGE30US (lin)
+            },
+            // 2. 물가 및 인플레이션
+            INFLATION: {
+              CPI_YOY: cpiYoY,             // CPIAUCSL (pc1)
+              CORE_CPI_YOY: coreCpiYoY,    // CPILFESL (pc1)
+              CORE_PCE_YOY: pcepilfeYoyVal, // PCEPILFE (pc1)
+              INFLATION_EXPECTATION_1Y: michVal // MICH (lin)
+            },
+            // 3. 고용 및 실물 경제 성장
+            ECONOMY: {
+              REAL_GDP: gdpVal,                  // GDPC1 (lin)
+              UNEMPLOYMENT: unrateVal,           // UNRATE (lin)
+              PAYEMS_CHG: payemsChgVal,          // PAYEMS (chg)
+              INDUSTRIAL_PRODUCTION: indproVal,  // INDPRO (lin)
+              MFG_PRODUCTION: ipmanVal,          // IPMAN (lin)
+              HOUSING_STARTS: houstVal,          // HOUST (lin)
+              CONSUMER_SENTIMENT: umsentVal      // UMCSENT (lin)
+            },
+            // 4. 시장 유동성 및 통화
+            LIQUIDITY: {
+              FED_BALANCE: fedVal,              // WALCL (lin, T단위)
+              M2_YOY: m2slYoyVal,              // M2SL (pc1)
+              DOLLAR_INDEX: dtwexafegsVal,     // DTWEXAFEGS (lin)
+              REVERSE_REPO: rpVal,             // RRPONTSYD (lin, B단위)
+              TGA: tgaRawVal ? parseFloat((tgaRawVal / 1000000).toFixed(3)) : null // WTREGEN (T단위)
+            },
+            // 5. 경기 침체 및 신용 위험
+            RISK: {
+              YIELD_CURVE: t10y2yVal,          // T10Y2Y (lin)
+              SAHM_RULE: sahmVal,              // SAHMREALTIME (lin)
+              HY_SPREAD: hyOasVal,             // BAMLH0A0HYM2 (lin)
+              CORP_PROFITS_YOY: cpYoyVal       // CP (pc1)
+            }
+          }
         }
       }
 
