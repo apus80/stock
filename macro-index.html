@@ -185,7 +185,7 @@ var STRUCTURE = [
   {
     title: '3. 경제 성장 및 고용',
     items: [
-      ['실질 GDP',    'GDPC1',    'lin', '실질 경제 규모',  '🌐', null, '',            'B$', true,  '#10b981'],
+      ['명목 GDP',    'GDP',      'lin', '명목 경제 규모 (B$)',  '🌐', null, '',        'B$', true,  '#10b981'],
       ['실업률',      'UNRATE',   'lin', '고용 상태',       '📉', 4.0,  '자연실업률',  '%',  false, '#f59e0b'],
       ['비농업 고용', 'PAYEMS',   'chg', '월간 고용 증가',  '👷', 100,  '정상 수준',   'K',  true,  '#10b981'],
       ['산업 생산',   'INDPRO',   'lin', '공장 생산 지수',  '🏭', null, '',            '',   true,  '#14b8a6'],
@@ -222,15 +222,17 @@ function fmtVal(v, units, unit) {
     if (v === null || v === undefined || isNaN(v)) return '-';
     if (units === 'pc1') return v.toFixed(2) + '%';
     if (units === 'chg') {
-        if (unit === 'K') return (v / 1000).toFixed(1) + 'K';
+        // PAYEMS/chg: FRED이 이미 thousands 단위로 반환 → 그대로 K 표시 (÷1000 금지)
+        if (unit === 'K') return Math.round(v).toLocaleString() + 'K';
         return v.toFixed(1) + (unit || '');
     }
     // lin
     if (unit === '%') return v.toFixed(2) + '%';
     if (unit === 'T$') return v.toFixed(2) + 'T';
-    if (unit === 'B$') return v.toFixed(1) + 'B';
-    if (unit === 'K')  return (v / 1000).toFixed(0) + 'K';
-    if (unit === 'B$' || unit === 'B') return v.toFixed(1) + 'B';
+    if (unit === 'B$') return Math.round(v).toLocaleString() + 'B';
+    // HOUST: FRED이 thousands 단위 → 그대로 K 표시 (÷1000 금지)
+    if (unit === 'K')  return Math.round(v).toLocaleString() + 'K';
+    if (unit === 'B') return v.toFixed(1) + 'B';
     return v.toFixed(2) + (unit ? ' ' + unit : '');
 }
 

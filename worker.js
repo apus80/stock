@@ -2161,7 +2161,7 @@ export default {
           ['PCEPILFE',           'pc1', 1],
           ['MICH',               'lin', 1],
           // 3. 경제 성장
-          ['GDPC1',              'lin', 1],
+          ['GDP',                'lin', 1],   // 명목 GDP (billions current $) — GDPC1은 실질GDP
           ['UNRATE',             'lin', 1],
           ['PAYEMS',             'chg', 1],   // 월간 변화 (thousands)
           ['INDPRO',             'lin', 1],
