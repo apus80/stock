@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>개인맞춤종목</title>
+<meta name="theme-color" content="#667eea">
+<style>
+:root {
+    --primary: #667eea;
+    --secondary: #764ba2;
+    --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg-gradient);
+    min-height: 100vh;
+    padding: 20px;
+    color: #2d3748;
+}
+.page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 30px;
+}
+.back-btn {
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+    color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    font-size: 0.85rem; text-decoration: none; transition: background 0.2s;
+    touch-action: manipulation;
+}
+.back-btn:hover { background: rgba(255,255,255,0.3); }
+.page-title {
+    color: white; font-size: 1.15rem; font-weight: 700;
+    text-align: center; flex: 1;
+}
+.content {
+    background: white; border-radius: 15px;
+    padding: 40px 30px; text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.content-icon { font-size: 3rem; margin-bottom: 16px; }
+.content-title { font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+.content-desc  { font-size: 0.9rem; color: #64748b; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+    <a class="back-btn" href="index.html">← 메인</a>
+    <div class="page-title">🎯 개인맞춤종목</div>
+    <div style="width:60px"></div>
+</div>
+
+<div class="content">
+    <div class="content-icon">🚧</div>
+    <div class="content-title">준비 중입니다</div>
+    <div class="content-desc">개인 맞춤 종목 추천 기능을<br>곧 제공할 예정입니다.</div>
+</div>
+
+</body>
+</html>
