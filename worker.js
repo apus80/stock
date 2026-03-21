@@ -40,6 +40,7 @@ const SP500_UNIVERSE = [
 ]
 
 const METRICZ_KV_KEY = 'metricz_universe_cache'
+const DISCOVERY_KV_KEY = 'alpha_discovery_cache'
 
 // 낮을수록 좋은 지표 (퍼센타일 역산)
 const LOWER_IS_BETTER = new Set([
@@ -175,6 +176,60 @@ async function refreshMetriczCache(env) {
   await kv.put(METRICZ_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
   console.log(`✅ metricz 캐시 갱신 완료: ${successCount}/${SP500_UNIVERSE.length}종목, ${elapsed}s 소요`)
+}
+
+// ── Discovery 캐시 갱신 (cron용, SP500 상위 80종목 × 4 API = 320 calls) ──
+async function refreshDiscoveryCache(env) {
+  const apiKey = env.FMP_API_KEY
+  const kv     = env.METRICZ_KV
+  if (!apiKey || !kv) {
+    console.error('❌ refreshDiscoveryCache: FMP_API_KEY 또는 METRICZ_KV 없음')
+    return
+  }
+
+  const BASE    = 'https://financialmodelingprep.com/stable'
+  const SYMBOLS = SP500_UNIVERSE.slice(0, 80) // 80종목 × 4 API = 320 calls/cron
+  const results = []
+
+  for (let i = 0; i < SYMBOLS.length; i += 10) {
+    const wave = SYMBOLS.slice(i, i + 10)
+    const waveResults = await Promise.allSettled(wave.map(async (symbol) => {
+      try {
+        const [qr, mr, rr, gr] = await Promise.allSettled([
+          fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`),
+          fmpGet(`${BASE}/key-metrics?symbol=${symbol}&limit=1&apikey=${apiKey}`),
+          fmpGet(`${BASE}/ratios?symbol=${symbol}&limit=1&apikey=${apiKey}`),
+          fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${apiKey}`)
+        ])
+        const ext = r => r.status === 'fulfilled' && r.value
+          ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
+          : {}
+        const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
+        return {
+          symbol,
+          price:           q.price              || 0,
+          revenueGrowth:   g.revenueGrowth       || 0,
+          epsGrowth:       g.epsGrowth ?? g.epsgrowth ?? 0,
+          roe:             m.roe                 || 0,
+          pe:              m.peRatio             || 0,
+          pb:              m.pbRatio             || 0,
+          profitMargin:    r.netProfitMargin      || 0,
+          operatingMargin: r.operatingMargin      || 0,
+          debtToEquity:    r.debtEquityRatio      || 0,
+          momentum:        (q.changesPercentage   || 0) / 100,
+          sector:          q.sector              || 'Unknown'
+        }
+      } catch {
+        return null
+      }
+    }))
+    results.push(...waveResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(v => v))
+    if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 300))
+  }
+
+  const payload = { timestamp: new Date().toISOString(), top_20: results }
+  await kv.put(DISCOVERY_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
+  console.log(`✅ discovery 캐시 갱신 완료: ${results.length}/${SYMBOLS.length}종목`)
 }
 
 // ── 퍼센타일 스코어링 ────────────────────────────────────────────
@@ -3169,40 +3224,49 @@ export default {
         }
       }
 
-      // ── 심플 Alpha Discovery (10종목 실시간) ─────────────────────
+      // ── 심플 Alpha Discovery (KV 캐시 우선, 폴백 10종목 실시간) ───
       async function fetchAlphaDiscoverySimple() {
-        const API = "https://financialmodelingprep.com/stable"
-        const KEY = FMP
-        const symbols = [
-          "AAPL","MSFT","NVDA","AMZN","GOOGL",
-          "META","TSLA","AVGO","LLY","JPM"
-        ]
+        const kv = env.METRICZ_KV
+
+        // 1️⃣ KV 캐시 확인 → 있으면 즉시 반환 (80종목)
+        if (kv) {
+          try {
+            const cached = await kv.get(DISCOVERY_KV_KEY)
+            if (cached) return JSON.parse(cached)
+          } catch(e) {
+            console.warn('⚠️ Discovery KV 읽기 실패:', e.message)
+          }
+        }
+
+        // 2️⃣ KV 없으면 상위 10종목 실시간 폴백
+        const BASE    = 'https://financialmodelingprep.com/stable'
+        const SYMBOLS = SP500_UNIVERSE.slice(0, 10)
         const results = await Promise.all(
-          symbols.map(async (symbol) => {
+          SYMBOLS.map(async (symbol) => {
             try {
-              const [quote, metrics, ratios, growth] = await Promise.all([
-                fetch(`${API}/quote?symbol=${symbol}&apikey=${KEY}`).then(r=>r.json()),
-                fetch(`${API}/key-metrics?symbol=${symbol}&limit=1&apikey=${KEY}`).then(r=>r.json()),
-                fetch(`${API}/ratios?symbol=${symbol}&limit=1&apikey=${KEY}`).then(r=>r.json()),
-                fetch(`${API}/financial-growth?symbol=${symbol}&limit=1&apikey=${KEY}`).then(r=>r.json())
+              const [qr, mr, rr, gr] = await Promise.allSettled([
+                fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${FMP}`),
+                fmpGet(`${BASE}/key-metrics?symbol=${symbol}&limit=1&apikey=${FMP}`),
+                fmpGet(`${BASE}/ratios?symbol=${symbol}&limit=1&apikey=${FMP}`),
+                fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${FMP}`)
               ])
-              const q = Array.isArray(quote) ? (quote[0] || {}) : (quote || {})
-              const m = Array.isArray(metrics) ? (metrics[0] || {}) : (metrics || {})
-              const r = Array.isArray(ratios) ? (ratios[0] || {}) : (ratios || {})
-              const g = Array.isArray(growth) ? (growth[0] || {}) : (growth || {})
+              const ext = r => r.status === 'fulfilled' && r.value
+                ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
+                : {}
+              const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
               return {
                 symbol,
-                price: q.price || 0,
-                revenueGrowth: g.revenueGrowth || 0,
-                epsGrowth: g.epsGrowth || 0,
-                roe: m.roe || 0,
-                pe: m.peRatio || 0,
-                pb: m.pbRatio || 0,
-                profitMargin: r.netProfitMargin || 0,
-                operatingMargin: r.operatingMargin || 0,
-                debtToEquity: r.debtEquityRatio || 0,
-                momentum: (q.changesPercentage || 0) / 100,
-                sector: q.sector || "Unknown"
+                price:           q.price              || 0,
+                revenueGrowth:   g.revenueGrowth       || 0,
+                epsGrowth:       g.epsGrowth ?? g.epsgrowth ?? 0,
+                roe:             m.roe                 || 0,
+                pe:              m.peRatio             || 0,
+                pb:              m.pbRatio             || 0,
+                profitMargin:    r.netProfitMargin      || 0,
+                operatingMargin: r.operatingMargin      || 0,
+                debtToEquity:    r.debtEquityRatio      || 0,
+                momentum:        (q.changesPercentage   || 0) / 100,
+                sector:          q.sector              || 'Unknown'
               }
             } catch {
               return null
@@ -4020,6 +4084,9 @@ export default {
 
   // ── Cron 핸들러: 6시간마다 metricz 유니버스 캐시 갱신 ──────────
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(refreshMetriczCache(env))
+    ctx.waitUntil(Promise.all([
+      refreshMetriczCache(env),
+      refreshDiscoveryCache(env)
+    ]))
   }
 }
