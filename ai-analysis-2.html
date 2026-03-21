@@ -989,6 +989,46 @@
             height: 10px;
             border-radius: 50%;
         }
+
+        /* ===== TOP 5 BREAKOUT PICKS ===== */
+        .top5-section {
+            margin-top: 30px;
+        }
+        .top5-btn {
+            padding: 10px 16px;
+            background: var(--primary, #667eea);
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .top5-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .top5-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--primary, #667eea);
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: var(--shadow-main);
+            color: var(--text-main);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        .top5-card:hover {
+            transform: scale(1.03);
+            box-shadow: var(--shadow-deep);
+        }
+        .top5-yes { color: var(--bull, #00d084); font-weight: bold; }
+        .top5-no  { color: var(--bear, #ff6b6b); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -2011,11 +2051,187 @@
 
                         <BreakoutRadar onSelectSymbol={setSelectedSymbol} />
 
+                        <Top5BreakoutPicks />
+
+                        <div style={{ marginTop: '30px' }}>
+                            <CatalystSurgeWidget />
+                        </div>
+
                         <div style={{ textAlign: 'center', color: '#2d3748', fontSize: '12px', marginTop: '40px', paddingBottom: '40px' }}>
                             <p>데이터 소스: FMP API, FRED, Alpha Discovery Engine</p>
                             <p style={{ marginTop: '8px', fontSize: '11px', color: '#2d3748' }}>모든 데이터는 API 응답에서 동적으로 추출됩니다</p>
                         </div>
                     </div>
+                </div>
+            )
+        }
+
+        // ── Top 5 Breakout Picks 컴포넌트 ─────────────────────────────
+        function Top5BreakoutPicks() {
+            const [stocks, setStocks] = React.useState([])
+            const [loading, setLoading] = React.useState(false)
+            const [error, setError] = React.useState(null)
+
+            const fetchTop5 = async () => {
+                setLoading(true)
+                setError(null)
+                try {
+                    const res = await fetch(API_BASE + '/analysis/catalyst-surge-top5')
+                    const data = await res.json()
+                    setStocks(Array.isArray(data) ? data : [])
+                } catch(e) {
+                    setError('Error loading data')
+                    console.error(e)
+                } finally {
+                    setLoading(false)
+                }
+            }
+
+            React.useEffect(() => { fetchTop5() }, [])
+
+            return (
+                <div className="top5-section">
+                    <h2 style={{ marginBottom: '15px', fontSize: '1.3em', color: 'var(--text-main)' }}>🔥 Top 5 Breakout Picks</h2>
+                    <button className="top5-btn" onClick={fetchTop5}>🔄 Refresh</button>
+                    {loading && <div style={{ color: 'var(--text-muted)' }}>Loading...</div>}
+                    {error && <div style={{ color: 'var(--bear)' }}>{error}</div>}
+                    {!loading && !error && stocks.length === 0 && (
+                        <div style={{ color: 'var(--text-muted)' }}>No breakout candidates</div>
+                    )}
+                    <div className="top5-grid">
+                        {stocks.map((s, i) => (
+                            <div
+                                key={s.symbol}
+                                className="top5-card"
+                                onClick={() => window.open(`/analysis/catalyst-surge?symbol=${s.symbol}`)}
+                            >
+                                <b>#{i + 1} {s.symbol}</b><br />
+                                <br />
+                                CSS: {s.css != null ? s.css.toFixed(1) : '-'}<br />
+                                {s.grade ?? '-'}<br />
+                                <br />
+                                T:{s.breakdown?.technical ?? '-'} |
+                                S:{s.breakdown?.smartMoney ?? '-'} |
+                                C:{s.breakdown?.catalyst ?? '-'}<br />
+                                <br />
+                                📈 Breakout: <span className={s.isBreakout ? 'top5-yes' : 'top5-no'}>{s.isBreakout ? 'YES' : 'NO'}</span><br />
+                                🎯 WinRate: {s.backtest?.winRate != null ? s.backtest.winRate.toFixed(1) : '-'}%
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )
+        }
+
+        // ── Catalyst Surge Analysis 위젯 ──────────────────────────────
+        function CatalystSurgeWidget() {
+            const [symbol, setSymbol] = useState("AAPL")
+            const [data, setData] = useState(null)
+            const [loading, setLoading] = useState(false)
+
+            const fetchData = async () => {
+                if (!symbol) return
+                setLoading(true)
+                try {
+                    const res = await fetch(`${API_BASE}/analysis/catalyst-surge?symbol=${symbol}`)
+                    const json = await res.json()
+                    setData(json)
+                } catch(e) {
+                    console.error(e)
+                    setData(null)
+                }
+                setLoading(false)
+            }
+
+            useEffect(() => { fetchData() }, [])
+
+            const styles = {
+                container: { padding: 20, background: "#111", color: "#fff", borderRadius: 12, maxWidth: 600, margin: "0 auto" },
+                inputRow:  { display: "flex", gap: 10, marginBottom: 20 },
+                input:     { padding: 10, fontSize: 16, width: 150, borderRadius: 6, border: "none" },
+                button:    { padding: 10, background: "#4CAF50", color: "#fff", border: "none", cursor: "pointer", borderRadius: 6 },
+                grid:      { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 20 },
+                card:      { background: "#222", padding: 15, borderRadius: 10, textAlign: "center" },
+                score:     { fontSize: 32, fontWeight: "bold" }
+            }
+
+            return (
+                <div style={styles.container}>
+                    <h2>🔥 Catalyst Surge Analysis</h2>
+
+                    <div style={styles.inputRow}>
+                        <input
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                            style={styles.input}
+                            placeholder="Enter Symbol (AAPL)"
+                        />
+                        <button onClick={fetchData} style={styles.button}>분석</button>
+                    </div>
+
+                    {loading && <p>Loading...</p>}
+
+                    {data && data.status === "REJECTED" && (
+                        <p style={{ color: "#ff5252" }}>❌ 필터 탈락 종목</p>
+                    )}
+
+                    {data && data.status !== "REJECTED" && data.detail && (
+                        <>
+                            <div style={styles.card}>
+                                <h3>CSS Score</h3>
+                                <p style={styles.score}>{data.css != null ? data.css.toFixed(1) : "-"}</p>
+                                <p>{data.grade || "-"}</p>
+                            </div>
+
+                            <div style={styles.grid}>
+                                <div style={styles.card}>
+                                    <h4>Technical</h4>
+                                    <p>{data.breakdown?.technical ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Smart Money</h4>
+                                    <p>{data.breakdown?.smartMoney ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Catalyst</h4>
+                                    <p>{data.breakdown?.catalyst ?? "-"}</p>
+                                </div>
+                            </div>
+
+                            <div style={styles.grid}>
+                                <div style={styles.card}>
+                                    <h4>RSI</h4>
+                                    <p>{data.detail?.technical?.rsi?.toFixed(1) ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Volume Ratio</h4>
+                                    <p>{data.detail?.technical?.volumeRatio?.toFixed(2) ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>ATR %</h4>
+                                    <p>{data.detail?.technical?.atr_pct?.toFixed(2) ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>EPS Surprise</h4>
+                                    <p>{data.detail?.catalyst?.epsSurprise != null
+                                        ? (data.detail.catalyst.epsSurprise * 100).toFixed(1) + "%"
+                                        : "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Revenue Growth</h4>
+                                    <p>{data.detail?.catalyst?.revGrowth != null
+                                        ? (data.detail.catalyst.revGrowth * 100).toFixed(1) + "%"
+                                        : "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>FCF Yield</h4>
+                                    <p>{data.detail?.catalyst?.fcfYield != null
+                                        ? (data.detail.catalyst.fcfYield * 100).toFixed(2) + "%"
+                                        : "-"}</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             )
         }

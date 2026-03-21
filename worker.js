@@ -40,6 +40,7 @@ const SP500_UNIVERSE = [
 ]
 
 const METRICZ_KV_KEY = 'metricz_universe_cache'
+const DISCOVERY_KV_KEY = 'alpha_discovery_cache'
 
 // 낮을수록 좋은 지표 (퍼센타일 역산)
 const LOWER_IS_BETTER = new Set([
@@ -177,6 +178,60 @@ async function refreshMetriczCache(env) {
   console.log(`✅ metricz 캐시 갱신 완료: ${successCount}/${SP500_UNIVERSE.length}종목, ${elapsed}s 소요`)
 }
 
+// ── Discovery 캐시 갱신 (cron용, SP500 상위 80종목 × 4 API = 320 calls) ──
+async function refreshDiscoveryCache(env) {
+  const apiKey = env.FMP_API_KEY
+  const kv     = env.METRICZ_KV
+  if (!apiKey || !kv) {
+    console.error('❌ refreshDiscoveryCache: FMP_API_KEY 또는 METRICZ_KV 없음')
+    return
+  }
+
+  const BASE    = 'https://financialmodelingprep.com/stable'
+  const SYMBOLS = SP500_UNIVERSE.slice(0, 80) // 80종목 × 4 API = 320 calls/cron
+  const results = []
+
+  for (let i = 0; i < SYMBOLS.length; i += 10) {
+    const wave = SYMBOLS.slice(i, i + 10)
+    const waveResults = await Promise.allSettled(wave.map(async (symbol) => {
+      try {
+        const [qr, mr, rr, gr] = await Promise.allSettled([
+          fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`),
+          fmpGet(`${BASE}/key-metrics?symbol=${symbol}&limit=1&apikey=${apiKey}`),
+          fmpGet(`${BASE}/ratios?symbol=${symbol}&limit=1&apikey=${apiKey}`),
+          fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${apiKey}`)
+        ])
+        const ext = r => r.status === 'fulfilled' && r.value
+          ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
+          : {}
+        const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
+        return {
+          symbol,
+          price:           q.price              || 0,
+          revenueGrowth:   g.revenueGrowth       || 0,
+          epsGrowth:       g.epsGrowth ?? g.epsgrowth ?? 0,
+          roe:             m.roe                 || 0,
+          pe:              m.peRatio             || 0,
+          pb:              m.pbRatio             || 0,
+          profitMargin:    r.netProfitMargin      || 0,
+          operatingMargin: r.operatingMargin      || 0,
+          debtToEquity:    r.debtEquityRatio      || 0,
+          momentum:        (q.changesPercentage   || 0) / 100,
+          sector:          q.sector              || 'Unknown'
+        }
+      } catch {
+        return null
+      }
+    }))
+    results.push(...waveResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(v => v))
+    if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 300))
+  }
+
+  const payload = { timestamp: new Date().toISOString(), top_20: results }
+  await kv.put(DISCOVERY_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
+  console.log(`✅ discovery 캐시 갱신 완료: ${results.length}/${SYMBOLS.length}종목`)
+}
+
 // ── 퍼센타일 스코어링 ────────────────────────────────────────────
 function metriczScore(stocksArray, userLogic) {
   return stocksArray.map(stock => {
@@ -202,6 +257,225 @@ function metriczScore(stocksArray, userLogic) {
       score:  parseFloat(totalScore.toFixed(2)),
     }
   })
+}
+
+// ── Catalyst Surge: module-level helpers ────────────────────────────────────
+// fetchFMP: path-based FMP wrapper reusing existing fmpGet (timeout + null safety)
+async function fetchFMP(endpoint, env) {
+  const API_KEY = env.FMP_API_KEY
+  const url = endpoint.includes('?')
+    ? `https://financialmodelingprep.com${endpoint}&apikey=${API_KEY}`
+    : `https://financialmodelingprep.com${endpoint}?apikey=${API_KEY}`
+  return await fmpGet(url)
+}
+
+function average(arr) {
+  return arr.reduce((a, b) => a + b, 0) / arr.length
+}
+
+function calculateEMA(data, period) {
+  const k = 2 / (period + 1)
+  let ema = [data[0]]
+  for (let i = 1; i < data.length; i++) {
+    ema.push(data[i] * k + ema[i - 1] * (1 - k))
+  }
+  return ema
+}
+
+function calculateRSI(data, period) {
+  let gains = [], losses = []
+  for (let i = 1; i < data.length; i++) {
+    const diff = data[i] - data[i - 1]
+    gains.push(diff > 0 ? diff : 0)
+    losses.push(diff < 0 ? -diff : 0)
+  }
+  let rsi = []
+  for (let i = period; i < gains.length; i++) {
+    const avgGain = average(gains.slice(i - period, i))
+    const avgLoss = average(losses.slice(i - period, i))
+    const rs = avgGain / (avgLoss || 1)
+    rsi.push(100 - 100 / (1 + rs))
+  }
+  return Array(period).fill(50).concat(rsi)
+}
+
+function calculateBollinger(data, period) {
+  const width = []
+  for (let i = period; i < data.length; i++) {
+    const slice = data.slice(i - period, i)
+    const avg = average(slice)
+    const std = Math.sqrt(average(slice.map(v => (v - avg) ** 2)))
+    width.push((avg + 2 * std - (avg - 2 * std)) / avg)
+  }
+  return { width: Array(period).fill(0).concat(width) }
+}
+
+function calculateATR(data) {
+  const trs = []
+  for (let i = 1; i < data.length; i++) {
+    const tr = Math.max(
+      data[i].high - data[i].low,
+      Math.abs(data[i].high - data[i - 1].close),
+      Math.abs(data[i].low - data[i - 1].close)
+    )
+    trs.push(tr)
+  }
+  const atr = average(trs.slice(-14))
+  const price = data[data.length - 1].close
+  return { atrPct: (atr / price) * 100 }
+}
+
+function csGetGrade(css) {
+  if (css >= 80) return "🔥 STRONG BUY"
+  if (css >= 70) return "✅ BUY"
+  if (css >= 60) return "⚡ WATCH"
+  if (css >= 50) return "⚠️ HOLD"
+  return "❌ AVOID"
+}
+
+async function csGetTop80(env) {
+  return await fetchFMP(`/stable/stock-screener?marketCapMoreThan=10000000000&limit=80`, env)
+}
+
+async function csGetTechnical(symbol, env) {
+  const hist = await fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env)
+  if (!hist || hist.length < 60) return { total: 0 }
+
+  const closes = hist.map(d => d.close).reverse()
+  const volumes = hist.map(d => d.volume).reverse()
+  const last = closes.length - 1
+
+  const rsiArr = calculateRSI(closes, 14)
+  const rsi = rsiArr[last]
+
+  const ema20 = calculateEMA(closes, 20)
+  const ema50 = calculateEMA(closes, 50)
+  const ema12 = calculateEMA(closes, 12)
+  const ema26 = calculateEMA(closes, 26)
+  const macd = ema12[last] - ema26[last]
+
+  const bb = calculateBollinger(closes, 20)
+  const bbWidth = bb.width[last]
+  const bbAvg = average(bb.width.slice(-50))
+
+  const { atrPct } = calculateATR(hist)
+
+  const volAvg = average(volumes.slice(-20))
+  const volNow = volumes[last]
+
+  const high20 = Math.max(...closes.slice(-20))
+  const high60 = Math.max(...closes.slice(-60))
+
+  const isBreakout =
+    closes[last] >= high20 * 0.99 &&
+    volNow > volAvg * 1.8 &&
+    bbWidth < bbAvg * 0.8
+
+  let score = 0
+  if (closes[last] > ema20[last]) score += 5
+  if (closes[last] > ema50[last]) score += 5
+  if (rsi >= 45 && rsi <= 65) score += 6
+  if (macd > 0) score += 5
+  if (bbWidth < bbAvg * 0.8) score += 4
+  if (volNow > volAvg * 2) score += 6
+  if (atrPct > 2) score += 3
+  if (isBreakout) score += 10
+  if (closes[last] >= high60 * 0.9) score += 5
+
+  return { rsi, atr_pct: atrPct, volumeRatio: volNow / volAvg, isBreakout, total: Math.min(score, 50) }
+}
+
+async function csGetSmartMoney(symbol, tech, env) {
+  const [insider, analyst] = await Promise.all([
+    fetchFMP(`/stable/insider-trading?symbol=${symbol}`, env),
+    fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`, env)
+  ])
+
+  let insiderScore = 0
+  if (insider?.length) {
+    let buy = 0, sell = 0
+    insider.slice(0, 20).forEach(d => {
+      if (d.transactionType === "P") buy++
+      if (d.transactionType === "S") sell++
+    })
+    if (buy > sell * 2) insiderScore = 4
+    else if (buy > sell) insiderScore = 2
+  }
+
+  let analystScore = 0
+  if (analyst?.[0]) {
+    const a = analyst[0]
+    if (a.strongBuy > 5) analystScore = 4
+    else if (a.buy > 5) analystScore = 2
+  }
+
+  return { total: insiderScore + analystScore + (tech.isBreakout ? 4 : 1) }
+}
+
+async function csGetCatalyst(symbol, env) {
+  const [earnings, income, ratios, balance, cashflow, quote] = await Promise.all([
+    fetchFMP(`/stable/earnings?symbol=${symbol}`, env),
+    fetchFMP(`/stable/income-statement?symbol=${symbol}&limit=5`, env),
+    fetchFMP(`/stable/ratios-ttm?symbol=${symbol}`, env),
+    fetchFMP(`/stable/balance-sheet-statement?symbol=${symbol}&limit=1`, env),
+    fetchFMP(`/stable/cash-flow-statement?symbol=${symbol}&limit=1`, env),
+    fetchFMP(`/stable/quote?symbol=${symbol}`, env)
+  ])
+
+  if (!earnings?.[0] || !income?.[1]) return { total: 0, de: 1, revGrowth: 0 }
+
+  const epsSurprise =
+    (earnings[0].epsActual - earnings[0].epsEstimated) /
+    Math.abs(earnings[0].epsEstimated || 1)
+
+  const revGrowth =
+    (income[0].revenue - income[1].revenue) / income[1].revenue
+
+  const pe = ratios?.[0]?.priceToEarningsRatioTTM || 30
+
+  const fcfYield =
+    cashflow?.[0]?.freeCashFlow / (quote?.[0]?.marketCap || 1)
+
+  const de =
+    balance?.[0]?.totalDebt / balance?.[0]?.totalStockholdersEquity
+
+  let score = 0
+  if (epsSurprise > 0.1) score += 6
+  if (revGrowth > 0.1) score += 5
+  if (pe < 25) score += 3
+  if (fcfYield > 0.03) score += 3
+  if (de < 0.6) score += 4
+
+  return { epsSurprise, revGrowth, fcfYield, de, total: score }
+}
+
+function csApplyFilters({ tech, catalyst }) {
+  if (tech.rsi > 70 || tech.rsi < 30) return false
+  if (catalyst.de > 1.5) return false
+  if (catalyst.revGrowth < 0) return false
+  if (!tech.isBreakout) return false
+  return true
+}
+
+async function csGetBacktest(symbol, env) {
+  const hist = await fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env)
+  if (!hist || !hist.length) return { trades: 0, winRate: 0, avgReturn: 0 }
+
+  let wins = 0, total = 0, totalReturn = 0
+  for (let i = 100; i < hist.length - 5; i++) {
+    const entry = hist[i].close
+    const exit = hist[i + 5].close
+    const ret = ((exit - entry) / entry) * 100
+    totalReturn += ret
+    total++
+    if (ret > 0) wins++
+  }
+
+  return {
+    trades: total,
+    winRate: total > 0 ? (wins / total) * 100 : 0,
+    avgReturn: total > 0 ? totalReturn / total : 0
+  }
 }
 
 export default {
@@ -3169,6 +3443,93 @@ export default {
         }
       }
 
+      // ── 심플 Alpha Discovery (KV 캐시 우선, 폴백 10종목 실시간) ───
+      async function fetchAlphaDiscoverySimple() {
+        const kv = env.METRICZ_KV
+
+        // 1️⃣ KV 캐시 확인 → 있으면 즉시 반환 (80종목)
+        if (kv) {
+          try {
+            const cached = await kv.get(DISCOVERY_KV_KEY)
+            if (cached) return JSON.parse(cached)
+          } catch(e) {
+            console.warn('⚠️ Discovery KV 읽기 실패:', e.message)
+          }
+        }
+
+        // 2️⃣ KV 없으면 상위 10종목 실시간 폴백
+        const BASE    = 'https://financialmodelingprep.com/stable'
+        const SYMBOLS = SP500_UNIVERSE.slice(0, 10)
+        const results = await Promise.all(
+          SYMBOLS.map(async (symbol) => {
+            try {
+              const [qr, mr, rr, gr] = await Promise.allSettled([
+                fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${FMP}`),
+                fmpGet(`${BASE}/key-metrics?symbol=${symbol}&limit=1&apikey=${FMP}`),
+                fmpGet(`${BASE}/ratios?symbol=${symbol}&limit=1&apikey=${FMP}`),
+                fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${FMP}`)
+              ])
+              const ext = r => r.status === 'fulfilled' && r.value
+                ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
+                : {}
+              const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
+              return {
+                symbol,
+                price:           q.price              || 0,
+                revenueGrowth:   g.revenueGrowth       || 0,
+                epsGrowth:       g.epsGrowth ?? g.epsgrowth ?? 0,
+                roe:             m.roe                 || 0,
+                pe:              m.peRatio             || 0,
+                pb:              m.pbRatio             || 0,
+                profitMargin:    r.netProfitMargin      || 0,
+                operatingMargin: r.operatingMargin      || 0,
+                debtToEquity:    r.debtEquityRatio      || 0,
+                momentum:        (q.changesPercentage   || 0) / 100,
+                sector:          q.sector              || 'Unknown'
+              }
+            } catch {
+              return null
+            }
+          })
+        )
+        return { top_20: results.filter(v => v) }
+      }
+
+      // ── 심플 Macro Data (FRED 3개) ────────────────────────────────
+      async function fetchMacroData() {
+        const get = async (id) => {
+          const res = await fetch(`https://api.stlouisfed.org/fred/series/observations?series_id=${id}&api_key=${FRED}&file_type=json`)
+          const json = await res.json()
+          const last = json.observations?.at(-1)
+          return parseFloat(last?.value) || 0
+        }
+        return {
+          fedBal: await get("WALCL"),
+          m2: await get("M2SL"),
+          reverseRepo: await get("RRPONTSYD")
+        }
+      }
+
+      // ── 심플 Alpha Scanner ────────────────────────────────────────
+      async function fetchAlphaScannerSimple() {
+        const discovery = await fetchAlphaDiscoverySimple()
+        const safe = (v) => isNaN(v) || v == null ? 0 : v
+        const qualified = []
+        for (const s of discovery.top_20) {
+          const score =
+            safe(s.revenueGrowth) * 100 * 0.25 +
+            safe(s.epsGrowth) * 100 * 0.25 +
+            safe(s.roe) * 100 * 0.2 +
+            safe(s.momentum) * 100 * 0.2 -
+            safe(s.pe) * 0.1
+          if (s.revenueGrowth > 0.1 && s.epsGrowth > 0.1 && s.roe > 0.1) {
+            qualified.push({ ...s, score })
+          }
+        }
+        qualified.sort((a, b) => b.score - a.score)
+        return { top_20: qualified.slice(0, 20) }
+      }
+
       /* ================================
          경로 기반 라우팅
       ================================ */
@@ -3758,15 +4119,23 @@ export default {
 
       } else if (pathname === "/alpha/discovery") {
         try {
-          response = await runAlphaDiscovery()
+          response = await fetchAlphaDiscoverySimple()
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }
 
-      // /alpha/alpha-scanner - 헤지펀드급 7-모듈 알파 스캐너
+      // /macro - FRED 유동성 3종 (fedBal, m2, reverseRepo)
+      } else if (pathname === "/macro") {
+        try {
+          response = await fetchMacroData()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
+      // /alpha/alpha-scanner - 심플 퀀트 스코어링
       } else if (pathname === "/alpha/alpha-scanner") {
         try {
-          response = await runAlphaScanner()
+          response = await fetchAlphaScannerSimple()
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }
@@ -3793,6 +4162,90 @@ export default {
           response = await getMetriczAll(request)
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
+        }
+
+      } else if (pathname === "/analysis/catalyst-surge") {
+        try {
+          if (!symbol) {
+            response = { error: "symbol parameter required" }
+          } else {
+            const technical = await csGetTechnical(symbol, env)
+            const smartMoney = await csGetSmartMoney(symbol, technical, env)
+            const catalyst = await csGetCatalyst(symbol, env)
+            if (!csApplyFilters({ tech: technical, catalyst })) {
+              response = { symbol, status: "REJECTED" }
+            } else {
+              const css =
+                catalyst.total * 0.4 +
+                technical.total * 0.35 +
+                smartMoney.total * 0.25
+              response = {
+                symbol,
+                css,
+                grade: csGetGrade(css),
+                breakdown: {
+                  catalyst: catalyst.total,
+                  technical: technical.total,
+                  smartMoney: smartMoney.total
+                },
+                detail: { technical, smartMoney, catalyst }
+              }
+            }
+          }
+        } catch(e) {
+          response = { error: e.message, endpoint: pathname }
+        }
+
+      } else if (pathname === "/analysis/catalyst-surge-top5") {
+        try {
+          const universe = await csGetTop80(env)
+          const safeUniverse = Array.isArray(universe) ? universe : []
+          const stage1 = []
+          for (const stock of safeUniverse) {
+            try {
+              const tech = await csGetTechnical(stock.symbol, env)
+              if (!tech.isBreakout) continue
+              stage1.push({ symbol: stock.symbol, quickScore: tech.total })
+            } catch (e) {}
+          }
+          const shortlist = stage1
+            .sort((a, b) => b.quickScore - a.quickScore)
+            .slice(0, 15)
+          const stage2 = []
+          for (const stock of shortlist) {
+            const technical = await csGetTechnical(stock.symbol, env)
+            const smartMoney = await csGetSmartMoney(stock.symbol, technical, env)
+            const catalyst = await csGetCatalyst(stock.symbol, env)
+            if (!csApplyFilters({ tech: technical, catalyst })) continue
+            const css =
+              catalyst.total * 0.4 +
+              technical.total * 0.35 +
+              smartMoney.total * 0.25
+            stage2.push({
+              symbol: stock.symbol,
+              css,
+              grade: csGetGrade(css),
+              breakdown: {
+                catalyst: catalyst.total,
+                technical: technical.total,
+                smartMoney: smartMoney.total
+              },
+              isBreakout: technical.isBreakout
+            })
+          }
+          const finalCandidates = stage2
+            .sort((a, b) => b.css - a.css)
+            .slice(0, 5)
+          const final = []
+          for (const stock of finalCandidates) {
+            const bt = await csGetBacktest(stock.symbol, env)
+            if (bt.winRate >= 55 && bt.avgReturn > 1) {
+              final.push({ ...stock, backtest: bt })
+            }
+          }
+          response = final
+        } catch(e) {
+          response = { error: e.message, endpoint: pathname }
         }
 
       } else if (action === 'metadata') {
@@ -3934,6 +4387,9 @@ export default {
 
   // ── Cron 핸들러: 6시간마다 metricz 유니버스 캐시 갱신 ──────────
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(refreshMetriczCache(env))
+    ctx.waitUntil(Promise.all([
+      refreshMetriczCache(env),
+      refreshDiscoveryCache(env)
+    ]))
   }
 }
