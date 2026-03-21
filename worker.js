@@ -3169,6 +3169,84 @@ export default {
         }
       }
 
+      // ── 심플 Alpha Discovery (10종목 실시간) ─────────────────────
+      async function fetchAlphaDiscoverySimple() {
+        const API = "https://financialmodelingprep.com/stable"
+        const KEY = FMP
+        const symbols = [
+          "AAPL","MSFT","NVDA","AMZN","GOOGL",
+          "META","TSLA","AVGO","LLY","JPM"
+        ]
+        const results = await Promise.all(
+          symbols.map(async (symbol) => {
+            try {
+              const [quote, metrics, ratios, growth] = await Promise.all([
+                fetch(`${API}/quote?symbol=${symbol}&apikey=${KEY}`).then(r=>r.json()),
+                fetch(`${API}/key-metrics?symbol=${symbol}&limit=1&apikey=${KEY}`).then(r=>r.json()),
+                fetch(`${API}/ratios?symbol=${symbol}&limit=1&apikey=${KEY}`).then(r=>r.json()),
+                fetch(`${API}/financial-growth?symbol=${symbol}&limit=1&apikey=${KEY}`).then(r=>r.json())
+              ])
+              const q = Array.isArray(quote) ? (quote[0] || {}) : (quote || {})
+              const m = Array.isArray(metrics) ? (metrics[0] || {}) : (metrics || {})
+              const r = Array.isArray(ratios) ? (ratios[0] || {}) : (ratios || {})
+              const g = Array.isArray(growth) ? (growth[0] || {}) : (growth || {})
+              return {
+                symbol,
+                price: q.price || 0,
+                revenueGrowth: g.revenueGrowth || 0,
+                epsGrowth: g.epsGrowth || 0,
+                roe: m.roe || 0,
+                pe: m.peRatio || 0,
+                pb: m.pbRatio || 0,
+                profitMargin: r.netProfitMargin || 0,
+                operatingMargin: r.operatingMargin || 0,
+                debtToEquity: r.debtEquityRatio || 0,
+                momentum: (q.changesPercentage || 0) / 100,
+                sector: q.sector || "Unknown"
+              }
+            } catch {
+              return null
+            }
+          })
+        )
+        return { top_20: results.filter(v => v) }
+      }
+
+      // ── 심플 Macro Data (FRED 3개) ────────────────────────────────
+      async function fetchMacroData() {
+        const get = async (id) => {
+          const res = await fetch(`https://api.stlouisfed.org/fred/series/observations?series_id=${id}&api_key=${FRED}&file_type=json`)
+          const json = await res.json()
+          const last = json.observations?.at(-1)
+          return parseFloat(last?.value) || 0
+        }
+        return {
+          fedBal: await get("WALCL"),
+          m2: await get("M2SL"),
+          reverseRepo: await get("RRPONTSYD")
+        }
+      }
+
+      // ── 심플 Alpha Scanner ────────────────────────────────────────
+      async function fetchAlphaScannerSimple() {
+        const discovery = await fetchAlphaDiscoverySimple()
+        const safe = (v) => isNaN(v) || v == null ? 0 : v
+        const qualified = []
+        for (const s of discovery.top_20) {
+          const score =
+            safe(s.revenueGrowth) * 100 * 0.25 +
+            safe(s.epsGrowth) * 100 * 0.25 +
+            safe(s.roe) * 100 * 0.2 +
+            safe(s.momentum) * 100 * 0.2 -
+            safe(s.pe) * 0.1
+          if (s.revenueGrowth > 0.1 && s.epsGrowth > 0.1 && s.roe > 0.1) {
+            qualified.push({ ...s, score })
+          }
+        }
+        qualified.sort((a, b) => b.score - a.score)
+        return { top_20: qualified.slice(0, 20) }
+      }
+
       /* ================================
          경로 기반 라우팅
       ================================ */
@@ -3758,15 +3836,23 @@ export default {
 
       } else if (pathname === "/alpha/discovery") {
         try {
-          response = await runAlphaDiscovery()
+          response = await fetchAlphaDiscoverySimple()
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }
 
-      // /alpha/alpha-scanner - 헤지펀드급 7-모듈 알파 스캐너
+      // /macro - FRED 유동성 3종 (fedBal, m2, reverseRepo)
+      } else if (pathname === "/macro") {
+        try {
+          response = await fetchMacroData()
+        } catch(e) {
+          response = {error: e.message, endpoint: pathname}
+        }
+
+      // /alpha/alpha-scanner - 심플 퀀트 스코어링
       } else if (pathname === "/alpha/alpha-scanner") {
         try {
-          response = await runAlphaScanner()
+          response = await fetchAlphaScannerSimple()
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
         }
