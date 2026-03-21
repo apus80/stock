@@ -4,6 +4,17 @@ workers_dev = true
 account_id = "05ba87763e81af6206c77d3bd3d79d84"
 compatibility_date = "2025-09-27"
 
+# ── Cron: 6시간마다 metricz 유니버스 캐시 갱신 (4회/일) ──
+[triggers]
+crons = ["0 */6 * * *"]
+
+# ── KV: metricz 종목 데이터 캐시 ──
+# 아래 id는 `wrangler kv:namespace create METRICZ_KV` 실행 후 교체
+[[kv_namespaces]]
+binding = "METRICZ_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_YOUR_KV_PREVIEW_ID"
+
 [vars]
 FMP_API_KEY = "JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK"
 FRED_KEY = "8a2fc0e51f931c3f4506eba1e177c644"
