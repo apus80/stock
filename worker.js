@@ -3490,11 +3490,20 @@ export default {
             const cached = await kv.get(DISCOVERY_KV_KEY)
             if (cached) {
               const parsed = JSON.parse(cached)
-              // 구버전 캐시(80종목 전체)도 정렬+슬라이스 보정
-              if (parsed.top_20?.length > 20) {
-                parsed.top_20 = parsed.top_20.sort((a, b) => b.score - a.score).slice(0, 20)
+              // 스테일 캐시 감지: 모든 종목의 핵심 필드가 0이면 캐시 무시 (필드명 수정 전 구버전)
+              const hasValidData = parsed.top_20?.some(s =>
+                (s.revenueGrowth || 0) !== 0 || (s.epsGrowth || 0) !== 0 || (s.roe || 0) !== 0
+              )
+              if (!hasValidData) {
+                console.warn('⚠️ Discovery KV 캐시가 스테일 (모두 0값) - 실시간 폴백으로 전환')
+                // fall through to real-time fetch
+              } else {
+                // 구버전 캐시(80종목 전체)도 정렬+슬라이스 보정
+                if (parsed.top_20?.length > 20) {
+                  parsed.top_20 = parsed.top_20.sort((a, b) => b.score - a.score).slice(0, 20)
+                }
+                return parsed
               }
-              return parsed
             }
           } catch(e) {
             console.warn('⚠️ Discovery KV 읽기 실패:', e.message)

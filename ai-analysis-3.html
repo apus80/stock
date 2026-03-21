@@ -1137,32 +1137,43 @@
                             }
 
                             {
-                                const top5 = scannerData.top_20.slice(0, 5);
+                                const top10 = scannerData.top_20.slice(0, 10);
 
-                                html = '<table style="width:100%; font-size:13px;"><thead><tr><th>#</th><th>종목</th><th>점수</th></tr></thead><tbody>';
-                                top5.forEach((s, i) => {
+                                html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#fee2e2;">';
+                                html += '<th style="padding:4px 6px;">#</th>';
+                                html += '<th style="padding:4px 6px;">종목</th>';
+                                html += '<th style="padding:4px 6px;">점수</th>';
+                                html += '<th style="padding:4px 6px;">수익증가</th>';
+                                html += '<th style="padding:4px 6px;">EPS증가</th>';
+                                html += '<th style="padding:4px 6px;">ROE</th>';
+                                html += '<th style="padding:4px 6px;">PE</th>';
+                                html += '<th style="padding:4px 6px;">섹터</th>';
+                                html += '</tr></thead><tbody>';
+                                top10.forEach((s, i) => {
                                     const score = (s.totalScore ?? s.score ?? 0).toFixed(1);
-                                    const scoreColor = score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444';
-                                    html += `<tr>
-                                        <td style="font-weight:700; color:#a0aec0;">${i + 1}</td>
-                                        <td style="font-weight:800;">${s.symbol}</td>
-                                        <td style="color:${scoreColor}; font-weight:700;">${score}</td>
+                                    const scoreColor = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+                                    const rev = ((s.revenueGrowth || 0) * 100).toFixed(1);
+                                    const eps = ((s.epsGrowth || 0) * 100).toFixed(1);
+                                    const roe = ((s.roe || 0) * 100).toFixed(1);
+                                    const pe  = (s.pe || 0).toFixed(1);
+                                    const sector = (s.sector || '-').replace('Communication Services','Comm').replace('Consumer Cyclical','Consum').replace('Technology','Tech');
+                                    const rowBg  = i % 2 === 0 ? '' : 'background:#fef2f2;';
+                                    html += `<tr style="${rowBg}">
+                                        <td style="padding:3px 6px; font-weight:700; color:#a0aec0; text-align:center;">${i + 1}</td>
+                                        <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                        <td style="padding:3px 6px; color:${scoreColor}; font-weight:700; text-align:right;">${score}</td>
+                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(rev)>=0?'#10b981':'#ef4444'};">${rev}%</td>
+                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(eps)>=0?'#10b981':'#ef4444'};">${eps}%</td>
+                                        <td style="padding:3px 6px; text-align:right;">${roe}%</td>
+                                        <td style="padding:3px 6px; text-align:right;">${pe}</td>
+                                        <td style="padding:3px 6px; font-size:11px; color:#718096;">${sector}</td>
                                     </tr>`;
                                 });
                                 html += '</tbody></table>';
-                                html += `<div class="status" style="margin-top:10px; font-size:11px; color:#718096;">
-                                    <strong>🔬 Alpha Scanner · 7모듈 헤지펀드 스코어링</strong><br>
-                                    실적모멘텀(25%) · 펀더멘털가속(20%) · 현금흐름품질(15%) · 재무건전성(10%) · 유통주식압축(10%) · 밸류에이션(10%) · 매크로오버레이(10%) 7개 모듈을 FMP 재무데이터 + FRED 거시지표로 계산합니다.
-                                    RISK-OFF 시 전체 점수에 ×0.7 배율을 적용합니다.<br>
-                                    분석: ${scannerData.deep_analyzed || scannerData.analyzed || '-'}종목 | 소요: ${scannerData.execution_time_sec || '-'}초
+                                html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                    <strong>🔬 Alpha Score</strong> = 수익증가×25% + EPS증가×25% + ROE×20% + 모멘텀×20% − PE×0.1<br>
+                                    분석: ${scannerData.deep_analyzed || scannerData.analyzed || '-'}종목
                                 </div>`;
-
-                                // (이하 구 UI 삭제됨 - 심플 테이블로 교체)
-                                const macro = scannerData.macro || {};
-                                void macro; // 향후 사용 가능
-
-                                // (구 카드 UI 제거됨)
-
                             }
                         } catch (scanErr) {
                             console.error('Widget 11 error:', scanErr);
