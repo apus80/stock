@@ -488,11 +488,11 @@
             </div>
         </div>
 
-        <!-- 위젯 4: 폭발적 성장 주식 탐색 -->
+        <!-- 위젯 4: 단기 모멘텀 전략 -->
         <div class="widget">
             <div class="widget-title">
-                <div>4️⃣ 폭발적 성장 주식 탐색</div>
-                <span>모멘텀 + 수익률 성장 + 거래량 기반</span>
+                <div>4️⃣ 단기 모멘텀 전략</div>
+                <span>당일상승률×60% + MA50추세×40%</span>
                 <button class="widget-refresh" onclick="refreshWidget(4)">🔄</button>
             </div>
             <div id="widget-4" class="content">
@@ -500,11 +500,11 @@
             </div>
         </div>
 
-        <!-- 위젯 5: 궁극의 주식 발굴 엔진 -->
+        <!-- 위젯 5: 중기 추세 전략 -->
         <div class="widget">
             <div class="widget-title">
-                <div>5️⃣ 궁극의 주식 발굴 엔진</div>
-                <span>최종 점수 + PE + 수익률 기반 발굴</span>
+                <div>5️⃣ 중기 추세 전략</div>
+                <span>MA50추세×50% + 52주강도×30% + 당일상승률×20%</span>
                 <button class="widget-refresh" onclick="refreshWidget(5)">🔄</button>
             </div>
             <div id="widget-5" class="content">
@@ -512,15 +512,11 @@
             </div>
         </div>
 
-        <!-- ════════════════════════════════════════════════════
-             새로운 5개 위젯 (프롬프 기반 커스텀)
-             ════════════════════════════════════════════════════ -->
-
-        <!-- 위젯 6: 초고성장 기업 발굴 -->
+        <!-- 위젯 6: 거래량 급증 전략 -->
         <div class="widget">
             <div class="widget-title">
-                <div>6️⃣ 초고성장 기업 발굴</div>
-                <span>수익+EPS 성장 + 수익성 + 밸류에이션</span>
+                <div>6️⃣ 거래량 급증 전략</div>
+                <span>거래량급증×50% + 당일상승률×30% + MA50추세×20%</span>
                 <button class="widget-refresh" onclick="refreshWidget(6)">🔄</button>
             </div>
             <div id="widget-6" class="content">
@@ -528,11 +524,11 @@
             </div>
         </div>
 
-        <!-- 위젯 7: 기관 매집 종목 -->
+        <!-- 위젯 7: 저PER 추세 전략 -->
         <div class="widget">
             <div class="widget-title">
-                <div>7️⃣ 기관 매집 종목</div>
-                <span>섹터모멘텀 + 수익성장 + EPS성장 + 영업이익률</span>
+                <div>7️⃣ 저PER 추세 전략</div>
+                <span>저PER점수×40% + MA50추세×35% + 52주강도×25%</span>
                 <button class="widget-refresh" onclick="refreshWidget(7)">🔄</button>
             </div>
             <div id="widget-7" class="content">
@@ -540,11 +536,11 @@
             </div>
         </div>
 
-        <!-- 위젯 8: 섹터 로테이션 리더 -->
+        <!-- 위젯 8: VIX 리스크 조정 전략 -->
         <div class="widget">
             <div class="widget-title">
-                <div>8️⃣ 섹터 로테이션 리더</div>
-                <span>섹터강도 + 수익성장 + EPS성장</span>
+                <div>8️⃣ VIX 리스크 조정 전략</div>
+                <span>기술점수(당일상승률×40%+MA50×35%+52주강도×25%) × VIX계수</span>
                 <button class="widget-refresh" onclick="refreshWidget(8)">🔄</button>
             </div>
             <div id="widget-8" class="content">
@@ -552,11 +548,11 @@
             </div>
         </div>
 
-        <!-- 위젯 9: 유동성 수혜 종목 -->
+        <!-- 위젯 9: 유동성 장세 수혜 -->
         <div class="widget">
             <div class="widget-title">
-                <div>9️⃣ 유동성 수혜 종목</div>
-                <span>유동성지수 + 리스크점수 + 수익성장</span>
+                <div>9️⃣ 유동성 장세 수혜</div>
+                <span>기술점수 × 유동성계수(Fed/M2/RRP) × 리스크계수(VIX)</span>
                 <button class="widget-refresh" onclick="refreshWidget(9)">🔄</button>
             </div>
             <div id="widget-9" class="content">
@@ -568,7 +564,7 @@
         <div class="widget">
             <div class="widget-title">
                 <div>🔟 통합 발굴 엔진</div>
-                <span>거시점수 + 섹터강도 + 기본가치 (ROE/성장)</span>
+                <span>당일상승률+MA50+52주강도+거래량+PER+VIX 6팩터 통합</span>
                 <button class="widget-refresh" onclick="refreshWidget(10)">🔄</button>
             </div>
             <div id="widget-10" class="content">
@@ -831,293 +827,252 @@
                         break;
 
                     case 4:
-                        // 폭발적 성장 주식 탐색 - 모멘텀 + 수익성장 중심
+                        // 단기 모멘텀 전략: 당일상승률×60% + MA50추세×40%
                         if (data && data.top_20 && data.top_20.length > 0) {
-                            // 전략4: 모멘텀(40%) + 수익성장(35%) + EPS성장(25%)
-                            // momentum/revenueGrowth/epsGrowth는 소수(0.05=5%) → norm()으로 0~100 변환
-                            const scored4 = data.top_20.map(stock => {
-                                const momScore = Math.min(100, Math.max(0, (stock.momentum * 100 || 0) + 50));
-                                const revScore = norm(stock.revenueGrowth || 0);
-                                const epsScore = norm(stock.epsGrowth || 0);
-                                const strategyScore = momScore * 0.40 + revScore * 0.35 + epsScore * 0.25;
-                                return { ...stock, strategyScore };
-                            }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
+                            const scored4 = data.top_20.map(s => {
+                                const score = (s.momentum||0) * 0.60 + (s.ma50trend||0) * 0.40;
+                                return { ...s, score };
+                            }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table><thead><tr><th>종목</th><th>전략점수</th><th>가격</th><th>모멘텀</th><th>수익증가</th></tr></thead><tbody>';
-                            scored4.forEach(stock => {
-                                const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
-                                const mom100 = (stock.momentum || 0) * 100;
-                                const rev100 = (stock.revenueGrowth || 0) * 100;
-                                html += `<tr>
-                                    <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(1)}</td>
-                                    <td>$${stock.price.toFixed(2)}</td>
-                                    <td style="color: ${mom100 >= 0 ? '#10b981' : '#ef4444'}">${mom100 >= 0 ? '+' : ''}${mom100.toFixed(2)}%</td>
-                                    <td style="color: ${rev100 >= 0 ? '#10b981' : '#ef4444'}">${rev100 >= 0 ? '+' : ''}${rev100.toFixed(2)}%</td>
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
+                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">당일상승률</th><th style="padding:4px 6px;">MA50추세</th>'
+                                + '</tr></thead><tbody>';
+                            scored4.forEach((s, i) => {
+                                const sc = s.score.toFixed(1);
+                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const momC = (s.momentum||0) >= 0 ? '#10b981' : '#ef4444';
+                                const maC  = (s.ma50trend||0) >= 0 ? '#10b981' : '#ef4444';
+                                const bg = i%2===0 ? '' : 'background:#f0fdf4;';
+                                html += `<tr style="${bg}">
+                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${momC};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${maC};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>🚀 모멘텀 성장 전략:</strong> 단기 모멘텀이 강하면서 매출 성장도 빠른 종목을 찾습니다.<br>
-                                <strong>📐 계산:</strong> 0.40×모멘텀 + 0.35×수익성장 + 0.25×EPS성장<br>
-                                분석: ${data.analyzed || '-'}개 / 우주: ${data.universe_size || '-'}개
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                <strong>🚀 단기 모멘텀 전략</strong> = 당일상승률×60% + MA50추세×40% | 분석: ${data.analyzed||'-'}종목
                             </div>`;
-                        } else {
-                            html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
-                        }
+                        } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 5:
-                        // 밸류에이션 발굴 엔진 - PE/PB 가치 + 수익성 중심
+                        // 중기 추세 전략: MA50추세×50% + 52주강도(중앙화)×30% + 당일상승률×20%
                         if (data && data.top_20 && data.top_20.length > 0) {
-                            // 전략5: PE(35%) + PB(25%) + 수익성장(20%) + ROE(20%)
-                            const scored5 = data.top_20.map(stock => {
-                                const pe = stock.pe > 0 ? (1 / stock.pe) * 100 : 0;
-                                const pb = stock.pb > 0 ? (1 / stock.pb) * 100 : 0;
-                                const strategyScore = pe * 0.35 + pb * 0.25 +
-                                    norm(stock.revenueGrowth || 0) * 0.20 +
-                                    norm(stock.roe || 0) * 0.20;
-                                return { ...stock, strategyScore };
-                            }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
+                            const scored5 = data.top_20.map(s => {
+                                const score = (s.ma50trend||0) * 0.50 + ((s.str52w||50) - 50) * 0.30 + (s.momentum||0) * 0.20;
+                                return { ...s, score };
+                            }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table><thead><tr><th>종목</th><th>가치점수</th><th>가격</th><th>PE</th><th>PB</th><th>수익률</th></tr></thead><tbody>';
-                            scored5.forEach(stock => {
-                                const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
-                                html += `<tr>
-                                    <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(1)}</td>
-                                    <td>$${stock.price.toFixed(2)}</td>
-                                    <td>${stock.pe > 0 ? stock.pe.toFixed(1) : 'N/A'}</td>
-                                    <td>${stock.pb > 0 ? stock.pb.toFixed(1) : 'N/A'}</td>
-                                    <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${stock.revenueGrowth >= 0 ? '+' : ''}${((stock.revenueGrowth || 0) * 100).toFixed(2)}%</td>
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
+                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th><th style="padding:4px 6px;">당일상승률</th>'
+                                + '</tr></thead><tbody>';
+                            scored5.forEach((s, i) => {
+                                const sc = s.score.toFixed(1);
+                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const bg = i%2===0 ? '' : 'background:#f0fdf4;';
+                                html += `<tr style="${bg}">
+                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>🏆 위젯5 · 저평가 가치주 발굴</strong><br>
-                                PER이 낮을수록(= 1/PE × 100), PBR이 낮을수록(= 1/PB × 100) 높은 점수를 줍니다.
-                                매출성장률과 ROE는 0~100으로 정규화(norm = 값×100, 최대 100)한 뒤 가중합산합니다.<br>
-                                <strong>점수 = (1/PE)×100×35% + (1/PB)×100×25% + norm(매출성장)×20% + norm(ROE)×20%</strong>
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                <strong>📈 중기 추세 전략</strong> = MA50추세×50% + (52주강도-50)×30% + 당일상승률×20% | 분석: ${data.analyzed||'-'}종목
                             </div>`;
-                        } else {
-                            html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
-                        }
+                        } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 6:
-                        // 1️⃣ Explosive Growth Stock Finder - 초고성장 기업 발굴
+                        // 거래량 급증 전략: 거래량급증×50% + 당일상승률×30% + MA50추세×20%
                         if (data && data.top_20 && data.top_20.length > 0) {
-                            // 전략6: 수익성장(25%) + EPS성장(25%) + 순이익마진(15%) + ROE(15%) + PE(10%) + PB(5%) + 모멘텀(5%)
-                            const explosiveStocks = data.top_20.map(stock => {
-                                const strategyScore =
-                                    norm(stock.revenueGrowth || 0) * 0.25 +
-                                    norm(stock.epsGrowth || 0) * 0.25 +
-                                    norm(stock.profitMargin || 0) * 0.15 +
-                                    norm(stock.roe || 0) * 0.15 +
-                                    (stock.pe > 0 ? (1 / stock.pe) * 100 : 0) * 0.10 +
-                                    (stock.pb > 0 ? (1 / stock.pb) * 100 : 0) * 0.05 +
-                                    norm(stock.momentum || 0) * 0.05;
-                                return { ...stock, strategyScore };
-                            }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
+                            const scored6 = data.top_20.map(s => {
+                                const volC = Math.min(100, Math.max(-30, s.volSurge||0));
+                                const score = volC * 0.50 + (s.momentum||0) * 0.30 + (s.ma50trend||0) * 0.20;
+                                return { ...s, score };
+                            }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>순이익마진</th><th>PE</th></tr></thead><tbody>';
-                            explosiveStocks.forEach(stock => {
-                                const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
-                                html += `<tr>
-                                    <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
-                                    <td>${stock.sector || '-'}</td>
-                                    <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.revenueGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.epsGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td>${((stock.profitMargin || 0) * 100).toFixed(1)}%</td>
-                                    <td>${stock.pe > 0 ? stock.pe.toFixed(1) : 'N/A'}</td>
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
+                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">거래량급증</th><th style="padding:4px 6px;">당일상승률</th><th style="padding:4px 6px;">MA50추세</th>'
+                                + '</tr></thead><tbody>';
+                            scored6.forEach((s, i) => {
+                                const sc = s.score.toFixed(1);
+                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const bg = i%2===0 ? '' : 'background:#f0fdf4;';
+                                html += `<tr style="${bg}">
+                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.volSurge||0)>=0?'#10b981':'#ef4444'};">${(s.volSurge||0) >= 0 ? '+' : ''}${(s.volSurge||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>📊 위젯6 · 초고성장 기업 발굴</strong><br>
-                                매출성장·EPS성장·순이익마진·ROE·모멘텀은 모두 norm(값×100, 최대 100)으로 정규화합니다.
-                                PE·PB는 역수×100으로 변환해 저평가일수록 유리하게 계산합니다.<br>
-                                <strong>점수 = norm(매출성장)×25% + norm(EPS성장)×25% + norm(순이익마진)×15% + norm(ROE)×15% + (1/PE)×100×10% + (1/PB)×100×5% + norm(모멘텀)×5%</strong>
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                <strong>📊 거래량 급증 전략</strong> = 거래량급증(cap±100%)×50% + 당일상승률×30% + MA50추세×20% | 분석: ${data.analyzed||'-'}종목
                             </div>`;
-                        } else {
-                            html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
-                        }
+                        } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 7:
-                        // 2️⃣ Smart Money Accumulation Finder - 기관 매집 종목 탐지
-                        if (market && data && data.top_20) {
-                            // 전략7: 섹터모멘텀(30%) + 영업이익률(25%) + 수익성장(20%) + EPS성장(15%) + 모멘텀(10%)
-                            const smartMoneyStocks = data.top_20.map(stock => {
-                                const sectorMomentum = market.SECTORS?.[normSector(stock.sector)]?.changePercentage || 0;
-                                const strategyScore =
-                                    sectorMomentum * 0.30 +
-                                    norm(stock.operatingMargin || 0) * 0.25 +
-                                    norm(stock.revenueGrowth || 0) * 0.20 +
-                                    norm(stock.epsGrowth || 0) * 0.15 +
-                                    norm(stock.momentum || 0) * 0.10;
-                                return { ...stock, sectorMomentum, strategyScore };
-                            }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
+                        // 저PER 추세 전략: 저PER점수×40% + MA50추세×35% + 52주강도×25%
+                        if (data && data.top_20 && data.top_20.length > 0) {
+                            const scored7 = data.top_20.map(s => {
+                                // PER이 낮을수록 높은 점수: PE 10→25, PE 20→12.5, PE 50→5, PE 없음→0
+                                const pe_sc = (s.pe > 0 && s.pe < 150) ? Math.min(25, 250 / s.pe) : 0;
+                                const score = pe_sc * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
+                                return { ...s, pe_sc, score };
+                            }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>영업이익률</th><th>섹터모멘텀</th></tr></thead><tbody>';
-                            smartMoneyStocks.forEach(stock => {
-                                const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
-                                const momColor = stock.sectorMomentum >= 0 ? '#10b981' : '#ef4444';
-                                html += `<tr>
-                                    <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
-                                    <td>${stock.sector || '-'}</td>
-                                    <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.revenueGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.epsGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td>${((stock.operatingMargin || 0) * 100).toFixed(1)}%</td>
-                                    <td style="color: ${momColor}">${stock.sectorMomentum.toFixed(2)}%</td>
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#fffbeb;">'
+                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">PER</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
+                                + '</tr></thead><tbody>';
+                            scored7.forEach((s, i) => {
+                                const sc = s.score.toFixed(1);
+                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const bg = i%2===0 ? '' : 'background:#fffbeb;';
+                                html += `<tr style="${bg}">
+                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
+                                    <td style="padding:3px 6px; text-align:right;">${s.pe > 0 ? s.pe.toFixed(1) : '-'}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>💰 위젯7 · 기관 매집 종목 탐지</strong><br>
-                                해당 종목의 섹터 등락률(%)을 그대로 섹터모멘텀으로 씁니다.
-                                영업이익률·매출성장·EPS성장·모멘텀은 norm(값×100, 최대 100)으로 정규화합니다.<br>
-                                <strong>점수 = 섹터변화율×30% + norm(영업이익률)×25% + norm(매출성장)×20% + norm(EPS성장)×15% + norm(모멘텀)×10%</strong>
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                <strong>💰 저PER 추세 전략</strong> = 저PER점수(250/PE, max25)×40% + MA50추세×35% + (52주강도-50)×25% | 분석: ${data.analyzed||'-'}종목
                             </div>`;
-                        } else {
-                            html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
-                        }
+                        } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 8:
-                        // 3️⃣ Sector Rotation Stock Leader - 섹터 로테이션 기반 종목 발굴
+                        // VIX 리스크 조정 전략: 기술점수(당일상승률×40%+MA50×35%+52주강도×25%) × VIX계수
                         if (market && data && data.top_20) {
-                            // 전략8: 섹터상대강도(40%) + 수익성장(25%) + EPS성장(20%) + 모멘텀(15%)
-                            const sectorLeaderStocks = data.top_20.map(stock => {
-                                const relativeStrength = market.SECTORS?.[normSector(stock.sector)]?.changePercentage || 0;
-                                const strategyScore =
-                                    relativeStrength * 0.40 +
-                                    norm(stock.revenueGrowth || 0) * 0.25 +
-                                    norm(stock.epsGrowth || 0) * 0.20 +
-                                    norm(stock.momentum || 0) * 0.15;
-                                return { ...stock, relativeStrength, strategyScore };
-                            }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
+                            const vix8 = market.US_MARKET?.VIX?.price || 20;
+                            // VIX 10→1.25, VIX 20→1.0, VIX 30→0.75, VIX 40→0.5
+                            const vixAdj = parseFloat(Math.max(0.3, Math.min(1.5, 1.5 - vix8 / 40)).toFixed(2));
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>섹터</th><th>상대강도</th><th>수익증가</th><th>EPS증가</th></tr></thead><tbody>';
-                            sectorLeaderStocks.forEach(stock => {
-                                const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
-                                const strengthColor = stock.relativeStrength >= 0 ? '#10b981' : '#ef4444';
-                                html += `<tr>
-                                    <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
-                                    <td>${stock.sector || '-'}</td>
-                                    <td style="color: ${strengthColor}">${stock.relativeStrength.toFixed(2)}%</td>
-                                    <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.revenueGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.epsGrowth || 0) * 100).toFixed(1)}%</td>
+                            const scored8 = data.top_20.map(s => {
+                                const techScore = (s.momentum||0) * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
+                                const score = techScore * vixAdj;
+                                return { ...s, techScore, score };
+                            }).sort((a, b) => b.score - a.score).slice(0, 10);
+
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0f9ff;">'
+                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">기술점수</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
+                                + '</tr></thead><tbody>';
+                            scored8.forEach((s, i) => {
+                                const sc = s.score.toFixed(1);
+                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const bg = i%2===0 ? '' : 'background:#f0f9ff;';
+                                html += `<tr style="${bg}">
+                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${s.techScore>=0?'#10b981':'#ef4444'};">${s.techScore.toFixed(2)}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>🎯 위젯8 · 섹터 로테이션 리더</strong><br>
-                                섹터 등락률(%)을 상대강도로 직접 사용합니다(높을수록 강세섹터).
-                                매출성장·EPS성장·모멘텀은 norm(값×100, 최대 100)으로 정규화합니다.<br>
-                                <strong>점수 = 섹터변화율×40% + norm(매출성장)×25% + norm(EPS성장)×20% + norm(모멘텀)×15%</strong>
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                <strong>🌊 VIX 리스크 조정 전략</strong> = 기술점수 × VIX계수 | VIX: ${vix8.toFixed(1)} → 계수: ${vixAdj} | 분석: ${data.analyzed||'-'}종목<br>
+                                기술점수 = 당일상승률×40% + MA50추세×35% + (52주강도-50)×25%
                             </div>`;
-                        } else {
-                            html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
-                        }
+                        } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 9:
-                        // 4️⃣ Liquidity Driven Stock Radar - 유동성 장세 종목
+                        // 유동성 장세 수혜: 기술점수 × 유동성계수(Fed/M2/RRP) × 리스크계수(VIX)
                         if (market && data && data.top_20) {
                             const fedBal9 = market.LIQUIDITY?.FED_BALANCE || 5000000;
                             const m2Val9 = market.MACRO_BASE?.M2 || 20000000;
-                            const reverseRepo9 = market.LIQUIDITY?.REVERSE_REPO || 0;
+                            const rrp9 = market.LIQUIDITY?.REVERSE_REPO || 0;
                             const vix9 = market.US_MARKET?.VIX?.price || 20;
 
-                            const liquidityIndex = (fedBal9 / 5000000) * 50 + (m2Val9 / 20000000) * 30 + (100 - reverseRepo9 / 100) * 20;
-                            const riskScore = 100 - vix9 * 3;
+                            // 유동성지수 (정상 기준 100)
+                            const liquidIdx = (fedBal9 / 5000000) * 50 + (m2Val9 / 20000000) * 30 + Math.max(0, 100 - rrp9 / 1000) * 20;
+                            const liquidFactor = parseFloat(Math.max(0.5, Math.min(2.0, liquidIdx / 100)).toFixed(2));
+                            // 리스크계수: VIX 낮을수록 위험선호 = 계수 높음
+                            const riskScore9 = Math.max(10, 80 - vix9 * 2);
+                            const riskFactor = parseFloat((riskScore9 / 60).toFixed(2));
 
-                            // 전략9: 유동성×모멘텀(30%) + 리스크×수익성장(25%) + D/E역수(20%) + EPS성장(15%) + PB역수(10%)
-                            const liquidityStocks = data.top_20.map(stock => {
-                                const strategyScore =
-                                    (liquidityIndex * (stock.momentum || 0)) * 0.30 +
-                                    (riskScore * (stock.revenueGrowth || 0)) * 0.25 +
-                                    (1 / (stock.debtToEquity || 1)) * 20 +
-                                    norm(stock.epsGrowth || 0) * 0.15 +
-                                    (stock.pb > 0 ? 1 / stock.pb : 0) * 10;
-                                return { ...stock, strategyScore, liquidityIndex, riskScore };
-                            }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
+                            const scored9 = data.top_20.map(s => {
+                                const techBase = (s.momentum||0) * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
+                                const score = techBase * liquidFactor * riskFactor;
+                                return { ...s, techBase, score };
+                            }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>수익증가</th><th>EPS증가</th><th>유동성</th><th>리스크</th></tr></thead><tbody>';
-                            liquidityStocks.forEach(stock => {
-                                const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
-                                html += `<tr>
-                                    <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
-                                    <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.revenueGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.epsGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td>${stock.liquidityIndex.toFixed(0)}</td>
-                                    <td>${stock.riskScore.toFixed(0)}</td>
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f5f3ff;">'
+                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">기술기반</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
+                                + '</tr></thead><tbody>';
+                            scored9.forEach((s, i) => {
+                                const sc = s.score.toFixed(2);
+                                const scC = s.score >= 3 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const bg = i%2===0 ? '' : 'background:#f5f3ff;';
+                                html += `<tr style="${bg}">
+                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${s.techBase>=0?'#10b981':'#ef4444'};">${s.techBase.toFixed(2)}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>💧 위젯9 · 유동성 장세 수혜주</strong><br>
-                                유동성지수 = (Fed잔액/5조)×50 + (M2/20조)×30 + (100 - RRP/100)×20 으로 거시 유동성을 계량화합니다.
-                                리스크점수 = 100 - VIX×3 (VIX가 낮을수록 위험선호).
-                                두 값을 각각 모멘텀·매출성장에 곱해 유동성 환경을 점수에 반영합니다.<br>
-                                <strong>점수 = (유동성×모멘텀)×30% + (리스크×매출성장)×25% + (1/부채비율)×20 + norm(EPS성장)×15% + (1/PB)×10</strong>
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                <strong>💧 유동성 장세 수혜</strong> = 기술기반 × 유동성계수(${liquidFactor}) × 리스크계수(${riskFactor})<br>
+                                유동성계수: Fed잔액/M2/RRP → 지수${liquidIdx.toFixed(0)}/100 | VIX: ${vix9.toFixed(1)} → 리스크계수 ${riskFactor}
                             </div>`;
-                        } else {
-                            html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
-                        }
+                        } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 10:
-                        // 5️⃣ Investflow Discovery Engine - 최강 통합 발굴 엔진
+                        // 통합 발굴 엔진: 당일상승률×20% + MA50×20% + 52주강도×20% + 거래량급증×20% + PER×10% + VIX×10%
                         if (market && data && data.top_20) {
                             const vix10 = market.US_MARKET?.VIX?.price || 20;
-                            const macroEnvScore = 100 - vix10 * 3;
+                            // VIX 점수: VIX낮을수록 높음 (VIX 10→20, VIX 20→10, VIX 30→0)
+                            const vixScore10 = Math.max(0, Math.min(20, 30 - vix10));
 
-                            // 전략10 통합: 거시환경(15%) + 섹터(15%) + 수익성장(15%) + EPS성장(15%) + ROE(10%) + PE(10%) + 영업이익률(10%) + 모멘텀(10%)
-                            const investflowStocks = data.top_20.map(stock => {
-                                const sectorStrength = market.SECTORS?.[normSector(stock.sector)]?.changePercentage || 0;
-                                const strategyScore =
-                                    macroEnvScore * 0.15 +
-                                    sectorStrength * 0.15 +
-                                    norm(stock.revenueGrowth || 0) * 0.15 +
-                                    norm(stock.epsGrowth || 0) * 0.15 +
-                                    norm(stock.roe || 0) * 0.10 +
-                                    (stock.pe > 0 ? (1 / stock.pe) * 100 : 0) * 0.10 +
-                                    norm(stock.operatingMargin || 0) * 0.10 +
-                                    norm(stock.momentum || 0) * 0.10;
-                                return { ...stock, sectorStrength, macroScore: macroEnvScore, strategyScore };
-                            }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
+                            const scored10 = data.top_20.map(s => {
+                                // PER 점수: PE 10→15, PE 20→7.5, PE 50→3, PE 없음→0
+                                const pe_sc10 = (s.pe > 0 && s.pe < 150) ? Math.min(15, 150 / s.pe) : 0;
+                                const vol_sc10 = Math.min(20, Math.max(-5, (s.volSurge||0) / 5));
+                                const score = (s.momentum||0)         * 0.20
+                                            + (s.ma50trend||0)        * 0.20
+                                            + ((s.str52w||50) - 50)   * 0.20
+                                            + vol_sc10                * 0.20
+                                            + pe_sc10                 * 0.10
+                                            + vixScore10              * 0.10;
+                                return { ...s, pe_sc10, vol_sc10, vixScore10, score };
+                            }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:11px;"><thead><tr><th>종목</th><th>Investflow</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>ROE</th><th>섹터강도</th><th>거시점수</th></tr></thead><tbody>';
-                            investflowStocks.forEach(stock => {
-                                const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
-                                html += `<tr>
-                                    <td style="font-weight: 600;">${stock.symbol}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 700;">${stock.strategyScore.toFixed(0)}</td>
-                                    <td>${stock.sector || '-'}</td>
-                                    <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.revenueGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${((stock.epsGrowth || 0) * 100).toFixed(1)}%</td>
-                                    <td>${((stock.roe || 0) * 100).toFixed(1)}%</td>
-                                    <td style="color: ${stock.sectorStrength >= 0 ? '#10b981' : '#ef4444'}">${stock.sectorStrength.toFixed(2)}%</td>
-                                    <td>${stock.macroScore.toFixed(0)}</td>
+                            html = '<table style="width:100%; font-size:11px; border-collapse:collapse;"><thead><tr style="background:#fff7ed;">'
+                                + '<th style="padding:4px 5px;">종목</th><th style="padding:4px 5px;">총점수</th><th style="padding:4px 5px;">당일상승률</th><th style="padding:4px 5px;">MA50추세</th><th style="padding:4px 5px;">52주강도</th><th style="padding:4px 5px;">거래량급증</th><th style="padding:4px 5px;">PER</th>'
+                                + '</tr></thead><tbody>';
+                            scored10.forEach((s, i) => {
+                                const sc = s.score.toFixed(1);
+                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const bg = i%2===0 ? '' : 'background:#fff7ed;';
+                                html += `<tr style="${bg}">
+                                    <td style="padding:3px 5px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 5px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
+                                    <td style="padding:3px 5px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 5px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
+                                    <td style="padding:3px 5px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 5px; text-align:right; color:${(s.volSurge||0)>=0?'#10b981':'#ef4444'};">${(s.volSurge||0) >= 0 ? '+' : ''}${(s.volSurge||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 5px; text-align:right;">${s.pe > 0 ? s.pe.toFixed(1) : '-'}</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top: 10px; font-size: 11px; color: #718096;">
-                                <strong>🚀 위젯10 · Investflow 통합 발굴 엔진</strong><br>
-                                거시점수 = 100 - VIX×3 (VIX가 낮을수록 시장 우호적). 섹터강도는 해당 섹터 등락률(%)을 그대로 사용합니다.
-                                나머지 팩터(매출성장·EPS성장·ROE·영업이익률·모멘텀)는 norm(값×100, 최대 100)으로 정규화합니다.
-                                PE는 역수(1/PE)를 사용해 저평가일수록 유리하게 반영합니다.<br>
-                                <strong>점수 = 거시점수×15% + 섹터변화율×15% + norm(매출성장)×15% + norm(EPS성장)×15% + norm(ROE)×10% + (1/PE)×10% + norm(영업이익률)×10% + norm(모멘텀)×10%</strong>
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                <strong>🚀 통합 발굴 엔진</strong> = 당일상승률×20% + MA50추세×20% + 52주강도×20% + 거래량급증×20% + PER점수×10% + VIX점수×10%<br>
+                                VIX: ${vix10.toFixed(1)} → VIX점수: ${vixScore10.toFixed(0)} | 분석: ${data.analyzed||'-'}종목
                             </div>`;
-                        } else {
-                            html = '<div class="loading">⚠️ 데이터를 불러올 수 없습니다</div>';
-                        }
+                        } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 11:
