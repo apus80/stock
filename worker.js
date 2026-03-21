@@ -235,7 +235,8 @@ async function refreshDiscoveryCache(env) {
     if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 300))
   }
 
-  const payload = { timestamp: new Date().toISOString(), universe_size: SYMBOLS.length, analyzed: results.length, execution_time_sec: 0, top_20: results }
+  const sorted = results.sort((a, b) => b.score - a.score).slice(0, 20)
+  const payload = { timestamp: new Date().toISOString(), universe_size: SYMBOLS.length, analyzed: results.length, execution_time_sec: 0, top_20: sorted }
   await kv.put(DISCOVERY_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
   console.log(`✅ discovery 캐시 갱신 완료: ${results.length}/${SYMBOLS.length}종목`)
 }
@@ -3454,12 +3455,20 @@ export default {
       // ── 심플 Alpha Discovery (KV 캐시 우선, 폴백 10종목 실시간) ───
       async function fetchAlphaDiscoverySimple() {
         const kv = env.METRICZ_KV
+        const forceRefresh = url.searchParams.get('force') === 'true'
 
-        // 1️⃣ KV 캐시 확인 → 있으면 즉시 반환 (80종목)
-        if (kv) {
+        // 1️⃣ KV 캐시 확인 → 있으면 즉시 반환 (force=true 시 캐시 무시)
+        if (kv && !forceRefresh) {
           try {
             const cached = await kv.get(DISCOVERY_KV_KEY)
-            if (cached) return JSON.parse(cached)
+            if (cached) {
+              const parsed = JSON.parse(cached)
+              // 구버전 캐시(80종목 전체)도 정렬+슬라이스 보정
+              if (parsed.top_20?.length > 20) {
+                parsed.top_20 = parsed.top_20.sort((a, b) => b.score - a.score).slice(0, 20)
+              }
+              return parsed
+            }
           } catch(e) {
             console.warn('⚠️ Discovery KV 읽기 실패:', e.message)
           }
@@ -3508,7 +3517,7 @@ export default {
             }
           })
         )
-        const items = results.filter(v => v)
+        const items = results.filter(v => v).sort((a, b) => b.score - a.score)
         return { top_20: items, analyzed: items.length, universe_size: 10, execution_time_sec: 0 }
       }
 
