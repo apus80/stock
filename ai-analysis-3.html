@@ -732,6 +732,22 @@
                 let html = '';
                 const norm = (v) => Math.max(0, Math.min(100, v * 100));
 
+                // FMP 섹터명(Title Case) → worker SECTORS 키(UPPERCASE) 매핑
+                const SECTOR_MAP = {
+                    'Technology': 'TECHNOLOGY', 'Information Technology': 'TECHNOLOGY',
+                    'Financials': 'FINANCIALS', 'Financial Services': 'FINANCIALS', 'Finance': 'FINANCIALS',
+                    'Energy': 'ENERGY',
+                    'Healthcare': 'HEALTHCARE', 'Health Care': 'HEALTHCARE',
+                    'Consumer Discretionary': 'CONSUMER_DISCRETIONARY', 'Consumer Cyclical': 'CONSUMER_DISCRETIONARY',
+                    'Industrials': 'INDUSTRIALS', 'Industrial': 'INDUSTRIALS',
+                    'Utilities': 'UTILITIES',
+                    'Real Estate': 'REAL_ESTATE',
+                    'Communication Services': 'COMMUNICATION_SERVICES', 'Communication': 'COMMUNICATION_SERVICES',
+                    'Materials': 'MATERIALS', 'Basic Materials': 'MATERIALS',
+                    'Consumer Staples': 'CONSUMER_STAPLES',
+                };
+                const normSector = (s) => SECTOR_MAP[s] || (s ? s.toUpperCase().replace(/ /g, '_') : '');
+
                 switch (widgetId) {
                     case 1:
                         // 매크로 유동성 데이터
@@ -931,7 +947,7 @@
                         if (market && data && data.top_20) {
                             // 전략7: 섹터모멘텀(30%) + 영업이익률(25%) + 수익성장(20%) + EPS성장(15%) + 모멘텀(10%)
                             const smartMoneyStocks = data.top_20.map(stock => {
-                                const sectorMomentum = market.SECTORS?.[stock.sector]?.changePercentage || 0;
+                                const sectorMomentum = market.SECTORS?.[normSector(stock.sector)]?.changePercentage || 0;
                                 const strategyScore =
                                     sectorMomentum * 0.30 +
                                     norm(stock.operatingMargin || 0) * 0.25 +
@@ -972,7 +988,7 @@
                         if (market && data && data.top_20) {
                             // 전략8: 섹터상대강도(40%) + 수익성장(25%) + EPS성장(20%) + 모멘텀(15%)
                             const sectorLeaderStocks = data.top_20.map(stock => {
-                                const relativeStrength = market.SECTORS?.[stock.sector]?.changePercentage || 0;
+                                const relativeStrength = market.SECTORS?.[normSector(stock.sector)]?.changePercentage || 0;
                                 const strategyScore =
                                     relativeStrength * 0.40 +
                                     norm(stock.revenueGrowth || 0) * 0.25 +
@@ -1061,7 +1077,7 @@
 
                             // 전략10 통합: 거시환경(15%) + 섹터(15%) + 수익성장(15%) + EPS성장(15%) + ROE(10%) + PE(10%) + 영업이익률(10%) + 모멘텀(10%)
                             const investflowStocks = data.top_20.map(stock => {
-                                const sectorStrength = market.SECTORS?.[stock.sector]?.changePercentage || 0;
+                                const sectorStrength = market.SECTORS?.[normSector(stock.sector)]?.changePercentage || 0;
                                 const strategyScore =
                                     macroEnvScore * 0.15 +
                                     sectorStrength * 0.15 +

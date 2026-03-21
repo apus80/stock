@@ -1210,7 +1210,7 @@
                     {data && !loading && (
                         <>
                             <div style={{ fontSize: '12px', color: '#2d3748', marginBottom: '12px' }}>
-                                {data.execution_time_sec}초 소요 ({data.analyzed}/{data.universe_size})
+                                {data.execution_time_sec ?? '-'}초 소요 ({data.analyzed ?? data.top_20?.length ?? '-'}/{data.universe_size ?? data.top_20?.length ?? '-'})
                             </div>
 
                             <table>
@@ -1235,13 +1235,13 @@
                                                 <td><span className="ticker">{stock.symbol}</span></td>
                                                 <td>
                                                     <span className={`score-badge ${grade.class}`}>
-                                                        {stock.score.toFixed(2)}
+                                                        {(stock.score ?? 0).toFixed(2)}
                                                     </span>
                                                 </td>
                                                 <td className={changeColor(stock.momentum)}>
                                                     {fmt.pct(stock.momentum * 100)}
                                                 </td>
-                                                <td>{fmt.mult(stock.volume)}</td>
+                                                <td>{stock.volume ? fmt.mult(stock.volume) : '-'}</td>
                                                 <td>{fmt.num(stock.pe)}</td>
                                                 <td className="value-positive">{fmt.pct(stock.revenueGrowth * 100)}</td>
                                                 <td>{grade.icon} {grade.label}</td>
@@ -1691,7 +1691,7 @@
                                                 <div className="stock-bar-fill">
                                                     <div className="stock-bar-progress" style={{ width: pct + '%' }} />
                                                 </div>
-                                                <div className="stock-bar-score">{grade.icon} {stock.score.toFixed(2)}</div>
+                                                <div className="stock-bar-score">{grade.icon} {(stock.score ?? 0).toFixed(2)}</div>
                                             </div>
                                         )
                                     })
