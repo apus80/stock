@@ -12,8 +12,8 @@ crons = ["0 */6 * * *"]
 # 아래 id는 `wrangler kv:namespace create METRICZ_KV` 실행 후 교체
 [[kv_namespaces]]
 binding = "METRICZ_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_YOUR_KV_PREVIEW_ID"
+id = "7e77d847aac94cf083ea892fc7750353"
+preview_id = "7e77d847aac94cf083ea892fc7750353"
 
 [vars]
 FMP_API_KEY = "JUTpjU8MvT3nTFv5CkJbVANjWntvcEiK"
