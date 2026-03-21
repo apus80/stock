@@ -259,6 +259,225 @@ function metriczScore(stocksArray, userLogic) {
   })
 }
 
+// ── Catalyst Surge: module-level helpers ────────────────────────────────────
+// fetchFMP: path-based FMP wrapper reusing existing fmpGet (timeout + null safety)
+async function fetchFMP(endpoint, env) {
+  const API_KEY = env.FMP_API_KEY
+  const url = endpoint.includes('?')
+    ? `https://financialmodelingprep.com${endpoint}&apikey=${API_KEY}`
+    : `https://financialmodelingprep.com${endpoint}?apikey=${API_KEY}`
+  return await fmpGet(url)
+}
+
+function average(arr) {
+  return arr.reduce((a, b) => a + b, 0) / arr.length
+}
+
+function calculateEMA(data, period) {
+  const k = 2 / (period + 1)
+  let ema = [data[0]]
+  for (let i = 1; i < data.length; i++) {
+    ema.push(data[i] * k + ema[i - 1] * (1 - k))
+  }
+  return ema
+}
+
+function calculateRSI(data, period) {
+  let gains = [], losses = []
+  for (let i = 1; i < data.length; i++) {
+    const diff = data[i] - data[i - 1]
+    gains.push(diff > 0 ? diff : 0)
+    losses.push(diff < 0 ? -diff : 0)
+  }
+  let rsi = []
+  for (let i = period; i < gains.length; i++) {
+    const avgGain = average(gains.slice(i - period, i))
+    const avgLoss = average(losses.slice(i - period, i))
+    const rs = avgGain / (avgLoss || 1)
+    rsi.push(100 - 100 / (1 + rs))
+  }
+  return Array(period).fill(50).concat(rsi)
+}
+
+function calculateBollinger(data, period) {
+  const width = []
+  for (let i = period; i < data.length; i++) {
+    const slice = data.slice(i - period, i)
+    const avg = average(slice)
+    const std = Math.sqrt(average(slice.map(v => (v - avg) ** 2)))
+    width.push((avg + 2 * std - (avg - 2 * std)) / avg)
+  }
+  return { width: Array(period).fill(0).concat(width) }
+}
+
+function calculateATR(data) {
+  const trs = []
+  for (let i = 1; i < data.length; i++) {
+    const tr = Math.max(
+      data[i].high - data[i].low,
+      Math.abs(data[i].high - data[i - 1].close),
+      Math.abs(data[i].low - data[i - 1].close)
+    )
+    trs.push(tr)
+  }
+  const atr = average(trs.slice(-14))
+  const price = data[data.length - 1].close
+  return { atrPct: (atr / price) * 100 }
+}
+
+function csGetGrade(css) {
+  if (css >= 80) return "🔥 STRONG BUY"
+  if (css >= 70) return "✅ BUY"
+  if (css >= 60) return "⚡ WATCH"
+  if (css >= 50) return "⚠️ HOLD"
+  return "❌ AVOID"
+}
+
+async function csGetTop80(env) {
+  return await fetchFMP(`/stable/stock-screener?marketCapMoreThan=10000000000&limit=80`, env)
+}
+
+async function csGetTechnical(symbol, env) {
+  const hist = await fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env)
+  if (!hist || hist.length < 60) return { total: 0 }
+
+  const closes = hist.map(d => d.close).reverse()
+  const volumes = hist.map(d => d.volume).reverse()
+  const last = closes.length - 1
+
+  const rsiArr = calculateRSI(closes, 14)
+  const rsi = rsiArr[last]
+
+  const ema20 = calculateEMA(closes, 20)
+  const ema50 = calculateEMA(closes, 50)
+  const ema12 = calculateEMA(closes, 12)
+  const ema26 = calculateEMA(closes, 26)
+  const macd = ema12[last] - ema26[last]
+
+  const bb = calculateBollinger(closes, 20)
+  const bbWidth = bb.width[last]
+  const bbAvg = average(bb.width.slice(-50))
+
+  const { atrPct } = calculateATR(hist)
+
+  const volAvg = average(volumes.slice(-20))
+  const volNow = volumes[last]
+
+  const high20 = Math.max(...closes.slice(-20))
+  const high60 = Math.max(...closes.slice(-60))
+
+  const isBreakout =
+    closes[last] >= high20 * 0.99 &&
+    volNow > volAvg * 1.8 &&
+    bbWidth < bbAvg * 0.8
+
+  let score = 0
+  if (closes[last] > ema20[last]) score += 5
+  if (closes[last] > ema50[last]) score += 5
+  if (rsi >= 45 && rsi <= 65) score += 6
+  if (macd > 0) score += 5
+  if (bbWidth < bbAvg * 0.8) score += 4
+  if (volNow > volAvg * 2) score += 6
+  if (atrPct > 2) score += 3
+  if (isBreakout) score += 10
+  if (closes[last] >= high60 * 0.9) score += 5
+
+  return { rsi, atr_pct: atrPct, volumeRatio: volNow / volAvg, isBreakout, total: Math.min(score, 50) }
+}
+
+async function csGetSmartMoney(symbol, tech, env) {
+  const [insider, analyst] = await Promise.all([
+    fetchFMP(`/stable/insider-trading?symbol=${symbol}`, env),
+    fetchFMP(`/stable/analyst-stock-recommendations?symbol=${symbol}`, env)
+  ])
+
+  let insiderScore = 0
+  if (insider?.length) {
+    let buy = 0, sell = 0
+    insider.slice(0, 20).forEach(d => {
+      if (d.transactionType === "P") buy++
+      if (d.transactionType === "S") sell++
+    })
+    if (buy > sell * 2) insiderScore = 4
+    else if (buy > sell) insiderScore = 2
+  }
+
+  let analystScore = 0
+  if (analyst?.[0]) {
+    const a = analyst[0]
+    if (a.strongBuy > 5) analystScore = 4
+    else if (a.buy > 5) analystScore = 2
+  }
+
+  return { total: insiderScore + analystScore + (tech.isBreakout ? 4 : 1) }
+}
+
+async function csGetCatalyst(symbol, env) {
+  const [earnings, income, ratios, balance, cashflow, quote] = await Promise.all([
+    fetchFMP(`/stable/earnings?symbol=${symbol}`, env),
+    fetchFMP(`/stable/income-statement?symbol=${symbol}&limit=5`, env),
+    fetchFMP(`/stable/ratios-ttm?symbol=${symbol}`, env),
+    fetchFMP(`/stable/balance-sheet-statement?symbol=${symbol}&limit=1`, env),
+    fetchFMP(`/stable/cash-flow-statement?symbol=${symbol}&limit=1`, env),
+    fetchFMP(`/stable/quote?symbol=${symbol}`, env)
+  ])
+
+  if (!earnings?.[0] || !income?.[1]) return { total: 0, de: 1, revGrowth: 0 }
+
+  const epsSurprise =
+    (earnings[0].epsActual - earnings[0].epsEstimated) /
+    Math.abs(earnings[0].epsEstimated || 1)
+
+  const revGrowth =
+    (income[0].revenue - income[1].revenue) / income[1].revenue
+
+  const pe = ratios?.[0]?.priceToEarningsRatioTTM || 30
+
+  const fcfYield =
+    cashflow?.[0]?.freeCashFlow / (quote?.[0]?.marketCap || 1)
+
+  const de =
+    balance?.[0]?.totalDebt / balance?.[0]?.totalStockholdersEquity
+
+  let score = 0
+  if (epsSurprise > 0.1) score += 6
+  if (revGrowth > 0.1) score += 5
+  if (pe < 25) score += 3
+  if (fcfYield > 0.03) score += 3
+  if (de < 0.6) score += 4
+
+  return { epsSurprise, revGrowth, fcfYield, de, total: score }
+}
+
+function csApplyFilters({ tech, catalyst }) {
+  if (tech.rsi > 70 || tech.rsi < 30) return false
+  if (catalyst.de > 1.5) return false
+  if (catalyst.revGrowth < 0) return false
+  if (!tech.isBreakout) return false
+  return true
+}
+
+async function csGetBacktest(symbol, env) {
+  const hist = await fetchFMP(`/stable/historical-price-eod?symbol=${symbol}&limit=150`, env)
+  if (!hist || !hist.length) return { trades: 0, winRate: 0, avgReturn: 0 }
+
+  let wins = 0, total = 0, totalReturn = 0
+  for (let i = 100; i < hist.length - 5; i++) {
+    const entry = hist[i].close
+    const exit = hist[i + 5].close
+    const ret = ((exit - entry) / entry) * 100
+    totalReturn += ret
+    total++
+    if (ret > 0) wins++
+  }
+
+  return {
+    trades: total,
+    winRate: total > 0 ? (wins / total) * 100 : 0,
+    avgReturn: total > 0 ? totalReturn / total : 0
+  }
+}
+
 export default {
   async fetch(request, env) {
     try {
@@ -3943,6 +4162,90 @@ export default {
           response = await getMetriczAll(request)
         } catch(e) {
           response = {error: e.message, endpoint: pathname}
+        }
+
+      } else if (pathname === "/analysis/catalyst-surge") {
+        try {
+          if (!symbol) {
+            response = { error: "symbol parameter required" }
+          } else {
+            const technical = await csGetTechnical(symbol, env)
+            const smartMoney = await csGetSmartMoney(symbol, technical, env)
+            const catalyst = await csGetCatalyst(symbol, env)
+            if (!csApplyFilters({ tech: technical, catalyst })) {
+              response = { symbol, status: "REJECTED" }
+            } else {
+              const css =
+                catalyst.total * 0.4 +
+                technical.total * 0.35 +
+                smartMoney.total * 0.25
+              response = {
+                symbol,
+                css,
+                grade: csGetGrade(css),
+                breakdown: {
+                  catalyst: catalyst.total,
+                  technical: technical.total,
+                  smartMoney: smartMoney.total
+                },
+                detail: { technical, smartMoney, catalyst }
+              }
+            }
+          }
+        } catch(e) {
+          response = { error: e.message, endpoint: pathname }
+        }
+
+      } else if (pathname === "/analysis/catalyst-surge-top5") {
+        try {
+          const universe = await csGetTop80(env)
+          const safeUniverse = Array.isArray(universe) ? universe : []
+          const stage1 = []
+          for (const stock of safeUniverse) {
+            try {
+              const tech = await csGetTechnical(stock.symbol, env)
+              if (!tech.isBreakout) continue
+              stage1.push({ symbol: stock.symbol, quickScore: tech.total })
+            } catch (e) {}
+          }
+          const shortlist = stage1
+            .sort((a, b) => b.quickScore - a.quickScore)
+            .slice(0, 15)
+          const stage2 = []
+          for (const stock of shortlist) {
+            const technical = await csGetTechnical(stock.symbol, env)
+            const smartMoney = await csGetSmartMoney(stock.symbol, technical, env)
+            const catalyst = await csGetCatalyst(stock.symbol, env)
+            if (!csApplyFilters({ tech: technical, catalyst })) continue
+            const css =
+              catalyst.total * 0.4 +
+              technical.total * 0.35 +
+              smartMoney.total * 0.25
+            stage2.push({
+              symbol: stock.symbol,
+              css,
+              grade: csGetGrade(css),
+              breakdown: {
+                catalyst: catalyst.total,
+                technical: technical.total,
+                smartMoney: smartMoney.total
+              },
+              isBreakout: technical.isBreakout
+            })
+          }
+          const finalCandidates = stage2
+            .sort((a, b) => b.css - a.css)
+            .slice(0, 5)
+          const final = []
+          for (const stock of finalCandidates) {
+            const bt = await csGetBacktest(stock.symbol, env)
+            if (bt.winRate >= 55 && bt.avgReturn > 1) {
+              final.push({ ...stock, backtest: bt })
+            }
+          }
+          response = final
+        } catch(e) {
+          response = { error: e.message, endpoint: pathname }
         }
 
       } else if (action === 'metadata') {
