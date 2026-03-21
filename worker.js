@@ -1844,9 +1844,27 @@ export default {
           ['CP',                 'pc1', 1],
         ]
 
-        // 병렬 FRED 호출
+        // 병렬 FRED 호출 (observation_start 포함 → 3년치만 요청, 응답 수십배 축소)
+        // fredGet 대신 직접 URL 빌드: 전체 히스토리 호출 시 일별 시리즈 수만 관측치 반환 → Worker 타임아웃 원인
+        async function fredHistGet(series, units) {
+          const ctrl  = new AbortController()
+          const timer = setTimeout(() => ctrl.abort(), 12000)
+          try {
+            const unitsParam = (units && units !== 'lin') ? `&units=${units}` : ''
+            const u = `https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${FRED}&file_type=json&observation_start=${obsStart}${unitsParam}`
+            const r = await fetch(u, { signal: ctrl.signal })
+            if (!r.ok) return []
+            const j = await r.json()
+            return j.observations || []
+          } catch(e) {
+            return []
+          } finally {
+            clearTimeout(timer)
+          }
+        }
+
         const results = await Promise.allSettled(
-          SERIES.map(([code, units]) => fredGet(code, units === 'lin' ? null : units))
+          SERIES.map(([code, units]) => fredHistGet(code, units))
         )
 
         const out = { timestamp: new Date().toISOString() }
