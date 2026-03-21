@@ -2053,6 +2053,10 @@
 
                         <Top5BreakoutPicks />
 
+                        <div style={{ marginTop: '30px' }}>
+                            <CatalystSurgeWidget />
+                        </div>
+
                         <div style={{ textAlign: 'center', color: '#2d3748', fontSize: '12px', marginTop: '40px', paddingBottom: '40px' }}>
                             <p>데이터 소스: FMP API, FRED, Alpha Discovery Engine</p>
                             <p style={{ marginTop: '8px', fontSize: '11px', color: '#2d3748' }}>모든 데이터는 API 응답에서 동적으로 추출됩니다</p>
@@ -2115,6 +2119,119 @@
                             </div>
                         ))}
                     </div>
+                </div>
+            )
+        }
+
+        // ── Catalyst Surge Analysis 위젯 ──────────────────────────────
+        function CatalystSurgeWidget() {
+            const [symbol, setSymbol] = useState("AAPL")
+            const [data, setData] = useState(null)
+            const [loading, setLoading] = useState(false)
+
+            const fetchData = async () => {
+                if (!symbol) return
+                setLoading(true)
+                try {
+                    const res = await fetch(`${API_BASE}/analysis/catalyst-surge?symbol=${symbol}`)
+                    const json = await res.json()
+                    setData(json)
+                } catch(e) {
+                    console.error(e)
+                    setData(null)
+                }
+                setLoading(false)
+            }
+
+            useEffect(() => { fetchData() }, [])
+
+            const styles = {
+                container: { padding: 20, background: "#111", color: "#fff", borderRadius: 12, maxWidth: 600, margin: "0 auto" },
+                inputRow:  { display: "flex", gap: 10, marginBottom: 20 },
+                input:     { padding: 10, fontSize: 16, width: 150, borderRadius: 6, border: "none" },
+                button:    { padding: 10, background: "#4CAF50", color: "#fff", border: "none", cursor: "pointer", borderRadius: 6 },
+                grid:      { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 20 },
+                card:      { background: "#222", padding: 15, borderRadius: 10, textAlign: "center" },
+                score:     { fontSize: 32, fontWeight: "bold" }
+            }
+
+            return (
+                <div style={styles.container}>
+                    <h2>🔥 Catalyst Surge Analysis</h2>
+
+                    <div style={styles.inputRow}>
+                        <input
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                            style={styles.input}
+                            placeholder="Enter Symbol (AAPL)"
+                        />
+                        <button onClick={fetchData} style={styles.button}>분석</button>
+                    </div>
+
+                    {loading && <p>Loading...</p>}
+
+                    {data && data.status === "REJECTED" && (
+                        <p style={{ color: "#ff5252" }}>❌ 필터 탈락 종목</p>
+                    )}
+
+                    {data && data.status !== "REJECTED" && data.detail && (
+                        <>
+                            <div style={styles.card}>
+                                <h3>CSS Score</h3>
+                                <p style={styles.score}>{data.css != null ? data.css.toFixed(1) : "-"}</p>
+                                <p>{data.grade || "-"}</p>
+                            </div>
+
+                            <div style={styles.grid}>
+                                <div style={styles.card}>
+                                    <h4>Technical</h4>
+                                    <p>{data.breakdown?.technical ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Smart Money</h4>
+                                    <p>{data.breakdown?.smartMoney ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Catalyst</h4>
+                                    <p>{data.breakdown?.catalyst ?? "-"}</p>
+                                </div>
+                            </div>
+
+                            <div style={styles.grid}>
+                                <div style={styles.card}>
+                                    <h4>RSI</h4>
+                                    <p>{data.detail?.technical?.rsi?.toFixed(1) ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Volume Ratio</h4>
+                                    <p>{data.detail?.technical?.volumeRatio?.toFixed(2) ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>ATR %</h4>
+                                    <p>{data.detail?.technical?.atr_pct?.toFixed(2) ?? "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>EPS Surprise</h4>
+                                    <p>{data.detail?.catalyst?.epsSurprise != null
+                                        ? (data.detail.catalyst.epsSurprise * 100).toFixed(1) + "%"
+                                        : "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>Revenue Growth</h4>
+                                    <p>{data.detail?.catalyst?.revGrowth != null
+                                        ? (data.detail.catalyst.revGrowth * 100).toFixed(1) + "%"
+                                        : "-"}</p>
+                                </div>
+                                <div style={styles.card}>
+                                    <h4>FCF Yield</h4>
+                                    <p>{data.detail?.catalyst?.fcfYield != null
+                                        ? (data.detail.catalyst.fcfYield * 100).toFixed(2) + "%"
+                                        : "-"}</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             )
         }
