@@ -1816,7 +1816,7 @@ export default {
           ['EFFR',               'lin', 1],
           ['DGS10',              'lin', 1],
           ['DGS2',               'lin', 1],
-          ['REAINTRATREARAT10Y', 'lin', 1],
+          ['REAINTRATREAAT10Y', 'lin', 1],
           ['MORTGAGE30US',       'lin', 1],
           // 2. 물가 및 인플레이션
           ['CPIAUCSL',           'pc1', 1],
