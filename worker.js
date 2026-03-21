@@ -205,19 +205,27 @@ async function refreshDiscoveryCache(env) {
           ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
           : {}
         const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
+        const rev = g.revenueGrowth || 0
+        const eps = g.epsGrowth ?? g.epsgrowth ?? 0
+        const roe = m.roe || 0
+        const mom = (q.changesPercentage || 0) / 100
+        const pe  = m.peRatio || 0
+        const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
         return {
           symbol,
           price:           q.price              || 0,
-          revenueGrowth:   g.revenueGrowth       || 0,
-          epsGrowth:       g.epsGrowth ?? g.epsgrowth ?? 0,
-          roe:             m.roe                 || 0,
-          pe:              m.peRatio             || 0,
+          volume:          q.volume             || 0,
+          revenueGrowth:   rev,
+          epsGrowth:       eps,
+          roe:             roe,
+          pe:              pe,
           pb:              m.pbRatio             || 0,
           profitMargin:    r.netProfitMargin      || 0,
           operatingMargin: r.operatingMargin      || 0,
           debtToEquity:    r.debtEquityRatio      || 0,
-          momentum:        (q.changesPercentage   || 0) / 100,
-          sector:          q.sector              || 'Unknown'
+          momentum:        mom,
+          sector:          q.sector              || 'Unknown',
+          score:           parseFloat(score.toFixed(2))
         }
       } catch {
         return null
@@ -227,7 +235,7 @@ async function refreshDiscoveryCache(env) {
     if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 300))
   }
 
-  const payload = { timestamp: new Date().toISOString(), top_20: results }
+  const payload = { timestamp: new Date().toISOString(), universe_size: SYMBOLS.length, analyzed: results.length, execution_time_sec: 0, top_20: results }
   await kv.put(DISCOVERY_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
   console.log(`✅ discovery 캐시 갱신 완료: ${results.length}/${SYMBOLS.length}종목`)
 }
@@ -766,7 +774,7 @@ export default {
         "DFEDTARU": { divisor: 1, unit: "%" },     // Fed 금리 상단
         "DFEDTARL": { divisor: 1, unit: "%" },     // Fed 금리 하단
         "EFFR": { divisor: 1, unit: "%" },          // 실효연방기금금리
-        "REAINTRATREAAT10Y": { divisor: 1, unit: "%" }, // 실질 금리 10년물
+        "REAINTRATREARAT10Y": { divisor: 1, unit: "%" }, // 실질 금리 10년물
         "MORTGAGE30US": { divisor: 1, unit: "%" }, // 30년 고정 모기지 금리
         "MICH": { divisor: 1, unit: "%" },          // 기대 인플레이션 (미시간대 1년)
         "IPMAN": { divisor: 1, unit: "idx" },       // 제조업 생산 지수
@@ -1791,7 +1799,7 @@ export default {
           fredGet("DFEDTARU"),             // 1-1) Fed 금리 상단 (lin)
           fredGet("DFEDTARL"),             // 1-2) Fed 금리 하단 (lin)
           fredGet("EFFR"),                 // 1-3) 실효연방기금금리 (lin)
-          fredGet("REAINTRATREAAT10Y"),    // 1-6) 실질 금리 10년물 (lin)
+          fredGet("REAINTRATREARAT10Y"),    // 1-6) 실질 금리 10년물 (lin)
           fredGet("MORTGAGE30US"),         // 1-7) 30년 고정 모기지 금리 (lin)
           fredGet("MICH"),                 // 2-4) 기대 인플레이션 미시간대 1년 (lin)
           fredGet("PCEPILFE", "pc1"),      // 2-3) 근원 PCE YoY% (pc1)
@@ -1981,7 +1989,7 @@ export default {
               EFFR: effrVal,               // EFFR (lin)
               US10Y: us10y,                // DGS10 (lin)
               US2Y: us2y,                  // DGS2 (lin)
-              REAL_RATE_10Y: reaintrateVal, // REAINTRATREAAT10Y (lin)
+              REAL_RATE_10Y: reaintrateVal, // REAINTRATREARAT10Y (lin)
               MORTGAGE30: mortgage30Val    // MORTGAGE30US (lin)
             },
             // 2. 물가 및 인플레이션
@@ -2090,7 +2098,7 @@ export default {
           ['EFFR',               'lin', 1],
           ['DGS10',              'lin', 1],
           ['DGS2',               'lin', 1],
-          ['REAINTRATREAAT10Y', 'lin', 1],
+          ['REAINTRATREARAT10Y', 'lin', 1],
           ['MORTGAGE30US',       'lin', 1],
           // 2. 물가 및 인플레이션
           ['CPIAUCSL',           'pc1', 1],
@@ -3473,26 +3481,35 @@ export default {
                 ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
                 : {}
               const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
+              const rev = g.revenueGrowth || 0
+              const eps = g.epsGrowth ?? g.epsgrowth ?? 0
+              const roe = m.roe || 0
+              const mom = (q.changesPercentage || 0) / 100
+              const pe  = m.peRatio || 0
+              const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
               return {
                 symbol,
                 price:           q.price              || 0,
-                revenueGrowth:   g.revenueGrowth       || 0,
-                epsGrowth:       g.epsGrowth ?? g.epsgrowth ?? 0,
-                roe:             m.roe                 || 0,
-                pe:              m.peRatio             || 0,
+                volume:          q.volume             || 0,
+                revenueGrowth:   rev,
+                epsGrowth:       eps,
+                roe:             roe,
+                pe:              pe,
                 pb:              m.pbRatio             || 0,
                 profitMargin:    r.netProfitMargin      || 0,
                 operatingMargin: r.operatingMargin      || 0,
                 debtToEquity:    r.debtEquityRatio      || 0,
-                momentum:        (q.changesPercentage   || 0) / 100,
-                sector:          q.sector              || 'Unknown'
+                momentum:        mom,
+                sector:          q.sector              || 'Unknown',
+                score:           parseFloat(score.toFixed(2))
               }
             } catch {
               return null
             }
           })
         )
-        return { top_20: results.filter(v => v) }
+        const items = results.filter(v => v)
+        return { top_20: items, analyzed: items.length, universe_size: 10, execution_time_sec: 0 }
       }
 
       // ── 심플 Macro Data (FRED 3개) ────────────────────────────────
