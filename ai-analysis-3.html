@@ -917,17 +917,17 @@
                                 return { ...stock, strategyScore };
                             }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>순이익마진</th><th>PE</th><th>점수</th></tr></thead><tbody>';
+                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>순이익마진</th><th>PE</th></tr></thead><tbody>';
                             explosiveStocks.forEach(stock => {
                                 const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
                                 html += `<tr>
                                     <td style="font-weight: 600;">${stock.symbol}</td>
+                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                     <td>${stock.sector || '-'}</td>
                                     <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.revenueGrowth || 0).toFixed(1)}%</td>
                                     <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.epsGrowth || 0).toFixed(1)}%</td>
                                     <td>${(stock.profitMargin || 0).toFixed(1)}%</td>
                                     <td>${stock.pe > 0 ? stock.pe.toFixed(1) : 'N/A'}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -957,18 +957,18 @@
                                 return { ...stock, sectorMomentum, strategyScore };
                             }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>영업이익률</th><th>섹터모멘텀</th><th>점수</th></tr></thead><tbody>';
+                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>영업이익률</th><th>섹터모멘텀</th></tr></thead><tbody>';
                             smartMoneyStocks.forEach(stock => {
                                 const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
                                 const momColor = stock.sectorMomentum >= 0 ? '#10b981' : '#ef4444';
                                 html += `<tr>
                                     <td style="font-weight: 600;">${stock.symbol}</td>
+                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                     <td>${stock.sector || '-'}</td>
                                     <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.revenueGrowth || 0).toFixed(1)}%</td>
                                     <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.epsGrowth || 0).toFixed(1)}%</td>
                                     <td>${(stock.operatingMargin || 0).toFixed(1)}%</td>
                                     <td style="color: ${momColor}">${stock.sectorMomentum.toFixed(2)}%</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -997,17 +997,17 @@
                                 return { ...stock, relativeStrength, strategyScore };
                             }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>섹터</th><th>상대강도</th><th>수익증가</th><th>EPS증가</th><th>점수</th></tr></thead><tbody>';
+                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>섹터</th><th>상대강도</th><th>수익증가</th><th>EPS증가</th></tr></thead><tbody>';
                             sectorLeaderStocks.forEach(stock => {
                                 const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
                                 const strengthColor = stock.relativeStrength >= 0 ? '#10b981' : '#ef4444';
                                 html += `<tr>
                                     <td style="font-weight: 600;">${stock.symbol}</td>
+                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                     <td>${stock.sector || '-'}</td>
                                     <td style="color: ${strengthColor}">${stock.relativeStrength.toFixed(2)}%</td>
                                     <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.revenueGrowth || 0).toFixed(1)}%</td>
                                     <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.epsGrowth || 0).toFixed(1)}%</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -1044,16 +1044,16 @@
                                 return { ...stock, strategyScore, liquidityIndex, riskScore };
                             }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>수익증가</th><th>EPS증가</th><th>유동성</th><th>리스크</th><th>점수</th></tr></thead><tbody>';
+                            html = '<table style="width:100%; font-size:12px;"><thead><tr><th>종목</th><th>점수</th><th>수익증가</th><th>EPS증가</th><th>유동성</th><th>리스크</th></tr></thead><tbody>';
                             liquidityStocks.forEach(stock => {
                                 const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
                                 html += `<tr>
                                     <td style="font-weight: 600;">${stock.symbol}</td>
+                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                     <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.revenueGrowth || 0).toFixed(1)}%</td>
                                     <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.epsGrowth || 0).toFixed(1)}%</td>
                                     <td>${stock.liquidityIndex.toFixed(0)}</td>
                                     <td>${stock.riskScore.toFixed(0)}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 600;">${stock.strategyScore.toFixed(0)}</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -1090,18 +1090,18 @@
                                 return { ...stock, sectorStrength, macroScore: macroEnvScore, strategyScore };
                             }).sort((a, b) => b.strategyScore - a.strategyScore).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:11px;"><thead><tr><th>종목</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>ROE</th><th>섹터강도</th><th>거시점수</th><th>Investflow</th></tr></thead><tbody>';
+                            html = '<table style="width:100%; font-size:11px;"><thead><tr><th>종목</th><th>Investflow</th><th>섹터</th><th>수익증가</th><th>EPS증가</th><th>ROE</th><th>섹터강도</th><th>거시점수</th></tr></thead><tbody>';
                             investflowStocks.forEach(stock => {
                                 const scoreColor = stock.strategyScore >= 70 ? '#10b981' : stock.strategyScore >= 50 ? '#f59e0b' : '#ef4444';
                                 html += `<tr>
                                     <td style="font-weight: 600;">${stock.symbol}</td>
+                                    <td style="color: ${scoreColor}; font-weight: 700;">${stock.strategyScore.toFixed(0)}</td>
                                     <td>${stock.sector || '-'}</td>
                                     <td style="color: ${stock.revenueGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.revenueGrowth || 0).toFixed(1)}%</td>
                                     <td style="color: ${stock.epsGrowth >= 0 ? '#10b981' : '#ef4444'}">${(stock.epsGrowth || 0).toFixed(1)}%</td>
                                     <td>${(stock.roe || 0).toFixed(1)}%</td>
                                     <td style="color: ${stock.sectorStrength >= 0 ? '#10b981' : '#ef4444'}">${stock.sectorStrength.toFixed(2)}%</td>
                                     <td>${stock.macroScore.toFixed(0)}</td>
-                                    <td style="color: ${scoreColor}; font-weight: 700;">${stock.strategyScore.toFixed(0)}</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';

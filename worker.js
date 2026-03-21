@@ -3566,20 +3566,17 @@ export default {
       async function fetchAlphaScannerSimple() {
         const discovery = await fetchAlphaDiscoverySimple()
         const safe = (v) => isNaN(v) || v == null ? 0 : v
-        const qualified = []
-        for (const s of discovery.top_20) {
+        const all = (discovery.top_20 || []).map(s => {
           const score =
             safe(s.revenueGrowth) * 100 * 0.25 +
             safe(s.epsGrowth) * 100 * 0.25 +
             safe(s.roe) * 100 * 0.2 +
             safe(s.momentum) * 100 * 0.2 -
             safe(s.pe) * 0.1
-          if (s.revenueGrowth > 0.1 && s.epsGrowth > 0.1 && s.roe > 0.1) {
-            qualified.push({ ...s, score })
-          }
-        }
-        qualified.sort((a, b) => b.score - a.score)
-        return { top_20: qualified.slice(0, 20) }
+          return { ...s, score }
+        })
+        all.sort((a, b) => b.score - a.score)
+        return { top_20: all.slice(0, 20), analyzed: discovery.analyzed, universe_size: discovery.universe_size }
       }
 
       /* ================================
