@@ -1087,7 +1087,7 @@
                                     norm(stock.revenueGrowth || 0) * 0.15 +
                                     norm(stock.epsGrowth || 0) * 0.15 +
                                     norm(stock.roe || 0) * 0.10 +
-                                    (stock.pe > 0 ? 1 / stock.pe : 0) * 0.10 +
+                                    (stock.pe > 0 ? (1 / stock.pe) * 100 : 0) * 0.10 +
                                     norm(stock.operatingMargin || 0) * 0.10 +
                                     norm(stock.momentum || 0) * 0.10;
                                 return { ...stock, sectorStrength, macroScore: macroEnvScore, strategyScore };
