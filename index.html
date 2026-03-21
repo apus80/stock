@@ -4459,9 +4459,9 @@
             if (inflightMacroIndexRequest) {
                 return inflightMacroIndexRequest;
             }
-            // 1년 전부터 요청 (월간 시리즈 최신값 확보용)
+            // 3년 전부터 요청 (GDPC1 분기 데이터 및 UMCSENT 갱신 주기 고려)
             var d = new Date();
-            d.setFullYear(d.getFullYear() - 1);
+            d.setFullYear(d.getFullYear() - 3);
             var start = d.toISOString().split('T')[0];
             var url = API_BASE + '/macroindex?start=' + start;
 
