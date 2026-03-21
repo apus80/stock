@@ -187,53 +187,61 @@ async function refreshDiscoveryCache(env) {
     return
   }
 
+  // 출처: FMP API /stable/quote (무료 플랜 확인)
+  // 유료 엔드포인트 제거 (key-metrics-ttm, ratios-ttm, financial-growth, profile → 모두 유료)
   const BASE    = 'https://financialmodelingprep.com/stable'
-  const SYMBOLS = SP500_UNIVERSE.slice(0, 80) // 80종목 × 4 API = 320 calls/cron
+  const SYMBOLS = SP500_UNIVERSE.slice(0, 80)
   const results = []
 
   for (let i = 0; i < SYMBOLS.length; i += 10) {
     const wave = SYMBOLS.slice(i, i + 10)
     const waveResults = await Promise.allSettled(wave.map(async (symbol) => {
       try {
-        const [qr, mr, rr, gr, pr] = await Promise.allSettled([
-          fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`),
-          fmpGet(`${BASE}/key-metrics-ttm?symbol=${symbol}&apikey=${apiKey}`),
-          fmpGet(`${BASE}/ratios-ttm?symbol=${symbol}&apikey=${apiKey}`),
-          fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${apiKey}`),
-          fmpGet(`${BASE}/profile?symbol=${symbol}&apikey=${apiKey}`)
-        ])
-        const ext = x => x.status === 'fulfilled' && x.value
-          ? (Array.isArray(x.value) ? (x.value[0] || {}) : x.value)
-          : {}
-        const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr), p = ext(pr)
-        const rev = g.revenueGrowth || 0
-        const eps = g.epsGrowth ?? g.epsgrowth ?? g.earningsGrowth ?? 0
-        const roe = m.returnOnEquityTTM || 0
-        const mom = (q.changePercentage || 0) / 100        // fix: changesPercentage → changePercentage
-        const pe  = r.priceToEarningsRatioTTM || 0         // fix: key-metrics null → ratios-ttm
-        const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
+        const qRaw = await fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`)
+        const q = Array.isArray(qRaw) ? (qRaw[0] || {}) : (qRaw || {})
+        if (!q.price) return null
+
+        const price   = q.price    || 0
+        const ma50    = q.priceAvg50  || price
+        const ma200   = q.priceAvg200 || price
+        const yLow    = q.yearLow   || price * 0.7
+        const yHigh   = q.yearHigh  || price * 1.3
+        const vol     = q.volume    || 0
+        const avgVol  = q.avgVolume || 1
+        const pe      = q.pe        || 0
+        const mom     = q.changePercentage || 0   // 당일 % 변동
+
+        // 기술적 지표 (모두 % 단위)
+        const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0  // MA50 대비 %
+        const ma200trend = ma200 > 0 ? (price - ma200) / ma200 * 100 : 0  // MA200 대비 %
+        const range      = yHigh - yLow
+        const str52w     = range > 0 ? (price - yLow) / range * 100 : 50   // 52주 강도 0~100%
+        const volSurge   = avgVol > 0 ? (vol / avgVol - 1) * 100 : 0       // 거래량 급증 %
+
+        // 종합 점수: 모멘텀30% + MA50추세25% + 52주강도25% + 거래량20%
+        const score = mom       * 0.30
+                    + ma50trend * 0.25
+                    + (str52w - 50) * 0.25    // 50% 기준 중립화
+                    + Math.min(50, Math.max(-20, volSurge)) * 0.20
+
         return {
           symbol,
-          price:           q.price                         || 0,
-          volume:          q.volume                        || 0,
-          revenueGrowth:   rev,
-          epsGrowth:       eps,
-          roe:             roe,
-          pe:              pe,
-          pb:              r.priceToBookRatioTTM            || 0,  // fix: key-metrics null → ratios-ttm
-          profitMargin:    r.netProfitMarginTTM             || 0,
-          operatingMargin: r.operatingProfitMarginTTM       || 0,
-          debtToEquity:    r.debtToEquityRatioTTM           || 0,  // fix: debtEquity → debtToEquity
-          momentum:        mom,
-          sector:          p.sector                         || 'Unknown',  // fix: quote(null) → profile
-          score:           parseFloat(score.toFixed(2))
+          price,
+          volume: vol,
+          // 기술 지표 (% 단위로 저장)
+          momentum:   parseFloat(mom.toFixed(2)),       // 당일 % 변동
+          ma50trend:  parseFloat(ma50trend.toFixed(2)), // MA50 대비 %
+          str52w:     parseFloat(str52w.toFixed(1)),    // 52주 강도 0~100
+          volSurge:   parseFloat(volSurge.toFixed(1)),  // 거래량 급증 %
+          pe:         parseFloat((pe || 0).toFixed(1)),
+          score:      parseFloat(score.toFixed(2))
         }
       } catch {
         return null
       }
     }))
     results.push(...waveResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(v => v))
-    if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 300))
+    if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 200))
   }
 
   const sorted = results.sort((a, b) => b.score - a.score).slice(0, 20)
@@ -3505,12 +3513,12 @@ export default {
             const cached = await kv.get(DISCOVERY_KV_KEY)
             if (cached) {
               const parsed = JSON.parse(cached)
-              // 스테일 캐시 감지: 모든 종목의 핵심 필드가 0이면 캐시 무시 (필드명 수정 전 구버전)
+              // 스테일 캐시 감지: ma50trend 필드가 없거나 모든 score가 0이면 구버전 캐시 → 무시
               const hasValidData = parsed.top_20?.some(s =>
-                (s.revenueGrowth || 0) !== 0 || (s.epsGrowth || 0) !== 0 || (s.roe || 0) !== 0
+                s.ma50trend !== undefined || Math.abs(s.score || 0) > 0.5
               )
               if (!hasValidData) {
-                console.warn('⚠️ Discovery KV 캐시가 스테일 (모두 0값) - 실시간 폴백으로 전환')
+                console.warn('⚠️ Discovery KV 캐시가 구버전 (ma50trend 없음) - 실시간 폴백으로 전환')
                 // fall through to real-time fetch
               } else {
                 // 구버전 캐시(80종목 전체)도 정렬+슬라이스 보정
@@ -3525,44 +3533,46 @@ export default {
           }
         }
 
-        // 2️⃣ KV 없으면 상위 10종목 실시간 폴백
+        // 2️⃣ KV 없으면 상위 10종목 실시간 폴백 (출처: FMP /stable/quote 무료 플랜)
         const BASE    = 'https://financialmodelingprep.com/stable'
         const SYMBOLS = SP500_UNIVERSE.slice(0, 10)
         const results = await Promise.all(
           SYMBOLS.map(async (symbol) => {
             try {
-              const [qr, mr, rr, gr, pr] = await Promise.allSettled([
-                fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${FMP}`),
-                fmpGet(`${BASE}/key-metrics-ttm?symbol=${symbol}&apikey=${FMP}`),
-                fmpGet(`${BASE}/ratios-ttm?symbol=${symbol}&apikey=${FMP}`),
-                fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${FMP}`),
-                fmpGet(`${BASE}/profile?symbol=${symbol}&apikey=${FMP}`)
-              ])
-              const ext = x => x.status === 'fulfilled' && x.value
-                ? (Array.isArray(x.value) ? (x.value[0] || {}) : x.value)
-                : {}
-              const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr), p = ext(pr)
-              const rev = g.revenueGrowth || 0
-              const eps = g.epsGrowth ?? g.epsgrowth ?? g.earningsGrowth ?? 0
-              const roe = m.returnOnEquityTTM || 0
-              const mom = (q.changePercentage || 0) / 100        // fix: changesPercentage → changePercentage
-              const pe  = r.priceToEarningsRatioTTM || 0         // fix: key-metrics null → ratios-ttm
-              const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
+              const qRaw = await fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${FMP}`)
+              const q = Array.isArray(qRaw) ? (qRaw[0] || {}) : (qRaw || {})
+              if (!q.price) return null
+
+              const price   = q.price    || 0
+              const ma50    = q.priceAvg50  || price
+              const ma200   = q.priceAvg200 || price
+              const yLow    = q.yearLow   || price * 0.7
+              const yHigh   = q.yearHigh  || price * 1.3
+              const vol     = q.volume    || 0
+              const avgVol  = q.avgVolume || 1
+              const pe      = q.pe        || 0
+              const mom     = q.changePercentage || 0
+
+              const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0
+              const range      = yHigh - yLow
+              const str52w     = range > 0 ? (price - yLow) / range * 100 : 50
+              const volSurge   = avgVol > 0 ? (vol / avgVol - 1) * 100 : 0
+
+              const score = mom       * 0.30
+                          + ma50trend * 0.25
+                          + (str52w - 50) * 0.25
+                          + Math.min(50, Math.max(-20, volSurge)) * 0.20
+
               return {
                 symbol,
-                price:           q.price                         || 0,
-                volume:          q.volume                        || 0,
-                revenueGrowth:   rev,
-                epsGrowth:       eps,
-                roe:             roe,
-                pe:              pe,
-                pb:              r.priceToBookRatioTTM            || 0,  // fix: key-metrics null → ratios-ttm
-                profitMargin:    r.netProfitMarginTTM             || 0,
-                operatingMargin: r.operatingProfitMarginTTM       || 0,
-                debtToEquity:    r.debtToEquityRatioTTM           || 0,  // fix: debtEquity → debtToEquity
-                momentum:        mom,
-                sector:          p.sector                         || 'Unknown',  // fix: quote(null) → profile
-                score:           parseFloat(score.toFixed(2))
+                price,
+                volume: vol,
+                momentum:  parseFloat(mom.toFixed(2)),
+                ma50trend: parseFloat(ma50trend.toFixed(2)),
+                str52w:    parseFloat(str52w.toFixed(1)),
+                volSurge:  parseFloat(volSurge.toFixed(1)),
+                pe:        parseFloat((pe || 0).toFixed(1)),
+                score:     parseFloat(score.toFixed(2))
               }
             } catch {
               return null
@@ -3591,14 +3601,19 @@ export default {
       // ── 심플 Alpha Scanner ────────────────────────────────────────
       async function fetchAlphaScannerSimple() {
         const discovery = await fetchAlphaDiscoverySimple()
+        // 이미 score가 계산된 데이터 사용 (refreshDiscoveryCache가 계산)
+        // 기존 구버전 캐시(revenueGrowth 등) 호환성을 위한 fallback 점수 계산
         const safe = (v) => isNaN(v) || v == null ? 0 : v
         const all = (discovery.top_20 || []).map(s => {
-          const score =
-            safe(s.revenueGrowth) * 100 * 0.25 +
-            safe(s.epsGrowth) * 100 * 0.25 +
-            safe(s.roe) * 100 * 0.2 +
-            safe(s.momentum) * 100 * 0.2 -
-            safe(s.pe) * 0.1
+          // 신버전: ma50trend 있으면 기존 score 사용
+          // 구버전: revenueGrowth/epsGrowth/roe로 재계산
+          const score = s.ma50trend !== undefined
+            ? (s.score || 0)
+            : (safe(s.revenueGrowth) * 100 * 0.25 +
+               safe(s.epsGrowth) * 100 * 0.25 +
+               safe(s.roe) * 100 * 0.2 +
+               safe(s.momentum) * 100 * 0.2 -
+               safe(s.pe) * 0.1)
           return { ...s, score }
         })
         all.sort((a, b) => b.score - a.score)

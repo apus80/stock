@@ -1143,36 +1143,36 @@
                                 html += '<th style="padding:4px 6px;">#</th>';
                                 html += '<th style="padding:4px 6px;">종목</th>';
                                 html += '<th style="padding:4px 6px;">점수</th>';
-                                html += '<th style="padding:4px 6px;">수익증가</th>';
-                                html += '<th style="padding:4px 6px;">EPS증가</th>';
-                                html += '<th style="padding:4px 6px;">ROE</th>';
+                                html += '<th style="padding:4px 6px;">당일%</th>';
+                                html += '<th style="padding:4px 6px;">MA50추세</th>';
+                                html += '<th style="padding:4px 6px;">52주강도</th>';
+                                html += '<th style="padding:4px 6px;">거래량%</th>';
                                 html += '<th style="padding:4px 6px;">PE</th>';
-                                html += '<th style="padding:4px 6px;">섹터</th>';
                                 html += '</tr></thead><tbody>';
                                 top10.forEach((s, i) => {
-                                    const score = (s.totalScore ?? s.score ?? 0).toFixed(1);
-                                    const scoreColor = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
-                                    const rev = ((s.revenueGrowth || 0) * 100).toFixed(1);
-                                    const eps = ((s.epsGrowth || 0) * 100).toFixed(1);
-                                    const roe = ((s.roe || 0) * 100).toFixed(1);
-                                    const pe  = (s.pe || 0).toFixed(1);
-                                    const sector = (s.sector || '-').replace('Communication Services','Comm').replace('Consumer Cyclical','Consum').replace('Technology','Tech');
-                                    const rowBg  = i % 2 === 0 ? '' : 'background:#fef2f2;';
+                                    const score = (s.score ?? 0).toFixed(1);
+                                    const scoreColor = score >= 5 ? '#10b981' : score >= 0 ? '#f59e0b' : '#ef4444';
+                                    const mom     = (s.momentum ?? 0).toFixed(1);
+                                    const ma50    = (s.ma50trend ?? 0).toFixed(1);
+                                    const str52w  = (s.str52w ?? 0).toFixed(0);
+                                    const volSurge= (s.volSurge ?? 0).toFixed(0);
+                                    const pe      = (s.pe ?? 0).toFixed(1);
+                                    const rowBg   = i % 2 === 0 ? '' : 'background:#fef2f2;';
                                     html += `<tr style="${rowBg}">
                                         <td style="padding:3px 6px; font-weight:700; color:#a0aec0; text-align:center;">${i + 1}</td>
                                         <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                         <td style="padding:3px 6px; color:${scoreColor}; font-weight:700; text-align:right;">${score}</td>
-                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(rev)>=0?'#10b981':'#ef4444'};">${rev}%</td>
-                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(eps)>=0?'#10b981':'#ef4444'};">${eps}%</td>
-                                        <td style="padding:3px 6px; text-align:right;">${roe}%</td>
-                                        <td style="padding:3px 6px; text-align:right;">${pe}</td>
-                                        <td style="padding:3px 6px; font-size:11px; color:#718096;">${sector}</td>
+                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(mom)>=0?'#10b981':'#ef4444'};">${mom}%</td>
+                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(ma50)>=0?'#10b981':'#ef4444'};">${ma50}%</td>
+                                        <td style="padding:3px 6px; text-align:right;">${str52w}%</td>
+                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(volSurge)>=0?'#10b981':'#ef4444'};">${volSurge}%</td>
+                                        <td style="padding:3px 6px; text-align:right;">${pe > 0 ? pe : '-'}</td>
                                     </tr>`;
                                 });
                                 html += '</tbody></table>';
                                 html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
-                                    <strong>🔬 Alpha Score</strong> = 수익증가×25% + EPS증가×25% + ROE×20% + 모멘텀×20% − PE×0.1<br>
-                                    분석: ${scannerData.deep_analyzed || scannerData.analyzed || '-'}종목
+                                    <strong>🔬 Alpha Score</strong> = 당일%×30% + MA50추세×25% + 52주강도×25% + 거래량×20%<br>
+                                    분석: ${scannerData.analyzed || '-'}종목 (출처: FMP /stable/quote)
                                 </div>`;
                             }
                         } catch (scanErr) {
