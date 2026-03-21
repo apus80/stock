@@ -195,36 +195,37 @@ async function refreshDiscoveryCache(env) {
     const wave = SYMBOLS.slice(i, i + 10)
     const waveResults = await Promise.allSettled(wave.map(async (symbol) => {
       try {
-        const [qr, mr, rr, gr] = await Promise.allSettled([
+        const [qr, mr, rr, gr, pr] = await Promise.allSettled([
           fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`),
           fmpGet(`${BASE}/key-metrics-ttm?symbol=${symbol}&apikey=${apiKey}`),
           fmpGet(`${BASE}/ratios-ttm?symbol=${symbol}&apikey=${apiKey}`),
-          fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${apiKey}`)
+          fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${apiKey}`),
+          fmpGet(`${BASE}/profile?symbol=${symbol}&apikey=${apiKey}`)
         ])
-        const ext = r => r.status === 'fulfilled' && r.value
-          ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
+        const ext = x => x.status === 'fulfilled' && x.value
+          ? (Array.isArray(x.value) ? (x.value[0] || {}) : x.value)
           : {}
-        const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
+        const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr), p = ext(pr)
         const rev = g.revenueGrowth || 0
         const eps = g.epsGrowth ?? g.epsgrowth ?? g.earningsGrowth ?? 0
         const roe = m.returnOnEquityTTM || 0
-        const mom = (q.changesPercentage || 0) / 100
-        const pe  = m.peRatioTTM || 0
+        const mom = (q.changePercentage || 0) / 100        // fix: changesPercentage → changePercentage
+        const pe  = r.priceToEarningsRatioTTM || 0         // fix: key-metrics null → ratios-ttm
         const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
         return {
           symbol,
-          price:           q.price                    || 0,
-          volume:          q.volume                   || 0,
+          price:           q.price                         || 0,
+          volume:          q.volume                        || 0,
           revenueGrowth:   rev,
           epsGrowth:       eps,
           roe:             roe,
           pe:              pe,
-          pb:              m.priceToBookRatioTTM       || 0,
-          profitMargin:    r.netProfitMarginTTM        || 0,
-          operatingMargin: r.operatingProfitMarginTTM  || 0,
-          debtToEquity:    r.debtEquityRatioTTM        || 0,
+          pb:              r.priceToBookRatioTTM            || 0,  // fix: key-metrics null → ratios-ttm
+          profitMargin:    r.netProfitMarginTTM             || 0,
+          operatingMargin: r.operatingProfitMarginTTM       || 0,
+          debtToEquity:    r.debtToEquityRatioTTM           || 0,  // fix: debtEquity → debtToEquity
           momentum:        mom,
-          sector:          q.sector                   || 'Unknown',
+          sector:          p.sector                         || 'Unknown',  // fix: quote(null) → profile
           score:           parseFloat(score.toFixed(2))
         }
       } catch {
@@ -3506,36 +3507,37 @@ export default {
         const results = await Promise.all(
           SYMBOLS.map(async (symbol) => {
             try {
-              const [qr, mr, rr, gr] = await Promise.allSettled([
+              const [qr, mr, rr, gr, pr] = await Promise.allSettled([
                 fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${FMP}`),
                 fmpGet(`${BASE}/key-metrics-ttm?symbol=${symbol}&apikey=${FMP}`),
                 fmpGet(`${BASE}/ratios-ttm?symbol=${symbol}&apikey=${FMP}`),
-                fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${FMP}`)
+                fmpGet(`${BASE}/financial-growth?symbol=${symbol}&limit=1&apikey=${FMP}`),
+                fmpGet(`${BASE}/profile?symbol=${symbol}&apikey=${FMP}`)
               ])
-              const ext = r => r.status === 'fulfilled' && r.value
-                ? (Array.isArray(r.value) ? (r.value[0] || {}) : r.value)
+              const ext = x => x.status === 'fulfilled' && x.value
+                ? (Array.isArray(x.value) ? (x.value[0] || {}) : x.value)
                 : {}
-              const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr)
+              const q = ext(qr), m = ext(mr), r = ext(rr), g = ext(gr), p = ext(pr)
               const rev = g.revenueGrowth || 0
               const eps = g.epsGrowth ?? g.epsgrowth ?? g.earningsGrowth ?? 0
               const roe = m.returnOnEquityTTM || 0
-              const mom = (q.changesPercentage || 0) / 100
-              const pe  = m.peRatioTTM || 0
+              const mom = (q.changePercentage || 0) / 100        // fix: changesPercentage → changePercentage
+              const pe  = r.priceToEarningsRatioTTM || 0         // fix: key-metrics null → ratios-ttm
               const score = rev * 100 * 0.25 + eps * 100 * 0.25 + roe * 100 * 0.20 + mom * 100 * 0.20
               return {
                 symbol,
-                price:           q.price                    || 0,
-                volume:          q.volume                   || 0,
+                price:           q.price                         || 0,
+                volume:          q.volume                        || 0,
                 revenueGrowth:   rev,
                 epsGrowth:       eps,
                 roe:             roe,
                 pe:              pe,
-                pb:              m.priceToBookRatioTTM       || 0,
-                profitMargin:    r.netProfitMarginTTM        || 0,
-                operatingMargin: r.operatingProfitMarginTTM  || 0,
-                debtToEquity:    r.debtEquityRatioTTM        || 0,
+                pb:              r.priceToBookRatioTTM            || 0,  // fix: key-metrics null → ratios-ttm
+                profitMargin:    r.netProfitMarginTTM             || 0,
+                operatingMargin: r.operatingProfitMarginTTM       || 0,
+                debtToEquity:    r.debtToEquityRatioTTM           || 0,  // fix: debtEquity → debtToEquity
                 momentum:        mom,
-                sector:          q.sector                   || 'Unknown',
+                sector:          p.sector                         || 'Unknown',  // fix: quote(null) → profile
                 score:           parseFloat(score.toFixed(2))
               }
             } catch {
