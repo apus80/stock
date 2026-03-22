@@ -100,11 +100,10 @@ async function fmpGet(url) {
   }
 }
 
-// 종목 전체 지표 fetch
-// ✅ /stable/ratios        (무료 플랜 동작 확인 - getRatios 함수에서 검증)
-// ✅ /stable/financial-growth (부분 동작)
-// ✅ /stable/quote              (Starter 플랜 - 기본 실시간 데이터)
-// ✅ /stable/ratios             (Starter 플랜 - ROE/ROA/PE/PB/PS/margins/payoutRatio/debtEquity 등 모두 반환)
+// 종목 전체 지표 fetch (Starter 플랜 기준)
+// ✅ /stable/ratios        실제 필드명: priceToEarningsRatio (NOT priceEarningsRatio!), returnOnEquity, returnOnAssets 등
+// ✅ /stable/financial-growth  실제 필드명: revenueGrowth, epsGrowth (대문자 G), operatingIncomeGrowth 등
+// ✅ /stable/quote              실제 필드명: pe, beta, name 등 (PE fallback용)
 // ✅ /stable/financial-growth   (Starter 플랜 - revenueGrowth/epsgrowth 반환)
 // ❌ /stable/ratios-ttm         → Starter에서도 핵심 필드 미반환, /stable/ratios 사용
 async function fetchAllMetricz(sym, apiKey) {
@@ -122,37 +121,44 @@ async function fetchAllMetricz(sym, apiKey) {
   const q = qd.status === 'fulfilled' ? (qd.value ? (Array.isArray(qd.value) ? qd.value[0] : qd.value) : null) : null
 
   // Starter 플랜: ratios에서 PE/ROE/ROA/payoutRatio/debtEquity 모두 반환됨
-  const pbPrimary = r?.priceToBookRatio   || r?.priceToBookRatioTTM
-  const psPrimary = r?.priceToSalesRatio  || r?.priceToSalesRatioTTM
-  // PE: ratios 우선 (Starter에서 정상), quote.pe fallback
-  const pePrimary = (r?.priceEarningsRatio && r.priceEarningsRatio > 0) ? r.priceEarningsRatio
+  // ✅ 실제 FMP 필드명 (getRatios 함수 line ~1507 에서 확인됨):
+  //    PE → priceToEarningsRatio (priceEarningsRatio 아님!)
+  //    PB → priceToBookRatio + pb (fallback)
+  //    PS → priceToSalesRatio
+  const pbPrimary = r?.priceToBookRatio   || r?.pb || r?.priceToBookRatioTTM
+  const psPrimary = r?.priceToSalesRatio  || r?.ps || r?.priceToSalesRatioTTM
+  // PE: ratios.priceToEarningsRatio 우선 (Starter 확인), ratios.pe → quote.pe 순 fallback
+  const pePrimary = (r?.priceToEarningsRatio && r.priceToEarningsRatio > 0) ? r.priceToEarningsRatio
+                  : (r?.pe && r.pe > 0) ? r.pe
                   : (q?.pe && q.pe > 0) ? q.pe
                   : null
 
   return {
     symbol: sym,
-    name:   q?.name ?? sym,
+    name:   q?.name ?? q?.companyName ?? sym,
     // 수익성 (/stable/ratios - Starter 플랜 전체 필드 반환)
     returnOnEquityTTM:            r?.returnOnEquity            ?? r?.returnOnEquityTTM            ?? null,
     operatingProfitMarginTTM:     r?.operatingProfitMargin     ?? r?.operatingProfitMarginTTM     ?? null,
     returnOnAssetsTTM:            r?.returnOnAssets            ?? r?.returnOnAssetsTTM            ?? null,
     netProfitMarginTTM:           r?.netProfitMargin           ?? r?.netProfitMarginTTM           ?? null,
-    // 밸류에이션
+    // 밸류에이션 (PE: priceToEarningsRatio가 실제 FMP 필드명, priceEarningsRatio는 오탈자)
     peRatioTTM:                   pePrimary,
     priceToBookRatioTTM:          (pbPrimary && pbPrimary > 0) ? pbPrimary : null,
     priceToSalesRatioTTM:         (psPrimary && psPrimary > 0) ? psPrimary : null,
     // 배당·건전성 (Starter 플랜: payoutRatio, debtEquityRatio 포함)
-    dividendYieldTTM:             r?.dividendYield   ?? r?.dividendYieldTTM   ?? null,
-    payoutRatioTTM:               r?.payoutRatio     ?? r?.payoutRatioTTM     ?? null,
-    debtEquityRatioTTM:           (() => { const v = r?.debtEquityRatio ?? r?.debtEquityRatioTTM; return (v && v > 0) ? v : null })(),
-    currentRatioTTM:              r?.currentRatio    ?? r?.currentRatioTTM    ?? null,
-    // EV/EBITDA·FCF
-    enterpriseValueOverEBITDATTM: r?.enterpriseValueMultiple ?? null,
-    freeCashFlowYieldTTM:         r?.freeCashFlowYield       ?? null,
+    // divYield는 getRatios에서 확인된 대안 필드명
+    dividendYieldTTM:             r?.dividendYield ?? r?.divYield ?? r?.dividendYieldTTM ?? null,
+    payoutRatioTTM:               r?.payoutRatio   ?? r?.payoutRatioTTM   ?? null,
+    debtEquityRatioTTM:           (() => { const v = r?.debtEquityRatio ?? r?.debtToEquityRatio ?? r?.debtEquityRatioTTM; return (v && v > 0) ? v : null })(),
+    currentRatioTTM:              r?.currentRatio  ?? r?.currentRatioTTM  ?? null,
+    // EV/EBITDA·FCF (enterpriseValueMultiple, freeCashFlowYield는 /stable/ratios 반환 필드)
+    enterpriseValueOverEBITDATTM: r?.enterpriseValueMultiple ?? r?.evToEbitda ?? null,
+    freeCashFlowYieldTTM:         r?.freeCashFlowYield ?? r?.freeCashFlowYieldTTM ?? null,
     // 성장성 (/stable/financial-growth - Starter 플랜)
+    // epsGrowth (대문자 G)는 FMP 확인 필드명, epsgrowth는 구버전 호환
     revenueGrowth:                g?.revenueGrowth         ?? null,
-    epsgrowth:                    g?.epsgrowth ?? g?.epsGrowth ?? g?.earningsGrowth ?? null,
-    operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? null,
+    epsgrowth:                    g?.epsGrowth ?? g?.epsgrowth ?? g?.earningsGrowth ?? null,
+    operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? g?.operatingCashFlowGrowth ?? null,
     assetGrowth:                  g?.assetGrowth           ?? null,
     // 리스크
     beta:                         q?.beta ?? null,
