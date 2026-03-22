@@ -103,55 +103,57 @@ async function fmpGet(url) {
 // 종목 전체 지표 fetch
 // ✅ /stable/ratios        (무료 플랜 동작 확인 - getRatios 함수에서 검증)
 // ✅ /stable/financial-growth (부분 동작)
-// ✅ /stable/quote         (무료 플랜 기본)
-// ❌ /stable/ratios-ttm    → 무료 플랜에서 핵심 필드(ROE/ROA/PE/debtEquity 등) 미반환
-// ❌ /stable/key-metrics-ttm → 유료 전용 (EV/EBITDA 등 100% null)
+// ✅ /stable/quote              (Starter 플랜 - 기본 실시간 데이터)
+// ✅ /stable/ratios             (Starter 플랜 - ROE/ROA/PE/PB/PS/margins/payoutRatio/debtEquity 등 모두 반환)
+// ✅ /stable/financial-growth   (Starter 플랜 - revenueGrowth/epsgrowth 반환)
+// ❌ /stable/ratios-ttm         → Starter에서도 핵심 필드 미반환, /stable/ratios 사용
 async function fetchAllMetricz(sym, apiKey) {
   const BASE = 'https://financialmodelingprep.com/stable'
-  // 3→2 엔드포인트: 540→360 API콜 → 레이트리밋 완화
-  // financial-growth 제거 (성장 데이터는 93% null이었음 → ratios+quote 우선)
-  const [rd, qd] = await Promise.allSettled([
-    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),  // 수익성+밸류+배당+건전성
-    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),   // pe(primary), beta, name
+  // 3 엔드포인트 × 8종목/wave × 300ms 딜레이 → rate limit 완화
+  const [rd, gd, qd] = await Promise.allSettled([
+    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),          // 수익성+밸류+배당+건전성 (Starter: 전체 필드)
+    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`), // 성장성 (Starter 플랜)
+    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),            // beta, name, pe fallback
   ])
 
   // 배열 응답 → 최신 데이터(index 0)
   const r = rd.status === 'fulfilled' ? (rd.value ? (Array.isArray(rd.value) ? rd.value[0] : rd.value) : null) : null
+  const g = gd.status === 'fulfilled' ? (gd.value ? (Array.isArray(gd.value) ? gd.value[0] : gd.value) : null) : null
   const q = qd.status === 'fulfilled' ? (qd.value ? (Array.isArray(qd.value) ? qd.value[0] : qd.value) : null) : null
 
-  // PE: ratios의 priceEarningsRatio는 무료 플랜 null → quote.pe 우선
-  // 나머지 ratios 필드 (operatingProfitMargin 등)는 무료 플랜 정상 반환 확인됨
+  // Starter 플랜: ratios에서 PE/ROE/ROA/payoutRatio/debtEquity 모두 반환됨
   const pbPrimary = r?.priceToBookRatio   || r?.priceToBookRatioTTM
   const psPrimary = r?.priceToSalesRatio  || r?.priceToSalesRatioTTM
-  const pePrimary = (q?.pe && q.pe > 0) ? q.pe
-                  : (r?.priceEarningsRatio && r.priceEarningsRatio > 0) ? r.priceEarningsRatio
+  // PE: ratios 우선 (Starter에서 정상), quote.pe fallback
+  const pePrimary = (r?.priceEarningsRatio && r.priceEarningsRatio > 0) ? r.priceEarningsRatio
+                  : (q?.pe && q.pe > 0) ? q.pe
                   : null
 
   return {
     symbol: sym,
     name:   q?.name ?? sym,
-    // 수익성 (/stable/ratios - 무료 플랜 정상 필드)
-    returnOnEquityTTM:            null, // FMP 무료 플랜 미지원 (priceEarningsRatio와 동일 제한)
+    // 수익성 (/stable/ratios - Starter 플랜 전체 필드 반환)
+    returnOnEquityTTM:            r?.returnOnEquity            ?? r?.returnOnEquityTTM            ?? null,
     operatingProfitMarginTTM:     r?.operatingProfitMargin     ?? r?.operatingProfitMarginTTM     ?? null,
-    returnOnAssetsTTM:            null, // FMP 무료 플랜 미지원
+    returnOnAssetsTTM:            r?.returnOnAssets            ?? r?.returnOnAssetsTTM            ?? null,
     netProfitMarginTTM:           r?.netProfitMargin           ?? r?.netProfitMarginTTM           ?? null,
-    // 밸류에이션: PE는 quote 우선 (ratios는 무료 플랜 null), PB/PS는 ratios
+    // 밸류에이션
     peRatioTTM:                   pePrimary,
     priceToBookRatioTTM:          (pbPrimary && pbPrimary > 0) ? pbPrimary : null,
     priceToSalesRatioTTM:         (psPrimary && psPrimary > 0) ? psPrimary : null,
-    // 배당·건전성
+    // 배당·건전성 (Starter 플랜: payoutRatio, debtEquityRatio 포함)
     dividendYieldTTM:             r?.dividendYield   ?? r?.dividendYieldTTM   ?? null,
-    payoutRatioTTM:               null, // FMP 무료 플랜 미지원
-    debtEquityRatioTTM:           null, // FMP 무료 플랜 미지원
+    payoutRatioTTM:               r?.payoutRatio     ?? r?.payoutRatioTTM     ?? null,
+    debtEquityRatioTTM:           (() => { const v = r?.debtEquityRatio ?? r?.debtEquityRatioTTM; return (v && v > 0) ? v : null })(),
     currentRatioTTM:              r?.currentRatio    ?? r?.currentRatioTTM    ?? null,
     // EV/EBITDA·FCF
     enterpriseValueOverEBITDATTM: r?.enterpriseValueMultiple ?? null,
     freeCashFlowYieldTTM:         r?.freeCashFlowYield       ?? null,
-    // 성장성: financial-growth 엔드포인트 제거 → null (API 콜 수 절감 우선)
-    revenueGrowth:                null,
-    epsgrowth:                    null,
-    operatingIncomeGrowth:        null,
-    assetGrowth:                  null,
+    // 성장성 (/stable/financial-growth - Starter 플랜)
+    revenueGrowth:                g?.revenueGrowth         ?? null,
+    epsgrowth:                    g?.epsgrowth ?? g?.epsGrowth ?? g?.earningsGrowth ?? null,
+    operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? null,
+    assetGrowth:                  g?.assetGrowth           ?? null,
     // 리스크
     beta:                         q?.beta ?? null,
   }
@@ -167,11 +169,11 @@ async function refreshMetriczCache(env) {
     return
   }
 
-  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 8종목(16 calls), 300ms 딜레이`)
+  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 8종목(24 calls), 300ms 딜레이`)
   const startTime = Date.now()
 
-  // 8종목/wave × 2 endpoints = 16 FMP 호출/wave + 300ms 딜레이
-  // discovery(10종목×1call=10/wave) + metricz(8종목×2calls=16/wave) = 26 동시 호출 → 레이트리밋 완화
+  // 8종목/wave × 3 endpoints = 24 FMP 호출/wave + 300ms 딜레이 (Starter 플랜)
+  // discovery(10종목×1call=10/wave) + metricz(8종목×3calls=24/wave) = 34 동시 호출 → 레이트리밋 허용 범위
   const results = await batchProcess(SP500_UNIVERSE, 8, sym => fetchAllMetricz(sym, apiKey), 300)
 
   const stocks = {}
@@ -2179,7 +2181,7 @@ export default {
           }
         }
 
-        // 2️⃣ KV 없으면 상위 30종목 실시간 폴백 (wave당 8×2=16 calls, 300ms 딜레이)
+        // 2️⃣ KV 없으면 상위 30종목 실시간 폴백 (wave당 8×3=24 calls, 300ms 딜레이)
         if (!stocksArray || stocksArray.length === 0) {
           const FALLBACK = SP500_UNIVERSE.slice(0, 30)
           const results = await batchProcess(FALLBACK, 8, sym => fetchAllMetricz(sym, FMP), 300)
