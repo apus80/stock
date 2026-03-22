@@ -4571,6 +4571,37 @@ export default {
         }
 
       // /metricz-debug - KV 캐시 원본값 확인 (GET ?symbols=MO,VZ,PLTR or ?all=1)
+      } else if (pathname === "/metricz-rawtest") {
+        // FMP API 원본 응답 확인 — 필드명 검증용
+        // 사용: /metricz-rawtest?symbol=AAPL
+        try {
+          const sym = (url.searchParams.get('symbol') || 'AAPL').toUpperCase()
+          const apiKey = env.FMP_API_KEY
+          const BASE = 'https://financialmodelingprep.com/stable'
+          const [rd, kd, gd, qd] = await Promise.allSettled([
+            fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),
+            fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),
+            fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`),
+            fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),
+          ])
+          const r = rd.status === 'fulfilled' ? rd.value : { error: rd.reason?.message }
+          const k = kd.status === 'fulfilled' ? kd.value : { error: kd.reason?.message }
+          const g = gd.status === 'fulfilled' ? gd.value : { error: gd.reason?.message }
+          const q = qd.status === 'fulfilled' ? qd.value : { error: qd.reason?.message }
+          response = {
+            symbol: sym,
+            ratios_raw:       r,  // /stable/ratios
+            keyMetrics_raw:   k,  // /stable/key-metrics-ttm
+            growth_raw:       g,  // /stable/financial-growth
+            quote_raw:        q,  // /stable/quote
+            ratios_fields:    r && !r.error ? Object.keys(Array.isArray(r) ? (r[0]||{}) : r) : null,
+            keyMetrics_fields:k && !k.error ? Object.keys(Array.isArray(k) ? (k[0]||{}) : k) : null,
+            growth_fields:    g && !g.error ? Object.keys(Array.isArray(g) ? (g[0]||{}) : g) : null,
+          }
+        } catch(e) {
+          response = { error: e.message }
+        }
+
       } else if (pathname === "/metricz-debug") {
         try {
           const kv = env.METRICZ_KV
