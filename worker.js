@@ -72,12 +72,15 @@ const METRIC_SOURCE_MAP = {
 }
 
 // 배치 헬퍼: items를 batchSize 단위로 나눠 순차 실행 (wave당 80 calls 제한)
-async function batchProcess(items, batchSize, fn) {
+async function batchProcess(items, batchSize, fn, delayMs = 0) {
   const results = []
   for (let i = 0; i < items.length; i += batchSize) {
     const wave = items.slice(i, i + batchSize)
     const waveResults = await Promise.allSettled(wave.map(fn))
     results.push(...waveResults)
+    if (delayMs > 0 && i + batchSize < items.length) {
+      await new Promise(r => setTimeout(r, delayMs))
+    }
   }
   return results
 }
@@ -105,49 +108,50 @@ async function fmpGet(url) {
 // ❌ /stable/key-metrics-ttm → 유료 전용 (EV/EBITDA 등 100% null)
 async function fetchAllMetricz(sym, apiKey) {
   const BASE = 'https://financialmodelingprep.com/stable'
-  // 4→3 엔드포인트: 720→540 API콜 → 레이트리밋 완화
-  const [rd, gd, qd] = await Promise.allSettled([
-    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),          // 수익성+밸류+배당+건전성
-    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`), // 성장성
-    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),            // beta, name, pe fallback
+  // 3→2 엔드포인트: 540→360 API콜 → 레이트리밋 완화
+  // financial-growth 제거 (성장 데이터는 93% null이었음 → ratios+quote 우선)
+  const [rd, qd] = await Promise.allSettled([
+    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),  // 수익성+밸류+배당+건전성
+    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),   // pe(primary), beta, name
   ])
 
   // 배열 응답 → 최신 데이터(index 0)
   const r = rd.status === 'fulfilled' ? (rd.value ? (Array.isArray(rd.value) ? rd.value[0] : rd.value) : null) : null
-  const g = gd.status === 'fulfilled' ? (gd.value ? (Array.isArray(gd.value) ? gd.value[0] : gd.value) : null) : null
   const q = qd.status === 'fulfilled' ? (qd.value ? (Array.isArray(qd.value) ? qd.value[0] : qd.value) : null) : null
 
-  // /stable/ratios 필드명 (TTM suffix 없음 - 연간 최신 데이터)
-  // 무료 플랜 실제 반환 필드 기반 매핑
-  const pePrimary = r?.priceEarningsRatio || r?.priceEarningsRatioTTM || r?.peRatioTTM || r?.peRatio
+  // PE: ratios의 priceEarningsRatio는 무료 플랜 null → quote.pe 우선
+  // 나머지 ratios 필드 (operatingProfitMargin 등)는 무료 플랜 정상 반환 확인됨
   const pbPrimary = r?.priceToBookRatio   || r?.priceToBookRatioTTM
   const psPrimary = r?.priceToSalesRatio  || r?.priceToSalesRatioTTM
+  const pePrimary = (q?.pe && q.pe > 0) ? q.pe
+                  : (r?.priceEarningsRatio && r.priceEarningsRatio > 0) ? r.priceEarningsRatio
+                  : null
 
   return {
     symbol: sym,
     name:   q?.name ?? sym,
-    // 수익성 (/stable/ratios → 필드명: TTM suffix 없음)
-    returnOnEquityTTM:            r?.returnOnEquity            ?? r?.returnOnEquityTTM            ?? null,
+    // 수익성 (/stable/ratios - 무료 플랜 정상 필드)
+    returnOnEquityTTM:            null, // FMP 무료 플랜 미지원 (priceEarningsRatio와 동일 제한)
     operatingProfitMarginTTM:     r?.operatingProfitMargin     ?? r?.operatingProfitMarginTTM     ?? null,
-    returnOnAssetsTTM:            r?.returnOnAssets            ?? r?.returnOnAssetsTTM            ?? null,
+    returnOnAssetsTTM:            null, // FMP 무료 플랜 미지원
     netProfitMarginTTM:           r?.netProfitMargin           ?? r?.netProfitMarginTTM           ?? null,
-    // 밸류에이션
-    peRatioTTM:                   (pePrimary && pePrimary > 0) ? pePrimary : (q?.pe && q.pe > 0 ? q.pe : null),
+    // 밸류에이션: PE는 quote 우선 (ratios는 무료 플랜 null), PB/PS는 ratios
+    peRatioTTM:                   pePrimary,
     priceToBookRatioTTM:          (pbPrimary && pbPrimary > 0) ? pbPrimary : null,
     priceToSalesRatioTTM:         (psPrimary && psPrimary > 0) ? psPrimary : null,
     // 배당·건전성
     dividendYieldTTM:             r?.dividendYield   ?? r?.dividendYieldTTM   ?? null,
-    payoutRatioTTM:               r?.payoutRatio     ?? r?.payoutRatioTTM     ?? null,
-    debtEquityRatioTTM:           (() => { const v = r?.debtEquityRatio ?? r?.debtEquityRatioTTM; return (v && v > 0) ? v : null })(),
+    payoutRatioTTM:               null, // FMP 무료 플랜 미지원
+    debtEquityRatioTTM:           null, // FMP 무료 플랜 미지원
     currentRatioTTM:              r?.currentRatio    ?? r?.currentRatioTTM    ?? null,
-    // EV/EBITDA·FCF: key-metrics-ttm 유료 전용 → quote 대체
+    // EV/EBITDA·FCF
     enterpriseValueOverEBITDATTM: r?.enterpriseValueMultiple ?? null,
     freeCashFlowYieldTTM:         r?.freeCashFlowYield       ?? null,
-    // 성장성 (/stable/financial-growth)
-    revenueGrowth:                g?.revenueGrowth         ?? null,
-    epsgrowth:                    g?.epsgrowth ?? g?.epsGrowth ?? g?.earningsGrowth ?? null,
-    operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? null,
-    assetGrowth:                  g?.assetGrowth           ?? null,
+    // 성장성: financial-growth 엔드포인트 제거 → null (API 콜 수 절감 우선)
+    revenueGrowth:                null,
+    epsgrowth:                    null,
+    operatingIncomeGrowth:        null,
+    assetGrowth:                  null,
     // 리스크
     beta:                         q?.beta ?? null,
   }
@@ -163,11 +167,12 @@ async function refreshMetriczCache(env) {
     return
   }
 
-  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 15종목(45 calls)`)
+  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 8종목(16 calls), 300ms 딜레이`)
   const startTime = Date.now()
 
-  // 15종목/wave: 15 × 3 endpoints = 45 FMP 호출/wave (20×4=80 → 15×3=45로 레이트리밋 완화)
-  const results = await batchProcess(SP500_UNIVERSE, 15, sym => fetchAllMetricz(sym, apiKey))
+  // 8종목/wave × 2 endpoints = 16 FMP 호출/wave + 300ms 딜레이
+  // discovery(10종목×1call=10/wave) + metricz(8종목×2calls=16/wave) = 26 동시 호출 → 레이트리밋 완화
+  const results = await batchProcess(SP500_UNIVERSE, 8, sym => fetchAllMetricz(sym, apiKey), 300)
 
   const stocks = {}
   let successCount = 0
@@ -200,9 +205,16 @@ async function refreshDiscoveryCache(env) {
   }
 
   // 출처: FMP API /stable/quote (무료 플랜 확인)
-  // 유료 엔드포인트 제거 (key-metrics-ttm, ratios-ttm, financial-growth, profile → 모두 유료)
   const BASE    = 'https://financialmodelingprep.com/stable'
-  const SYMBOLS = SP500_UNIVERSE   // 전체 180종목 분석 (80→180 확장)
+  const SYMBOLS = SP500_UNIVERSE   // 전체 180종목 분석
+
+  // metricz KV에서 PE 데이터 로드 (quote pe가 null/0일 때 fallback)
+  let metriczStocks = {}
+  try {
+    const metriczRaw = await kv.get(METRICZ_KV_KEY)
+    if (metriczRaw) metriczStocks = JSON.parse(metriczRaw).stocks || {}
+  } catch(e) { console.warn('metricz KV 로드 실패 (PE fallback 없음):', e.message) }
+
   const results = []
 
   for (let i = 0; i < SYMBOLS.length; i += 10) {
@@ -219,32 +231,37 @@ async function refreshDiscoveryCache(env) {
         const yLow    = q.yearLow   || price * 0.7
         const yHigh   = q.yearHigh  || price * 1.3
         const vol     = q.volume    || 0
-        const avgVol  = (q.avgVolume > 0) ? q.avgVolume : (vol || 1)  // avgVol 없으면 vol 사용(surge=0)
-        const pe      = q.pe        || 0
+        const avgVol  = (q.avgVolume > 0) ? q.avgVolume : null  // null이면 비교 불가
         const mom     = q.changePercentage || 0   // 당일 % 변동
 
-        // 기술적 지표 (모두 % 단위)
-        const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0  // MA50 대비 %
-        const ma200trend = ma200 > 0 ? (price - ma200) / ma200 * 100 : 0  // MA200 대비 %
-        const range      = yHigh - yLow
-        const str52w     = range > 0 ? (price - yLow) / range * 100 : 50   // 52주 강도 0~100%
-        const volSurge   = avgVol > 0 ? (vol / avgVol - 1) * 100 : 0       // 거래량 급증 %
+        // PE: quote 우선, 없으면 metricz KV fallback
+        const peFromQuote   = (q.pe && q.pe > 0) ? q.pe : 0
+        const peFromMetricz = metriczStocks[symbol]?.peRatioTTM > 0 ? metriczStocks[symbol].peRatioTTM : 0
+        const pe = peFromQuote > 0 ? peFromQuote : peFromMetricz
 
-        // 종합 점수: 모멘텀30% + MA50추세25% + 52주강도25% + 거래량20%
+        // 기술적 지표 (모두 % 단위)
+        const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0
+        const range      = yHigh - yLow
+        const str52w     = range > 0 ? (price - yLow) / range * 100 : 50
+
+        // 거래량 급증: vol=0 또는 avgVol 없으면 null (장 마감/주말 판단 불가)
+        const volSurge = (vol > 0 && avgVol > 0) ? (vol / avgVol - 1) * 100 : null
+
+        // 종합 점수 (volSurge 없으면 0으로 처리)
+        const vsScore = volSurge != null ? Math.min(50, Math.max(-20, volSurge)) : 0
         const score = mom       * 0.30
                     + ma50trend * 0.25
-                    + (str52w - 50) * 0.25    // 50% 기준 중립화
-                    + Math.min(50, Math.max(-20, volSurge)) * 0.20
+                    + (str52w - 50) * 0.25
+                    + vsScore       * 0.20
 
         return {
           symbol,
           price,
           volume: vol,
-          // 기술 지표 (% 단위로 저장)
-          momentum:   parseFloat(mom.toFixed(2)),       // 당일 % 변동
-          ma50trend:  parseFloat(ma50trend.toFixed(2)), // MA50 대비 %
-          str52w:     parseFloat(str52w.toFixed(1)),    // 52주 강도 0~100
-          volSurge:   parseFloat(volSurge.toFixed(1)),  // 거래량 급증 %
+          momentum:   parseFloat(mom.toFixed(2)),
+          ma50trend:  parseFloat(ma50trend.toFixed(2)),
+          str52w:     parseFloat(str52w.toFixed(1)),
+          volSurge:   volSurge != null ? parseFloat(volSurge.toFixed(1)) : null,  // 장 마감 시 null
           pe:         parseFloat((pe || 0).toFixed(1)),
           score:      parseFloat(score.toFixed(2))
         }
@@ -2162,10 +2179,10 @@ export default {
           }
         }
 
-        // 2️⃣ KV 없으면 상위 40종목 실시간 폴백 (wave당 20×4=80 calls)
+        // 2️⃣ KV 없으면 상위 30종목 실시간 폴백 (wave당 8×2=16 calls, 300ms 딜레이)
         if (!stocksArray || stocksArray.length === 0) {
-          const FALLBACK = SP500_UNIVERSE.slice(0, 40)
-          const results = await batchProcess(FALLBACK, 20, sym => fetchAllMetricz(sym, FMP))
+          const FALLBACK = SP500_UNIVERSE.slice(0, 30)
+          const results = await batchProcess(FALLBACK, 8, sym => fetchAllMetricz(sym, FMP), 300)
           stocksArray = results
             .map((r, i) => r.status === 'fulfilled' ? r.value : { symbol: FALLBACK[i], name: FALLBACK[i] })
             .filter(Boolean)
@@ -3610,19 +3627,21 @@ export default {
               const yLow    = q.yearLow   || price * 0.7
               const yHigh   = q.yearHigh  || price * 1.3
               const vol     = q.volume    || 0
-              const avgVol  = (q.avgVolume > 0) ? q.avgVolume : (vol || 1)  // avgVol 없으면 vol 사용(surge=0)
-              const pe      = q.pe        || 0
+              const avgVol  = (q.avgVolume > 0) ? q.avgVolume : null
+              const peRaw   = (q.pe && q.pe > 0) ? q.pe : 0
               const mom     = q.changePercentage || 0
 
               const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0
               const range      = yHigh - yLow
               const str52w     = range > 0 ? (price - yLow) / range * 100 : 50
-              const volSurge   = avgVol > 0 ? (vol / avgVol - 1) * 100 : 0
+              // 장 마감/주말: vol=0 또는 avgVol 없으면 null
+              const volSurge   = (vol > 0 && avgVol > 0) ? (vol / avgVol - 1) * 100 : null
+              const vsScore    = volSurge != null ? Math.min(50, Math.max(-20, volSurge)) : 0
 
               const score = mom       * 0.30
                           + ma50trend * 0.25
                           + (str52w - 50) * 0.25
-                          + Math.min(50, Math.max(-20, volSurge)) * 0.20
+                          + vsScore   * 0.20
 
               return {
                 symbol,
@@ -3631,8 +3650,8 @@ export default {
                 momentum:  parseFloat(mom.toFixed(2)),
                 ma50trend: parseFloat(ma50trend.toFixed(2)),
                 str52w:    parseFloat(str52w.toFixed(1)),
-                volSurge:  parseFloat(volSurge.toFixed(1)),
-                pe:        parseFloat((pe || 0).toFixed(1)),
+                volSurge:  volSurge != null ? parseFloat(volSurge.toFixed(1)) : null,
+                pe:        parseFloat((peRaw || 0).toFixed(1)),
                 score:     parseFloat(score.toFixed(2))
               }
             } catch {
