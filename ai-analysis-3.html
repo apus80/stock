@@ -457,9 +457,10 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="global-theme.css">
 </head>
 <body>
-    <button class="back-btn" onclick="window.history.back()">← 뒤로가기</button>
+    <a class="back-btn" href="index.html">← 메인</a>
 
     <div class="container">
         <div class="header">
@@ -1246,5 +1247,6 @@
             console.error('페이지 에러:', e.error);
         });
     </script>
+    <script>document.addEventListener('mousemove',function(e){var d=document.documentElement;d.style.setProperty('--mouse-x',e.clientX+'px');d.style.setProperty('--mouse-y',e.clientY+'px')});</script>
 </body>
 </html>

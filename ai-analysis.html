@@ -675,9 +675,10 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="global-theme.css">
 </head>
 <body>
-    <button class="back-btn" onclick="window.history.back()">← 뒤로가기</button>
+    <a class="back-btn" href="index.html">← 메인</a>
 
     <!-- 헤더 -->
     <div class="header">
@@ -1292,5 +1293,6 @@ ${JSON.stringify(data, null, 2).substring(0, 500)}...
         // 페이지 로드
         document.addEventListener('DOMContentLoaded', init);
     </script>
+    <script>document.addEventListener('mousemove',function(e){var d=document.documentElement;d.style.setProperty('--mouse-x',e.clientX+'px');d.style.setProperty('--mouse-y',e.clientY+'px')});</script>
 </body>
 </html>

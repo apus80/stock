@@ -1,0 +1,190 @@
+/* ============================================================
+   InvestFlow — Global Dark Theme
+   Include LAST in <head> to override page-level styles
+   ============================================================ */
+
+/* ── CSS Variables Override ────────────────────────────────── */
+:root {
+  --bg-gradient:  linear-gradient(135deg, #0d0d1a 0%, #0f1035 100%);
+  --light-bg:     #0d0d1a;
+  --card-bg:      rgba(255,255,255,0.05);
+  --card-border:  rgba(255,255,255,0.09);
+  --text-main:    #e2e8f0;
+  --text-muted:   #94a3b8;
+  --text-light:   #ffffff;
+  --shadow-main:  0 4px 20px rgba(0,0,0,0.45);
+  --shadow-deep:  0 20px 60px rgba(0,0,0,0.65);
+  --primary:      #818cf8;
+  --primary-dark: #6366f1;
+  /* mouse glow */
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+/* ── Body / Background ──────────────────────────────────────── */
+html, body {
+  background: #0d0d1a !important;
+  color: var(--text-main) !important;
+}
+
+/* mouse-follow glow */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y),
+              rgba(102,126,234,0.07), transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Header / Page Banner ──────────────────────────────────── */
+.header {
+  background: linear-gradient(135deg, rgba(102,126,234,0.25) 0%, rgba(118,75,162,0.25) 100%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  color: #fff !important;
+}
+.header h1, .header p, .header-content h1, .header-content p { color: #fff !important; }
+
+/* page-header bar (macro-index, personal) */
+.page-header {
+  background: transparent !important;
+}
+
+/* ── Cards / Widgets ────────────────────────────────────────── */
+.widget,
+.section-wrap,
+.breakout-card {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  border-left-color: var(--primary) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  color: var(--text-main) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+}
+.widget:hover,
+.section-wrap:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6) !important;
+}
+
+/* econ cards (macro-index) */
+.econ-card {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.09) !important;
+  color: var(--text-main) !important;
+}
+.econ-card:hover {
+  background: rgba(129,140,248,0.12) !important;
+  border-color: rgba(129,140,248,0.3) !important;
+}
+.econ-card-val { color: #f1f5f9 !important; }
+.econ-card-lbl { color: var(--text-muted) !important; }
+
+/* ── Widget Internal Elements ───────────────────────────────── */
+.widget-header,
+.widget-title {
+  border-bottom-color: rgba(255,255,255,0.09) !important;
+  color: var(--text-main) !important;
+}
+.widget-title span { color: var(--text-muted) !important; }
+.widget-refresh { color: var(--text-muted) !important; }
+
+/* Tables inside widgets */
+table { color: var(--text-main) !important; }
+th { background: rgba(255,255,255,0.07) !important; color: var(--text-main) !important; }
+td { border-color: rgba(255,255,255,0.06) !important; }
+tr:hover td, tr:nth-child(even) { background: rgba(255,255,255,0.03) !important; }
+
+/* ── Section Title ───────────────────────────────────────────── */
+.section-title { color: #a5b4fc !important; }
+
+/* ── Unified Back Button (appearance only — position handled per-page) ── */
+.back-btn {
+  padding: 8px 16px !important;
+  background: rgba(129,140,248,0.15) !important;
+  border: 1px solid rgba(129,140,248,0.35) !important;
+  color: #a5b4fc !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  display: inline-block !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  transition: all 0.2s !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3) !important;
+}
+.back-btn:hover {
+  background: rgba(129,140,248,0.28) !important;
+  border-color: rgba(129,140,248,0.55) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(129,140,248,0.25) !important;
+}
+
+/* ── Header top padding (to clear fixed back-btn on ai-analysis pages) ── */
+.header { padding-top: 48px !important; }
+
+/* ── Inputs / Selects ───────────────────────────────────────── */
+input, select, textarea {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+  color: var(--text-main) !important;
+}
+input::placeholder { color: var(--text-muted) !important; }
+
+/* ── Text Overrides ─────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 { color: #f1f5f9 !important; }
+p { color: var(--text-main) !important; }
+label { color: var(--text-muted) !important; }
+
+/* ── Separator Lines ────────────────────────────────────────── */
+hr { border-color: rgba(255,255,255,0.08) !important; }
+
+/* ── Status/Signal Colors (keep as-is) ─────────────────────── */
+.bull, .positive, [class*="bull"], [class*="positive"],
+[style*="color: #00d084"], [style*="color:#00d084"],
+[style*="color: #10b981"], [style*="color: rgb(0, 208, 132)"] {
+  /* keep green, no override */
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+::-webkit-scrollbar-thumb {
+  background: rgba(129,140,248,0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(129,140,248,0.5); }
+
+/* ── Mobile Fixes ───────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .back-btn {
+    top: 8px !important;
+    left: 8px !important;
+    padding: 6px 12px !important;
+    font-size: 0.75rem !important;
+  }
+  .header { padding-top: 44px !important; }
+  /* Prevent horizontal overflow */
+  .widget, .section-wrap, .econ-card, .breakout-card {
+    overflow-x: hidden !important;
+    word-break: break-word !important;
+  }
+  table { font-size: 0.75rem !important; }
+  /* Ensure tables scroll horizontally */
+  .widget-content, .section-wrap > div {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* ── Mouse Glow Script Hook ─────────────────────────────────── */
+/* JS: document.addEventListener('mousemove', e => {
+     document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
+     document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
+   }); */

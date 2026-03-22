@@ -37,6 +37,21 @@
     /* 모바일에서 select 길어지지 않게 */
     select, input[type=number] { -webkit-appearance: none; appearance: none; }
 </style>
+<link rel="stylesheet" href="global-theme.css">
+<style>
+/* personal.html Tailwind dark-theme overrides */
+#quant-widget { background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.1) !important; }
+.bg-slate-900 { background: rgba(102,126,234,0.18) !important; }
+.bg-slate-50\/60, .logic-item { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.08) !important; }
+.bg-white { background: rgba(255,255,255,0.07) !important; }
+.text-slate-700, .text-slate-800 { color: #e2e8f0 !important; }
+.text-slate-400, .text-slate-300 { color: #94a3b8 !important; }
+.ring-slate-200, .border-slate-100, .border-slate-200 { border-color: rgba(255,255,255,0.1) !important; --tw-ring-color: rgba(255,255,255,0.1) !important; }
+.border-dashed { border-color: rgba(255,255,255,0.15) !important; }
+.bg-slate-200 { background: rgba(255,255,255,0.1) !important; }
+.text-blue-600 { color: #818cf8 !important; }
+.page-title { padding-top: 0 !important; }
+</style>
 </head>
 <body>
 
@@ -242,6 +257,6 @@ async function submitScreener() {
     }
 }
 </script>
-
+<script>document.addEventListener('mousemove',function(e){var d=document.documentElement;d.style.setProperty('--mouse-x',e.clientX+'px');d.style.setProperty('--mouse-y',e.clientY+'px')});</script>
 </body>
 </html>

@@ -117,6 +117,7 @@ body {
 .loading-msg { text-align: center; color: rgba(255,255,255,0.8); padding: 40px 0; font-size: 1rem; }
 .error-msg   { text-align: center; color: #fca5a5; padding: 30px; font-size: 0.9rem; }
 </style>
+<link rel="stylesheet" href="global-theme.css">
 </head>
 <body>
 
@@ -439,5 +440,6 @@ document.addEventListener('keydown', function(e) {
 /* 실행 */
 load();
 </script>
+<script>document.addEventListener('mousemove',function(e){var d=document.documentElement;d.style.setProperty('--mouse-x',e.clientX+'px');d.style.setProperty('--mouse-y',e.clientY+'px')});</script>
 </body>
 </html>

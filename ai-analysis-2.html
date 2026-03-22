@@ -1034,9 +1034,10 @@
         .top5-yes { color: var(--bull, #00d084); font-weight: bold; }
         .top5-no  { color: var(--bear, #ff6b6b); font-weight: bold; }
     </style>
+    <link rel="stylesheet" href="global-theme.css">
 </head>
 <body>
-    <button class="back-btn" onclick="window.history.back()">← 뒤로가기</button>
+    <a class="back-btn" href="index.html">← 메인</a>
     <div id="root"></div>
 
     <script type="text/babel">
@@ -2129,5 +2130,6 @@
         // Render
         ReactDOM.createRoot(document.getElementById('root')).render(<App />)
     </script>
+    <script>document.addEventListener('mousemove',function(e){var d=document.documentElement;d.style.setProperty('--mouse-x',e.clientX+'px');d.style.setProperty('--mouse-y',e.clientY+'px')});</script>
 </body>
 </html>
