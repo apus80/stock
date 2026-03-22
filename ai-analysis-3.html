@@ -794,12 +794,21 @@
                         }
                         break;
 
+                    // ── 0~100 정규화 헬퍼 ──────────────────────────────────
+                    // momentum (당일등락률 %): -10%→0, 0%→50, +10%→100
                     case 3:
                         // 단기 모멘텀 전략: 당일상승률×60% + MA50추세×40%
                         if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
+                            const normMom   = v => Math.max(0, Math.min(100, ((v||0) + 10) / 20 * 100));
+                            const normMA50  = v => Math.max(0, Math.min(100, ((v||0) + 20) / 40 * 100));
+                            const normStr52 = v => Math.max(0, Math.min(100, v||50));
+                            const normVol   = v => Math.max(0, Math.min(100, (Math.min(100, Math.max(-30, v||0)) + 30) / 130 * 100));
+                            const normPE    = pe => (!pe || pe <= 0 || pe >= 200) ? 0 : Math.max(0, Math.min(100, 1000 / pe));
+                            const normVIX   = vix => Math.max(0, Math.min(100, (35 - (vix||20)) / 25 * 100));
+                            const scColor   = sc => sc >= 60 ? '#10b981' : sc >= 40 ? '#f59e0b' : '#ef4444';
                             const pool3 = data.all_stocks || data.top_20;
                             const scored4 = pool3.map(s => {
-                                const score = (s.momentum||0) * 0.60 + (s.ma50trend||0) * 0.40;
+                                const score = normMom(s.momentum) * 0.60 + normMA50(s.ma50trend) * 0.40;
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
@@ -807,8 +816,8 @@
                                 + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">당일상승률</th><th style="padding:4px 6px;">MA50추세</th>'
                                 + '</tr></thead><tbody>';
                             scored4.forEach((s, i) => {
-                                const sc = s.score.toFixed(1);
-                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const sc = Math.round(s.score);
+                                const scC = scColor(s.score);
                                 const momC = (s.momentum||0) >= 0 ? '#10b981' : '#ef4444';
                                 const maC  = (s.ma50trend||0) >= 0 ? '#10b981' : '#ef4444';
                                 const bg = i%2===0 ? '' : 'background:#f0fdf4;';
@@ -827,11 +836,11 @@
                         break;
 
                     case 4:
-                        // 중기 추세 전략: MA50추세×50% + 52주강도(중앙화)×30% + 당일상승률×20%
+                        // 중기 추세 전략: MA50추세×50% + 52주강도×30% + 당일상승률×20%
                         if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
                             const pool4 = data.all_stocks || data.top_20;
                             const scored5 = pool4.map(s => {
-                                const score = (s.ma50trend||0) * 0.50 + ((s.str52w||50) - 50) * 0.30 + (s.momentum||0) * 0.20;
+                                const score = normMA50(s.ma50trend) * 0.50 + normStr52(s.str52w) * 0.30 + normMom(s.momentum) * 0.20;
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
@@ -839,8 +848,8 @@
                                 + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th><th style="padding:4px 6px;">당일상승률</th>'
                                 + '</tr></thead><tbody>';
                             scored5.forEach((s, i) => {
-                                const sc = s.score.toFixed(1);
-                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const sc = Math.round(s.score);
+                                const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:#f0fdf4;';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
@@ -862,8 +871,7 @@
                         if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
                             const pool5 = data.all_stocks || data.top_20;
                             const scored6 = pool5.map(s => {
-                                const volC = Math.min(100, Math.max(-30, s.volSurge||0));
-                                const score = volC * 0.50 + (s.momentum||0) * 0.30 + (s.ma50trend||0) * 0.20;
+                                const score = normVol(s.volSurge) * 0.50 + normMom(s.momentum) * 0.30 + normMA50(s.ma50trend) * 0.20;
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
@@ -871,8 +879,8 @@
                                 + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">거래량급증</th><th style="padding:4px 6px;">당일상승률</th><th style="padding:4px 6px;">MA50추세</th>'
                                 + '</tr></thead><tbody>';
                             scored6.forEach((s, i) => {
-                                const sc = s.score.toFixed(1);
-                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const sc = Math.round(s.score);
+                                const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:#f0fdf4;';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
@@ -894,9 +902,8 @@
                         if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
                             const pool6 = data.all_stocks || data.top_20;
                             const scored7 = pool6.map(s => {
-                                // PER이 낮을수록 높은 점수: PE 10→25, PE 20→12.5, PE 50→5, PE 없음→0
-                                const pe_sc = (s.pe > 0 && s.pe < 150) ? Math.min(25, 250 / s.pe) : 0;
-                                const score = pe_sc * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
+                                const pe_sc = normPE(s.pe);
+                                const score = pe_sc * 0.40 + normMA50(s.ma50trend) * 0.35 + normStr52(s.str52w) * 0.25;
                                 return { ...s, pe_sc, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
@@ -904,8 +911,8 @@
                                 + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">PER</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored7.forEach((s, i) => {
-                                const sc = s.score.toFixed(1);
-                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const sc = Math.round(s.score);
+                                const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:#fffbeb;';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
@@ -931,8 +938,8 @@
 
                             const pool7 = data.all_stocks || data.top_20;
                             const scored8 = pool7.map(s => {
-                                const techScore = (s.momentum||0) * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
-                                const score = techScore * vixAdj;
+                                const techScore = normMom(s.momentum) * 0.40 + normMA50(s.ma50trend) * 0.35 + normStr52(s.str52w) * 0.25;
+                                const score = Math.max(0, Math.min(100, techScore * vixAdj));
                                 return { ...s, techScore, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
@@ -940,13 +947,13 @@
                                 + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">기술점수</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored8.forEach((s, i) => {
-                                const sc = s.score.toFixed(1);
-                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const sc = Math.round(s.score);
+                                const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:#f0f9ff;';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
-                                    <td style="padding:3px 6px; text-align:right; color:${s.techScore>=0?'#10b981':'#ef4444'};">${s.techScore.toFixed(2)}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${s.techScore>=50?'#10b981':'#ef4444'};">${Math.round(s.techScore)}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
                                     <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
@@ -976,8 +983,8 @@
 
                             const pool8 = data.all_stocks || data.top_20;
                             const scored9 = pool8.map(s => {
-                                const techBase = (s.momentum||0) * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
-                                const score = techBase * liquidFactor * riskFactor;
+                                const techBase = normMom(s.momentum) * 0.40 + normMA50(s.ma50trend) * 0.35 + normStr52(s.str52w) * 0.25;
+                                const score = Math.max(0, Math.min(100, techBase * liquidFactor * riskFactor));
                                 return { ...s, techBase, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
@@ -985,13 +992,13 @@
                                 + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">기술기반</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored9.forEach((s, i) => {
-                                const sc = s.score.toFixed(2);
-                                const scC = s.score >= 3 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const sc = Math.round(s.score);
+                                const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:#f5f3ff;';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
-                                    <td style="padding:3px 6px; text-align:right; color:${s.techBase>=0?'#10b981':'#ef4444'};">${s.techBase.toFixed(2)}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${s.techBase>=50?'#10b981':'#ef4444'};">${Math.round(s.techBase)}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
                                     <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
@@ -1011,26 +1018,26 @@
                             // VIX 점수: VIX낮을수록 높음 (VIX 10→20, VIX 20→10, VIX 30→0)
                             const vixScore10 = Math.max(0, Math.min(20, 30 - vix10));
 
+                            const vixNorm10 = normVIX(vix10);
                             const pool9 = data.all_stocks || data.top_20;
                             const scored10 = pool9.map(s => {
-                                // PER 점수: PE 10→15, PE 20→7.5, PE 50→3, PE 없음→0
-                                const pe_sc10 = (s.pe > 0 && s.pe < 150) ? Math.min(15, 150 / s.pe) : 0;
-                                const vol_sc10 = Math.min(20, Math.max(-5, (s.volSurge||0) / 5));
-                                const score = (s.momentum||0)         * 0.20
-                                            + (s.ma50trend||0)        * 0.20
-                                            + ((s.str52w||50) - 50)   * 0.20
-                                            + vol_sc10                * 0.20
-                                            + pe_sc10                 * 0.10
-                                            + vixScore10              * 0.10;
-                                return { ...s, pe_sc10, vol_sc10, vixScore10, score };
+                                const pe_sc10  = normPE(s.pe);
+                                const vol_sc10 = normVol(s.volSurge);
+                                const score = normMom(s.momentum)   * 0.20
+                                            + normMA50(s.ma50trend) * 0.20
+                                            + normStr52(s.str52w)   * 0.20
+                                            + vol_sc10              * 0.20
+                                            + pe_sc10               * 0.10
+                                            + vixNorm10             * 0.10;
+                                return { ...s, pe_sc10, vol_sc10, vixNorm10, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:11px; border-collapse:collapse;"><thead><tr style="background:#fff7ed;">'
                                 + '<th style="padding:4px 5px;">종목</th><th style="padding:4px 5px;">총점수</th><th style="padding:4px 5px;">당일상승률</th><th style="padding:4px 5px;">MA50추세</th><th style="padding:4px 5px;">52주강도</th><th style="padding:4px 5px;">거래량급증</th><th style="padding:4px 5px;">PER</th>'
                                 + '</tr></thead><tbody>';
                             scored10.forEach((s, i) => {
-                                const sc = s.score.toFixed(1);
-                                const scC = s.score >= 5 ? '#10b981' : s.score >= 0 ? '#f59e0b' : '#ef4444';
+                                const sc = Math.round(s.score);
+                                const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:#fff7ed;';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 5px; font-weight:800;">${s.symbol}</td>
@@ -1045,7 +1052,7 @@
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
                                 <strong>🚀 통합 발굴 엔진</strong> = 당일상승률×20% + MA50추세×20% + 52주강도×20% + 거래량급증×20% + PER점수×10% + VIX점수×10%<br>
-                                VIX: ${vix10.toFixed(1)} → VIX점수: ${vixScore10.toFixed(0)} | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
+                                VIX: ${vix10.toFixed(1)} → VIX점수: ${Math.round(vixNorm10)} | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
