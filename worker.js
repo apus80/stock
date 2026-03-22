@@ -363,7 +363,7 @@ async function fetchAllMetricz(sym, apiKey) {
     priceToSalesRatioTTM:         (psPrimary && psPrimary > 0) ? psPrimary : null,
     // 배당·건전성 — payoutRatio/debtEquity는 key-metrics-ttm 우선
     dividendYieldTTM:             r?.dividendYield ?? r?.divYield ?? k?.dividendYieldTTM ?? null,
-    payoutRatioTTM:               k?.payoutRatioTTM   ?? k?.payoutRatio   ?? r?.payoutRatio   ?? null,
+    payoutRatioTTM:               k?.payoutRatioTTM   ?? k?.payoutRatio   ?? r?.dividendPayoutRatio ?? null,
     debtEquityRatioTTM:           (() => {
                                     const v = k?.debtToEquityTTM ?? k?.debtEquityRatioTTM ?? k?.debtToEquity
                                            ?? r?.debtEquityRatio ?? r?.debtToEquityRatio
@@ -400,9 +400,12 @@ async function refreshMetriczCache(env) {
   console.log(`🔄 metricz 캐시 갱신 시작: ${universe.length}개 종목, wave당 6종목(24 calls), 1000ms 딜레이 (Starter 300calls/min)`)
   const startTime = Date.now()
 
-  // 6종목/wave × 4 endpoints = 24 FMP 호출/wave
-  // Starter 300calls/min: 24calls / 5calls/sec = 4.8s 필요 → 1000ms 딜레이 (병렬 실행 ~500ms + 딜레이 1000ms ≈ 1.5s/wave)
-  const results = await batchProcess(universe, 6, sym => fetchAllMetricz(sym, apiKey), 1000)
+  // 6종목/wave × 4 endpoints = 24 FMP 동시 호출/wave
+  // ⚠️ 병렬 호출은 동시에 발생 → 24 calls 순간 폭발
+  // Starter 300calls/min = 5calls/sec → 24calls가 한번에 날아가면 429 발생
+  // 안전 계산: 24calls/wave ÷ 300calls/min × 60s = 4.8s/wave 필요
+  // 실행시간 ~800ms 포함: delay=5000ms → wave당 ~5.8s → 24/5.8×60 ≈ 248calls/min ✅
+  const results = await batchProcess(universe, 6, sym => fetchAllMetricz(sym, apiKey), 5000)
 
   const stocks = {}
   let successCount = 0

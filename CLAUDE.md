@@ -36,8 +36,9 @@
 
 ### Rate Limit 가이드 (Starter 300calls/min)
 ```
-- fetchAllMetricz: 6종목/wave × 4endpoints = 24calls/wave, 1000ms 딜레이
-  → ~84 waves × 1.5s = ~2분 (cron에서 실행, timeout 없음)
+- fetchAllMetricz: 6종목/wave × 4endpoints = 24calls/wave, 5000ms 딜레이
+  → 24calls 병렬 동시 발생 → wave당 5.8s → ~248calls/min (300한도 이내)
+  → ~84 waves × 5.8s = ~8분 (ctx.waitUntil 백그라운드 실행)
 - refreshDiscoveryCache: 10종목/wave × 1call = 10calls/wave, 200ms 딜레이
 - refreshBreakoutCache: 15종목/wave × 1call = 15calls/wave, 300ms 딜레이
 - SP500 구성 캐시: 24h TTL (KV SP500_KV_KEY), 변경 빈도 낮음
