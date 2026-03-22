@@ -29,14 +29,14 @@
         }
 
         :root {
-            --primary: #667eea;
-            --primary-dark: #5a67d8;
+            --primary: #818cf8;
+            --primary-dark: #6366f1;
             --secondary: #764ba2;
-            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --light-bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-main: #2d3748;
-            --text-muted: #718096;
+            --bg-gradient: linear-gradient(135deg, #0d0d1a 0%, #0f1035 100%);
+            --light-bg: #0d0d1a;
+            --card-bg: rgba(255,255,255,0.05);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
@@ -46,8 +46,8 @@
             width: 100%;
             min-height: 100%;
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            background: var(--light-bg);
-            color: var(--text-main);
+            background: #0d0d1a;
+            color: #e2e8f0;
             font-size: 16px;
         }
 
@@ -99,10 +99,11 @@
         }
 
         .widget {
-            background: var(--card-bg);
+            background: rgba(255,255,255,0.05);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.09);
             border-left: 4px solid var(--primary);
             margin-bottom: 0;
             overflow: hidden;
@@ -113,7 +114,7 @@
             font-weight: 700;
             margin-bottom: 16px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid rgba(255,255,255,0.09);
             display: flex;
             flex-wrap: nowrap;
             justify-content: space-between;
@@ -214,18 +215,18 @@
         }
 
         .score-strong {
-            background: #d1fae5;
-            color: #065f46;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
         }
 
         .score-moderate {
-            background: #fef3c7;
-            color: #92400e;
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
         }
 
         .score-weak {
-            background: #fee2e2;
-            color: #991b1b;
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
         }
 
         /* 테이블 스타일 - 모바일 대응 */
@@ -238,25 +239,26 @@
         }
 
         th {
-            background: #f3f4f6;
+            background: rgba(255,255,255,0.07);
             padding: 10px 8px;
             text-align: left;
             font-weight: 600;
             font-size: 11px;
-            color: var(--text-muted);
-            border-bottom: 2px solid #e5e7eb;
+            color: #e2e8f0;
+            border-bottom: 2px solid rgba(255,255,255,0.09);
             word-break: keep-all;
         }
 
         td {
             padding: 10px 8px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            color: #e2e8f0;
             word-break: break-word;
             overflow-wrap: break-word;
         }
 
         tr:hover {
-            background: #f9fafb;
+            background: rgba(255,255,255,0.03);
         }
 
         .status {
@@ -284,7 +286,7 @@
             font-size: 12px;
             margin-top: 40px;
             padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid rgba(255,255,255,0.08);
         }
 
         /* 테이블 수평 스크롤 처리 */
@@ -597,8 +599,8 @@
         </div>
 
         <!-- 위젯 10: Alpha Scanner (헤지펀드급 7-모듈 스코어링) -->
-        <div class="widget" style="border-left: 4px solid #ef4444; background: linear-gradient(145deg, #ffffff 0%, #fff5f5 100%);">
-            <div class="widget-title" style="border-bottom: 2px solid #ef4444;">
+        <div class="widget" style="border-left: 4px solid #ef4444 !important; background: linear-gradient(145deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.04) 100%) !important;">
+            <div class="widget-title" style="border-bottom: 2px solid rgba(239,68,68,0.4) !important;">
                 <div style="font-size: 1.1em;">🔟 🔬 Alpha Scanner <span style="font-size: 0.7em; color: #ef4444; font-weight: 800;">PRO</span></div>
                 <span style="font-size: 0.75em;">7-Module Scoring | S&P500 Top 80 | 1~3주 목표 20%</span>
                 <button class="widget-refresh" onclick="refreshWidget(10)">🔄</button>
@@ -860,7 +862,7 @@
                                 const maC  = (s.ma50trend||0) >= 0 ? '#10b981' : '#ef4444';
                                 const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
-                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${momC};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
                                     <td style="padding:3px 6px; text-align:right; color:${maC};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
@@ -890,10 +892,10 @@
                                 const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
-                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
-                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:#cbd5e1;">${(s.str52w||0).toFixed(0)}%</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
                                 </tr>`;
                             });
@@ -921,7 +923,7 @@
                                 const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
-                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${s.volSurge!=null?(s.volSurge>=0?'#10b981':'#ef4444'):'#a0aec0'};">${s.volSurge!=null?((s.volSurge>=0?'+':'')+s.volSurge.toFixed(0)+'%'):'-'}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
@@ -953,11 +955,11 @@
                                 const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
-                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
-                                    <td style="padding:3px 6px; text-align:right;">${s.pe > 0 ? s.pe.toFixed(1) : '-'}</td>
+                                    <td style="padding:3px 6px; text-align:right; color:#cbd5e1;">${s.pe > 0 ? s.pe.toFixed(1) : '-'}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
-                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:#cbd5e1;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -989,11 +991,11 @@
                                 const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
-                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${s.techScore>=50?'#10b981':'#ef4444'};">${Math.round(s.techScore)}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
-                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:#cbd5e1;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -1034,11 +1036,11 @@
                                 const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
-                                    <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 6px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${s.techBase>=50?'#10b981':'#ef4444'};">${Math.round(s.techBase)}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
-                                    <td style="padding:3px 6px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:#cbd5e1;">${(s.str52w||0).toFixed(0)}%</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -1078,13 +1080,13 @@
                                 const scC = scColor(s.score);
                                 const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
-                                    <td style="padding:3px 5px; font-weight:800;">${s.symbol}</td>
+                                    <td style="padding:3px 5px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                     <td style="padding:3px 5px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
                                     <td style="padding:3px 5px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
                                     <td style="padding:3px 5px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
-                                    <td style="padding:3px 5px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 5px; text-align:right; color:#cbd5e1;">${(s.str52w||0).toFixed(0)}%</td>
                                     <td style="padding:3px 5px; text-align:right; color:${s.volSurge!=null?(s.volSurge>=0?'#10b981':'#ef4444'):'#a0aec0'};">${s.volSurge!=null?((s.volSurge>=0?'+':'')+s.volSurge.toFixed(0)+'%'):'-'}</td>
-                                    <td style="padding:3px 5px; text-align:right;">${s.pe > 0 ? s.pe.toFixed(1) : '-'}</td>
+                                    <td style="padding:3px 5px; text-align:right; color:#cbd5e1;">${s.pe > 0 ? s.pe.toFixed(1) : '-'}</td>
                                 </tr>`;
                             });
                             html += '</tbody></table>';
@@ -1135,13 +1137,13 @@
                                     const rowBg   = i % 2 === 0 ? '' : 'background:rgba(255,255,255,0.04);';
                                     html += `<tr style="${rowBg}">
                                         <td style="padding:3px 6px; font-weight:700; color:#a0aec0; text-align:right;">${i + 1}</td>
-                                        <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
+                                        <td style="padding:3px 6px; font-weight:800; color:#f1f5f9;">${s.symbol}</td>
                                         <td style="padding:3px 6px; color:${scoreColor}; font-weight:700; text-align:right;">${score}</td>
                                         <td style="padding:3px 6px; text-align:right; color:${parseFloat(mom)>=0?'#10b981':'#ef4444'};">${mom}%</td>
                                         <td style="padding:3px 6px; text-align:right; color:${parseFloat(ma50)>=0?'#10b981':'#ef4444'};">${ma50}%</td>
-                                        <td style="padding:3px 6px; text-align:right;">${str52w}%</td>
+                                        <td style="padding:3px 6px; text-align:right; color:#cbd5e1;">${str52w}%</td>
                                         <td style="padding:3px 6px; text-align:right; color:${volSurge!=null?(parseFloat(volSurge)>=0?'#10b981':'#ef4444'):'#a0aec0'};">${volSurge!=null?((parseFloat(volSurge)>=0?'+':'')+volSurge+'%'):'-'}</td>
-                                        <td style="padding:3px 6px; text-align:right;">${pe > 0 ? pe : '-'}</td>
+                                        <td style="padding:3px 6px; text-align:right; color:#cbd5e1;">${pe > 0 ? pe : '-'}</td>
                                     </tr>`;
                                 });
                                 html += '</tbody></table>';
