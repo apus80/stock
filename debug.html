@@ -298,6 +298,181 @@
             text-transform: uppercase;
         }
 
+        /* 종목 검색 섹션 */
+        .symbol-search {
+            background: var(--bg2);
+            border: 2px solid var(--blue);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .symbol-search-title {
+            color: var(--blue);
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .symbol-search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .symbol-search-input {
+            flex: 1;
+            max-width: 250px;
+            padding: 10px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .symbol-search-input:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 8px rgba(88, 166, 255, 0.3);
+        }
+
+        .symbol-search-btn {
+            padding: 10px 24px;
+            background: var(--blue);
+            border: none;
+            color: white;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .symbol-search-btn:hover { opacity: 0.85; }
+        .symbol-search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .symbol-quick-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .symbol-tag {
+            padding: 4px 10px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 12px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .symbol-tag:hover {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .symbol-results {
+            display: none;
+            margin-top: 15px;
+        }
+
+        .symbol-results.show { display: block; }
+
+        .symbol-results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .symbol-results-title {
+            color: var(--green);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .symbol-results-meta {
+            color: var(--yellow);
+            font-size: 10px;
+        }
+
+        .symbol-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 12px;
+        }
+
+        .symbol-result-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .symbol-result-card.loading { opacity: 0.6; }
+        .symbol-result-card.ok { border-left: 3px solid var(--green); }
+        .symbol-result-card.fail { border-left: 3px solid var(--red); }
+
+        .src-header {
+            background: var(--bg3);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .src-header .src-name { color: var(--blue); }
+        .src-header .src-time { color: var(--yellow); font-weight: normal; }
+
+        .src-body {
+            padding: 10px 12px;
+        }
+
+        .src-kv {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid var(--bg3);
+            font-size: 11px;
+        }
+
+        .src-kv:last-child { border-bottom: none; }
+        .src-kv .k { color: var(--yellow); }
+        .src-kv .v { color: var(--text); font-weight: bold; }
+        .src-kv .v.up { color: var(--green); }
+        .src-kv .v.down { color: var(--red); }
+
+        .src-raw-toggle {
+            color: var(--blue);
+            font-size: 10px;
+            cursor: pointer;
+            margin-top: 6px;
+            display: inline-block;
+        }
+
+        .src-raw {
+            display: none;
+            background: var(--bg2);
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+            font-size: 9px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .src-raw.show { display: block; }
+
         .summary-item-value {
             font-size: 14px;
             font-weight: bold;
@@ -310,6 +485,27 @@
         <div class="header">
             <h1>🔧 Worker API 디버그 대시보드</h1>
             <div class="subtitle">35개 엔드포인트 테스트 및 모니터링</div>
+        </div>
+
+        <!-- 종목 검색 -->
+        <div class="symbol-search">
+            <div class="symbol-search-title">🔍 종목 심볼 검색 — 모든 엔드포인트 한번에 조회</div>
+            <div class="symbol-search-row">
+                <input type="text" class="symbol-search-input" id="symbolInput" placeholder="AAPL" value="" autocomplete="off">
+                <button class="symbol-search-btn" id="symbolSearchBtn" onclick="searchSymbol()">조회</button>
+            </div>
+            <div class="symbol-quick-tags">
+                <span class="symbol-tag" onclick="quickSearch('AAPL')">AAPL</span>
+                <span class="symbol-tag" onclick="quickSearch('NVDA')">NVDA</span>
+                <span class="symbol-tag" onclick="quickSearch('TSLA')">TSLA</span>
+                <span class="symbol-tag" onclick="quickSearch('MSFT')">MSFT</span>
+                <span class="symbol-tag" onclick="quickSearch('GOOGL')">GOOGL</span>
+                <span class="symbol-tag" onclick="quickSearch('AMZN')">AMZN</span>
+                <span class="symbol-tag" onclick="quickSearch('META')">META</span>
+                <span class="symbol-tag" onclick="quickSearch('SPY')">SPY</span>
+                <span class="symbol-tag" onclick="quickSearch('QQQ')">QQQ</span>
+            </div>
+            <div class="symbol-results" id="symbolResults"></div>
         </div>
 
         <!-- 컨트롤 -->
@@ -581,6 +777,280 @@
             a.href = url;
             a.download = `worker-debug-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
+        }
+
+        // === 종목 심볼 검색 기능 ===
+
+        const SYMBOL_ENDPOINTS = [
+            { path: '/stock', name: '실시간 시세', extract: extractStock },
+            { path: '/alpha', name: 'Alpha Score', extract: extractAlpha },
+            { path: '/fundamentals/ratios', name: '재무비율 (PE/PB)', extract: extractRatios },
+            { path: '/fundamentals/profile', name: '회사 프로필', extract: extractProfile },
+            { path: '/fundamentals/income', name: '손익계산서', extract: extractIncome },
+            { path: '/fundamentals/balance', name: '재무상태표', extract: extractBalance },
+            { path: '/fundamentals/growth', name: '성장률', extract: extractGrowth },
+            { path: '/fundamentals/cashflow', name: '현금흐름', extract: extractCashflow },
+            { path: '/fundamentals/earnings', name: '실적', extract: extractEarnings },
+            { path: '/fundamentals/shares', name: '주식수', extract: extractShares },
+            { path: '/analysis/catalyst-surge', name: 'Catalyst Surge', extract: extractCatalyst },
+        ];
+
+        function quickSearch(sym) {
+            document.getElementById('symbolInput').value = sym;
+            searchSymbol();
+        }
+
+        document.getElementById('symbolInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') searchSymbol();
+        });
+
+        async function searchSymbol() {
+            const input = document.getElementById('symbolInput');
+            const sym = input.value.trim().toUpperCase();
+            if (!sym) return;
+            input.value = sym;
+
+            const btn = document.getElementById('symbolSearchBtn');
+            btn.disabled = true;
+            btn.textContent = '조회 중...';
+
+            const container = document.getElementById('symbolResults');
+            container.classList.add('show');
+
+            // 헤더 + 빈 카드 생성
+            let html = `
+                <div class="symbol-results-header">
+                    <div class="symbol-results-title">${sym} — 엔드포인트별 응답</div>
+                    <div class="symbol-results-meta" id="symMeta">0 / ${SYMBOL_ENDPOINTS.length} 완료</div>
+                </div>
+                <div class="symbol-results-grid" id="symGrid">
+            `;
+            SYMBOL_ENDPOINTS.forEach(function(ep, i) {
+                html += `<div class="symbol-result-card loading" id="sym-card-${i}">
+                    <div class="src-header"><span class="src-name">${ep.name}</span><span class="src-time" id="sym-time-${i}">...</span></div>
+                    <div class="src-body" id="sym-body-${i}"><span style="color:var(--yellow)">⏳ 호출 중...</span></div>
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+            // 모든 엔드포인트 병렬 호출
+            let done = 0;
+            const promises = SYMBOL_ENDPOINTS.map(function(ep, i) {
+                const url = API_BASE + ep.path + '?symbol=' + sym;
+                const t0 = Date.now();
+                return fetch(url)
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        const ms = Date.now() - t0;
+                        renderSymbolCard(i, ep, data, ms, sym);
+                        done++;
+                        document.getElementById('symMeta').textContent = done + ' / ' + SYMBOL_ENDPOINTS.length + ' 완료';
+                    })
+                    .catch(function(err) {
+                        const ms = Date.now() - t0;
+                        renderSymbolCardError(i, ep, err, ms);
+                        done++;
+                        document.getElementById('symMeta').textContent = done + ' / ' + SYMBOL_ENDPOINTS.length + ' 완료';
+                    });
+            });
+
+            await Promise.all(promises);
+            btn.disabled = false;
+            btn.textContent = '조회';
+        }
+
+        function renderSymbolCard(i, ep, data, ms) {
+            const card = document.getElementById('sym-card-' + i);
+            card.className = 'symbol-result-card ok';
+            document.getElementById('sym-time-' + i).textContent = ms + 'ms';
+
+            const kvs = ep.extract(data);
+            const rawId = 'sym-raw-' + i;
+            let html = '';
+            kvs.forEach(function(kv) {
+                const cls = kv.dir === 'up' ? ' up' : kv.dir === 'down' ? ' down' : '';
+                html += '<div class="src-kv"><span class="k">' + kv.k + '</span><span class="v' + cls + '">' + kv.v + '</span></div>';
+            });
+            html += '<span class="src-raw-toggle" onclick="toggleRaw(\'' + rawId + '\')">▶ Raw JSON</span>';
+            html += '<div class="src-raw" id="' + rawId + '">' + JSON.stringify(data, null, 2).substring(0, 1500) + '</div>';
+            document.getElementById('sym-body-' + i).innerHTML = html;
+        }
+
+        function renderSymbolCardError(i, ep, err, ms) {
+            const card = document.getElementById('sym-card-' + i);
+            card.className = 'symbol-result-card fail';
+            document.getElementById('sym-time-' + i).textContent = ms + 'ms';
+            document.getElementById('sym-body-' + i).innerHTML = '<span style="color:var(--red)">❌ ' + err.message + '</span>';
+        }
+
+        function toggleRaw(id) {
+            var el = document.getElementById(id);
+            el.classList.toggle('show');
+        }
+
+        // --- 데이터 추출 함수들 ---
+
+        function fmtNum(v, dec) {
+            if (v == null || v === '-') return '-';
+            return Number(v).toFixed(dec == null ? 2 : dec);
+        }
+        function fmtPct(v) {
+            if (v == null) return '-';
+            var n = Number(v);
+            return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+        }
+        function chgDir(v) {
+            if (v == null) return '';
+            return Number(v) >= 0 ? 'up' : 'down';
+        }
+
+        function extractStock(d) {
+            var q = d.data || d;
+            return [
+                { k: 'Symbol', v: q.symbol || '-' },
+                { k: 'Name', v: q.name || '-' },
+                { k: 'Price', v: fmtNum(q.price) },
+                { k: 'Change', v: fmtPct(q.changePercentage), dir: chgDir(q.changePercentage) },
+                { k: 'Volume', v: q.volume ? Number(q.volume).toLocaleString() : '-' },
+                { k: 'Market Cap', v: q.marketCap ? '$' + (q.marketCap / 1e9).toFixed(1) + 'B' : '-' },
+            ];
+        }
+
+        function extractAlpha(d) {
+            var a = d.data || d;
+            var f = a.factors || {};
+            var m = a.metrics || {};
+            var p = a.profile || {};
+            return [
+                { k: 'Explosive Score', v: fmtNum(a.explosiveScore, 1) },
+                { k: 'Sector', v: p.sector || '-' },
+                { k: 'PE', v: fmtNum(f.pe, 1) },
+                { k: 'PB', v: fmtNum(f.pb, 1) },
+                { k: 'Revenue Growth', v: fmtPct(f.revenueGrowth), dir: chgDir(f.revenueGrowth) },
+                { k: 'Earnings Growth', v: fmtPct(f.earningsGrowth), dir: chgDir(f.earningsGrowth) },
+                { k: 'Analyst Score', v: fmtNum(f.analystScore, 0) },
+                { k: 'Momentum', v: fmtNum(m.momentum, 2) },
+                { k: 'Volume Score', v: fmtNum(m.volume, 2) },
+            ];
+        }
+
+        function extractRatios(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var r = arr[0] || {};
+            return [
+                { k: 'PE Ratio (TTM)', v: fmtNum(r.priceToEarningsRatioTTM || r.peRatioTTM) },
+                { k: 'PB Ratio (TTM)', v: fmtNum(r.priceToBookRatioTTM || r.pbRatioTTM) },
+                { k: 'PS Ratio', v: fmtNum(r.priceToSalesRatioTTM) },
+                { k: 'ROE', v: fmtPct(r.returnOnEquityTTM ? r.returnOnEquityTTM * 100 : null) },
+                { k: 'ROA', v: fmtPct(r.returnOnAssetsTTM ? r.returnOnAssetsTTM * 100 : null) },
+                { k: 'Gross Margin', v: fmtPct(r.grossProfitMarginTTM ? r.grossProfitMarginTTM * 100 : null) },
+                { k: 'Net Margin', v: fmtPct(r.netProfitMarginTTM ? r.netProfitMarginTTM * 100 : null) },
+                { k: 'Debt/Equity', v: fmtNum(r.debtEquityRatioTTM) },
+                { k: 'Current Ratio', v: fmtNum(r.currentRatioTTM) },
+                { k: 'Dividend Yield', v: fmtPct(r.dividendYieldTTM ? r.dividendYieldTTM * 100 : null) },
+            ];
+        }
+
+        function extractProfile(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var p = arr[0] || {};
+            return [
+                { k: 'Name', v: p.companyName || p.name || '-' },
+                { k: 'Sector', v: p.sector || '-' },
+                { k: 'Industry', v: p.industry || '-' },
+                { k: 'CEO', v: p.ceo || '-' },
+                { k: 'Employees', v: p.fullTimeEmployees ? Number(p.fullTimeEmployees).toLocaleString() : '-' },
+                { k: 'Country', v: p.country || '-' },
+                { k: 'IPO Date', v: p.ipoDate || '-' },
+            ];
+        }
+
+        function extractIncome(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var r = arr[0] || {};
+            return [
+                { k: 'Period', v: r.date || r.period || '-' },
+                { k: 'Revenue', v: r.revenue ? '$' + (r.revenue / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'Gross Profit', v: r.grossProfit ? '$' + (r.grossProfit / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'Net Income', v: r.netIncome ? '$' + (r.netIncome / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'EPS', v: fmtNum(r.eps) },
+                { k: 'Operating Income', v: r.operatingIncome ? '$' + (r.operatingIncome / 1e9).toFixed(2) + 'B' : '-' },
+            ];
+        }
+
+        function extractBalance(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var r = arr[0] || {};
+            return [
+                { k: 'Period', v: r.date || '-' },
+                { k: 'Total Assets', v: r.totalAssets ? '$' + (r.totalAssets / 1e9).toFixed(1) + 'B' : '-' },
+                { k: 'Total Liabilities', v: r.totalLiabilities ? '$' + (r.totalLiabilities / 1e9).toFixed(1) + 'B' : '-' },
+                { k: 'Total Equity', v: r.totalStockholdersEquity ? '$' + (r.totalStockholdersEquity / 1e9).toFixed(1) + 'B' : '-' },
+                { k: 'Cash', v: r.cashAndCashEquivalents ? '$' + (r.cashAndCashEquivalents / 1e9).toFixed(1) + 'B' : '-' },
+                { k: 'Total Debt', v: r.totalDebt ? '$' + (r.totalDebt / 1e9).toFixed(1) + 'B' : '-' },
+            ];
+        }
+
+        function extractGrowth(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var r = arr[0] || {};
+            return [
+                { k: 'Period', v: r.date || '-' },
+                { k: 'Revenue Growth', v: fmtPct(r.revenueGrowth ? r.revenueGrowth * 100 : null), dir: chgDir(r.revenueGrowth) },
+                { k: 'Net Income Growth', v: fmtPct(r.netIncomeGrowth ? r.netIncomeGrowth * 100 : null), dir: chgDir(r.netIncomeGrowth) },
+                { k: 'EPS Growth', v: fmtPct(r.epsgrowth ? r.epsgrowth * 100 : null), dir: chgDir(r.epsgrowth) },
+                { k: 'Gross Profit Growth', v: fmtPct(r.grossProfitGrowth ? r.grossProfitGrowth * 100 : null), dir: chgDir(r.grossProfitGrowth) },
+                { k: 'Operating Income Growth', v: fmtPct(r.operatingIncomeGrowth ? r.operatingIncomeGrowth * 100 : null), dir: chgDir(r.operatingIncomeGrowth) },
+            ];
+        }
+
+        function extractCashflow(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var r = arr[0] || {};
+            return [
+                { k: 'Period', v: r.date || '-' },
+                { k: 'Operating CF', v: r.operatingCashFlow ? '$' + (r.operatingCashFlow / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'Investing CF', v: r.netCashUsedForInvestingActivites ? '$' + (r.netCashUsedForInvestingActivites / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'Financing CF', v: r.netCashUsedProvidedByFinancingActivities ? '$' + (r.netCashUsedProvidedByFinancingActivities / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'Free CF', v: r.freeCashFlow ? '$' + (r.freeCashFlow / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'CapEx', v: r.capitalExpenditure ? '$' + (r.capitalExpenditure / 1e9).toFixed(2) + 'B' : '-' },
+            ];
+        }
+
+        function extractEarnings(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var r = arr[0] || {};
+            return [
+                { k: 'Date', v: r.date || '-' },
+                { k: 'EPS Actual', v: fmtNum(r.epsActual || r.eps) },
+                { k: 'EPS Estimated', v: fmtNum(r.epsEstimated) },
+                { k: 'Revenue Actual', v: r.revenueActual ? '$' + (r.revenueActual / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'Revenue Estimated', v: r.revenueEstimated ? '$' + (r.revenueEstimated / 1e9).toFixed(2) + 'B' : '-' },
+            ];
+        }
+
+        function extractShares(d) {
+            var arr = Array.isArray(d) ? d : (d.data ? (Array.isArray(d.data) ? d.data : [d.data]) : [d]);
+            var r = arr[0] || {};
+            return [
+                { k: 'Date', v: r.date || '-' },
+                { k: 'Float Shares', v: r.floatShares ? (r.floatShares / 1e9).toFixed(2) + 'B' : '-' },
+                { k: 'Outstanding', v: r.outstandingShares ? (r.outstandingShares / 1e9).toFixed(2) + 'B' : (r.sharesOutstanding ? (r.sharesOutstanding / 1e9).toFixed(2) + 'B' : '-') },
+                { k: 'Free Float', v: r.freeFloat ? fmtPct(r.freeFloat) : '-' },
+            ];
+        }
+
+        function extractCatalyst(d) {
+            var c = d.data || d;
+            var b = c.breakdown || {};
+            return [
+                { k: 'CSS Score', v: fmtNum(c.css || c.css_raw, 1) },
+                { k: 'Grade', v: c.grade || '-' },
+                { k: 'Catalyst', v: fmtNum(b.catalyst, 1) },
+                { k: 'Technical', v: fmtNum(b.technical, 1) },
+                { k: 'Smart Money', v: fmtNum(b.smartMoney, 1) },
+            ];
         }
 
         // 초기화
