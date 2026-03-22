@@ -4281,6 +4281,23 @@ export default {
           response = {error: e.message, endpoint: pathname}
         }
 
+      // /metricz-refresh - KV 캐시 수동 갱신 (최대 2분 소요)
+      } else if (pathname === "/metricz-refresh") {
+        try {
+          const t0 = Date.now()
+          await refreshMetriczCache(env)
+          const elapsed = ((Date.now() - t0) / 1000).toFixed(1)
+          const kv = env.METRICZ_KV
+          let count = 0
+          if (kv) {
+            const cached = await kv.get(METRICZ_KV_KEY)
+            if (cached) count = Object.keys(JSON.parse(cached).stocks || {}).length
+          }
+          response = { ok: true, message: `metricz 캐시 갱신 완료`, stocks_cached: count, elapsed_sec: parseFloat(elapsed) }
+        } catch(e) {
+          response = { error: e.message, endpoint: pathname }
+        }
+
       // /metricz-debug - KV 캐시 원본값 확인 (GET ?symbols=MO,VZ,PLTR or ?all=1)
       } else if (pathname === "/metricz-debug") {
         try {

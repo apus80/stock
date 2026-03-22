@@ -840,11 +840,33 @@ function rFredP(){
 async function loadKvCache(syms){
   S.kvLoading=true;render();
   try{
-    const url=syms?`${API}/metricz-debug?symbols=${syms}`:`${API}/metricz-debug?symbols=MO,VZ,T,PM,DUK,TXN,QCOM,ORCL,MSFT,AVGO,NVDA,AMD,PLTR,MU,AVGO,META,GOOGL,CRWD`;
-    const r=await fw(url);
+    const defaultSyms='MO,VZ,T,PM,DUK,TXN,QCOM,ORCL,MSFT,AVGO,NVDA,AMD,PLTR,MU,META,GOOGL';
+    const url=`${API}/metricz-debug?symbols=${syms||defaultSyms}`;
+    const r=await fw(url,{},30000);
+    if(!r.ok){S.kvData={error:`HTTP ${r.status}: ${r.error}`};addLog(`❌ KV Cache HTTP오류: ${r.error}`,'fail');S.kvLoading=false;render();return;}
+    const tc=r.data?.total_cached;
     S.kvData=r.data;
-    addLog(r.ok?`✅ KV Cache 로드: ${r.data?.total_cached||0}종목 캐시됨 (${r.ms}ms)`:`❌ KV Cache 오류: ${r.error}`);
-  }catch(e){S.kvData={error:e.message};}
+    if(!tc){
+      addLog(`⚠️ KV Cache 비어있음 — [🔄 캐시 갱신] 버튼을 눌러주세요 (${r.ms}ms)`,'warn');
+    } else {
+      addLog(`✅ KV Cache 로드: ${tc}종목 캐시됨 (${r.ms}ms)`,'ok');
+    }
+  }catch(e){S.kvData={error:e.message};addLog(`❌ ${e.message}`,'fail');}
+  S.kvLoading=false;render();
+}
+async function refreshKvCache(){
+  if(!confirm('⚠️ 180종목 × 4 FMP API 호출 — 약 60~120초 소요됩니다. 진행할까요?'))return;
+  S.kvLoading=true;S.kvData=null;addLog('🔄 캐시 갱신 시작 (최대 2분 대기)...');render();
+  try{
+    const r=await fw(`${API}/metricz-refresh`,{},150000);
+    if(r.ok&&r.data?.ok){
+      addLog(`✅ 갱신 완료: ${r.data.stocks_cached}종목, ${r.data.elapsed_sec}초 소요`,'ok');
+      await loadKvCache();
+    } else {
+      addLog(`❌ 갱신 실패: ${r.data?.error||r.error||'unknown'}`,'fail');
+      S.kvData={error:r.data?.error||r.error||'갱신 실패'};
+    }
+  }catch(e){addLog(`❌ ${e.message}`,'fail');S.kvData={error:e.message};}
   S.kvLoading=false;render();
 }
 function rKvCache(){
@@ -879,15 +901,21 @@ function rKvCache(){
       ${Object.entries(ns).map(([m,v])=>`<tr style="border-bottom:1px solid #1e293b"><td style="padding:3px 8px;color:#cbd5e1">${m}</td><td style="padding:3px 8px;color:#10b981;text-align:right">${v.valid_count}</td><td style="padding:3px 8px;color:${v.null_count>50?'#ef4444':'#f59e0b'};text-align:right">${v.null_count}</td><td style="padding:3px 8px;color:${v.null_count>50?'#ef4444':'#f59e0b'};text-align:right">${v.null_pct}</td></tr>`).join('')}
       </table></div>`;
   }
-  const symInput=`<input id="kvSymIn" placeholder="MO,VZ,PLTR,NVDA..." style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:4px 8px;border-radius:6px;font-size:12px;width:300px">`;
+  const symInput=`<input id="kvSymIn" placeholder="MO,VZ,PLTR,NVDA..." style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:4px 8px;border-radius:6px;font-size:12px;width:280px">`;
+  const emptyWarning=d&&!d.error&&!d.total_cached?`<div style="background:rgba(245,158,11,.1);border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:12px;color:#fcd34d">
+    ⚠️ <strong>KV 캐시가 비어있습니다</strong> — cron이 한 번도 실행되지 않았습니다.<br>
+    <span style="font-size:12px;opacity:.8">[🔄 캐시 갱신] 버튼을 눌러 180종목 데이터를 수동으로 채우세요 (1~2분 소요)</span>
+  </div>`:'';
   return`<div class="panel active">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-      <button class="btn btn-primary" onclick="loadKvCache()" ${S.kvLoading?'disabled':''}>▶ 기본 검증 종목 로드</button>
+      <button class="btn btn-primary" onclick="loadKvCache()" ${S.kvLoading?'disabled':''}>▶ 캐시 확인</button>
+      <button class="btn" style="background:#dc2626" onclick="refreshKvCache()" ${S.kvLoading?'disabled':''}>🔄 캐시 갱신 (1~2분)</button>
       ${symInput}
       <button class="btn" onclick="loadKvCache(document.getElementById('kvSymIn').value||undefined)" ${S.kvLoading?'disabled':''}>검색</button>
-      ${d?`<span style="color:var(--muted);font-size:11px">캐시: ${d.cache_timestamp||'-'} | ${d.total_cached||0}종목</span>`:''}
+      ${d&&d.total_cached?`<span style="color:var(--muted);font-size:11px">캐시: ${d.cache_timestamp||'-'} | ${d.total_cached}종목</span>`:''}
     </div>
-    ${S.kvLoading?'<div style="color:var(--cyan);padding:20px">🔄 로딩 중...</div>':d?d.error?`<div style="color:#ef4444;padding:12px">❌ ${d.error}</div>`:symsHtml:'<div style="color:var(--muted);padding:20px;text-align:center">▶ 버튼을 눌러 KV 캐시 데이터를 확인하세요</div>'}
+    ${emptyWarning}
+    ${S.kvLoading?'<div style="color:var(--cyan);padding:20px">🔄 처리 중...</div>':d?d.error?`<div style="background:rgba(239,68,68,.1);border:1px solid #ef4444;border-radius:8px;padding:12px;color:#fca5a5">❌ ${d.error}</div>`:symsHtml:'<div style="color:var(--muted);padding:20px;text-align:center">▶ 캐시 확인 버튼을 눌러주세요</div>'}
   </div>`;
 }
 
