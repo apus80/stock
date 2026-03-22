@@ -1151,7 +1151,7 @@
                 <div className="widget grid-full">
                     <div className="widget-header">
                         <div>
-                            <div className="widget-title">🔍 Alpha Discovery Scanner
+                            <div className="widget-title">3. 🔍 Alpha Discovery Scanner
                                 <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>당일등락률×30% + MA50추세×25% + 52주강도×25% + 거래량급증×20%</span>
                             </div>
                             <div className="widget-subtitle">S&P500 유니버스 80종목 스캔 (KV 캐시 8h, 실시간 Top10 폴백)</div>
@@ -1340,9 +1340,9 @@
             }, [gates])
 
             return (
-                <div className="widget">
+                <div className="widget grid-full">
                     <div className="widget-header">
-                        <div className="widget-title">🚪 Market Entry Gate
+                        <div className="widget-title">1. 🚪 Market Entry Gate
                             <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>공포탐욕 + 시장체제로 진입신호 판정</span>
                         </div>
                         <button className="btn-refresh" onClick={fetchGates} disabled={loading}>↻</button>
@@ -1443,8 +1443,8 @@
 
             if (!symbol) {
                 return (
-                    <div className="widget">
-                        <div className="widget-title">💰 종목 깊이 분석
+                    <div className="widget grid-full">
+                        <div className="widget-title">2. 💰 종목 깊이 분석
                             <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>재무 + PE/PBR + 매수 판정</span>
                         </div>
                         <form onSubmit={handleSubmit} className="input-group" style={{ marginBottom: '16px' }}>
@@ -1476,9 +1476,9 @@
             }
 
             return (
-                <div className="widget">
+                <div className="widget grid-full">
                     <div className="widget-header">
-                        <div className="widget-title">💰 종목 깊이 분석
+                        <div className="widget-title">2. 💰 종목 깊이 분석
                             <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>재무 + PE/PBR + 매수 판정</span>
                         </div>
                         <button className="btn-refresh" onClick={handleSubmit} disabled={loading}>↻</button>
@@ -1568,153 +1568,7 @@
         }
 
         // =============================
-        // WIDGET 4: SECTOR ROTATION DRILL DOWN
-        // =============================
-
-        function SectorRotationDrillDown({ onSelectSymbol }) {
-            const [sectors, setSectors] = useState([])
-            const [sectorMap, setSectorMap] = useState({})
-            const [selectedSector, setSelectedSector] = useState(null)
-            const [loading, setLoading] = useState(false)
-            const [error, setError] = useState(null)
-
-            const fetchSectorData = useCallback(async () => {
-                try {
-                    setLoading(true)
-
-                    const results = await Promise.allSettled([
-                        fetch(API_BASE + '/analysis/sector-rotation').then(r => r.json()),
-                        fetch(API_BASE + '/alpha/discovery').then(r => r.json())
-                    ])
-
-                    const rotation = results[0].status === 'fulfilled' ? results[0].value : null
-                    const discovery = results[1].status === 'fulfilled' ? results[1].value : null
-
-                    if (!rotation?.rankings || !discovery?.top_20) {
-                        setError('섹터 데이터 없음')
-                        return
-                    }
-
-                    const sortedSectors = [...rotation.rankings].sort((a, b) => (b.w1 ?? 0) - (a.w1 ?? 0))
-                    setSectors(sortedSectors)
-
-                    const profileResults = await Promise.allSettled(
-                        discovery.top_20.map(stock =>
-                            fetch(API_BASE + `/fundamentals/profile?symbol=${stock.symbol}`).then(r => r.json())
-                        )
-                    )
-
-                    const map = {}
-                    sortedSectors.forEach(s => { map[s.name] = [] })
-
-                    discovery.top_20.forEach((stock, idx) => {
-                        const profileResult = profileResults[idx]
-                        const profile = profileResult.status === 'fulfilled' ? profileResult.value : null
-                        const sector = profile?.data?.sector
-
-                        let matched = false
-                        for (const s of sortedSectors) {
-                            if (matchSector(sector, s.name)) {
-                                map[s.name].push(stock)
-                                matched = true
-                                break
-                            }
-                        }
-
-                        if (!matched) {
-                            if (!map['기타']) map['기타'] = []
-                            map['기타'].push(stock)
-                        }
-                    })
-
-                    setSectorMap(map)
-                    setSelectedSector(sortedSectors[0]?.name || null)
-                    setError(null)
-                } catch (e) {
-                    setError(e.message)
-                } finally {
-                    setLoading(false)
-                }
-            }, [])
-
-            useEffect(() => {
-                fetchSectorData()
-            }, [fetchSectorData])
-
-            const selectedStocks = useMemo(() => {
-                if (!selectedSector || !sectorMap[selectedSector]) return []
-                const stocks = sectorMap[selectedSector]
-                const maxScore = Math.max(...stocks.map(s => s.score || 0), 1)
-                return stocks
-                    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-                    .map(s => ({ ...s, maxScore }))
-            }, [selectedSector, sectorMap])
-
-            return (
-                <div className="widget grid-full">
-                    <div className="widget-header">
-                        <div>
-                            <div className="widget-title">📊 Sector Rotation Drill Down
-                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>섹터별 강세 분석 및 종목 발굴</span>
-                            </div>
-                            <div className="widget-subtitle">강한 섹터 내 Alpha Score 비교</div>
-                        </div>
-                        <button className="btn-refresh" onClick={fetchSectorData} disabled={loading}>↻</button>
-                    </div>
-
-                    {loading && <div className="loading">로딩 중...</div>}
-                    {error && <div className="error-box">{error}</div>}
-
-                    {!loading && !error && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
-                            <div className="sector-list">
-                                {sectors.map(sector => (
-                                    <div
-                                        key={sector.name}
-                                        className={`sector-item ${selectedSector === sector.name ? 'active' : ''}`}
-                                        onClick={() => setSelectedSector(sector.name)}
-                                    >
-                                        <div className="sector-name">{sector.name}</div>
-                                        <div className={`sector-change ${changeColor(sector.w1)}`}>
-                                            {fmt.pct(sector.w1)}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div>
-                                {selectedStocks.length > 0 ? (
-                                    selectedStocks.map((stock, idx) => {
-                                        const pct = (stock.score / stock.maxScore) * 100
-                                        const grade = scoreGrade(stock.score)
-                                        return (
-                                            <div
-                                                key={stock.symbol}
-                                                className="stock-bar"
-                                                onClick={() => onSelectSymbol(stock.symbol)}
-                                            >
-                                                <div className="stock-bar-symbol">{idx + 1}. {stock.symbol}</div>
-                                                <div className="stock-bar-fill">
-                                                    <div className="stock-bar-progress" style={{ width: pct + '%' }} />
-                                                </div>
-                                                <div className="stock-bar-score">{grade.icon} {(stock.score ?? 0).toFixed(2)}</div>
-                                            </div>
-                                        )
-                                    })
-                                ) : (
-                                    <div style={{ padding: '40px 20px', textAlign: 'center', color: '#2d3748' }}>
-                                        이 섹터에 종목이 없습니다
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )
-        }
-
-        // =============================
-        // WIDGET 5: BREAKOUT RADAR
+        // WIDGET 4: BREAKOUT RADAR
         // 단기 돌파 후보 발굴 (1~3주, 목표 20%)
         // 데이터 소스: FMP API /stable/quote (52주 고저, MA, 거래량 등)
         // =============================
@@ -1774,55 +1628,38 @@
             const boolColor = (v) => v ? '#10b981' : '#ef4444'
 
             return (
-                <div className="breakout-widget">
-                    <div className="breakout-header">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <h2>Breakout Radar</h2>
-                                <p>S&P500 Top 80 | 단기 돌파 후보 발굴 (1~3주, 목표 20%)</p>
-                                {data && (
-                                    <div className="header-meta">
-                                        <span>분석: <strong>{data.analyzed || '-'}종목</strong></span>
-                                        <span>소요: <strong>{data.execution_time_sec || '-'}초</strong></span>
-                                        <span>갱신: <strong>{data.timestamp ? new Date(data.timestamp).toLocaleTimeString('ko-KR') : '-'}</strong></span>
-                                    </div>
-                                )}
+                <div className="widget grid-full">
+                    <div className="widget-header">
+                        <div>
+                            <div className="widget-title">4. 📡 Breakout Radar
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>S&P500 Top 80 | 단기 돌파 후보 발굴 (1~3주, 목표 20%)</span>
                             </div>
-                            <button
-                                onClick={fetchData}
-                                disabled={loading}
-                                style={{
-                                    background: 'rgba(255,255,255,0.15)',
-                                    border: '1px solid rgba(255,255,255,0.3)',
-                                    color: '#fff',
-                                    padding: '8px 16px',
-                                    borderRadius: '8px',
-                                    cursor: loading ? 'wait' : 'pointer',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {loading ? `분석 중... ${elapsed}초` : '새로고침'}
-                            </button>
+                            {data && (
+                                <div className="widget-subtitle">
+                                    분석: {data.analyzed || '-'}종목 | 소요: {data.execution_time_sec || '-'}초 | 갱신: {data.timestamp ? new Date(data.timestamp).toLocaleTimeString('ko-KR') : '-'}
+                                </div>
+                            )}
                         </div>
+                        <button
+                            className={`btn-refresh ${loading ? 'loading' : ''}`}
+                            onClick={fetchData}
+                            disabled={loading}
+                        >
+                            {loading ? `${elapsed}초` : '↻'}
+                        </button>
                     </div>
 
-                    <div className="breakout-body">
-                        {loading && !data && (
-                            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
-                                <div style={{ fontSize: '2em', marginBottom: '12px' }}>&#9201;</div>
-                                <div style={{ fontSize: '14px' }}>S&P500 Top 80 종목 분석 중... ({elapsed}초)</div>
-                                <div style={{ fontSize: '12px', marginTop: '8px', color: '#64748b' }}>7개 기술적 지표 스캐닝</div>
-                            </div>
-                        )}
+                    {loading && !data && (
+                        <div className="loading">
+                            📡 S&P500 Top 80 종목 분석 중... ({elapsed}초) — 7개 기술적 지표 스캐닝
+                        </div>
+                    )}
 
                         {error && !data && (
-                            <div className="error-box">
-                                <div>{error}</div>
-                                <button onClick={fetchData}>재시도</button>
-                            </div>
-                        )}
+                        <div className="error-box">
+                            {error} <button onClick={fetchData}>재시도</button>
+                        </div>
+                    )}
 
                         {data && data.top_15 && data.top_15.length > 0 && (
                             <>
@@ -2010,10 +1847,10 @@
                                 )}
 
                                 {/* 스코어링 설명 */}
-                                <div style={{ marginTop: '16px', padding: '14px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '11px', color: '#64748b', lineHeight: 1.7 }}>
-                                    <strong style={{ color: '#94a3b8' }}>Breakout Score 산출 로직 (7개 기술적 지표 가중합):</strong><br/>
+                                <div style={{ marginTop: '16px', padding: '14px', background: 'rgba(102, 126, 234, 0.06)', borderRadius: '8px', fontSize: '11px', color: '#718096', lineHeight: 1.7 }}>
+                                    <strong style={{ color: '#2d3748' }}>Breakout Score 산출 로직 (7개 기술적 지표 가중합):</strong><br/>
                                     52W 고점 근접도 20% | 거래량 급증 20% | 단기 모멘텀 15% | 50MA 돌파 15% | 골든크로스 10% | 52W 범위 위치 10% | 매수 압력 10%<br/>
-                                    <span style={{ color: '#475569' }}>데이터 소스: FMP API /stable/quote (실시간) | 대상: S&P500 시총 상위 80종목</span>
+                                    <span style={{ color: '#94a3b8' }}>데이터 소스: FMP API /stable/quote (실시간) | 대상: S&P500 시총 상위 80종목</span>
                                 </div>
                             </>
                         )}
@@ -2023,7 +1860,6 @@
                                 분석 결과가 없습니다.
                             </div>
                         )}
-                    </div>
                 </div>
             )
         }
@@ -2043,21 +1879,23 @@
                             <p>개별 종목 발굴 & 매수 판정 시스템</p>
                         </div>
 
-                        <div className="grid-layout">
-                            <MarketEntryGate />
-                            <SingleStockDeepDive symbol={selectedSymbol} />
-                            <div />
-                        </div>
-
-                        <AlphaDiscoveryScanner onSelectSymbol={setSelectedSymbol} />
+                        <MarketEntryGate />
 
                         <div style={{ marginTop: '30px' }}>
-                            <SectorRotationDrillDown onSelectSymbol={setSelectedSymbol} />
+                            <SingleStockDeepDive symbol={selectedSymbol} />
                         </div>
 
-                        <BreakoutRadar onSelectSymbol={setSelectedSymbol} />
+                        <div style={{ marginTop: '30px' }}>
+                            <AlphaDiscoveryScanner onSelectSymbol={setSelectedSymbol} />
+                        </div>
 
-                        <Top5BreakoutPicks />
+                        <div style={{ marginTop: '30px' }}>
+                            <BreakoutRadar onSelectSymbol={setSelectedSymbol} />
+                        </div>
+
+                        <div style={{ marginTop: '30px' }}>
+                            <Top5BreakoutPicks />
+                        </div>
 
                         <div style={{ marginTop: '30px' }}>
                             <CatalystSurgeWidget />
@@ -2096,11 +1934,15 @@
             React.useEffect(() => { fetchTop5() }, [])
 
             return (
-                <div className="top5-section">
-                    <h2 style={{ marginBottom: '15px', fontSize: '1.3em', color: 'var(--text-main)' }}>🔥 Top 5 Breakout Picks</h2>
-                    <button className="top5-btn" onClick={fetchTop5}>🔄 Refresh</button>
-                    {loading && <div style={{ color: 'var(--text-muted)' }}>Loading...</div>}
-                    {error && <div style={{ color: 'var(--bear)' }}>{error}</div>}
+                <div className="widget grid-full">
+                    <div className="widget-header">
+                        <div className="widget-title">5. 🔥 Top 5 Breakout Picks
+                            <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS 점수 기준 돌파 후보 Top 5</span>
+                        </div>
+                        <button className={`btn-refresh ${loading ? 'loading' : ''}`} onClick={fetchTop5} disabled={loading}>↻</button>
+                    </div>
+                    {loading && <div className="loading">로딩 중...</div>}
+                    {error && <div className="error-box">{error} <button onClick={fetchTop5}>재시도</button></div>}
                     {!loading && !error && stocks.length === 0 && (
                         <div style={{ color: 'var(--text-muted)' }}>No breakout candidates</div>
                     )}
@@ -2151,89 +1993,86 @@
 
             useEffect(() => { fetchData() }, [])
 
-            const styles = {
-                container: { padding: 20, background: "#111", color: "#fff", borderRadius: 12, maxWidth: 600, margin: "0 auto" },
-                inputRow:  { display: "flex", gap: 10, marginBottom: 20 },
-                input:     { padding: 10, fontSize: 16, width: 150, borderRadius: 6, border: "none" },
-                button:    { padding: 10, background: "#4CAF50", color: "#fff", border: "none", cursor: "pointer", borderRadius: 6 },
-                grid:      { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 20 },
-                card:      { background: "#222", padding: 15, borderRadius: 10, textAlign: "center" },
-                score:     { fontSize: 32, fontWeight: "bold" }
-            }
-
             return (
-                <div style={styles.container}>
-                    <h2>🔥 Catalyst Surge Analysis</h2>
+                <div className="widget grid-full">
+                    <div className="widget-header">
+                        <div>
+                            <div className="widget-title">6. 🔥 Catalyst Surge Analysis
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS = Technical×40% + SmartMoney×35% + Catalyst×25%</span>
+                            </div>
+                            <div className="widget-subtitle">종목 심층 분석 (기술적 + 스마트머니 + 카탈리스트)</div>
+                        </div>
+                        <button className={`btn-refresh ${loading ? 'loading' : ''}`} onClick={fetchData} disabled={loading}>↻</button>
+                    </div>
 
-                    <div style={styles.inputRow}>
+                    <div className="input-group" style={{ marginBottom: '16px' }}>
                         <input
                             value={symbol}
                             onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                            style={styles.input}
-                            placeholder="Enter Symbol (AAPL)"
+                            placeholder="종목 코드 입력 (예: AAPL)"
+                            style={{ fontWeight: '700' }}
                         />
-                        <button onClick={fetchData} style={styles.button}>분석</button>
+                        <button onClick={fetchData} disabled={loading}>분석</button>
                     </div>
 
-                    {loading && <p>Loading...</p>}
+                    {loading && <div className="loading">로딩 중...</div>}
 
                     {data && data.status === "REJECTED" && (
-                        <p style={{ color: "#ff5252" }}>❌ 필터 탈락 종목</p>
+                        <div className="error-box">❌ 필터 탈락 종목</div>
                     )}
 
                     {data && data.status !== "REJECTED" && data.detail && (
                         <>
-                            <div style={styles.card}>
-                                <h3>CSS Score</h3>
-                                <p style={styles.score}>{data.css != null ? data.css.toFixed(1) : "-"}</p>
-                                <p>{data.grade || "-"}</p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                                <div className="metric-item" style={{ gridColumn: '1', textAlign: 'center', background: 'rgba(102,126,234,0.08)', borderRadius: '10px', padding: '16px' }}>
+                                    <div className="metric-label">CSS Score</div>
+                                    <div style={{ fontSize: '2em', fontWeight: '800', color: '#667eea' }}>{data.css != null ? data.css.toFixed(1) : "-"}</div>
+                                    <div style={{ fontSize: '12px', color: '#718096' }}>{data.grade || "-"}</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">Technical</div>
+                                    <div className="metric-value">{data.breakdown?.technical ?? "-"}</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">Smart Money</div>
+                                    <div className="metric-value">{data.breakdown?.smartMoney ?? "-"}</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">Catalyst</div>
+                                    <div className="metric-value">{data.breakdown?.catalyst ?? "-"}</div>
+                                </div>
                             </div>
 
-                            <div style={styles.grid}>
-                                <div style={styles.card}>
-                                    <h4>Technical</h4>
-                                    <p>{data.breakdown?.technical ?? "-"}</p>
+                            <div className="metrics-grid">
+                                <div className="metric-item">
+                                    <div className="metric-label">RSI</div>
+                                    <div className="metric-value">{data.detail?.technical?.rsi?.toFixed(1) ?? "-"}</div>
                                 </div>
-                                <div style={styles.card}>
-                                    <h4>Smart Money</h4>
-                                    <p>{data.breakdown?.smartMoney ?? "-"}</p>
+                                <div className="metric-item">
+                                    <div className="metric-label">Volume Ratio</div>
+                                    <div className="metric-value">{data.detail?.technical?.volumeRatio?.toFixed(2) ?? "-"}</div>
                                 </div>
-                                <div style={styles.card}>
-                                    <h4>Catalyst</h4>
-                                    <p>{data.breakdown?.catalyst ?? "-"}</p>
+                                <div className="metric-item">
+                                    <div className="metric-label">ATR %</div>
+                                    <div className="metric-value">{data.detail?.technical?.atr_pct?.toFixed(2) ?? "-"}</div>
                                 </div>
-                            </div>
-
-                            <div style={styles.grid}>
-                                <div style={styles.card}>
-                                    <h4>RSI</h4>
-                                    <p>{data.detail?.technical?.rsi?.toFixed(1) ?? "-"}</p>
-                                </div>
-                                <div style={styles.card}>
-                                    <h4>Volume Ratio</h4>
-                                    <p>{data.detail?.technical?.volumeRatio?.toFixed(2) ?? "-"}</p>
-                                </div>
-                                <div style={styles.card}>
-                                    <h4>ATR %</h4>
-                                    <p>{data.detail?.technical?.atr_pct?.toFixed(2) ?? "-"}</p>
-                                </div>
-                                <div style={styles.card}>
-                                    <h4>EPS Surprise</h4>
-                                    <p>{data.detail?.catalyst?.epsSurprise != null
+                                <div className="metric-item">
+                                    <div className="metric-label">EPS Surprise</div>
+                                    <div className="metric-value">{data.detail?.catalyst?.epsSurprise != null
                                         ? (data.detail.catalyst.epsSurprise * 100).toFixed(1) + "%"
-                                        : "-"}</p>
+                                        : "-"}</div>
                                 </div>
-                                <div style={styles.card}>
-                                    <h4>Revenue Growth</h4>
-                                    <p>{data.detail?.catalyst?.revGrowth != null
+                                <div className="metric-item">
+                                    <div className="metric-label">Revenue Growth</div>
+                                    <div className="metric-value">{data.detail?.catalyst?.revGrowth != null
                                         ? (data.detail.catalyst.revGrowth * 100).toFixed(1) + "%"
-                                        : "-"}</p>
+                                        : "-"}</div>
                                 </div>
-                                <div style={styles.card}>
-                                    <h4>FCF Yield</h4>
-                                    <p>{data.detail?.catalyst?.fcfYield != null
+                                <div className="metric-item">
+                                    <div className="metric-label">FCF Yield</div>
+                                    <div className="metric-value">{data.detail?.catalyst?.fcfYield != null
                                         ? (data.detail.catalyst.fcfYield * 100).toFixed(2) + "%"
-                                        : "-"}</p>
+                                        : "-"}</div>
                                 </div>
                             </div>
                         </>
