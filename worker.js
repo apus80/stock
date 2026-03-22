@@ -4452,7 +4452,65 @@ export default {
         }
 
       // /metricz-refresh - KV 캐시 수동 갱신 (최대 2분 소요)
-      } else if (pathname === "/metricz-refresh") {
+      // /sp500-check - S&P500 constituent API 동작 확인 (KV 캐시 + FMP API 테스트)
+      } else if (pathname === "/sp500-check") {
+        try {
+          const kv = env.METRICZ_KV
+          const apiKey = env.FMP_API_KEY
+          const t0 = Date.now()
+
+          // KV 캐시 상태 확인
+          let kvStatus = null
+          if (kv) {
+            const cached = await kv.get(SP500_KV_KEY)
+            if (cached) {
+              const parsed = JSON.parse(cached)
+              const ageMin = ((Date.now() - new Date(parsed.timestamp).getTime()) / 60000).toFixed(0)
+              kvStatus = { hit: true, count: parsed.symbols?.length, age_min: parseInt(ageMin), timestamp: parsed.timestamp }
+            } else {
+              kvStatus = { hit: false, message: 'KV 캐시 없음 (아직 cron 미실행 or TTL 만료)' }
+            }
+          }
+
+          // FMP API 직접 호출 테스트 (force=1 파라미터로 강제)
+          let apiStatus = null
+          const force = url.searchParams.get('force') === '1'
+          if (force || !kvStatus?.hit) {
+            const data = await fmpGet(`https://financialmodelingprep.com/stable/sp500-constituent?apikey=${apiKey}`)
+            if (data && Array.isArray(data) && data.length > 0) {
+              apiStatus = {
+                ok: true,
+                count: data.length,
+                first_5: data.slice(0, 5).map(s => s.symbol),
+                last_5: data.slice(-5).map(s => s.symbol),
+                sample_fields: Object.keys(data[0] || {})
+              }
+            } else {
+              apiStatus = { ok: false, response: data, message: '응답이 비어있거나 형식 오류 (Starter 플랜 미지원 가능성)' }
+            }
+          }
+
+          // getSP500Symbols() 최종 결과
+          const symbols = await getSP500Symbols(kv, apiKey)
+          const elapsed = ((Date.now() - t0) / 1000).toFixed(2)
+
+          response = {
+            ok: true,
+            elapsed_sec: parseFloat(elapsed),
+            universe_count: symbols.length,
+            first_10: symbols.slice(0, 10),
+            last_10: symbols.slice(-10),
+            kv_cache: kvStatus,
+            fmp_api: apiStatus || { skipped: true, hint: '?force=1 파라미터로 강제 API 호출 가능' },
+            note: symbols.length < 400
+              ? '⚠️ Fallback 180종목 사용중 (FMP API 실패 또는 KV 캐시 없음)'
+              : `✅ S&P500 전종목 ${symbols.length}개 로드 성공`
+          }
+        } catch(e) {
+          response = { error: e.message, endpoint: pathname }
+        }
+
+      // /metricz-refresh - metricz KV 캐시 수동 갱신
         try {
           const t0 = Date.now()
           await refreshMetriczCache(env)
