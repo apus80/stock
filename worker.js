@@ -4133,6 +4133,19 @@ export default {
           })
         }
       }
+      // FRED 단일 시리즈 조회 (?series=WALCL 형태) — 루트 경로보다 먼저 처리
+      else if (series) {
+        const fredData = await fredGet(series)
+        const raw = getLatestValue(fredData)
+        const value = convertFredValue(series, raw)
+
+        response = {
+          timestamp: new Date().toISOString(),
+          dataType: "fred_single",
+          series: series,
+          value: value
+        }
+      }
       // 루트 경로 처리
       else if (pathname === "/" || pathname === "/analysis") {
         response = {
@@ -4402,17 +4415,6 @@ export default {
               "/alpha/discovery"
             ]
           }
-        }
-      } else if (series) {
-        const fredData = await fredGet(series)
-        const raw = getLatestValue(fredData)
-        const value = convertFredValue(series, raw)
-
-        response = {
-          timestamp: new Date().toISOString(),
-          dataType: "fred_single",
-          series: series,
-          value: value
         }
       } else {
         // 기본값: 메타데이터 반환
