@@ -1935,11 +1935,29 @@
                             <CatalystSurgeWidget />
                         </div>
 
-                        <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '12px', marginTop: '40px', paddingBottom: '40px' }}>
+                        <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '12px', marginTop: '40px', paddingBottom: '20px' }}>
                             <p>데이터 소스: FMP API, FRED, Alpha Discovery Engine</p>
                             <p style={{ marginTop: '8px', fontSize: '11px', color: '#94a3b8' }}>모든 데이터는 API 응답에서 동적으로 추출됩니다</p>
                         </div>
                     </div>
+
+                    <footer style={{ padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '11px', color: '#94a3b8', lineHeight: '1.8' }}>
+                        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                            <div style={{ marginBottom: '10px', fontWeight: '700', color: '#94a3b8', fontSize: '12px' }}>📋 분석 범위 안내</div>
+                            <div style={{ marginBottom: '8px' }}>
+                                본 서비스는 S&P500 전체 500종목 중 <strong style={{ color: '#cbd5e1' }}>섹터별 시가총액 상위 대표 180종목</strong>을 분석합니다.
+                                (메가캡·테크 30 / 헬스케어 20 / 금융 20 / 소비재임의 20 / 소비재필수 15 / 에너지 15 / 산업재 20 / 소재 10 / 유틸리티 10 / 리츠 10 / 커뮤니케이션 10)
+                                Alpha Discovery·Breakout Radar·Top 5 Picks 등 모든 종목 발굴 위젯은 이 180종목 내에서 순위를 산출하며, S&P500 전체 순위가 아님을 유의하시기 바랍니다.
+                                데이터는 FMP·FRED API 기반이며, KV 캐시로 제공 시 최대 8시간 지연될 수 있습니다.
+                            </div>
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', marginTop: '10px', fontWeight: '700', color: '#94a3b8', fontSize: '12px' }}>⚠️ 투자 면책조항</div>
+                            <div>
+                                본 페이지에서 제공하는 모든 정보는 <strong style={{ color: '#cbd5e1' }}>투자 참고용</strong>으로만 활용하시기 바라며, 특정 종목의 매수·매도를 권유하지 않습니다.
+                                제시된 점수·순위·분석 결과는 알고리즘 기반의 자동 계산값으로, 실제 시장 상황과 다를 수 있습니다.
+                                투자 판단 및 그에 따른 손익은 전적으로 투자자 본인의 책임이며, 본 서비스는 투자 결과에 대한 어떠한 법적·재정적 책임도 지지 않습니다.
+                            </div>
+                        </div>
+                    </footer>
                 </div>
             )
         }
@@ -2177,23 +2195,5 @@
     </script>
     <script>document.addEventListener('mousemove',function(e){var d=document.documentElement;d.style.setProperty('--mouse-x',e.clientX+'px');d.style.setProperty('--mouse-y',e.clientY+'px')});</script>
 
-    <!-- ── 투자 면책조항 & 분석 범위 안내 ── -->
-    <footer style="margin-top:40px; padding:20px 24px; background:#0f172a; border-top:1px solid rgba(255,255,255,0.1); font-size:11px; color:#94a3b8; line-height:1.8;">
-        <div style="max-width:1200px; margin:0 auto;">
-            <div style="margin-bottom:10px; font-weight:700; color:#94a3b8; font-size:12px;">📋 분석 범위 안내</div>
-            <div style="margin-bottom:8px;">
-                본 서비스는 S&amp;P500 전체 500종목 중 <strong style="color:#cbd5e1;">섹터별 시가총액 상위 대표 180종목</strong>을 분석합니다.
-                (메가캡·테크 30 / 헬스케어 20 / 금융 20 / 소비재임의 20 / 소비재필수 15 / 에너지 15 / 산업재 20 / 소재 10 / 유틸리티 10 / 리츠 10 / 커뮤니케이션 10)
-                Alpha Discovery·Breakout Radar·Top 5 Picks 등 모든 종목 발굴 위젯은 이 180종목 내에서 순위를 산출하며, S&amp;P500 전체 순위가 아님을 유의하시기 바랍니다.
-                데이터는 FMP·FRED API 기반이며, KV 캐시로 제공 시 최대 8시간 지연될 수 있습니다.
-            </div>
-            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; margin-top:10px; font-weight:700; color:#94a3b8; font-size:12px;">⚠️ 투자 면책조항</div>
-            <div>
-                본 페이지에서 제공하는 모든 정보는 <strong style="color:#cbd5e1;">투자 참고용</strong>으로만 활용하시기 바라며, 특정 종목의 매수·매도를 권유하지 않습니다.
-                제시된 점수·순위·분석 결과는 알고리즘 기반의 자동 계산값으로, 실제 시장 상황과 다를 수 있습니다.
-                투자 판단 및 그에 따른 손익은 전적으로 투자자 본인의 책임이며, 본 서비스는 투자 결과에 대한 어떠한 법적·재정적 책임도 지지 않습니다.
-            </div>
-        </div>
-    </footer>
 </body>
 </html>
