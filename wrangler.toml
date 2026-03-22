@@ -1,7 +1,6 @@
 name = "fmp-proxy"
 main = "worker.js"
 workers_dev = true
-compatibility_date = "2024-01-01"
 account_id = "05ba87763e81af6206c77d3bd3d79d84"
 compatibility_date = "2025-09-27"
 
