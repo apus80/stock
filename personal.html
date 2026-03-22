@@ -21,6 +21,7 @@
         margin-bottom: 16px;
     }
     .back-btn {
+        position: fixed; top: 12px; left: 12px; z-index: 100;
         background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
         color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer;
         font-size: 0.8rem; text-decoration: none; transition: background 0.2s;
@@ -55,11 +56,11 @@
 </head>
 <body>
 
+<a class="back-btn" href="index.html">← 메인</a>
+
 <!-- 페이지 헤더 -->
 <div class="page-header">
-    <a class="back-btn" href="index.html">← 메인</a>
     <div class="page-title">🎯 개인맞춤종목</div>
-    <div style="width:60px"></div>
 </div>
 
 <!-- 위젯 -->
