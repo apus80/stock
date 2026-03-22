@@ -1693,6 +1693,7 @@
                                             <th>등락</th>
                                             <th style={{ minWidth: '140px' }}>Breakout Score</th>
                                             <th>시그널</th>
+                                            <th title="주가수익비율 (낮을수록 저평가) — 브레이크아웃 스코어의 10% 반영">PER</th>
                                             <th title="현재가 ÷ 52주최고가 × 100 (%) — 100%에 가까울수록 신고가 근처">52W고점근접%</th>
                                             <th title="현재 거래량 ÷ 평균 거래량 (x배) — 1.5x 이상이면 거래량 급증">거래량비(x)</th>
                                             <th title="현재가가 50일 이동평균선 위에 있으면 ▲, 아래면 ▼">50MA위치</th>
@@ -1750,6 +1751,17 @@
                                                     </span>
                                                 </td>
                                                 <td style={{ fontSize: '12px' }}>
+                                                    <span style={{
+                                                        color: !stock.pe ? '#64748b'
+                                                             : stock.pe < 15 ? '#10b981'
+                                                             : stock.pe < 25 ? '#f59e0b'
+                                                             : '#ef4444',
+                                                        fontWeight: stock.pe && stock.pe < 20 ? 600 : 400
+                                                    }}>
+                                                        {stock.pe ? stock.pe.toFixed(1) : '-'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ fontSize: '12px' }}>
                                                     <span style={{ color: stock.signals?.highProximity >= 90 ? '#10b981' : '#64748b' }}>
                                                         {stock.signals?.highProximity?.toFixed(0) || '-'}%
                                                     </span>
@@ -1795,6 +1807,7 @@
                                                 { key: 'goldenScore', label: '골든크로스', sub: selected.signals?.goldenCross ? 'Active' : 'N/A' },
                                                 { key: 'rangeScore', label: '52W 위치', sub: `${selected.signals?.yearRangePosition?.toFixed(0)}%` },
                                                 { key: 'pressureScore', label: '매수 압력', sub: `${selected.signals?.buyPressure?.toFixed(0)}%` },
+                                                { key: 'peScore', label: 'PER 밸류', sub: selected.pe ? `PER ${selected.pe.toFixed(1)}` : 'N/A' },
                                             ].map(comp => (
                                                 <div className="breakout-comp-card" key={comp.key}>
                                                     <div className="breakout-comp-label">{comp.label}</div>
@@ -1954,72 +1967,88 @@
 
             React.useEffect(() => { fetchTop5() }, [])
 
+            const cssColor = (css) => css >= 75 ? '#ef4444' : css >= 55 ? '#10b981' : css >= 40 ? '#f59e0b' : '#94a3b8'
+            const cssLevel = (css) => css >= 55 ? 'level-high' : css >= 40 ? 'level-mid' : 'level-low'
+
             return (
                 <div className="widget grid-full">
                     <div className="widget-header">
-                        <div className="widget-title">5. 🔥 Top 5 Breakout Picks
-                            <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS 점수 기준 돌파 후보 Top 5</span>
+                        <div>
+                            <div className="widget-title">5. 🔥 Top 5 Breakout Picks
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS 점수 기준 | S&P500 전종목 분석</span>
+                            </div>
+                            <div className="widget-subtitle">
+                                CSS = (C×0.4 + T×0.35 + S×0.25) ÷ 28.9 × 100 &nbsp;|&nbsp; 🔵 T(기술/50) &nbsp;🟡 S(스마트/12) &nbsp;🟢 C(촉매/21)
+                            </div>
                         </div>
                         <button className={`btn-refresh ${loading ? 'loading' : ''}`} onClick={fetchTop5} disabled={loading}>↻</button>
                     </div>
-                    {loading && <div className="loading">로딩 중...</div>}
+
+                    {loading && <div className="loading">🔥 S&P500 전종목 CSS 분석 중... — T·S·C 3팩터 스코어링</div>}
                     {error && <div className="error-box">{error} <button onClick={fetchTop5}>재시도</button></div>}
                     {!loading && !error && stocks.length === 0 && (
                         <div style={{ color: 'var(--text-muted)' }}>No breakout candidates</div>
                     )}
-                    {/* ── 점수 설명 범례 ── */}
-                    <div style={{ fontSize: '11px', color: '#64748b', background: '#f8fafc', borderRadius: '6px', padding: '8px 12px', marginBottom: '12px', lineHeight: '1.8' }}>
-                        <b style={{ color: '#475569' }}>점수 구성 (CSS = 0~100)</b>
-                        <span>🔵 <b>T</b>(기술 /50): RSI·MACD·BB·ATR·거래량·EMA·돌파 합산</span>
-                        <span>🟡 <b>S</b>(스마트머니 /12): 내부자·애널리스트 신호</span>
-                        <span>🟢 <b>C</b>(카탈리스트 /21): EPS서프라이즈·매출성장·FCF·PE·D/E</span>
-                        <span>CSS = (C×0.4 + T×0.35 + S×0.25) ÷ 28.9 × 100</span>
-                    </div>
-                    <div className="top5-grid">
-                        {stocks.map((s, i) => {
-                            const css = s.css ?? 0
-                            const cssColor = css >= 75 ? '#ef4444' : css >= 55 ? '#10b981' : css >= 40 ? '#f59e0b' : '#94a3b8'
-                            const T = s.breakdown?.technical ?? 0
-                            const S = s.breakdown?.smartMoney ?? 0
-                            const C = s.breakdown?.catalyst ?? 0
-                            const tPct = Math.round(T / 50 * 100)
-                            const sPct = Math.round(S / 12 * 100)
-                            const cPct = Math.round(C / 21 * 100)
-                            return (
-                                <div key={s.symbol} className="top5-card" style={{ cursor: 'default' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                        <span style={{ fontWeight: 800, fontSize: '15px', color: '#667eea' }}>#{i + 1} {s.symbol}</span>
-                                        <span style={{ fontSize: '11px', color: '#718096' }}>{s.isBreakout ? '📈 돌파' : '🔎 관찰'}</span>
-                                    </div>
-                                    <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                                        <div style={{ fontSize: '2em', fontWeight: 900, color: cssColor, lineHeight: 1 }}>{s.css != null ? s.css.toFixed(1) : '-'}</div>
-                                        <div style={{ fontSize: '11px', color: cssColor, fontWeight: 600 }}>{s.grade ?? '-'}</div>
-                                    </div>
-                                    {/* 프로그레스 바 */}
-                                    <div style={{ background: '#e2e8f0', borderRadius: '4px', height: '5px', marginBottom: '10px' }}>
-                                        <div style={{ background: cssColor, width: `${Math.min(100, css)}%`, height: '100%', borderRadius: '4px' }} />
-                                    </div>
-                                    {/* T / S / C 분해 */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', marginBottom: '8px' }}>
-                                        {[
-                                            { label: '🔵 기술(T)', val: T, max: 50, pct: tPct, color: '#4dabf7' },
-                                            { label: '🟡 스마트(S)', val: S, max: 12, pct: sPct, color: '#fbbf24' },
-                                            { label: '🟢 촉매(C)', val: C, max: 21, pct: cPct, color: '#10b981' },
-                                        ].map(item => (
-                                            <div key={item.label} style={{ background: '#f8fafc', borderRadius: '5px', padding: '5px 4px', textAlign: 'center' }}>
-                                                <div style={{ fontSize: '9px', color: '#718096', marginBottom: '2px' }}>{item.label}</div>
-                                                <div style={{ fontWeight: 700, fontSize: '13px', color: item.color }}>{item.val !== '-' ? Number(item.val).toFixed(1) : '-'}</div>
-                                                <div style={{ fontSize: '9px', color: '#94a3b8' }}>/{item.max} ({item.pct}%)</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
-                                        🎯 승률: <b style={{ color: '#475569' }}>{s.backtest?.winRate != null ? s.backtest.winRate.toFixed(1) + '%' : '-'}</b>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
+
+                    {!loading && !error && stocks.length > 0 && (
+                        <table className="breakout-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>종목</th>
+                                    <th style={{ minWidth: '150px' }}>CSS Score</th>
+                                    <th>🔵 T(기술)</th>
+                                    <th>🟡 S(스마트)</th>
+                                    <th>🟢 C(촉매)</th>
+                                    <th>등급</th>
+                                    <th>신호</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stocks.map((s, i) => {
+                                    const css = s.css ?? 0
+                                    const T = s.breakdown?.technical ?? 0
+                                    const S = s.breakdown?.smartMoney ?? 0
+                                    const C = s.breakdown?.catalyst ?? 0
+                                    return (
+                                        <tr key={s.symbol} className={s.isBreakout ? 'signal-breakout' : ''}>
+                                            <td className={`breakout-rank ${i < 3 ? 'top3' : ''}`}>{i + 1}</td>
+                                            <td>
+                                                <div className="breakout-ticker-cell">
+                                                    <span className="breakout-ticker">{s.symbol}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="breakout-score-bar">
+                                                    <div className="breakout-score-track">
+                                                        <div className={`breakout-score-fill ${cssLevel(css)}`} style={{ width: `${Math.min(100, css)}%` }} />
+                                                    </div>
+                                                    <span className="breakout-score-num" style={{ color: cssColor(css) }}>{s.css != null ? s.css.toFixed(1) : '-'}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ color: '#4dabf7', fontWeight: 600, fontSize: '13px' }}>
+                                                {T.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: '10px' }}>/50</span>
+                                            </td>
+                                            <td style={{ color: '#fbbf24', fontWeight: 600, fontSize: '13px' }}>
+                                                {S.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: '10px' }}>/12</span>
+                                            </td>
+                                            <td style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
+                                                {C.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: '10px' }}>/21</span>
+                                            </td>
+                                            <td>
+                                                <span className={`signal-tag signal-${css >= 55 ? 'BREAKOUT' : css >= 40 ? 'WATCH' : 'NEUTRAL'}`}>
+                                                    {s.grade ?? '-'}
+                                                </span>
+                                            </td>
+                                            <td style={{ fontSize: '12px' }}>
+                                                {s.isBreakout ? '📈 돌파' : '🔎 관찰'}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             )
         }
@@ -2147,5 +2176,24 @@
         ReactDOM.createRoot(document.getElementById('root')).render(<App />)
     </script>
     <script>document.addEventListener('mousemove',function(e){var d=document.documentElement;d.style.setProperty('--mouse-x',e.clientX+'px');d.style.setProperty('--mouse-y',e.clientY+'px')});</script>
+
+    <!-- ── 투자 면책조항 & 분석 범위 안내 ── -->
+    <footer style="margin-top:40px; padding:20px 24px; background:#f8fafc; border-top:1px solid #e2e8f0; font-size:11px; color:#94a3b8; line-height:1.8;">
+        <div style="max-width:1200px; margin:0 auto;">
+            <div style="margin-bottom:10px; font-weight:700; color:#64748b; font-size:12px;">📋 분석 범위 안내</div>
+            <div style="margin-bottom:8px;">
+                본 서비스는 S&amp;P500 전체 500종목 중 <strong style="color:#475569;">섹터별 시가총액 상위 대표 180종목</strong>을 분석합니다.
+                (메가캡·테크 30 / 헬스케어 20 / 금융 20 / 소비재임의 20 / 소비재필수 15 / 에너지 15 / 산업재 20 / 소재 10 / 유틸리티 10 / 리츠 10 / 커뮤니케이션 10)
+                Alpha Discovery·Breakout Radar·Top 5 Picks 등 모든 종목 발굴 위젯은 이 180종목 내에서 순위를 산출하며, S&amp;P500 전체 순위가 아님을 유의하시기 바랍니다.
+                데이터는 FMP·FRED API 기반이며, KV 캐시로 제공 시 최대 8시간 지연될 수 있습니다.
+            </div>
+            <div style="border-top:1px solid #e2e8f0; padding-top:10px; margin-top:10px; font-weight:700; color:#64748b; font-size:12px;">⚠️ 투자 면책조항</div>
+            <div>
+                본 페이지에서 제공하는 모든 정보는 <strong style="color:#475569;">투자 참고용</strong>으로만 활용하시기 바라며, 특정 종목의 매수·매도를 권유하지 않습니다.
+                제시된 점수·순위·분석 결과는 알고리즘 기반의 자동 계산값으로, 실제 시장 상황과 다를 수 있습니다.
+                투자 판단 및 그에 따른 손익은 전적으로 투자자 본인의 책임이며, 본 서비스는 투자 결과에 대한 어떠한 법적·재정적 책임도 지지 않습니다.
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

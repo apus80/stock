@@ -1,5 +1,55 @@
 # InvestFlow 개발 가이드
 
+## 🔑 FMP API 플랜 정보 (중요! 매번 확인)
+
+### ✅ 현재 플랜: **STARTER** (유료)
+| 항목 | 값 |
+|------|-----|
+| 플랜 | Starter (유료) |
+| API Rate Limit | **300 calls / minute** |
+| 분석 대상 | **S&P500 전종목** (~503종목) |
+| 히스토리 | 5년 |
+| 커버리지 | US 전체 |
+| 데이터 | Fundamentals, Ratios, Historical, Profile |
+
+### S&P500 전종목 유니버스 구현 방식
+```javascript
+// ✅ FMP /stable/sp500-constituent API로 동적 로드 (KV 24h 캐시)
+// worker.js getSP500Symbols(kv, apiKey) 함수
+// → FMP /stable/sp500-constituent → KV(SP500_KV_KEY, 24h TTL)
+// → Fallback: 기존 180종목 hardcoded SP500_UNIVERSE
+
+// 모든 위젯의 분석 대상: S&P500 전종목 (~503종목)
+// - refreshMetriczCache: getSP500Symbols() 사용
+// - refreshDiscoveryCache: getSP500Symbols() 사용
+// - refreshBreakoutCache: getSP500Symbols() 사용
+// - csGetTop80: getSP500Symbols() 사용
+// - getHedgeFundUniverse: getSP500Symbols() 사용
+```
+
+### Cron 실행 순서 (6시간마다)
+```
+1. refreshMetriczCache  → S&P500 전종목 ratios+key-metrics-ttm (PE 포함), 1000ms 딜레이
+2. refreshDiscoveryCache → Alpha Discovery (metricz KV PE 활용)
+3. refreshBreakoutCache  → Breakout Radar (metricz KV PE 활용)
+```
+
+### Rate Limit 가이드 (Starter 300calls/min)
+```
+- fetchAllMetricz: 6종목/wave × 4endpoints = 24calls/wave, 1000ms 딜레이
+  → ~84 waves × 1.5s = ~2분 (cron에서 실행, timeout 없음)
+- refreshDiscoveryCache: 10종목/wave × 1call = 10calls/wave, 200ms 딜레이
+- refreshBreakoutCache: 15종목/wave × 1call = 15calls/wave, 300ms 딜레이
+- SP500 구성 캐시: 24h TTL (KV SP500_KV_KEY), 변경 빈도 낮음
+```
+
+### ⚠️ 주의사항
+- **SP500_UNIVERSE (180종목 hardcoded)**: Fallback 전용. 직접 사용 금지.
+- 실제 분석은 반드시 `getSP500Symbols(kv, apiKey)` 경유
+- Cron이 한번도 실행되지 않으면 KV가 비어있음 → 첫 배포 후 cron 수동 실행 필요
+
+---
+
 ## 📋 데이터 처리 규칙
 
 ### ❌ 금지 사항
