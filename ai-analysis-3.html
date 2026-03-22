@@ -99,16 +99,16 @@
             padding-bottom: 12px;
             border-bottom: 1px solid #e5e7eb;
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             gap: 8px;
             width: 100%;
         }
 
         .widget-title > div:first-child {
             flex: 0 0 auto;
-            min-width: 0;
+            white-space: nowrap;
         }
 
         .widget-title span {
@@ -117,6 +117,10 @@
             font-size: 11px !important;
             font-weight: normal !important;
             color: #718096 !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 8px;
         }
 
         .widget-refresh {
@@ -813,7 +817,7 @@
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
-                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">당일상승률</th><th style="padding:4px 6px;">MA50추세</th>'
+                                + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">당일상승률</th><th style="padding:4px 6px; text-align:right;">MA50추세</th>'
                                 + '</tr></thead><tbody>';
                             scored4.forEach((s, i) => {
                                 const sc = Math.round(s.score);
@@ -845,7 +849,7 @@
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
-                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th><th style="padding:4px 6px;">당일상승률</th>'
+                                + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th><th style="padding:4px 6px; text-align:right;">당일상승률</th>'
                                 + '</tr></thead><tbody>';
                             scored5.forEach((s, i) => {
                                 const sc = Math.round(s.score);
@@ -876,7 +880,7 @@
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
-                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">거래량급증</th><th style="padding:4px 6px;">당일상승률</th><th style="padding:4px 6px;">MA50추세</th>'
+                                + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">거래량급증</th><th style="padding:4px 6px; text-align:right;">당일상승률</th><th style="padding:4px 6px; text-align:right;">MA50추세</th>'
                                 + '</tr></thead><tbody>';
                             scored6.forEach((s, i) => {
                                 const sc = Math.round(s.score);
@@ -908,7 +912,7 @@
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#fffbeb;">'
-                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">PER</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
+                                + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">PER</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored7.forEach((s, i) => {
                                 const sc = Math.round(s.score);
@@ -944,7 +948,7 @@
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0f9ff;">'
-                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">기술점수</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
+                                + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">기술점수</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored8.forEach((s, i) => {
                                 const sc = Math.round(s.score);
@@ -989,7 +993,7 @@
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f5f3ff;">'
-                                + '<th style="padding:4px 6px;">종목</th><th style="padding:4px 6px;">총점수</th><th style="padding:4px 6px;">기술기반</th><th style="padding:4px 6px;">MA50추세</th><th style="padding:4px 6px;">52주강도</th>'
+                                + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">기술기반</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored9.forEach((s, i) => {
                                 const sc = Math.round(s.score);
@@ -1033,7 +1037,7 @@
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
                             html = '<table style="width:100%; font-size:11px; border-collapse:collapse;"><thead><tr style="background:#fff7ed;">'
-                                + '<th style="padding:4px 5px;">종목</th><th style="padding:4px 5px;">총점수</th><th style="padding:4px 5px;">당일상승률</th><th style="padding:4px 5px;">MA50추세</th><th style="padding:4px 5px;">52주강도</th><th style="padding:4px 5px;">거래량급증</th><th style="padding:4px 5px;">PER</th>'
+                                + '<th style="padding:4px 5px; text-align:left;">종목</th><th style="padding:4px 5px; text-align:right;">총점수</th><th style="padding:4px 5px; text-align:right;">당일상승률</th><th style="padding:4px 5px; text-align:right;">MA50추세</th><th style="padding:4px 5px; text-align:right;">52주강도</th><th style="padding:4px 5px; text-align:right;">거래량급증</th><th style="padding:4px 5px; text-align:right;">PER</th>'
                                 + '</tr></thead><tbody>';
                             scored10.forEach((s, i) => {
                                 const sc = Math.round(s.score);
@@ -1077,14 +1081,14 @@
                                 const top10 = scannerData.top_20.slice(0, 10);
 
                                 html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#fee2e2;">';
-                                html += '<th style="padding:4px 6px;">#</th>';
-                                html += '<th style="padding:4px 6px;">종목</th>';
-                                html += '<th style="padding:4px 6px;">점수</th>';
-                                html += '<th style="padding:4px 6px;">당일%</th>';
-                                html += '<th style="padding:4px 6px;">MA50추세</th>';
-                                html += '<th style="padding:4px 6px;">52주강도</th>';
-                                html += '<th style="padding:4px 6px;">거래량%</th>';
-                                html += '<th style="padding:4px 6px;">PE</th>';
+                                html += '<th style="padding:4px 6px; text-align:right;">#</th>';
+                                html += '<th style="padding:4px 6px; text-align:left;">종목</th>';
+                                html += '<th style="padding:4px 6px; text-align:right;">점수</th>';
+                                html += '<th style="padding:4px 6px; text-align:right;">당일%</th>';
+                                html += '<th style="padding:4px 6px; text-align:right;">MA50추세</th>';
+                                html += '<th style="padding:4px 6px; text-align:right;">52주강도</th>';
+                                html += '<th style="padding:4px 6px; text-align:right;">거래량%</th>';
+                                html += '<th style="padding:4px 6px; text-align:right;">PE</th>';
                                 html += '</tr></thead><tbody>';
                                 top10.forEach((s, i) => {
                                     const score = (s.score ?? 0).toFixed(1);
@@ -1096,7 +1100,7 @@
                                     const pe      = (s.pe ?? 0).toFixed(1);
                                     const rowBg   = i % 2 === 0 ? '' : 'background:#fef2f2;';
                                     html += `<tr style="${rowBg}">
-                                        <td style="padding:3px 6px; font-weight:700; color:#a0aec0; text-align:center;">${i + 1}</td>
+                                        <td style="padding:3px 6px; font-weight:700; color:#a0aec0; text-align:right;">${i + 1}</td>
                                         <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                         <td style="padding:3px 6px; color:${scoreColor}; font-weight:700; text-align:right;">${score}</td>
                                         <td style="padding:3px 6px; text-align:right; color:${parseFloat(mom)>=0?'#10b981':'#ef4444'};">${mom}%</td>
