@@ -3,6 +3,22 @@
 <html lang="ko">
 
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KYRLYLKPCT"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-KYRLYLKPCT');
+    </script>
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "vztdiv78ha");
+    </script>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -1436,31 +1452,30 @@
 
 
 
-        /* ── 뷰 토글 버튼 ─────────────────────────────────────────── */
-        #viewToggleBtn {
-            display: inline-flex;
+        /* ── 메인으로 돌아가기 버튼 ─────────────────────────────── */
+        .back-btn {
             position: fixed;
-            top: 12px; left: 12px; /* env() 미지원 브라우저 fallback */
-            top: calc(env(safe-area-inset-top, 0px) + 12px);
-            left: calc(env(safe-area-inset-left, 0px) + 12px);
-            align-items: center;
-            gap: 5px;
-            padding: 8px 14px;
-            background: rgba(102,126,234,0.92);
-            border: 1px solid rgba(255,255,255,0.5);
-            color: white;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.8em;
-            font-weight: 700;
-            transition: background 0.2s, transform 0.15s;
-            white-space: nowrap;
+            top: 12px; left: 12px;
             z-index: 9999;
-            touch-action: manipulation;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            padding: 8px 16px;
+            background: rgba(129,140,248,0.15);
+            border: 1px solid rgba(129,140,248,0.35);
+            color: #a5b4fc;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
-        @media (hover: hover) {
-        #viewToggleBtn:hover { background: rgba(102,126,234,1); transform: scale(1.05); }
+        .back-btn:hover {
+            background: rgba(129,140,248,0.28);
+            border-color: rgba(129,140,248,0.55);
+            transform: translateY(-1px);
         }
 
         /* ── 모바일 섹션 내비게이션 (데스크탑/모바일 공통 적용) ────────────────────────────────── */
@@ -1705,6 +1720,7 @@
     </style>
 </head>
 <body style="background: var(--bg-gradient); padding: 20px;">
+    <a class="back-btn" href="index.html">← 메인</a>
     <div id="mainContent" class="main-content">
         <div class="container">
             <div class="header">
@@ -1715,11 +1731,7 @@
                         📱 홈 화면에 추가
                     </button>
 
-                    <!-- 모바일/데스크탑 뷰 토글 버튼 -->
-                    <button id="viewToggleBtn" onclick="toggleViewMode()" title="모바일/데스크탑 뷰 전환" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.95em; font-weight: 600; transition: all 0.3s;">
-                        📱 모바일뷰
-                    </button>
-                </div>
+                    </div>
 
                 <h1>INVESTFLOW</h1>
                 <div
@@ -1730,9 +1742,6 @@
                 </div>
             
 
-            <button class="ms-back-btn" onclick="window.location.href='index.html'" style="display: flex !important; margin-bottom: 20px; font-weight: bold; background: white; border-radius: 8px; padding: 10px 15px; border: 1px solid #ddd; cursor: pointer;">
-                ← 홈으로
-            </button>
 
             <div class="econ-wrap">
                 <div class="econ-hdr">

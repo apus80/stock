@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KYRLYLKPCT"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KYRLYLKPCT');
+</script>
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "vztdiv78ha");
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>개인맞춤종목</title>
@@ -21,6 +37,7 @@
         margin-bottom: 16px;
     }
     .back-btn {
+        position: fixed; top: 12px; left: 12px; z-index: 100;
         background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
         color: white; border-radius: 8px; padding: 6px 12px; cursor: pointer;
         font-size: 0.8rem; text-decoration: none; transition: background 0.2s;
@@ -55,11 +72,11 @@
 </head>
 <body>
 
+<a class="back-btn" href="index.html">← 메인</a>
+
 <!-- 페이지 헤더 -->
 <div class="page-header">
-    <a class="back-btn" href="index.html">← 메인</a>
     <div class="page-title">🎯 개인맞춤종목</div>
-    <div style="width:60px"></div>
 </div>
 
 <!-- 위젯 -->
