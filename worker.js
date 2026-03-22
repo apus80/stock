@@ -302,56 +302,78 @@ async function refreshBreakoutCache(env) {
 }
 
 // 단일 종목 FMP fetch 헬퍼 (타임아웃 9초)
-async function fmpGet(url) {
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), 9000)
-  try {
-    const r = await fetch(url, { signal: ctrl.signal })
-    if (!r.ok) return null
-    return await r.json()
-  } catch(e) {
-    return null
-  } finally {
-    clearTimeout(timer)
+async function fmpGet(url, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 12000)
+    try {
+      const r = await fetch(url, { signal: ctrl.signal })
+      if (r.status === 429) {
+        clearTimeout(timer)
+        if (attempt < retries) {
+          const wait = (attempt + 1) * 2000
+          console.warn(`⚠️ 429 rate limit: ${url.split('?')[0]}, retry ${attempt+1} in ${wait}ms`)
+          await new Promise(resolve => setTimeout(resolve, wait))
+          continue
+        }
+        console.error(`❌ 429 rate limit exhausted: ${url.split('?')[0]}`)
+        return null
+      }
+      if (!r.ok) {
+        clearTimeout(timer)
+        console.warn(`⚠️ HTTP ${r.status}: ${url.split('?')[0]}`)
+        return null
+      }
+      const data = await r.json()
+      clearTimeout(timer)
+      return data
+    } catch(e) {
+      clearTimeout(timer)
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        continue
+      }
+      return null
+    }
   }
+  return null
 }
 
-// 종목 전체 지표 fetch (Starter 플랜 기준)
-// ✅ /stable/ratios            PB, PS, currentRatio, margins, dividendYield
-// ✅ /stable/key-metrics-ttm   ROE, ROA, payoutRatio, debtEquity, EV/EBITDA, FCF yield (Starter 플랜 필드)
-// ✅ /stable/financial-growth  revenueGrowth, epsGrowth, operatingIncomeGrowth
-// ✅ /stable/quote             pe, beta, name (fallback용)
-async function fetchAllMetricz(sym, apiKey) {
+// 종목 전체 지표 fetch (Starter 플랜 기준, 2 endpoints로 최적화)
+// ✅ /stable/ratios            PE, PB, PS, currentRatio, margins, dividendYield, debt ratios
+// ✅ /stable/key-metrics-ttm   ROE, ROA, payoutRatio, debtEquity, EV/EBITDA, FCF yield
+// ⚠️ growth/quote는 선택적 (subrequest 예산에 따라)
+async function fetchAllMetricz(sym, apiKey, includeGrowth = false) {
   const BASE = 'https://financialmodelingprep.com/stable'
-  // 4 엔드포인트 × 6종목/wave × 300ms 딜레이 → 6×4=24 calls/wave (rate limit 허용 범위)
-  const [rd, kd, gd, qd] = await Promise.allSettled([
-    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),               // PB/PS/margins/currentRatio/dividendYield
-    fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),      // ROE/ROA/payoutRatio/debtEquity/EV/FCF (Starter)
-    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`),     // 성장성
-    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),                // pe, beta, name fallback
-  ])
+  // 핵심 2 엔드포인트만 호출 (subrequest 절약: 4→2)
+  const calls = [
+    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),               // PE/PB/PS/margins/currentRatio/dividendYield
+    fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),      // ROE/ROA/payoutRatio/debtEquity/EV/FCF
+  ]
+  if (includeGrowth) {
+    calls.push(fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`))
+  }
 
-  // 배열 응답 → 최신 데이터(index 0)
-  const r = rd.status === 'fulfilled' ? (rd.value ? (Array.isArray(rd.value) ? rd.value[0] : rd.value) : null) : null
-  const k = kd.status === 'fulfilled' ? (kd.value ? (Array.isArray(kd.value) ? kd.value[0] : kd.value) : null) : null
-  const g = gd.status === 'fulfilled' ? (gd.value ? (Array.isArray(gd.value) ? gd.value[0] : gd.value) : null) : null
-  const q = qd.status === 'fulfilled' ? (qd.value ? (Array.isArray(qd.value) ? qd.value[0] : qd.value) : null) : null
+  const settled = await Promise.allSettled(calls)
+  const unwrap = (s) => s.status === 'fulfilled' && s.value ? (Array.isArray(s.value) ? s.value[0] : s.value) : null
 
-  // PE: ratios.priceToEarningsRatio 우선, key-metrics-ttm → quote.pe 순 fallback
+  const r = unwrap(settled[0])  // ratios
+  const k = unwrap(settled[1])  // key-metrics-ttm
+  const g = includeGrowth ? unwrap(settled[2]) : null  // financial-growth (선택)
+
+  // PE: ratios.priceToEarningsRatio 우선, key-metrics-ttm fallback
   const pbPrimary = r?.priceToBookRatio   || r?.pb || r?.priceToBookRatioTTM
   const psPrimary = r?.priceToSalesRatio  || r?.ps || r?.priceToSalesRatioTTM
   const pePrimary = (r?.priceToEarningsRatio && r.priceToEarningsRatio > 0) ? r.priceToEarningsRatio
-                  : (r?.peRatio            && r.peRatio > 0)             ? r.peRatio             // FMP 실제 필드명
+                  : (r?.peRatio            && r.peRatio > 0)             ? r.peRatio
                   : (r?.pe                 && r.pe > 0)                  ? r.pe
                   : (k?.peRatioTTM         && k.peRatioTTM > 0)         ? k.peRatioTTM
                   : (k?.peRatio            && k.peRatio > 0)             ? k.peRatio
-                  : (q?.pe                 && q.pe > 0)                  ? q.pe
-                  : (q?.price > 0 && q?.eps && q.eps > 0)               ? q.price / q.eps        // price/eps 계산
                   : null
 
   return {
     symbol: sym,
-    name:   q?.name ?? q?.companyName ?? sym,
+    name:   sym,
     // 수익성 — ROE/ROA는 /stable/key-metrics-ttm 전용 (ratios에 없음)
     returnOnEquityTTM:            k?.returnOnEquityTTM            ?? k?.returnOnEquity            ?? null,
     operatingProfitMarginTTM:     r?.operatingProfitMargin        ?? r?.operatingProfitMarginTTM  ?? null,
@@ -370,62 +392,101 @@ async function fetchAllMetricz(sym, apiKey) {
                                     return (v != null && v !== 0) ? v : null
                                   })(),
     currentRatioTTM:              r?.currentRatio  ?? r?.currentRatioTTM  ?? null,
-    // EV/EBITDA·FCF — key-metrics-ttm 우선 (ratios에서는 미반환)
+    // EV/EBITDA·FCF — key-metrics-ttm 우선
     enterpriseValueOverEBITDATTM: k?.enterpriseValueOverEBITDATTM ?? k?.evToEbitdaTTM ?? k?.evToEbitda
                                   ?? r?.enterpriseValueMultiple ?? null,
     freeCashFlowYieldTTM:         k?.freeCashFlowYieldTTM ?? k?.freeCashFlowYield
                                   ?? r?.freeCashFlowYield ?? null,
-    // 성장성 (/stable/financial-growth)
+    // 성장성 (/stable/financial-growth — includeGrowth=true일 때만)
     revenueGrowth:                g?.revenueGrowth         ?? null,
     epsgrowth:                    g?.epsGrowth ?? g?.epsgrowth ?? g?.earningsGrowth ?? null,
     operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? g?.operatingCashFlowGrowth ?? null,
     assetGrowth:                  g?.assetGrowth           ?? null,
-    // 리스크
-    beta:                         q?.beta ?? null,
+    // 리스크 — ratios에서 추출
+    beta:                         null,
   }
 }
 
-// ── KV 캐시 갱신 (cron용) ───────────────────────────────────────
-// 15종목씩 묶어 병렬 fetch → wave당 최대 45 API call (3 endpoints × 15)
-async function refreshMetriczCache(env) {
+// ── KV 캐시 갱신 (cron용, chunk 지원) ───────────────────────────────────────
+// Cloudflare Workers subrequest 한도 대응: chunk 단위 처리
+// Free plan: 50 subrequests, Paid plan: 1000 subrequests
+// 종목당 2 API calls (ratios + key-metrics-ttm) → chunk당 최대 20종목(40 calls)
+async function refreshMetriczCache(env, chunkIndex = -1) {
   const apiKey = env.FMP_API_KEY
   const kv     = env.METRICZ_KV
   if (!apiKey || !kv) {
     console.error('❌ refreshMetriczCache: FMP_API_KEY 또는 METRICZ_KV 없음')
-    return
+    return { success: 0, total: 0 }
   }
 
   // S&P500 전종목 유니버스 로드 (FMP constituent API → KV 캐시)
   const universe = await getSP500Symbols(kv, apiKey)
-  console.log(`🔄 metricz 캐시 갱신 시작: ${universe.length}개 종목, wave당 6종목(24 calls), 1000ms 딜레이 (Starter 300calls/min)`)
   const startTime = Date.now()
 
-  // 6종목/wave × 4 endpoints = 24 FMP 동시 호출/wave
-  // ⚠️ 병렬 호출은 동시에 발생 → 24 calls 순간 폭발
-  // Starter 300calls/min = 5calls/sec → 24calls가 한번에 날아가면 429 발생
-  // 안전 계산: 24calls/wave ÷ 300calls/min × 60s = 4.8s/wave 필요
-  // 실행시간 ~800ms 포함: delay=5000ms → wave당 ~5.8s → 24/5.8×60 ≈ 248calls/min ✅
-  const results = await batchProcess(universe, 6, sym => fetchAllMetricz(sym, apiKey), 5000)
+  // chunk 설정: 20종목/chunk × 2endpoints = 40 subrequests (50한도 이내)
+  const CHUNK_SIZE = 20
+  const totalChunks = Math.ceil(universe.length / CHUNK_SIZE)
 
-  const stocks = {}
-  let successCount = 0
+  // 기존 KV 데이터 로드 (chunk 모드에서 병합용)
+  let existingStocks = {}
+  let existingCount = 0
+  try {
+    const existing = await kv.get(METRICZ_KV_KEY)
+    if (existing) {
+      const parsed = JSON.parse(existing)
+      existingStocks = parsed.stocks || {}
+      existingCount = Object.keys(existingStocks).length
+    }
+  } catch(e) { /* 기존 데이터 없으면 빈 객체 */}
+
+  // chunkIndex=-1이면 전체 처리 (paid plan용), 아니면 해당 chunk만 처리
+  let startIdx, endIdx
+  if (chunkIndex >= 0) {
+    startIdx = chunkIndex * CHUNK_SIZE
+    endIdx = Math.min(startIdx + CHUNK_SIZE, universe.length)
+    if (startIdx >= universe.length) {
+      console.log(`⚠️ chunk ${chunkIndex} 범위 초과 (총 ${universe.length}종목, ${totalChunks} chunks)`)
+      return { success: 0, total: universe.length, chunk: chunkIndex, totalChunks }
+    }
+  } else {
+    startIdx = 0
+    endIdx = universe.length
+  }
+
+  const targetSymbols = universe.slice(startIdx, endIdx)
+  console.log(`🔄 metricz 캐시 갱신: ${targetSymbols.length}종목 (${startIdx}~${endIdx-1}), chunk=${chunkIndex}, 2 endpoints/stock`)
+
+  // 5종목/wave × 2endpoints = 10 calls/wave, 2000ms 딜레이
+  // rate: 10/2 × 60 = 300 calls/min → Starter 한도 이내
+  const results = await batchProcess(targetSymbols, 5, sym => fetchAllMetricz(sym, apiKey), 2000)
+
+  // 기존 데이터에 새 데이터 병합
+  let newSuccess = 0
   results.forEach((r, i) => {
     if (r.status === 'fulfilled' && r.value) {
-      stocks[universe[i]] = r.value
-      successCount++
+      const sym = targetSymbols[i]
+      // 유효한 데이터만 병합 (최소 1개 필드가 non-null)
+      const v = r.value
+      const hasData = v.peRatioTTM != null || v.returnOnEquityTTM != null || v.operatingProfitMarginTTM != null
+      if (hasData) {
+        existingStocks[sym] = v
+        newSuccess++
+      } else if (!existingStocks[sym]) {
+        existingStocks[sym] = v  // null 데이터라도 저장 (빈 항목 방지)
+      }
     }
   })
 
   const payload = {
     timestamp: new Date().toISOString(),
-    count: successCount,
-    stocks,
+    count: Object.keys(existingStocks).length,
+    stocks: existingStocks,
   }
 
-  // KV 저장: TTL 8시간 (6시간 cron + 2시간 여유)
-  await kv.put(METRICZ_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
+  await kv.put(METRICZ_KV_KEY, JSON.stringify(payload), { expirationTtl: 12 * 3600 })
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-  console.log(`✅ metricz 캐시 갱신 완료: ${successCount}/${universe.length}종목, ${elapsed}s 소요`)
+  console.log(`✅ metricz chunk ${chunkIndex}: ${newSuccess}/${targetSymbols.length}종목 성공, 누적 ${Object.keys(existingStocks).length}종목, ${elapsed}s`)
+  return { success: newSuccess, total: targetSymbols.length, chunk: chunkIndex, totalChunks, cumulative: Object.keys(existingStocks).length }
 }
 
 // ── Discovery 캐시 갱신 (cron용, SP500 상위 80종목 × 4 API = 320 calls) ──
@@ -4561,14 +4622,34 @@ export default {
           response = { error: e.message, endpoint: pathname }
         }
 
-      // /metricz-refresh - metricz KV 캐시 수동 갱신 (백그라운드 실행, 즉시 202 응답)
+      // /metricz-refresh - metricz KV 캐시 수동 갱신 (chunk 지원)
+      // ?chunk=0 : chunk 0만 처리 (20종목, ~40 subrequests)
+      // ?chunk=all : 모든 chunk를 순차 실행 (paid plan 전용)
+      // (파라미터 없음) : chunk=all 기본값
       } else if (pathname === "/metricz-refresh") {
         try {
-          // ~503종목 처리에 약 2분 소요 → Worker HTTP 30초 타임아웃 초과
-          // ctx.waitUntil()로 백그라운드에서 실행하고 즉시 202 응답 반환
-          ctx.waitUntil(refreshMetriczCache(env))
-          response = { ok: true, message: `metricz 캐시 갱신 시작됨 (백그라운드 실행, 약 2분 소요)`, note: `완료 확인은 /metricz-debug?all=1 로 확인` }
-          return new Response(JSON.stringify(response), { status: 202, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
+          const chunkParam = url.searchParams.get('chunk')
+          if (chunkParam !== null && chunkParam !== 'all') {
+            // 단일 chunk 처리 (동기, 결과 반환)
+            const chunkIdx = parseInt(chunkParam) || 0
+            const result = await refreshMetriczCache(env, chunkIdx)
+            response = { ok: true, ...result, message: `chunk ${chunkIdx} 갱신 완료` }
+          } else {
+            // 전체 순차 처리: chunk 0부터 끝까지
+            ctx.waitUntil((async () => {
+              const universe = await getSP500Symbols(env.METRICZ_KV, env.FMP_API_KEY)
+              const totalChunks = Math.ceil(universe.length / 20)
+              console.log(`🔄 metricz 전체 갱신: ${universe.length}종목, ${totalChunks} chunks`)
+              for (let i = 0; i < totalChunks; i++) {
+                const r = await refreshMetriczCache(env, i)
+                console.log(`  chunk ${i}/${totalChunks}: ${r.success}/${r.total} 성공`)
+                if (i < totalChunks - 1) await new Promise(resolve => setTimeout(resolve, 1000))
+              }
+              console.log(`✅ metricz 전체 갱신 완료: ${totalChunks} chunks`)
+            })())
+            response = { ok: true, message: `metricz 전체 갱신 시작 (백그라운드)`, note: `완료 확인: /metricz-debug?all=1` }
+            return new Response(JSON.stringify(response), { status: 202, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
+          }
         } catch(e) {
           response = { error: e.message, endpoint: pathname }
         }
@@ -4908,11 +4989,26 @@ export default {
 
   // ── Cron 핸들러: 6시간마다 metricz 유니버스 캐시 갱신 ──────────
   async scheduled(event, env, ctx) {
-    // ⚠️ 순차 실행 필수: metricz 먼저 → discovery/breakout이 최신 PE 데이터를 metricz KV에서 읽도록
+    // ⚠️ 순차 실행: metricz chunks → discovery → breakout
     ctx.waitUntil((async () => {
-      await refreshMetriczCache(env)    // 1st: S&P500 전종목 ratios/key-metrics-ttm (PE 포함)
-      await refreshDiscoveryCache(env)  // 2nd: Alpha Discovery (metricz PE 활용)
-      await refreshBreakoutCache(env)   // 3rd: Breakout Radar (metricz PE 활용, S&P500 전종목)
+      try {
+        // 1st: metricz 전종목 chunk 단위 갱신 (20종목/chunk × 2 endpoints = 40 subrequests)
+        const universe = await getSP500Symbols(env.METRICZ_KV, env.FMP_API_KEY)
+        const totalChunks = Math.ceil(universe.length / 20)
+        console.log(`🔄 Cron metricz: ${universe.length}종목, ${totalChunks} chunks`)
+        for (let i = 0; i < totalChunks; i++) {
+          await refreshMetriczCache(env, i)
+          if (i < totalChunks - 1) await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+        console.log(`✅ Cron metricz 완료: ${totalChunks} chunks`)
+
+        // 2nd: Alpha Discovery (metricz PE 활용)
+        await refreshDiscoveryCache(env)
+        // 3rd: Breakout Radar (metricz PE 활용)
+        await refreshBreakoutCache(env)
+      } catch(e) {
+        console.error('❌ Cron 실행 에러:', e.message)
+      }
     })())
   }
 }
