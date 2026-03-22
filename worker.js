@@ -4559,6 +4559,7 @@ export default {
         }
 
       // /metricz-refresh - metricz KV 캐시 수동 갱신
+      } else if (pathname === "/metricz-refresh") {
         try {
           const t0 = Date.now()
           await refreshMetriczCache(env)
