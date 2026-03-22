@@ -732,6 +732,15 @@
                 };
                 const normSector = (s) => SECTOR_MAP[s] || (s ? s.toUpperCase().replace(/ /g, '_') : '');
 
+                // ── 0~100 정규화 헬퍼 (switch 바깥에 선언 - case 3~9 공통 사용) ──
+                const normMom   = v => Math.max(0, Math.min(100, ((v||0) + 10) / 20 * 100));
+                const normMA50  = v => Math.max(0, Math.min(100, ((v||0) + 20) / 40 * 100));
+                const normStr52 = v => Math.max(0, Math.min(100, v||50));
+                const normVol   = v => Math.max(0, Math.min(100, (Math.min(100, Math.max(-30, v||0)) + 30) / 130 * 100));
+                const normPE    = pe => (!pe || pe <= 0 || pe >= 200) ? 0 : Math.max(0, Math.min(100, 1000 / pe));
+                const normVIX   = vix => Math.max(0, Math.min(100, (35 - (vix||20)) / 25 * 100));
+                const scColor   = sc => sc >= 60 ? '#10b981' : sc >= 40 ? '#f59e0b' : '#ef4444';
+
                 switch (widgetId) {
                     case 1:
                         // 매크로 유동성 데이터
@@ -794,18 +803,9 @@
                         }
                         break;
 
-                    // ── 0~100 정규화 헬퍼 ──────────────────────────────────
-                    // momentum (당일등락률 %): -10%→0, 0%→50, +10%→100
                     case 3:
                         // 단기 모멘텀 전략: 당일상승률×60% + MA50추세×40%
                         if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
-                            const normMom   = v => Math.max(0, Math.min(100, ((v||0) + 10) / 20 * 100));
-                            const normMA50  = v => Math.max(0, Math.min(100, ((v||0) + 20) / 40 * 100));
-                            const normStr52 = v => Math.max(0, Math.min(100, v||50));
-                            const normVol   = v => Math.max(0, Math.min(100, (Math.min(100, Math.max(-30, v||0)) + 30) / 130 * 100));
-                            const normPE    = pe => (!pe || pe <= 0 || pe >= 200) ? 0 : Math.max(0, Math.min(100, 1000 / pe));
-                            const normVIX   = vix => Math.max(0, Math.min(100, (35 - (vix||20)) / 25 * 100));
-                            const scColor   = sc => sc >= 60 ? '#10b981' : sc >= 40 ? '#f59e0b' : '#ef4444';
                             const pool3 = data.all_stocks || data.top_20;
                             const scored4 = pool3.map(s => {
                                 const score = normMom(s.momentum) * 0.60 + normMA50(s.ma50trend) * 0.40;
