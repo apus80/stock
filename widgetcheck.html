@@ -496,24 +496,26 @@ const WIDGET_CALC=[
 // resolve value for calc widget inputs (supports "top_20.0.field" paths)
 function getCalcValue(srcEpPath, fieldPath) {
   // determine which cached data to use
+  // NOTE: more specific paths must come BEFORE generic ones
+  // (e.g. '/analysis/market-regime' contains '/market', so must be checked first)
   let data = null;
-  if (srcEpPath.includes('/market')) data = S.marketData;
-  else if (srcEpPath.includes('/alpha/discovery')) data = S.discoveryData;
-  else if (srcEpPath.includes('/feargreed')) data = S.res['feargreed']?.data;
-  else if (srcEpPath.includes('/analysis/market-regime')) data = S.res['a-regime']?.data;
+  if (srcEpPath.includes('/analysis/market-regime')) data = S.res['a-regime']?.data;
   else if (srcEpPath.includes('/analysis/volatility-regime')) data = S.res['a-vol']?.data;
   else if (srcEpPath.includes('/analysis/credit-stress')) data = S.res['a-credit']?.data;
   else if (srcEpPath.includes('/analysis/sector-rotation')) data = S.res['a-sector']?.data;
-  else if (srcEpPath.includes('/alpha/breakout')) data = S.res['breakout']?.data;
-  else if (srcEpPath.includes('/alpha/alpha-scanner')) data = S.res['scanner']?.data;
   else if (srcEpPath.includes('catalyst-surge-top5')) data = S.res['cs-top5']?.data;
   else if (srcEpPath.includes('catalyst-surge')) data = S.res['cs']?.data;
+  else if (srcEpPath.includes('/alpha/discovery')) data = S.discoveryData;
+  else if (srcEpPath.includes('/alpha/breakout')) data = S.res['breakout']?.data;
+  else if (srcEpPath.includes('/alpha/alpha-scanner')) data = S.res['scanner']?.data;
   else if (srcEpPath.includes('/alpha?symbol') || srcEpPath.includes('/alpha')) data = S.res['alpha']?.data;
   else if (srcEpPath.includes('/fundamentals/growth')) data = S.res['f-growth']?.data;
   else if (srcEpPath.includes('/fundamentals/income')) data = S.res['f-income']?.data;
   else if (srcEpPath.includes('/fundamentals/balance')) data = S.res['f-balance']?.data;
   else if (srcEpPath.includes('/fundamentals/cashflow')) data = S.res['f-cashflow']?.data;
   else if (srcEpPath.includes('/fundamentals/profile')) data = S.res['f-profile']?.data;
+  else if (srcEpPath.includes('/feargreed')) data = S.res['feargreed']?.data;
+  else if (srcEpPath.includes('/market')) data = S.marketData;
   if (!data) return undefined;
   // handle array index paths like "top_20.0.score"
   return fieldPath.split('.').reduce((o, k) => {
