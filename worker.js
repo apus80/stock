@@ -125,9 +125,12 @@ async function fetchAllMetricz(sym, apiKey) {
   const pbPrimary = r?.priceToBookRatio   || r?.pb || r?.priceToBookRatioTTM
   const psPrimary = r?.priceToSalesRatio  || r?.ps || r?.priceToSalesRatioTTM
   const pePrimary = (r?.priceToEarningsRatio && r.priceToEarningsRatio > 0) ? r.priceToEarningsRatio
-                  : (r?.pe && r.pe > 0) ? r.pe
-                  : (k?.peRatioTTM && k.peRatioTTM > 0) ? k.peRatioTTM
-                  : (q?.pe && q.pe > 0) ? q.pe
+                  : (r?.peRatio            && r.peRatio > 0)             ? r.peRatio             // FMP 실제 필드명
+                  : (r?.pe                 && r.pe > 0)                  ? r.pe
+                  : (k?.peRatioTTM         && k.peRatioTTM > 0)         ? k.peRatioTTM
+                  : (k?.peRatio            && k.peRatio > 0)             ? k.peRatio
+                  : (q?.pe                 && q.pe > 0)                  ? q.pe
+                  : (q?.price > 0 && q?.eps && q.eps > 0)               ? q.price / q.eps        // price/eps 계산
                   : null
 
   return {
@@ -243,8 +246,10 @@ async function refreshDiscoveryCache(env) {
         const avgVol  = (q.avgVolume > 0) ? q.avgVolume : null  // null이면 비교 불가
         const mom     = q.changePercentage || 0   // 당일 % 변동
 
-        // PE: quote 우선, 없으면 metricz KV fallback
-        const peFromQuote   = (q.pe && q.pe > 0) ? q.pe : 0
+        // PE: quote.pe → price/eps 계산 → metricz KV fallback
+        const peFromQuote   = (q.pe && q.pe > 0) ? q.pe
+                            : (price > 0 && q.eps && q.eps > 0) ? price / q.eps   // price÷eps 계산
+                            : 0
         const peFromMetricz = metriczStocks[symbol]?.peRatioTTM > 0 ? metriczStocks[symbol].peRatioTTM : 0
         const pe = peFromQuote > 0 ? peFromQuote : peFromMetricz
 
@@ -1511,7 +1516,9 @@ export default {
             data: {
               symbol: symbol,
               // ✅ 0은 invalid 데이터 → null로 처리
-              priceToEarningsRatio: (ratios.priceToEarningsRatio && ratios.priceToEarningsRatio > 0) ? ratios.priceToEarningsRatio : null,
+              priceToEarningsRatio: (ratios.priceToEarningsRatio && ratios.priceToEarningsRatio > 0) ? ratios.priceToEarningsRatio
+                                  : (ratios.peRatio            && ratios.peRatio > 0)             ? ratios.peRatio
+                                  : null,
               priceToBookRatio: (ratios.priceToBookRatio && ratios.priceToBookRatio > 0) ? ratios.priceToBookRatio : null,
               // ✅ 추가 필드들 (fallback용)
               pe: (ratios.pe && ratios.pe > 0) ? ratios.pe : null,
@@ -3698,7 +3705,9 @@ export default {
               const yHigh   = q.yearHigh  || price * 1.3
               const vol     = q.volume    || 0
               const avgVol  = (q.avgVolume > 0) ? q.avgVolume : null
-              const peRaw   = (q.pe && q.pe > 0) ? q.pe : 0
+              const peRaw   = (q.pe && q.pe > 0) ? q.pe
+                            : (price > 0 && q.eps && q.eps > 0) ? price / q.eps
+                            : 0
               const mom     = q.changePercentage || 0
 
               const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0
@@ -4729,9 +4738,10 @@ export default {
 
   // ── Cron 핸들러: 6시간마다 metricz 유니버스 캐시 갱신 ──────────
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(Promise.all([
-      refreshMetriczCache(env),
-      refreshDiscoveryCache(env)
-    ]))
+    // ⚠️ 순차 실행 필수: metricz 먼저 → discovery가 최신 PE 데이터를 metricz KV에서 읽도록
+    ctx.waitUntil((async () => {
+      await refreshMetriczCache(env)
+      await refreshDiscoveryCache(env)
+    })())
   }
 }
