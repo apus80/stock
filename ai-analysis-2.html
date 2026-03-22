@@ -1954,72 +1954,88 @@
 
             React.useEffect(() => { fetchTop5() }, [])
 
+            const cssColor = (css) => css >= 75 ? '#ef4444' : css >= 55 ? '#10b981' : css >= 40 ? '#f59e0b' : '#94a3b8'
+            const cssLevel = (css) => css >= 55 ? 'level-high' : css >= 40 ? 'level-mid' : 'level-low'
+
             return (
                 <div className="widget grid-full">
                     <div className="widget-header">
-                        <div className="widget-title">5. 🔥 Top 5 Breakout Picks
-                            <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS 점수 기준 돌파 후보 Top 5</span>
+                        <div>
+                            <div className="widget-title">5. 🔥 Top 5 Breakout Picks
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS 점수 기준 | S&P500 전종목 분석</span>
+                            </div>
+                            <div className="widget-subtitle">
+                                CSS = (C×0.4 + T×0.35 + S×0.25) ÷ 28.9 × 100 &nbsp;|&nbsp; 🔵 T(기술/50) &nbsp;🟡 S(스마트/12) &nbsp;🟢 C(촉매/21)
+                            </div>
                         </div>
                         <button className={`btn-refresh ${loading ? 'loading' : ''}`} onClick={fetchTop5} disabled={loading}>↻</button>
                     </div>
-                    {loading && <div className="loading">로딩 중...</div>}
+
+                    {loading && <div className="loading">🔥 S&P500 전종목 CSS 분석 중... — T·S·C 3팩터 스코어링</div>}
                     {error && <div className="error-box">{error} <button onClick={fetchTop5}>재시도</button></div>}
                     {!loading && !error && stocks.length === 0 && (
                         <div style={{ color: 'var(--text-muted)' }}>No breakout candidates</div>
                     )}
-                    {/* ── 점수 설명 범례 ── */}
-                    <div style={{ fontSize: '11px', color: '#64748b', background: '#f8fafc', borderRadius: '6px', padding: '8px 12px', marginBottom: '12px', lineHeight: '1.8' }}>
-                        <b style={{ color: '#475569' }}>점수 구성 (CSS = 0~100)</b>
-                        <span>🔵 <b>T</b>(기술 /50): RSI·MACD·BB·ATR·거래량·EMA·돌파 합산</span>
-                        <span>🟡 <b>S</b>(스마트머니 /12): 내부자·애널리스트 신호</span>
-                        <span>🟢 <b>C</b>(카탈리스트 /21): EPS서프라이즈·매출성장·FCF·PE·D/E</span>
-                        <span>CSS = (C×0.4 + T×0.35 + S×0.25) ÷ 28.9 × 100</span>
-                    </div>
-                    <div className="top5-grid">
-                        {stocks.map((s, i) => {
-                            const css = s.css ?? 0
-                            const cssColor = css >= 75 ? '#ef4444' : css >= 55 ? '#10b981' : css >= 40 ? '#f59e0b' : '#94a3b8'
-                            const T = s.breakdown?.technical ?? 0
-                            const S = s.breakdown?.smartMoney ?? 0
-                            const C = s.breakdown?.catalyst ?? 0
-                            const tPct = Math.round(T / 50 * 100)
-                            const sPct = Math.round(S / 12 * 100)
-                            const cPct = Math.round(C / 21 * 100)
-                            return (
-                                <div key={s.symbol} className="top5-card" style={{ cursor: 'default' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                        <span style={{ fontWeight: 800, fontSize: '15px', color: '#667eea' }}>#{i + 1} {s.symbol}</span>
-                                        <span style={{ fontSize: '11px', color: '#718096' }}>{s.isBreakout ? '📈 돌파' : '🔎 관찰'}</span>
-                                    </div>
-                                    <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                                        <div style={{ fontSize: '2em', fontWeight: 900, color: cssColor, lineHeight: 1 }}>{s.css != null ? s.css.toFixed(1) : '-'}</div>
-                                        <div style={{ fontSize: '11px', color: cssColor, fontWeight: 600 }}>{s.grade ?? '-'}</div>
-                                    </div>
-                                    {/* 프로그레스 바 */}
-                                    <div style={{ background: '#e2e8f0', borderRadius: '4px', height: '5px', marginBottom: '10px' }}>
-                                        <div style={{ background: cssColor, width: `${Math.min(100, css)}%`, height: '100%', borderRadius: '4px' }} />
-                                    </div>
-                                    {/* T / S / C 분해 */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', marginBottom: '8px' }}>
-                                        {[
-                                            { label: '🔵 기술(T)', val: T, max: 50, pct: tPct, color: '#4dabf7' },
-                                            { label: '🟡 스마트(S)', val: S, max: 12, pct: sPct, color: '#fbbf24' },
-                                            { label: '🟢 촉매(C)', val: C, max: 21, pct: cPct, color: '#10b981' },
-                                        ].map(item => (
-                                            <div key={item.label} style={{ background: '#f8fafc', borderRadius: '5px', padding: '5px 4px', textAlign: 'center' }}>
-                                                <div style={{ fontSize: '9px', color: '#718096', marginBottom: '2px' }}>{item.label}</div>
-                                                <div style={{ fontWeight: 700, fontSize: '13px', color: item.color }}>{item.val !== '-' ? Number(item.val).toFixed(1) : '-'}</div>
-                                                <div style={{ fontSize: '9px', color: '#94a3b8' }}>/{item.max} ({item.pct}%)</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
-                                        🎯 승률: <b style={{ color: '#475569' }}>{s.backtest?.winRate != null ? s.backtest.winRate.toFixed(1) + '%' : '-'}</b>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </div>
+
+                    {!loading && !error && stocks.length > 0 && (
+                        <table className="breakout-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>종목</th>
+                                    <th style={{ minWidth: '150px' }}>CSS Score</th>
+                                    <th>🔵 T(기술)</th>
+                                    <th>🟡 S(스마트)</th>
+                                    <th>🟢 C(촉매)</th>
+                                    <th>등급</th>
+                                    <th>신호</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stocks.map((s, i) => {
+                                    const css = s.css ?? 0
+                                    const T = s.breakdown?.technical ?? 0
+                                    const S = s.breakdown?.smartMoney ?? 0
+                                    const C = s.breakdown?.catalyst ?? 0
+                                    return (
+                                        <tr key={s.symbol} className={s.isBreakout ? 'signal-breakout' : ''}>
+                                            <td className={`breakout-rank ${i < 3 ? 'top3' : ''}`}>{i + 1}</td>
+                                            <td>
+                                                <div className="breakout-ticker-cell">
+                                                    <span className="breakout-ticker">{s.symbol}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div className="breakout-score-bar">
+                                                    <div className="breakout-score-track">
+                                                        <div className={`breakout-score-fill ${cssLevel(css)}`} style={{ width: `${Math.min(100, css)}%` }} />
+                                                    </div>
+                                                    <span className="breakout-score-num" style={{ color: cssColor(css) }}>{s.css != null ? s.css.toFixed(1) : '-'}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ color: '#4dabf7', fontWeight: 600, fontSize: '13px' }}>
+                                                {T.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: '10px' }}>/50</span>
+                                            </td>
+                                            <td style={{ color: '#fbbf24', fontWeight: 600, fontSize: '13px' }}>
+                                                {S.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: '10px' }}>/12</span>
+                                            </td>
+                                            <td style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
+                                                {C.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: '10px' }}>/21</span>
+                                            </td>
+                                            <td>
+                                                <span className={`signal-tag signal-${css >= 55 ? 'BREAKOUT' : css >= 40 ? 'WATCH' : 'NEUTRAL'}`}>
+                                                    {s.grade ?? '-'}
+                                                </span>
+                                            </td>
+                                            <td style={{ fontSize: '12px' }}>
+                                                {s.isBreakout ? '📈 돌파' : '🔎 관찰'}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             )
         }

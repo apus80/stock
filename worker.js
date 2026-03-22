@@ -408,8 +408,8 @@ function csGetGrade(css) {
 }
 
 async function csGetTop80(env) {
-  // stock-screener는 유료 플랜 전용 → SP500_UNIVERSE 상위 80개 사용
-  return SP500_UNIVERSE.slice(0, 80).map(s => ({ symbol: s }))
+  // 전체 SP500_UNIVERSE(180종목) 사용 — Stage1 병렬 처리로 timeout 방지
+  return SP500_UNIVERSE.map(s => ({ symbol: s }))
 }
 
 async function csGetTechnical(symbol, env) {
@@ -4565,13 +4565,19 @@ export default {
           const universe = await csGetTop80(env)
           const safeUniverse = Array.isArray(universe) ? universe : []
           const stage1 = []
-          // Stage 1: 기술적 점수 8 이상인 종목만 진행 (tech 결과 보관 → Stage2 재사용)
-          for (const stock of safeUniverse) {
-            try {
-              const tech = await csGetTechnical(stock.symbol, env)
-              if ((tech.total || 0) < 8) continue
-              stage1.push({ symbol: stock.symbol, quickScore: tech.total, tech }) // tech 저장
-            } catch (e) {}
+          // Stage 1: 15개씩 병렬 처리 → 전체 SP500_UNIVERSE(180종목) 커버 가능
+          const WAVE_SIZE = 15
+          for (let wi = 0; wi < safeUniverse.length; wi += WAVE_SIZE) {
+            const wave = safeUniverse.slice(wi, wi + WAVE_SIZE)
+            const waveResults = await Promise.allSettled(
+              wave.map(stock => csGetTechnical(stock.symbol, env).then(tech => ({ symbol: stock.symbol, tech })))
+            )
+            for (const r of waveResults) {
+              if (r.status === 'fulfilled' && r.value && (r.value.tech?.total || 0) >= 8) {
+                stage1.push({ symbol: r.value.symbol, quickScore: r.value.tech.total, tech: r.value.tech })
+              }
+            }
+            if (wi + WAVE_SIZE < safeUniverse.length) await new Promise(r => setTimeout(r, 100))
           }
           const shortlist = stage1
             .sort((a, b) => b.quickScore - a.quickScore)
