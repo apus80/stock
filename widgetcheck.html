@@ -12,35 +12,35 @@
   --green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6;--purple:#a78bfa;--cyan:#22d3ee;--orange:#f97316;
   --font:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
 }
-body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:12px;line-height:1.5}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6}
 .app{max-width:1600px;margin:0 auto;padding:12px}
 .hdr{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-.hdr h1{font-size:18px;font-weight:800;background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hdr-sub{color:var(--muted);font-size:11px}
+.hdr h1{font-size:20px;font-weight:800;background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-sub{color:var(--muted);font-size:13px}
 .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.btn{padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;font:inherit;font-size:11px;font-weight:600;transition:all .15s}
+.btn{padding:7px 16px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;font:inherit;font-size:13px;font-weight:600;transition:all .15s}
 .btn:hover{background:var(--surface3);border-color:var(--blue)}
 .btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
 .btn-primary:hover{background:#2563eb}
-.btn-sm{padding:3px 8px;font-size:10px}
+.btn-sm{padding:4px 10px;font-size:12px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
-.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
-.sum-card .val{font-size:24px;font-weight:800}
-.sum-card .lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
+.sum-card .val{font-size:26px;font-weight:800}
+.sum-card .lbl{font-size:12px;color:var(--muted);margin-top:2px}
 .sum-card.ok .val{color:var(--green)}.sum-card.warn .val{color:var(--yellow)}.sum-card.fail .val{color:var(--red)}.sum-card.info .val{color:var(--cyan)}
 .tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:8px}
-.tab{padding:6px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:11px;font-weight:600;color:var(--muted);border:1px solid transparent;border-bottom:none;transition:all .15s}
+.tab{padding:7px 16px;border-radius:6px 6px 0 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);border:1px solid transparent;border-bottom:none;transition:all .15s}
 .tab:hover{color:var(--text);background:var(--surface2)}
 .tab.active{color:var(--cyan);background:var(--surface);border-color:var(--border);border-bottom:2px solid var(--cyan)}
-.tab .badge{display:inline-block;background:var(--surface3);padding:1px 6px;border-radius:10px;font-size:9px;margin-left:4px}
+.tab .badge{display:inline-block;background:var(--surface3);padding:1px 7px;border-radius:10px;font-size:13px;margin-left:4px}
 .panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:300px;max-height:75vh;overflow-y:auto}
 .panel.active{display:block}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{text-align:left;padding:6px 8px;background:var(--surface2);color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
-td{padding:5px 8px;border-bottom:1px solid rgba(51,65,85,.3);vertical-align:top}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;background:var(--surface2);color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1;font-size:13px}
+td{padding:7px 10px;border-bottom:1px solid rgba(51,65,85,.3);vertical-align:top;font-size:13px}
 tr:hover td{background:rgba(59,130,246,.04)}
-.led{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.led{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 .led-ok{background:var(--green);box-shadow:0 0 4px var(--green)}
 .led-warn{background:var(--yellow);box-shadow:0 0 4px var(--yellow)}
 .led-fail{background:var(--red);box-shadow:0 0 4px var(--red)}
@@ -49,24 +49,24 @@ tr:hover td{background:rgba(59,130,246,.04)}
 .v-ok{color:var(--green)}.v-warn{color:var(--yellow)}.v-fail{color:var(--red)}.v-null{color:var(--dim);font-style:italic}
 .v-num{color:var(--cyan)}.v-str{color:var(--purple)}
 .fgroup{margin-bottom:16px}
-.fgroup-title{font-size:12px;font-weight:700;color:var(--blue);padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between}
-.fgroup-title .cnt{color:var(--muted);font-weight:400;font-size:10px}
-.progress-bar{height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;margin:8px 0}
+.fgroup-title{font-size:14px;font-weight:700;color:var(--blue);padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between}
+.fgroup-title .cnt{color:var(--muted);font-weight:400;font-size:12px}
+.progress-bar{height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;margin:8px 0}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));transition:width .3s;border-radius:2px}
-.log{font-size:10px;color:var(--dim);max-height:120px;overflow-y:auto;padding:8px;background:var(--bg);border-radius:4px;margin-top:8px}
-.log-line{padding:1px 0}.log-ok{color:var(--green)}.log-warn{color:var(--yellow)}.log-fail{color:var(--red)}
-.search{padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font:inherit;font-size:11px;width:200px}
+.log{font-size:12px;color:var(--dim);max-height:140px;overflow-y:auto;padding:10px;background:var(--bg);border-radius:4px;margin-top:8px}
+.log-line{padding:2px 0}.log-ok{color:var(--green)}.log-warn{color:var(--yellow)}.log-fail{color:var(--red)}
+.search{padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font:inherit;font-size:13px;width:220px}
 .search::placeholder{color:var(--dim)}
-.sym-input{padding:5px 10px;background:var(--bg);border:1px solid var(--orange);border-radius:6px;color:var(--orange);font:inherit;font-size:13px;font-weight:800;width:90px;text-align:center;text-transform:uppercase}
+.sym-input{padding:6px 10px;background:var(--bg);border:1px solid var(--orange);border-radius:6px;color:var(--orange);font:inherit;font-size:14px;font-weight:800;width:95px;text-align:center;text-transform:uppercase}
 .sym-input:focus{outline:none;border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,.2)}
 .sym-bar{display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(90deg,rgba(249,115,22,.08),rgba(34,211,238,.08));border:1px solid var(--border);border-radius:8px;margin-bottom:12px;flex-wrap:wrap}
-.sym-bar label{color:var(--orange);font-weight:700;font-size:12px}
-.sym-bar .hint{color:var(--dim);font-size:10px}
-.sym-quick{padding:3px 8px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--muted);cursor:pointer}
+.sym-bar label{color:var(--orange);font-weight:700;font-size:14px}
+.sym-bar .hint{color:var(--dim);font-size:12px}
+.sym-quick{padding:4px 10px;font-size:12px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--muted);cursor:pointer}
 .sym-quick:hover{background:var(--surface3);color:var(--text);border-color:var(--cyan)}
-.field-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
-.field-card-title{font-size:12px;font-weight:700;margin-bottom:8px;color:var(--cyan);display:flex;justify-content:space-between;align-items:center}
-@media(max-width:768px){.app{padding:6px}.hdr{padding:12px}.summary{grid-template-columns:repeat(2,1fr)}.tabs{gap:2px}.tab{padding:4px 8px;font-size:10px}}
+.field-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px}
+.field-card-title{font-size:14px;font-weight:700;margin-bottom:8px;color:var(--cyan);display:flex;justify-content:space-between;align-items:center}
+@media(max-width:768px){.app{padding:8px}.hdr{padding:12px}.summary{grid-template-columns:repeat(2,1fr)}.tabs{gap:2px}.tab{padding:5px 10px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -169,7 +169,13 @@ function epUrl(ep,sym){let p=ep.path;if(ep.needsSymbol)p+=(p.includes('?')?'&':'
 
 async function testEp(ep){const url=epUrl(ep);const opts=ep.method==='POST'?{method:'POST'}:{};const r=await fw(url,opts);let nc=0;if(r.ok&&r.data)nc=(JSON.stringify(r.data).match(/:null/g)||[]).length;const st=!r.ok?'fail':nc>5?'warn':'ok';S.res[ep.id]={...r,nullCount:nc,status:st};if(ep.id==='market'&&r.data)S.marketData=r.data;if(ep.id==='discovery'&&r.data)S.discoveryData=r.data;addLog(`${st==='ok'?'✅':st==='warn'?'⚠️':'❌'} ${ep.path}${ep.needsSymbol?' ['+S.sym+']':''} → ${r.ms}ms${nc>0?' (null:'+nc+')':''}`,st);return st}
 async function testAll(){S.testing=true;S.prog=0;S.progT=ENDPOINTS.length;S.log=[];render();addLog('🚀 전체 테스트 시작 (심볼: '+S.sym+')');for(let i=0;i<ENDPOINTS.length;i++){S.prog=i+1;render();await testEp(ENDPOINTS[i]);await new Promise(r=>setTimeout(r,80))}addLog(`✅ 완료: ${Object.values(S.res).filter(r=>r.status==='ok').length}/${ENDPOINTS.length} 성공`);S.testing=false;render()}
-async function testFred(){S.testing=true;S.prog=0;S.progT=FRED_SERIES.length;render();addLog('🔬 FRED 시리즈 테스트');for(let i=0;i<FRED_SERIES.length;i++){const sid=FRED_SERIES[i];S.prog=i+1;const r=await fw(`${API}/?series=${sid}`);const v=r.data?.value;const st=r.ok&&v!=null?'ok':r.ok?'warn':'fail';S.fredRes[sid]={...r,value:v,status:st};addLog(`${st==='ok'?'✅':'⚠️'} FRED ${sid} → ${v??'null'} (${r.ms}ms)`,st);render();await new Promise(r=>setTimeout(r,60))}S.testing=false;addLog('✅ FRED 완료');render()}
+async function testFred(){S.testing=true;S.tab='fred';S.prog=0;S.progT=FRED_SERIES.length;S.fredRawDebug=null;render();try{addLog('🔬 FRED 시리즈 테스트');for(let i=0;i<FRED_SERIES.length;i++){const sid=FRED_SERIES[i];S.prog=i+1;const res=await fw(`${API}/?series=${sid}`);
+// 첫 번째 응답 구조 저장 (디버그용)
+if(i===0&&res.data)S.fredRawDebug=res.data;
+// 다중 경로 fallback으로 값 추출
+const d=res.data;
+const v=d?.value??d?.observations?.[0]?.value??d?.[0]?.value??d?.data?.value??(Array.isArray(d)&&d.length?d[0]?.value:undefined)??d?.result?.value??d?.latest_value??d?.val;
+const st=res.ok&&v!=null?'ok':res.ok?'warn':'fail';S.fredRes[sid]={...res,value:v,status:st};addLog(`${st==='ok'?'✅':'⚠️'} FRED ${sid} → ${v??'null'} (${res.ms}ms)`,st);render();await new Promise(resolve=>setTimeout(resolve,60))}addLog('✅ FRED 완료');}finally{S.testing=false;render()}}
 
 async function testSymbol(sym){
   if(!sym)sym=S.sym;S.sym=sym.toUpperCase();S.testing=true;S.symRes={};render();
@@ -611,41 +617,41 @@ function renderCalcWidget(w, useSymData) {
   let symBar = '';
   if (isSymWidget) {
     symBar = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding:6px 8px;background:rgba(249,115,22,.08);border-radius:4px">
-      <span style="color:var(--orange);font-weight:700;font-size:11px">🎯 종목:</span>
+      <span style="color:var(--orange);font-weight:700;font-size:13px">🎯 종목:</span>
       <span style="color:var(--cyan);font-weight:800;font-size:13px">${S.calcSym}</span>
-      <span style="color:var(--dim);font-size:10px">(상단 종목 입력에서 변경)</span>
+      <span style="color:var(--dim);font-size:12px">(상단 종목 입력에서 변경)</span>
     </div>`;
   }
   if (isDiscWidget) {
     const match = S.calcDiscMatch;
     symBar = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding:6px 8px;background:rgba(34,211,238,.06);border-radius:4px;flex-wrap:wrap">
-      <span style="color:var(--cyan);font-weight:700;font-size:11px">🔍 발굴 종목 검색:</span>
-      <input class="sym-input" style="width:70px;font-size:11px;border-color:var(--cyan);color:var(--cyan)" value="${S.calcDiscTicker}" placeholder="NVDA"
+      <span style="color:var(--cyan);font-weight:700;font-size:13px">🔍 발굴 종목 검색:</span>
+      <input class="sym-input" style="width:70px;font-size:13px;border-color:var(--cyan);color:var(--cyan)" value="${S.calcDiscTicker}" placeholder="NVDA"
         onkeydown="if(event.key==='Enter')searchDiscTicker(this.value)" oninput="S.calcDiscTicker=this.value.toUpperCase()">
       <button class="btn btn-sm" style="background:var(--cyan);color:#000;border-color:var(--cyan)" onclick="searchDiscTicker(S.calcDiscTicker)">검색</button>
-      ${match ? `<span class="v-ok" style="font-size:10px">✅ ${match.symbol} 발견 (score: ${match.score}, momentum: ${match.momentum}%)</span>` : S.calcDiscTicker ? `<span class="v-warn" style="font-size:10px">top_20에 없음</span>` : ''}
+      ${match ? `<span class="v-ok" style="font-size:12px">✅ ${match.symbol} 발견 (score: ${match.score}, momentum: ${match.momentum}%)</span>` : S.calcDiscTicker ? `<span class="v-warn" style="font-size:12px">top_20에 없음</span>` : ''}
     </div>`;
   }
 
   return `<div class="field-card" style="border-left:3px solid ${allOk?'var(--green)':okCount>0?'var(--yellow)':'var(--red)'}">
     <div class="field-card-title">
-      <span>${w.icon} <b>${w.name}</b> <span style="color:var(--dim);font-weight:400;font-size:10px">${w.ep.replace(/SYM/g, isSymWidget ? S.calcSym : 'SYM')}</span></span>
-      <span style="font-size:10px;color:${allOk?'var(--green)':'var(--yellow)'}">입력값 ${okCount}/${inputResults.length} OK</span>
+      <span>${w.icon} <b>${w.name}</b> <span style="color:var(--dim);font-weight:400;font-size:12px">${w.ep.replace(/SYM/g, isSymWidget ? S.calcSym : 'SYM')}</span></span>
+      <span style="font-size:12px;color:${allOk?'var(--green)':'var(--yellow)'}">입력값 ${okCount}/${inputResults.length} OK</span>
     </div>
     ${symBar}
-    <div style="background:var(--surface2);padding:8px;border-radius:4px;margin-bottom:8px;font-size:11px">
+    <div style="background:var(--surface2);padding:8px;border-radius:4px;margin-bottom:8px;font-size:13px">
       <div style="color:var(--cyan);font-weight:700;margin-bottom:2px">📐 계산식: ${w.formula}</div>
-      <div style="color:var(--muted);font-size:10px">${w.formulaDetail}</div>
+      <div style="color:var(--muted);font-size:12px">${w.formulaDetail}</div>
     </div>
     <table>
       <tr><th style="width:24px"></th><th>입력 변수</th><th>소스 엔드포인트</th><th>필드 경로</th><th>현재 값</th><th>단위</th></tr>
       ${inputResults.map(r => `<tr>
         <td><span class="led ${r.ok?'led-ok':'led-warn'}"></span></td>
-        <td style="font-weight:600;font-size:10px">${r.name}</td>
-        <td style="color:var(--dim);font-size:10px">${r.src.replace(/SYM/g, isSymWidget ? S.calcSym : '')}</td>
-        <td style="font-size:10px">${r.path}</td>
+        <td style="font-weight:600;font-size:12px">${r.name}</td>
+        <td style="color:var(--dim);font-size:12px">${r.src.replace(/SYM/g, isSymWidget ? S.calcSym : '')}</td>
+        <td style="font-size:12px">${r.path}</td>
         <td>${vd(r.val)}</td>
-        <td style="color:var(--dim);font-size:10px">${r.unit}</td>
+        <td style="color:var(--dim);font-size:12px">${r.unit}</td>
       </tr>`).join('')}
     </table>
     ${isDiscWidget && S.calcDiscMatch ? renderDiscMatchDetail(w) : ''}
@@ -682,7 +688,7 @@ function renderDiscMatchDetail(w) {
     const sc = mom*0.20 + ma50*0.20 + (str-50)*0.20 + vol_sc*0.20 + pe_sc*0.10 + vixSc*0.10;
     calcResult = `<b>score = ${mom.toFixed(2)}×20% + ${ma50.toFixed(2)}×20% + (${str.toFixed(1)}-50)×20% + ${vol_sc.toFixed(1)}×20% + ${pe_sc.toFixed(1)}×10% + ${vixSc.toFixed(1)}(VIX=${vix.toFixed(1)})×10% = <span class="v-num">${sc.toFixed(2)}</span></b>`;
   }
-  return `<div style="margin-top:8px;padding:8px;background:rgba(34,211,238,.06);border:1px solid var(--cyan);border-radius:6px;font-size:11px">
+  return `<div style="margin-top:8px;padding:8px;background:rgba(34,211,238,.06);border:1px solid var(--cyan);border-radius:6px;font-size:13px">
     <div style="color:var(--cyan);font-weight:700;margin-bottom:4px">📊 ${s.symbol} 계산 시뮬레이션</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:4px 12px;margin-bottom:6px">
       <div><span style="color:var(--muted)">momentum:</span> <span class="v-num">${mom.toFixed(2)}%</span></div>
@@ -704,14 +710,14 @@ function rCalc() {
     <!-- 시장 데이터 로드 -->
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="loadCalcData()" ${S.testing?'disabled':''}>📐 시장 데이터 로드</button>
-      <span class="hint" style="color:var(--dim);font-size:10px">/market + /discovery + /analysis + /feargreed + /breakout + /scanner</span>
+      <span class="hint" style="color:var(--dim);font-size:12px">/market + /discovery + /analysis + /feargreed + /breakout + /scanner</span>
     </div>
     <!-- 종목 검색 (분석2,3의 종목 위젯용) -->
     <div class="sym-bar" style="margin-bottom:12px">
       <label style="color:var(--orange)">🎯 종목 계산식 검증</label>
       <input class="sym-input" id="calcSymIn" value="${S.calcSym}" placeholder="AAPL" onkeydown="if(event.key==='Enter')loadCalcSymbol(this.value)">
       <button class="btn btn-primary" onclick="loadCalcSymbol(document.getElementById('calcSymIn').value)" ${S.testing?'disabled':''}>종목 로드 (alpha + fundamentals + catalyst)</button>
-      ${hasSymData ? `<span class="v-ok" style="font-size:10px">✅ ${S.calcSym} 데이터 로드됨</span>` : `<span style="color:var(--dim);font-size:10px">종목 위젯의 실제 값을 확인하려면 티커 입력</span>`}
+      ${hasSymData ? `<span class="v-ok" style="font-size:12px">✅ ${S.calcSym} 데이터 로드됨</span>` : `<span style="color:var(--dim);font-size:12px">종목 위젯의 실제 값을 확인하려면 티커 입력</span>`}
       <div style="display:flex;gap:4px;margin-left:auto;flex-wrap:wrap">${['AAPL','NVDA','TSLA','MSFT','AMD','PLTR','AVGO','DDOG'].map(s=>`<button class="sym-quick" onclick="document.getElementById('calcSymIn').value='${s}';loadCalcSymbol('${s}')">${s}</button>`).join('')}</div>
     </div>
     ${!hasData ? '<div style="text-align:center;padding:30px;color:var(--muted)">먼저 "시장 데이터 로드" 버튼을 눌러주세요</div>' : ''}
@@ -766,7 +772,7 @@ function rEP(){
   ${cats.map(cat=>{const eps=ENDPOINTS.filter(e=>e.cat===cat&&(!S.filter||e.path.includes(S.filter)||e.desc.includes(S.filter)));if(!eps.length)return'';
     return`<div class="fgroup"><div class="fgroup-title">${cat}<span class="cnt">${eps.length}</span></div>
     <table><tr><th style="width:28px"></th><th>엔드포인트</th><th>설명</th><th style="width:55px">응답</th><th style="width:45px">Null</th><th style="width:40px"></th></tr>
-    ${eps.map(ep=>{const r=S.res[ep.id],st=r?r.status:'wait';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600;color:${st==='fail'?'var(--red)':st==='warn'?'var(--yellow)':'var(--text)'}">${ep.method!=='GET'?`<span style="color:var(--orange)">[${ep.method}]</span> `:''}${ep.path}${ep.needsSymbol?` <span style="color:var(--orange);font-size:10px">[${S.sym}]</span>`:''}</td><td style="color:var(--muted)">${ep.desc}</td><td>${r?r.ms+'ms':'-'}</td><td>${r?(r.nullCount>0?`<span class="v-warn">${r.nullCount}</span>`:'<span class="v-ok">0</span>'):'-'}</td><td><button class="btn btn-sm" onclick="testOne('${ep.id}')" ${S.testing?'disabled':''}>▶</button></td></tr>`}).join('')}
+    ${eps.map(ep=>{const r=S.res[ep.id],st=r?r.status:'wait';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600;color:${st==='fail'?'var(--red)':st==='warn'?'var(--yellow)':'var(--text)'}">${ep.method!=='GET'?`<span style="color:var(--orange)">[${ep.method}]</span> `:''}${ep.path}${ep.needsSymbol?` <span style="color:var(--orange);font-size:12px">[${S.sym}]</span>`:''}</td><td style="color:var(--muted)">${ep.desc}</td><td>${r?r.ms+'ms':'-'}</td><td>${r?(r.nullCount>0?`<span class="v-warn">${r.nullCount}</span>`:'<span class="v-ok">0</span>'):'-'}</td><td><button class="btn btn-sm" onclick="testOne('${ep.id}')" ${S.testing?'disabled':''}>▶</button></td></tr>`}).join('')}
     </table></div>`}).join('')}</div>`;
 }
 
@@ -778,11 +784,11 @@ function rSym(){
     ${entries.map(([epId,{result:r,fields,ep}])=>{
       const st=r.ok?'ok':'fail';const okF=fields.filter(f=>f.status==='ok').length;
       return`<div class="field-card">
-        <div class="field-card-title"><span><span class="led ${lc(st)}"></span> ${ep.path}?symbol=${S.sym} <span style="color:var(--dim);font-weight:400;font-size:10px">${ep.desc} | ${r.ms}ms</span></span><span style="font-size:10px;color:${okF===fields.length?'var(--green)':'var(--yellow)'}">${okF}/${fields.length} OK</span></div>
-        ${r.error?`<div style="color:var(--red);font-size:11px;margin-bottom:6px">❌ ${r.error}</div>`:''}
+        <div class="field-card-title"><span><span class="led ${lc(st)}"></span> ${ep.path}?symbol=${S.sym} <span style="color:var(--dim);font-weight:400;font-size:12px">${ep.desc} | ${r.ms}ms</span></span><span style="font-size:12px;color:${okF===fields.length?'var(--green)':'var(--yellow)'}">${okF}/${fields.length} OK</span></div>
+        ${r.error?`<div style="color:var(--red);font-size:13px;margin-bottom:6px">❌ ${r.error}</div>`:''}
         ${fields.length?`<table><tr><th style="width:24px"></th><th>필드 경로</th><th>값</th><th>타입</th></tr>
-        ${fields.map(f=>`<tr><td><span class="led ${lc(f.status)}"></span></td><td style="font-weight:600;font-size:10px">${f.path}</td><td>${vd(f.value)}</td><td style="color:var(--dim);font-size:10px">${f.value!=null?typeof f.value:'-'}</td></tr>`).join('')}</table>`
-        :`<pre style="font-size:9px;color:var(--cyan);max-height:200px;overflow:auto;background:var(--surface2);padding:8px;border-radius:4px">${r.data?JSON.stringify(r.data,null,2):'null'}</pre>`}
+        ${fields.map(f=>`<tr><td><span class="led ${lc(f.status)}"></span></td><td style="font-weight:600;font-size:12px">${f.path}</td><td>${vd(f.value)}</td><td style="color:var(--dim);font-size:12px">${f.value!=null?typeof f.value:'-'}</td></tr>`).join('')}</table>`
+        :`<pre style="font-size:11px;color:var(--cyan);max-height:200px;overflow:auto;background:var(--surface2);padding:8px;border-radius:4px">${r.data?JSON.stringify(r.data,null,2):'null'}</pre>`}
       </div>`}).join('')}
   </div>`;
 }
@@ -794,16 +800,16 @@ function rMkt(){
   ${groups.map(g=>{const fs=MARKET_FIELDS.filter(f=>f.g===g&&(!S.filter||f.p.toLowerCase().includes(S.filter.toLowerCase())));if(!fs.length)return'';const gOk=fs.filter(f=>gv(d,f.p)!=null).length;
     return`<div class="fgroup"><div class="fgroup-title">${g}<span class="cnt">${gOk}/${fs.length} OK</span></div>
     <table><tr><th style="width:24px"></th><th>필드</th><th>값</th><th>타입</th><th>설명</th></tr>
-    ${fs.map(f=>{const v=gv(d,f.p),st=v!=null?'ok':'warn';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-size:10px;font-weight:600">${f.p}</td><td>${vd(v)}</td><td style="color:var(--dim);font-size:10px">${v!=null?typeof v:'-'}</td><td style="color:var(--muted);font-size:10px">${f.d}</td></tr>`}).join('')}
+    ${fs.map(f=>{const v=gv(d,f.p),st=v!=null?'ok':'warn';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-size:12px;font-weight:600">${f.p}</td><td>${vd(v)}</td><td style="color:var(--dim);font-size:12px">${v!=null?typeof v:'-'}</td><td style="color:var(--muted);font-size:12px">${f.d}</td></tr>`}).join('')}
     </table></div>`}).join('')}</div>`;
 }
 
 function rDisc(){
   const d=S.discoveryData;if(!d)return`<div class="panel active"><div style="text-align:center;padding:40px;color:var(--muted)"><button class="btn btn-primary" onclick="testOne('discovery')">▶ /alpha/discovery 호출</button></div></div>`;
   const t20=d.top_20||[];
-  return`<div class="panel active"><div style="margin-bottom:8px;color:var(--muted);font-size:11px">analyzed:${d.analyzed||'-'} | universe:${d.universe_size||'-'} | top_20:${t20.length}</div>
+  return`<div class="panel active"><div style="margin-bottom:8px;color:var(--muted);font-size:13px">analyzed:${d.analyzed||'-'} | universe:${d.universe_size||'-'} | top_20:${t20.length}</div>
   <table><tr><th>#</th>${DISC_FIELDS.map(f=>`<th>${f}</th>`).join('')}<th>상태</th></tr>
-  ${t20.map((s,i)=>{const nulls=DISC_FIELDS.filter(f=>s[f]==null);const st=nulls.length===0?'ok':nulls.length<=2?'warn':'fail';return`<tr><td>${i+1}</td>${DISC_FIELDS.map(f=>`<td>${vd(s[f])}</td>`).join('')}<td><span class="led ${lc(st)}"></span>${nulls.length>0?`<span class="v-warn" style="font-size:10px">null:${nulls.join(',')}</span>`:'<span class="v-ok" style="font-size:10px">OK</span>'}</td></tr>`}).join('')}
+  ${t20.map((s,i)=>{const nulls=DISC_FIELDS.filter(f=>s[f]==null);const st=nulls.length===0?'ok':nulls.length<=2?'warn':'fail';return`<tr><td>${i+1}</td>${DISC_FIELDS.map(f=>`<td>${vd(s[f])}</td>`).join('')}<td><span class="led ${lc(st)}"></span>${nulls.length>0?`<span class="v-warn" style="font-size:12px">null:${nulls.join(',')}</span>`:'<span class="v-ok" style="font-size:12px">OK</span>'}</td></tr>`}).join('')}
   </table></div>`;
 }
 
@@ -812,12 +818,19 @@ function rAnal(){
   const kf={'a-inst':['score','signal','components'],'a-regime':['regime','confidence','signal'],'a-liquid':['score','signal','components'],'a-yield':['spread','inverted','signal'],'a-infl':['pressure','signal','metrics'],'a-credit':['stress_level','signal','spread'],'a-breadth':['score','signal','components'],'a-vol':['vix','regime','confidence'],'a-sector':['all_sectors','rankings'],'a-dollar':['dxy','signal','metrics'],'a-crypto':['score','signal','components'],'a-smart':['signal','regime','confidence'],'a-rank':['ranking','items'],'a-heat':['assets','categories'],'a-real':['policy','signal','metrics'],'a-fed':['policy_stance','signal'],'a-labor':['score','trend','signal'],'a-macro':['score','signal','components'],'cs':['css','grade','breakdown'],'cs-top5':[]};
   return`<div class="panel active"><table><tr><th style="width:28px"></th><th>엔드포인트</th><th>설명</th><th>응답</th><th>핵심필드</th></tr>
   ${eps.map(ep=>{const r=S.res[ep.id],st=r?r.status:'wait';const fields=kf[ep.id]||[];let fc='-';if(r&&r.data){fc=fields.map(f=>{const v=r.data[f],ok=v!=null;return`<span class="${ok?'v-ok':'v-fail'}">${f}:${ok?'✓':'✗'}</span>`}).join(' ')}
-    return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600">${ep.path}${ep.needsSymbol?` <span style="color:var(--orange)">[${S.sym}]</span>`:''}</td><td style="color:var(--muted)">${ep.desc}</td><td>${r?r.ms+'ms':'-'}</td><td style="font-size:10px">${fc}</td></tr>`}).join('')}
+    return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600">${ep.path}${ep.needsSymbol?` <span style="color:var(--orange)">[${S.sym}]</span>`:''}</td><td style="color:var(--muted)">${ep.desc}</td><td>${r?r.ms+'ms':'-'}</td><td style="font-size:12px">${fc}</td></tr>`}).join('')}
   </table></div>`;
 }
 
 function rFredP(){
-  return`<div class="panel active"><button class="btn btn-primary" onclick="testFred()" ${S.testing?'disabled':''}>▶ FRED 전체 (${FRED_SERIES.length}개)</button><span style="color:var(--muted);font-size:10px;margin-left:8px">/?series=ID 개별호출</span>
+  const debugBox=S.fredRawDebug?`<div style="margin-top:8px;padding:10px;background:rgba(34,211,238,.06);border:1px solid var(--cyan);border-radius:6px">
+    <div style="color:var(--cyan);font-weight:700;font-size:13px;margin-bottom:4px">🔍 응답 구조 (WALCL 기준) — 값이 undefined면 아래 키를 확인</div>
+    <pre style="font-size:12px;color:var(--purple);max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all">${JSON.stringify(S.fredRawDebug,null,2)}</pre>
+  </div>`:'';
+  return`<div class="panel active"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <button class="btn btn-primary" onclick="testFred()" ${S.testing?'disabled':''}>▶ FRED 전체 (${FRED_SERIES.length}개)</button>
+  <span style="color:var(--muted);font-size:12px">/?series=ID 개별호출</span></div>
+  ${debugBox}
   <table style="margin-top:8px"><tr><th style="width:28px"></th><th>Series ID</th><th>값</th><th>응답</th><th>설명</th></tr>
   ${FRED_SERIES.map(sid=>{const r=S.fredRes[sid],st=r?r.status:'wait';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600">${sid}</td><td>${r?vd(r.value):'-'}</td><td>${r?r.ms+'ms':'-'}</td><td style="color:var(--muted)">${FRED_DESC[sid]||''}</td></tr>`}).join('')}
   </table></div>`;
@@ -827,7 +840,7 @@ function rRaw(){
   const opts=ENDPOINTS.filter(e=>S.res[e.id]).map(e=>`<option value="${e.id}" ${e.id===S._rawSel?'selected':''}>${e.path}${e.needsSymbol?' ['+S.sym+']':''}</option>`).join('');
   const r=S._rawSel?S.res[S._rawSel]:null;
   return`<div class="panel active"><select class="search" style="width:350px" onchange="S._rawSel=this.value;render()"><option value="">-- 선택 --</option>${opts}</select>
-  ${r&&r.data?`<pre style="background:var(--bg);padding:12px;border-radius:6px;font-size:10px;max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--cyan);margin-top:8px">${JSON.stringify(r.data,null,2)}</pre>`:'<div style="color:var(--muted);padding:20px;text-align:center">데이터 없음</div>'}
+  ${r&&r.data?`<pre style="background:var(--bg);padding:12px;border-radius:6px;font-size:12px;max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--cyan);margin-top:8px">${JSON.stringify(r.data,null,2)}</pre>`:'<div style="color:var(--muted);padding:20px;text-align:center">데이터 없음</div>'}
   </div>`;
 }
 
