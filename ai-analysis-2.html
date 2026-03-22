@@ -140,7 +140,7 @@
         }
 
         .widget {
-            background: white;
+            background: rgba(255,255,255,0.05);
             border-radius: 12px;
             padding: 24px;
             box-shadow: var(--shadow-main);
@@ -168,7 +168,7 @@
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid rgba(255,255,255,0.09);
             padding-bottom: 15px;
         }
 
@@ -1031,8 +1031,8 @@
             margin-top: 15px;
         }
         .top5-card {
-            background: white;
-            border: 1px solid #e2e8f0;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.09);
             border-left: 4px solid var(--primary, #667eea);
             padding: 15px;
             border-radius: 12px;
@@ -1191,7 +1191,7 @@
                             {marketRegime && (
                                 <div style={{
                                     background: 'rgba(102, 126, 234, 0.2)',
-                                    color: '#2d3748',
+                                    color: '#e2e8f0',
                                     padding: '6px 12px',
                                     borderRadius: '4px',
                                     fontSize: '12px',
@@ -1230,7 +1230,7 @@
 
                     {data && !loading && (
                         <>
-                            <div style={{ fontSize: '12px', color: '#2d3748', marginBottom: '12px' }}>
+                            <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>
                                 {data.execution_time_sec ?? '-'}초 소요 ({data.analyzed ?? data.top_20?.length ?? '-'}/{data.universe_size ?? data.top_20?.length ?? '-'})
                             </div>
 
@@ -1522,10 +1522,10 @@
                     {data && !loading && (
                         <>
                             <div style={{ marginBottom: '16px' }}>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#2d3748', marginBottom: '4px' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>
                                     {data.profile?.data?.companyName ?? symbol}
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#2d3748' }}>
+                                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                                     {[data.profile?.data?.sector, data.profile?.data?.industry].filter(Boolean).join(' | ') || '-'}
                                 </div>
                             </div>
@@ -1541,7 +1541,7 @@
                                     <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px' }}>
                                         {verdict.label}
                                     </div>
-                                    <div style={{ fontSize: '12px', color: '#2d3748' }}>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                                         {verdict.reason}
                                     </div>
                                 </div>
@@ -1881,8 +1881,8 @@
                                 )}
 
                                 {/* 스코어링 설명 */}
-                                <div style={{ marginTop: '16px', padding: '14px', background: 'rgba(102, 126, 234, 0.06)', borderRadius: '8px', fontSize: '11px', color: '#718096', lineHeight: 1.7 }}>
-                                    <strong style={{ color: '#2d3748' }}>Breakout Score 산출 로직 (7개 기술적 지표 가중합):</strong><br/>
+                                <div style={{ marginTop: '16px', padding: '14px', background: 'rgba(102, 126, 234, 0.06)', borderRadius: '8px', fontSize: '11px', color: '#94a3b8', lineHeight: 1.7 }}>
+                                    <strong style={{ color: '#e2e8f0' }}>Breakout Score 산출 로직 (7개 기술적 지표 가중합):</strong><br/>
                                     52W 고점 근접도 20% | 거래량 급증 20% | 단기 모멘텀 15% | 50MA 돌파 15% | 골든크로스 10% | 52W 범위 위치 10% | 매수 압력 10%<br/>
                                     <span style={{ color: '#94a3b8' }}>데이터 소스: FMP API /stable/quote (실시간) | 대상: S&P500 시총 상위 80종목</span>
                                 </div>
@@ -1935,9 +1935,9 @@
                             <CatalystSurgeWidget />
                         </div>
 
-                        <div style={{ textAlign: 'center', color: '#2d3748', fontSize: '12px', marginTop: '40px', paddingBottom: '40px' }}>
+                        <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '12px', marginTop: '40px', paddingBottom: '40px' }}>
                             <p>데이터 소스: FMP API, FRED, Alpha Discovery Engine</p>
-                            <p style={{ marginTop: '8px', fontSize: '11px', color: '#2d3748' }}>모든 데이터는 API 응답에서 동적으로 추출됩니다</p>
+                            <p style={{ marginTop: '8px', fontSize: '11px', color: '#94a3b8' }}>모든 데이터는 API 응답에서 동적으로 추출됩니다</p>
                         </div>
                     </div>
                 </div>
