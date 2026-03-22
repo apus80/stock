@@ -3030,7 +3030,10 @@ export default {
         const priceAvg50 = q.priceAvg50 || price
         const priceAvg200 = q.priceAvg200 || price
         const changePct = q.changesPercentage || q.changePercentage || 0
-        const pe = q.pe || 0
+        const eps = q.eps || 0
+        const pe = (q.pe && q.pe > 0) ? q.pe
+                 : (price > 0 && eps > 0) ? price / eps
+                 : 0
         const marketCap = q.marketCap || 0
         const open = q.open || price
         const prevClose = q.previousClose || price
@@ -3059,20 +3062,32 @@ export default {
         const yearPosition = yearRange > 0 ? (price - yearLow) / yearRange * 100 : 50
         const rangeScore = Math.max(0, Math.min(100, yearPosition))
 
-        // 7. 일중 매수 압력 (10%) - 장중 저가 대비 현재가 위치
+        // 7. 일중 매수 압력 (4%) - 장중 저가 대비 현재가 위치
         const dayRange = dayHigh - dayLow
         const dayPosition = dayRange > 0 ? (price - dayLow) / dayRange * 100 : 50
         const pressureScore = Math.max(0, Math.min(100, dayPosition))
 
-        // 종합 Breakout Score (가중합)
+        // 8. 밸류에이션 (PER 기반) (10%) - 낮은 PER = 저평가 = 상승 여력
+        // pe=0이면 데이터 없음 → 중립(50점), pe>0이면 구간별 점수
+        let peScore = 50  // 기본값: 데이터 없음
+        if (pe > 0) {
+          if (pe < 15)       peScore = 90  // 저평가
+          else if (pe < 20)  peScore = 75  // 적정
+          else if (pe < 30)  peScore = 55  // 약간 고평가
+          else if (pe < 40)  peScore = 35  // 고평가
+          else               peScore = 15  // 매우 고평가
+        }
+
+        // 종합 Breakout Score (가중합) — 8개 요소 합계 100%
         const totalScore =
           highScore * 0.20 +
           volScore * 0.20 +
           momScore * 0.15 +
           ma50Score * 0.15 +
-          goldenScore * 0.10 +
-          rangeScore * 0.10 +
-          pressureScore * 0.10
+          goldenScore * 0.08 +
+          rangeScore * 0.08 +
+          pressureScore * 0.04 +
+          peScore * 0.10
 
         // 시그널 분류
         let signal, signalLabel
@@ -3086,6 +3101,7 @@ export default {
           name: q.name || q.symbol,
           price: parseFloat(price.toFixed(2)),
           change: parseFloat(changePct.toFixed(2)),
+          pe: pe > 0 ? parseFloat(pe.toFixed(1)) : null,
           breakoutScore: parseFloat(totalScore.toFixed(1)),
           signal,
           signalLabel,
@@ -3105,7 +3121,7 @@ export default {
             priceAvg200: parseFloat(priceAvg200.toFixed(2)),
             volume,
             avgVolume,
-            pe: pe ? parseFloat(pe.toFixed(1)) : null,
+            pe: pe > 0 ? parseFloat(pe.toFixed(1)) : null,
             marketCap
           },
           components: {
@@ -3115,7 +3131,8 @@ export default {
             ma50Score: parseFloat(ma50Score.toFixed(1)),
             goldenScore: parseFloat(goldenScore.toFixed(1)),
             rangeScore: parseFloat(rangeScore.toFixed(1)),
-            pressureScore: parseFloat(pressureScore.toFixed(1))
+            pressureScore: parseFloat(pressureScore.toFixed(1)),
+            peScore: parseFloat(peScore.toFixed(1))
           }
         }
       }

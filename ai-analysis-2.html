@@ -1693,6 +1693,7 @@
                                             <th>등락</th>
                                             <th style={{ minWidth: '140px' }}>Breakout Score</th>
                                             <th>시그널</th>
+                                            <th title="주가수익비율 (낮을수록 저평가) — 브레이크아웃 스코어의 10% 반영">PER</th>
                                             <th title="현재가 ÷ 52주최고가 × 100 (%) — 100%에 가까울수록 신고가 근처">52W고점근접%</th>
                                             <th title="현재 거래량 ÷ 평균 거래량 (x배) — 1.5x 이상이면 거래량 급증">거래량비(x)</th>
                                             <th title="현재가가 50일 이동평균선 위에 있으면 ▲, 아래면 ▼">50MA위치</th>
@@ -1750,6 +1751,17 @@
                                                     </span>
                                                 </td>
                                                 <td style={{ fontSize: '12px' }}>
+                                                    <span style={{
+                                                        color: !stock.pe ? '#64748b'
+                                                             : stock.pe < 15 ? '#10b981'
+                                                             : stock.pe < 25 ? '#f59e0b'
+                                                             : '#ef4444',
+                                                        fontWeight: stock.pe && stock.pe < 20 ? 600 : 400
+                                                    }}>
+                                                        {stock.pe ? stock.pe.toFixed(1) : '-'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ fontSize: '12px' }}>
                                                     <span style={{ color: stock.signals?.highProximity >= 90 ? '#10b981' : '#64748b' }}>
                                                         {stock.signals?.highProximity?.toFixed(0) || '-'}%
                                                     </span>
@@ -1795,6 +1807,7 @@
                                                 { key: 'goldenScore', label: '골든크로스', sub: selected.signals?.goldenCross ? 'Active' : 'N/A' },
                                                 { key: 'rangeScore', label: '52W 위치', sub: `${selected.signals?.yearRangePosition?.toFixed(0)}%` },
                                                 { key: 'pressureScore', label: '매수 압력', sub: `${selected.signals?.buyPressure?.toFixed(0)}%` },
+                                                { key: 'peScore', label: 'PER 밸류', sub: selected.pe ? `PER ${selected.pe.toFixed(1)}` : 'N/A' },
                                             ].map(comp => (
                                                 <div className="breakout-comp-card" key={comp.key}>
                                                     <div className="breakout-comp-label">{comp.label}</div>
