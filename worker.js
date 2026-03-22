@@ -5,38 +5,74 @@
    - /metricz-all 엔드포인트에서 KV 캐시를 읽어 스코어링
 ============================================================ */
 
-// ── S&P500 대표 유니버스 (180종목, 섹터 분산) ──────────────────
+// ── S&P500 전종목 (~500종목, 2025/2026 기준) ──────────────────────────────
+// FMP API /stable/sp500-constituent 실패 시 사용하는 Fallback (전체 S&P500 커버)
 const SP500_UNIVERSE = [
-  // 메가캡·테크 (30)
-  'AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','AVGO','ORCL','ADBE',
-  'AMD','QCOM','TXN','INTC','AMAT','LRCX','MU','CRM','NOW','INTU',
-  'PANW','PLTR','DDOG','ZS','TTD','SNOW','MRVL','KLAC','FTNT','ON',
-  // 헬스케어 (20)
+  // 정보기술 (Information Technology ~66)
+  'AAPL','MSFT','NVDA','AVGO','ORCL','CRM','ADBE','AMD','QCOM','TXN',
+  'AMAT','LRCX','MU','NOW','INTU','PANW','CSCO','IBM','KLAC','PLTR',
+  'MRVL','NXPI','FTNT','MCHP','TER','ON','MPWR','ANSS','CDNS','DDOG',
+  'ZS','STX','WDC','NTAP','JNPR','GLW','SWKS','HPQ','HPE','CDW',
+  'KEYS','IT','GDDY','ZBRA','AKAM','PTC','GEN','EPAM','ANET','FSLR',
+  'ENPH','DELL','CTSH','ACN','SNPS','VRSN','PAYC','WDAY','FICO','NTNX',
+  'FFIV','TRMB','VEEV','MANH','INTC','TTD',
+  // 커뮤니케이션 서비스 (Communication Services ~22)
+  'META','GOOGL','GOOG','NFLX','DIS','CMCSA','T','VZ','TMUS','CHTR',
+  'WBD','EA','TTWO','OMC','IPG','FOXA','FOX','LYV','MTCH','PARA',
+  'NWSA','NWS',
+  // 헬스케어 (Health Care ~62)
   'LLY','UNH','JNJ','MRK','ABBV','TMO','ABT','DHR','BMY','AMGN',
   'GILD','ISRG','VRTX','REGN','BSX','CI','CVS','ELV','HCA','BIIB',
-  // 금융 (20)
+  'ZBH','DXCM','ALGN','HOLX','PODD','CRL','WST','MTD','A','IQV',
+  'SYK','EW','RMD','BDX','BAX','MCK','EHC','VTRS','MOH','CNC',
+  'HUM','HSIC','DGX','LH','INCY','BIO','WAT','MRNA','PFE','MDT',
+  'STE','GEHC','RVTY','TFX','SOLV','TECH','PKI','COO','IDXX','PDCO',
+  'CTLT','EXAS',
+  // 금융 (Financials ~68)
   'JPM','BAC','WFC','GS','MS','C','AXP','BLK','V','MA',
   'SCHW','CME','COF','USB','PNC','TFC','CB','MMC','AON','ICE',
-  // 소비재 임의 (20)
-  'HD','MCD','NKE','SBUX','LOW','BKNG','TJX','ROST','ULTA','DHI',
-  'LEN','YUM','DRI','ABNB','MGM','HLT','MAR','RCL','GM','F',
-  // 소비재 필수 (15)
+  'SPGI','MCO','MET','PRU','AFL','AIG','ALL','PGR','TRV','HIG',
+  'WRB','CINF','FITB','HBAN','KEY','CMA','RF','MTB','CFG','EG',
+  'ACGL','TROW','BEN','IVZ','STT','NTRS','FDS','AMP','RJF','LNC',
+  'MKTX','CG','APO','BX','KKR','ARES','FHN','FNF','FAF','WTW',
+  'FLT','WEX','BR','CBOE','NDAQ','EFX','SYF','ALLY',
+  // 임의소비재 (Consumer Discretionary ~55)
+  'AMZN','TSLA','HD','MCD','NKE','SBUX','LOW','BKNG','TJX','ROST',
+  'ULTA','DHI','LEN','TOL','PHM','NVR','YUM','DRI','ABNB','MGM',
+  'HLT','MAR','RCL','CCL','NCLH','GM','F','ETSY','EBAY','VFC',
+  'PVH','TPR','RL','GRMN','EXPE','DG','DLTR','BBWI','POOL','BWA',
+  'AZO','ORLY','APTV','LVS','WYNN','DPZ','CMG','LULU','MTN','GPC',
+  'KMX','LKQ','CPRI','HAS','MAT',
+  // 필수소비재 (Consumer Staples ~36)
   'WMT','COST','PG','KO','PEP','MO','PM','CL','KMB','GIS',
-  'MDLZ','STZ','HRL','SYY','TSN',
-  // 에너지 (15)
+  'MDLZ','STZ','HRL','SYY','TSN','CAG','CPB','MKC','K','SJM',
+  'CHD','EL','BG','INGR','TAP','ADM','LW','REYN','POST','CLX',
+  'HSY','MNST','KDP','KVUE','COTY','THS',
+  // 에너지 (Energy ~23)
   'XOM','CVX','COP','EOG','SLB','MPC','VLO','PSX','OXY','DVN',
-  'HAL','BKR','HES','MRO','FANG',
-  // 산업재 (20)
+  'HAL','BKR','HES','MRO','FANG','APA','LNG','EQT','AR','KMI',
+  'WMB','OKE','TRGP',
+  // 산업재 (Industrials ~78)
   'CAT','DE','RTX','BA','HON','GE','LMT','NOC','GD','UPS',
   'FDX','CSX','NSC','UNP','WM','RSG','EMR','ETN','PH','ROK',
-  // 소재 (10)
+  'AME','XYL','EXPD','JBHT','CHRW','KNX','ODFL','GWW','FAST','SWK',
+  'SNA','PNR','RRX','GNRC','TT','JCI','IR','CARR','OTIS','WCN',
+  'FTV','NDSN','LDOS','SAIC','CACI','VRT','AXON','HUBB','ALLE','MAS',
+  'AOS','LII','WAB','GEV','VRSK','DAL','UAL','AAL','LUV','ALK',
+  'TDG','HWM','HII','TXT','AGCO','PCAR','TREX','BCO','RXO','XPO',
+  'SAIA','L','MSM','RBC','PWR','ITW','MHK','JBLU',
+  // 소재 (Materials ~29)
   'LIN','APD','NEM','FCX','NUE','STLD','DOW','DD','PPG','SHW',
-  // 유틸리티 (10)
-  'NEE','DUK','SO','D','AEP','SRE','XEL','WEC','ES','ETR',
-  // 부동산 REIT (10)
+  'ECL','EMN','CE','CF','MOS','IFF','IEX','BLL','AMCR','IP',
+  'AVY','PKG','SEE','WRK','ATI','RS','CMC','MLM','VMC',
+  // 부동산 (Real Estate ~31)
   'PLD','AMT','CCI','EQIX','SPG','O','WELL','AVB','EQR','DLR',
-  // 커뮤니케이션 (10)
-  'NFLX','DIS','CMCSA','T','VZ','TMUS','CHTR','WBD','EA','TTWO',
+  'ARE','VTR','PSA','EXR','CUBE','MAA','UDR','CPT','BXP','VICI',
+  'INVH','SBA','SBAC','CBRE','IRM','STAG','FR','RHP','HST','NNN','REG',
+  // 유틸리티 (Utilities ~28)
+  'NEE','DUK','SO','D','AEP','SRE','XEL','WEC','ES','ETR',
+  'PCG','EXC','PPL','CMS','AEE','AWK','CNP','NI','LNT','CEG',
+  'VST','EIX','FE','NRG','EVRG','DTE','PEG','AES',
 ]
 
 const METRICZ_KV_KEY    = 'metricz_universe_cache'
@@ -84,30 +120,37 @@ async function getSP500Symbols(kv, apiKey) {
       if (cached) {
         const parsed = JSON.parse(cached)
         const ageMs = Date.now() - new Date(parsed.timestamp).getTime()
-        if (ageMs < 24 * 3600 * 1000 && parsed.symbols?.length > 400) {
+        if (ageMs < 24 * 3600 * 1000 && parsed.symbols?.length > 100) {
           console.log(`✅ S&P500 KV 캐시 히트: ${parsed.symbols.length}종목`)
           return parsed.symbols
         }
       }
     } catch(e) { console.warn('⚠️ S&P500 KV 읽기 실패:', e.message) }
   }
-  // 2. FMP API에서 S&P500 현재 구성 가져오기
+  // 2-a. FMP stable endpoint 시도
   try {
     const data = await fmpGet(`https://financialmodelingprep.com/stable/sp500-constituent?apikey=${apiKey}`)
-    if (data && Array.isArray(data) && data.length > 400) {
+    if (data && Array.isArray(data) && data.length > 100) {
       const symbols = data.map(s => s.symbol).filter(Boolean)
-      console.log(`✅ FMP S&P500 구성 로드: ${symbols.length}종목`)
-      if (kv) {
-        await kv.put(SP500_KV_KEY, JSON.stringify({
-          timestamp: new Date().toISOString(),
-          symbols
-        }), { expirationTtl: 24 * 3600 })
-      }
+      console.log(`✅ FMP stable S&P500: ${symbols.length}종목`)
+      if (kv) await kv.put(SP500_KV_KEY, JSON.stringify({ timestamp: new Date().toISOString(), symbols }), { expirationTtl: 24 * 3600 })
       return symbols
     }
-  } catch(e) { console.warn('⚠️ S&P500 구성 API 실패, fallback 사용:', e.message) }
-  // 3. Fallback: 기존 180종목 hardcoded list
-  console.warn('⚠️ S&P500 구성 fallback: 기존 180종목 사용')
+    console.warn('⚠️ stable/sp500-constituent 실패 응답:', JSON.stringify(data)?.slice(0, 200))
+  } catch(e) { console.warn('⚠️ stable/sp500-constituent 예외:', e.message) }
+  // 2-b. FMP v3 endpoint 시도 (alternative)
+  try {
+    const data = await fmpGet(`https://financialmodelingprep.com/api/v3/sp500_constituent?apikey=${apiKey}`)
+    if (data && Array.isArray(data) && data.length > 100) {
+      const symbols = data.map(s => s.symbol).filter(Boolean)
+      console.log(`✅ FMP v3 S&P500: ${symbols.length}종목`)
+      if (kv) await kv.put(SP500_KV_KEY, JSON.stringify({ timestamp: new Date().toISOString(), symbols }), { expirationTtl: 24 * 3600 })
+      return symbols
+    }
+    console.warn('⚠️ v3/sp500_constituent 실패 응답:', JSON.stringify(data)?.slice(0, 200))
+  } catch(e) { console.warn('⚠️ v3/sp500_constituent 예외:', e.message) }
+  // 3. Fallback: 확장 hardcoded ~500종목 (FMP API 미지원 플랜 또는 장애 시)
+  console.warn(`⚠️ S&P500 API 실패 → hardcoded ${SP500_UNIVERSE.length}종목 사용`)
   return SP500_UNIVERSE
 }
 
@@ -4472,39 +4515,44 @@ export default {
             }
           }
 
-          // FMP API 직접 호출 테스트 (force=1 파라미터로 강제)
-          let apiStatus = null
+          // FMP API 직접 호출 테스트 (항상 실행 - 진단용)
           const force = url.searchParams.get('force') === '1'
+          let stableStatus = null, v3Status = null
           if (force || !kvStatus?.hit) {
-            const data = await fmpGet(`https://financialmodelingprep.com/stable/sp500-constituent?apikey=${apiKey}`)
-            if (data && Array.isArray(data) && data.length > 0) {
-              apiStatus = {
-                ok: true,
-                count: data.length,
-                first_5: data.slice(0, 5).map(s => s.symbol),
-                last_5: data.slice(-5).map(s => s.symbol),
-                sample_fields: Object.keys(data[0] || {})
-              }
+            // stable endpoint 테스트
+            const d1 = await fmpGet(`https://financialmodelingprep.com/stable/sp500-constituent?apikey=${apiKey}`)
+            if (d1 && Array.isArray(d1) && d1.length > 0) {
+              stableStatus = { ok: true, count: d1.length, first_5: d1.slice(0,5).map(s=>s.symbol) }
             } else {
-              apiStatus = { ok: false, response: data, message: '응답이 비어있거나 형식 오류 (Starter 플랜 미지원 가능성)' }
+              stableStatus = { ok: false, raw: JSON.stringify(d1)?.slice(0,300) }
+            }
+            // v3 endpoint 테스트
+            const d2 = await fmpGet(`https://financialmodelingprep.com/api/v3/sp500_constituent?apikey=${apiKey}`)
+            if (d2 && Array.isArray(d2) && d2.length > 0) {
+              v3Status = { ok: true, count: d2.length, first_5: d2.slice(0,5).map(s=>s.symbol) }
+            } else {
+              v3Status = { ok: false, raw: JSON.stringify(d2)?.slice(0,300) }
             }
           }
 
           // getSP500Symbols() 최종 결과
           const symbols = await getSP500Symbols(kv, apiKey)
           const elapsed = ((Date.now() - t0) / 1000).toFixed(2)
+          const usingHardcoded = symbols.length === SP500_UNIVERSE.length
 
           response = {
             ok: true,
             elapsed_sec: parseFloat(elapsed),
             universe_count: symbols.length,
+            source: usingHardcoded ? 'hardcoded_fallback' : kvStatus?.hit ? 'kv_cache' : 'fmp_api',
             first_10: symbols.slice(0, 10),
             last_10: symbols.slice(-10),
             kv_cache: kvStatus,
-            fmp_api: apiStatus || { skipped: true, hint: '?force=1 파라미터로 강제 API 호출 가능' },
-            note: symbols.length < 400
-              ? '⚠️ Fallback 180종목 사용중 (FMP API 실패 또는 KV 캐시 없음)'
-              : `✅ S&P500 전종목 ${symbols.length}개 로드 성공`
+            fmp_stable: stableStatus || { skipped: true, hint: 'KV 캐시 히트로 API 호출 skip. ?force=1 로 강제 테스트 가능' },
+            fmp_v3: v3Status || { skipped: true },
+            note: usingHardcoded
+              ? `⚠️ FMP API 미지원(Starter 플랜 제한) → hardcoded ${SP500_UNIVERSE.length}종목 사용중`
+              : `✅ S&P500 ${symbols.length}개 로드 성공`
           }
         } catch(e) {
           response = { error: e.message, endpoint: pathname }
