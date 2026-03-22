@@ -101,61 +101,62 @@ async function fmpGet(url) {
 }
 
 // 종목 전체 지표 fetch (Starter 플랜 기준)
-// ✅ /stable/ratios        실제 필드명: priceToEarningsRatio (NOT priceEarningsRatio!), returnOnEquity, returnOnAssets 등
-// ✅ /stable/financial-growth  실제 필드명: revenueGrowth, epsGrowth (대문자 G), operatingIncomeGrowth 등
-// ✅ /stable/quote              실제 필드명: pe, beta, name 등 (PE fallback용)
-// ✅ /stable/financial-growth   (Starter 플랜 - revenueGrowth/epsgrowth 반환)
-// ❌ /stable/ratios-ttm         → Starter에서도 핵심 필드 미반환, /stable/ratios 사용
+// ✅ /stable/ratios            PB, PS, currentRatio, margins, dividendYield
+// ✅ /stable/key-metrics-ttm   ROE, ROA, payoutRatio, debtEquity, EV/EBITDA, FCF yield (Starter 플랜 필드)
+// ✅ /stable/financial-growth  revenueGrowth, epsGrowth, operatingIncomeGrowth
+// ✅ /stable/quote             pe, beta, name (fallback용)
 async function fetchAllMetricz(sym, apiKey) {
   const BASE = 'https://financialmodelingprep.com/stable'
-  // 3 엔드포인트 × 8종목/wave × 300ms 딜레이 → rate limit 완화
-  const [rd, gd, qd] = await Promise.allSettled([
-    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),          // 수익성+밸류+배당+건전성 (Starter: 전체 필드)
-    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`), // 성장성 (Starter 플랜)
-    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),            // beta, name, pe fallback
+  // 4 엔드포인트 × 6종목/wave × 300ms 딜레이 → 6×4=24 calls/wave (rate limit 허용 범위)
+  const [rd, kd, gd, qd] = await Promise.allSettled([
+    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),               // PB/PS/margins/currentRatio/dividendYield
+    fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),      // ROE/ROA/payoutRatio/debtEquity/EV/FCF (Starter)
+    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`),     // 성장성
+    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),                // pe, beta, name fallback
   ])
 
   // 배열 응답 → 최신 데이터(index 0)
   const r = rd.status === 'fulfilled' ? (rd.value ? (Array.isArray(rd.value) ? rd.value[0] : rd.value) : null) : null
+  const k = kd.status === 'fulfilled' ? (kd.value ? (Array.isArray(kd.value) ? kd.value[0] : kd.value) : null) : null
   const g = gd.status === 'fulfilled' ? (gd.value ? (Array.isArray(gd.value) ? gd.value[0] : gd.value) : null) : null
   const q = qd.status === 'fulfilled' ? (qd.value ? (Array.isArray(qd.value) ? qd.value[0] : qd.value) : null) : null
 
-  // Starter 플랜: ratios에서 PE/ROE/ROA/payoutRatio/debtEquity 모두 반환됨
-  // ✅ 실제 FMP 필드명 (getRatios 함수 line ~1507 에서 확인됨):
-  //    PE → priceToEarningsRatio (priceEarningsRatio 아님!)
-  //    PB → priceToBookRatio + pb (fallback)
-  //    PS → priceToSalesRatio
+  // PE: ratios.priceToEarningsRatio 우선, key-metrics-ttm → quote.pe 순 fallback
   const pbPrimary = r?.priceToBookRatio   || r?.pb || r?.priceToBookRatioTTM
   const psPrimary = r?.priceToSalesRatio  || r?.ps || r?.priceToSalesRatioTTM
-  // PE: ratios.priceToEarningsRatio 우선 (Starter 확인), ratios.pe → quote.pe 순 fallback
   const pePrimary = (r?.priceToEarningsRatio && r.priceToEarningsRatio > 0) ? r.priceToEarningsRatio
                   : (r?.pe && r.pe > 0) ? r.pe
+                  : (k?.peRatioTTM && k.peRatioTTM > 0) ? k.peRatioTTM
                   : (q?.pe && q.pe > 0) ? q.pe
                   : null
 
   return {
     symbol: sym,
     name:   q?.name ?? q?.companyName ?? sym,
-    // 수익성 (/stable/ratios - Starter 플랜 전체 필드 반환)
-    returnOnEquityTTM:            r?.returnOnEquity            ?? r?.returnOnEquityTTM            ?? null,
-    operatingProfitMarginTTM:     r?.operatingProfitMargin     ?? r?.operatingProfitMarginTTM     ?? null,
-    returnOnAssetsTTM:            r?.returnOnAssets            ?? r?.returnOnAssetsTTM            ?? null,
-    netProfitMarginTTM:           r?.netProfitMargin           ?? r?.netProfitMarginTTM           ?? null,
-    // 밸류에이션 (PE: priceToEarningsRatio가 실제 FMP 필드명, priceEarningsRatio는 오탈자)
+    // 수익성 — ROE/ROA는 /stable/key-metrics-ttm 전용 (ratios에 없음)
+    returnOnEquityTTM:            k?.returnOnEquityTTM            ?? k?.returnOnEquity            ?? null,
+    operatingProfitMarginTTM:     r?.operatingProfitMargin        ?? r?.operatingProfitMarginTTM  ?? null,
+    returnOnAssetsTTM:            k?.returnOnAssetsTTM            ?? k?.returnOnAssets            ?? null,
+    netProfitMarginTTM:           r?.netProfitMargin              ?? r?.netProfitMarginTTM        ?? null,
+    // 밸류에이션
     peRatioTTM:                   pePrimary,
     priceToBookRatioTTM:          (pbPrimary && pbPrimary > 0) ? pbPrimary : null,
     priceToSalesRatioTTM:         (psPrimary && psPrimary > 0) ? psPrimary : null,
-    // 배당·건전성 (Starter 플랜: payoutRatio, debtEquityRatio 포함)
-    // divYield는 getRatios에서 확인된 대안 필드명
-    dividendYieldTTM:             r?.dividendYield ?? r?.divYield ?? r?.dividendYieldTTM ?? null,
-    payoutRatioTTM:               r?.payoutRatio   ?? r?.payoutRatioTTM   ?? null,
-    debtEquityRatioTTM:           (() => { const v = r?.debtEquityRatio ?? r?.debtToEquityRatio ?? r?.debtEquityRatioTTM; return (v && v > 0) ? v : null })(),
+    // 배당·건전성 — payoutRatio/debtEquity는 key-metrics-ttm 우선
+    dividendYieldTTM:             r?.dividendYield ?? r?.divYield ?? k?.dividendYieldTTM ?? null,
+    payoutRatioTTM:               k?.payoutRatioTTM   ?? k?.payoutRatio   ?? r?.payoutRatio   ?? null,
+    debtEquityRatioTTM:           (() => {
+                                    const v = k?.debtToEquityTTM ?? k?.debtEquityRatioTTM ?? k?.debtToEquity
+                                           ?? r?.debtEquityRatio ?? r?.debtToEquityRatio
+                                    return (v != null && v !== 0) ? v : null
+                                  })(),
     currentRatioTTM:              r?.currentRatio  ?? r?.currentRatioTTM  ?? null,
-    // EV/EBITDA·FCF (enterpriseValueMultiple, freeCashFlowYield는 /stable/ratios 반환 필드)
-    enterpriseValueOverEBITDATTM: r?.enterpriseValueMultiple ?? r?.evToEbitda ?? null,
-    freeCashFlowYieldTTM:         r?.freeCashFlowYield ?? r?.freeCashFlowYieldTTM ?? null,
-    // 성장성 (/stable/financial-growth - Starter 플랜)
-    // epsGrowth (대문자 G)는 FMP 확인 필드명, epsgrowth는 구버전 호환
+    // EV/EBITDA·FCF — key-metrics-ttm 우선 (ratios에서는 미반환)
+    enterpriseValueOverEBITDATTM: k?.enterpriseValueOverEBITDATTM ?? k?.evToEbitdaTTM ?? k?.evToEbitda
+                                  ?? r?.enterpriseValueMultiple ?? null,
+    freeCashFlowYieldTTM:         k?.freeCashFlowYieldTTM ?? k?.freeCashFlowYield
+                                  ?? r?.freeCashFlowYield ?? null,
+    // 성장성 (/stable/financial-growth)
     revenueGrowth:                g?.revenueGrowth         ?? null,
     epsgrowth:                    g?.epsGrowth ?? g?.epsgrowth ?? g?.earningsGrowth ?? null,
     operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? g?.operatingCashFlowGrowth ?? null,
@@ -175,12 +176,12 @@ async function refreshMetriczCache(env) {
     return
   }
 
-  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 8종목(24 calls), 300ms 딜레이`)
+  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 6종목(24 calls), 300ms 딜레이`)
   const startTime = Date.now()
 
-  // 8종목/wave × 3 endpoints = 24 FMP 호출/wave + 300ms 딜레이 (Starter 플랜)
-  // discovery(10종목×1call=10/wave) + metricz(8종목×3calls=24/wave) = 34 동시 호출 → 레이트리밋 허용 범위
-  const results = await batchProcess(SP500_UNIVERSE, 8, sym => fetchAllMetricz(sym, apiKey), 300)
+  // 6종목/wave × 4 endpoints = 24 FMP 호출/wave + 300ms 딜레이 (Starter 플랜)
+  // discovery(10종목×1call=10/wave) + metricz(6종목×4calls=24/wave) = 34 동시 호출 → 레이트리밋 허용 범위
+  const results = await batchProcess(SP500_UNIVERSE, 6, sym => fetchAllMetricz(sym, apiKey), 300)
 
   const stocks = {}
   let successCount = 0
