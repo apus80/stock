@@ -42,6 +42,7 @@ const SP500_UNIVERSE = [
 const METRICZ_KV_KEY    = 'metricz_universe_cache'
 const DISCOVERY_KV_KEY  = 'alpha_discovery_cache'
 const BREAKOUT_KV_KEY   = 'breakout_discovery_cache'
+const SP500_KV_KEY      = 'sp500_constituent_cache'   // 24h TTL — S&P500 구성 종목 캐시
 
 // 낮을수록 좋은 지표 (퍼센타일 역산)
 const LOWER_IS_BETTER = new Set([
@@ -72,6 +73,44 @@ const METRIC_SOURCE_MAP = {
 }
 
 // 배치 헬퍼: items를 batchSize 단위로 나눠 순차 실행 (wave당 80 calls 제한)
+// ── S&P500 전종목 유니버스 (FMP API + KV 캐시) ────────────────────────────
+// 출처: FMP /stable/sp500-constituent (Starter 플랜 포함 Reference Data)
+// KV TTL: 24h (S&P500 구성 변경 빈도 낮음, 월/분기 단위)
+async function getSP500Symbols(kv, apiKey) {
+  // 1. KV 캐시 확인 (24h TTL)
+  if (kv) {
+    try {
+      const cached = await kv.get(SP500_KV_KEY)
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        const ageMs = Date.now() - new Date(parsed.timestamp).getTime()
+        if (ageMs < 24 * 3600 * 1000 && parsed.symbols?.length > 400) {
+          console.log(`✅ S&P500 KV 캐시 히트: ${parsed.symbols.length}종목`)
+          return parsed.symbols
+        }
+      }
+    } catch(e) { console.warn('⚠️ S&P500 KV 읽기 실패:', e.message) }
+  }
+  // 2. FMP API에서 S&P500 현재 구성 가져오기
+  try {
+    const data = await fmpGet(`https://financialmodelingprep.com/stable/sp500-constituent?apikey=${apiKey}`)
+    if (data && Array.isArray(data) && data.length > 400) {
+      const symbols = data.map(s => s.symbol).filter(Boolean)
+      console.log(`✅ FMP S&P500 구성 로드: ${symbols.length}종목`)
+      if (kv) {
+        await kv.put(SP500_KV_KEY, JSON.stringify({
+          timestamp: new Date().toISOString(),
+          symbols
+        }), { expirationTtl: 24 * 3600 })
+      }
+      return symbols
+    }
+  } catch(e) { console.warn('⚠️ S&P500 구성 API 실패, fallback 사용:', e.message) }
+  // 3. Fallback: 기존 180종목 hardcoded list
+  console.warn('⚠️ S&P500 구성 fallback: 기존 180종목 사용')
+  return SP500_UNIVERSE
+}
+
 async function batchProcess(items, batchSize, fn, delayMs = 0) {
   const results = []
   for (let i = 0; i < items.length; i += batchSize) {
@@ -83,6 +122,140 @@ async function batchProcess(items, batchSize, fn, delayMs = 0) {
     }
   }
   return results
+}
+
+// ── Breakout 점수 계산 (순수 함수 — 클로저 불필요, module-level) ─────────────
+function calculateBreakoutScore(q) {
+  if (!q || !q.price) return null
+  const price = q.price
+  const yearHigh = q.yearHigh || price
+  const yearLow = q.yearLow || price * 0.7
+  const volume = q.volume || 0
+  const avgVolume = q.avgVolume || volume || 1
+  const dayLow = q.dayLow || price
+  const dayHigh = q.dayHigh || price
+  const priceAvg50 = q.priceAvg50 || price
+  const priceAvg200 = q.priceAvg200 || price
+  const changePct = q.changesPercentage || q.changePercentage || 0
+  const eps = q.eps || 0
+  const pe = (q.pe && q.pe > 0) ? q.pe : (price > 0 && eps > 0) ? price / eps : 0
+  const marketCap = q.marketCap || 0
+  const highPct = yearHigh > 0 ? (price / yearHigh) * 100 : 50
+  const highScore = Math.max(0, Math.min(100, (highPct - 70) * (100 / 30)))
+  const volRatio = avgVolume > 0 ? volume / avgVolume : 1
+  const volScore = Math.max(0, Math.min(100, (volRatio - 0.5) * 100))
+  const momScore = Math.max(0, Math.min(100, (changePct + 5) * 10))
+  const ma50Ratio = priceAvg50 > 0 ? price / priceAvg50 : 1
+  const ma50Score = Math.max(0, Math.min(100, (ma50Ratio - 0.9) * 500))
+  const goldenRatio = priceAvg200 > 0 ? priceAvg50 / priceAvg200 : 1
+  const goldenScore = Math.max(0, Math.min(100, (goldenRatio - 0.95) * 1000))
+  const yearRange = yearHigh - yearLow
+  const yearPosition = yearRange > 0 ? (price - yearLow) / yearRange * 100 : 50
+  const rangeScore = Math.max(0, Math.min(100, yearPosition))
+  const dayRange = dayHigh - dayLow
+  const dayPosition = dayRange > 0 ? (price - dayLow) / dayRange * 100 : 50
+  const pressureScore = Math.max(0, Math.min(100, dayPosition))
+  let peScore = 50
+  if (pe > 0) {
+    if (pe < 15)       peScore = 90
+    else if (pe < 20)  peScore = 75
+    else if (pe < 30)  peScore = 55
+    else if (pe < 40)  peScore = 35
+    else               peScore = 15
+  }
+  const totalScore = highScore*0.20 + volScore*0.20 + momScore*0.15 + ma50Score*0.15
+                   + goldenScore*0.08 + rangeScore*0.08 + pressureScore*0.04 + peScore*0.10
+  let signal, signalLabel
+  if (totalScore >= 75)      { signal = 'BREAKOUT';     signalLabel = '돌파 임박' }
+  else if (totalScore >= 60) { signal = 'ACCUMULATION'; signalLabel = '매집 단계' }
+  else if (totalScore >= 45) { signal = 'NEUTRAL';      signalLabel = '중립' }
+  else                       { signal = 'WEAKNESS';     signalLabel = '약세' }
+  return {
+    symbol: q.symbol || q.name, name: q.name || q.symbol,
+    price: parseFloat(price.toFixed(2)), change: parseFloat(changePct.toFixed(2)),
+    pe: pe > 0 ? parseFloat(pe.toFixed(1)) : null,
+    breakoutScore: parseFloat(totalScore.toFixed(1)), signal, signalLabel,
+    signals: {
+      highProximity: parseFloat(highPct.toFixed(1)), volumeRatio: parseFloat(volRatio.toFixed(2)),
+      momentum: parseFloat(changePct.toFixed(2)), ma50Above: price > priceAvg50,
+      goldenCross: priceAvg50 > priceAvg200, yearRangePosition: parseFloat(yearPosition.toFixed(1)),
+      buyPressure: parseFloat(dayPosition.toFixed(1))
+    },
+    technicals: {
+      yearHigh: parseFloat(yearHigh.toFixed(2)), yearLow: parseFloat(yearLow.toFixed(2)),
+      priceAvg50: parseFloat(priceAvg50.toFixed(2)), priceAvg200: parseFloat(priceAvg200.toFixed(2)),
+      volume, avgVolume, pe: pe > 0 ? parseFloat(pe.toFixed(1)) : null, marketCap
+    },
+    components: {
+      highScore: parseFloat(highScore.toFixed(1)), volScore: parseFloat(volScore.toFixed(1)),
+      momScore: parseFloat(momScore.toFixed(1)), ma50Score: parseFloat(ma50Score.toFixed(1)),
+      goldenScore: parseFloat(goldenScore.toFixed(1)), rangeScore: parseFloat(rangeScore.toFixed(1)),
+      pressureScore: parseFloat(pressureScore.toFixed(1)), peScore: parseFloat(peScore.toFixed(1))
+    }
+  }
+}
+
+// ── Breakout 캐시 갱신 (module-level — cron + 실시간 fallback 공용) ──────────
+// 출처: FMP /stable/quote (Starter 플랜) + METRICZ_KV PE 주입
+async function refreshBreakoutCache(env) {
+  const kv = env.METRICZ_KV
+  const apiKey = env.FMP_API_KEY
+  if (!apiKey || !kv) return null
+
+  // S&P500 전종목 유니버스 (FMP constituent API → KV 캐시)
+  const stocks = await getSP500Symbols(kv, apiKey)
+
+  // METRICZ_KV에서 PE 로드 (ratios + key-metrics-ttm 기반, 신뢰도 높음)
+  let metriczPE = {}
+  try {
+    const metriczRaw = await kv.get(METRICZ_KV_KEY)
+    if (metriczRaw) {
+      const metriczData = JSON.parse(metriczRaw).stocks || {}
+      for (const [sym, data] of Object.entries(metriczData)) {
+        if (data.peRatioTTM && data.peRatioTTM > 0) metriczPE[sym] = data.peRatioTTM
+      }
+      console.log(`✅ Breakout: metricz PE ${Object.keys(metriczPE).length}개 로드`)
+    }
+  } catch(e) { console.warn('⚠️ Breakout metricz PE 로드 실패:', e.message) }
+
+  const results = []
+  const startTime = Date.now()
+  const WAVE = 15  // 15개씩 병렬, 300ms 딜레이 → Starter 300calls/min 준수
+
+  for (let i = 0; i < stocks.length; i += WAVE) {
+    const wave = stocks.slice(i, i + WAVE)
+    const waveResults = await Promise.allSettled(wave.map(async sym => {
+      try {
+        const r = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${apiKey}`)
+        if (!r.ok) return null
+        const j = await r.json()
+        const q = Array.isArray(j) ? j[0] : j
+        if (!q?.price) return null
+        if (metriczPE[sym]) q.pe = metriczPE[sym]  // METRICZ_KV PE 주입
+        return calculateBreakoutScore(q)
+      } catch { return null }
+    }))
+    for (const r of waveResults) {
+      if (r.status === 'fulfilled' && r.value) results.push(r.value)
+    }
+    if (i + WAVE < stocks.length) await new Promise(r => setTimeout(r, 300))
+  }
+
+  results.sort((a, b) => b.breakoutScore - a.breakoutScore)
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+  const breakoutResult = {
+    timestamp: new Date().toISOString(),
+    dataType: 'breakout_discovery',
+    universe_size: stocks.length,
+    analyzed: results.length,
+    execution_time_sec: parseFloat(elapsed),
+    top_15: results.slice(0, 15)
+  }
+  try {
+    await kv.put(BREAKOUT_KV_KEY, JSON.stringify(breakoutResult), { expirationTtl: 8 * 3600 })
+    console.log(`✅ Breakout KV 갱신: ${results.length}/${stocks.length}종목, ${elapsed}s`)
+  } catch(e) { console.warn('⚠️ Breakout KV 쓰기 실패:', e.message) }
+  return breakoutResult
 }
 
 // 단일 종목 FMP fetch 헬퍼 (타임아웃 9초)
@@ -179,18 +352,20 @@ async function refreshMetriczCache(env) {
     return
   }
 
-  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 6종목(24 calls), 300ms 딜레이`)
+  // S&P500 전종목 유니버스 로드 (FMP constituent API → KV 캐시)
+  const universe = await getSP500Symbols(kv, apiKey)
+  console.log(`🔄 metricz 캐시 갱신 시작: ${universe.length}개 종목, wave당 6종목(24 calls), 1000ms 딜레이 (Starter 300calls/min)`)
   const startTime = Date.now()
 
-  // 6종목/wave × 4 endpoints = 24 FMP 호출/wave + 300ms 딜레이 (Starter 플랜)
-  // discovery(10종목×1call=10/wave) + metricz(6종목×4calls=24/wave) = 34 동시 호출 → 레이트리밋 허용 범위
-  const results = await batchProcess(SP500_UNIVERSE, 6, sym => fetchAllMetricz(sym, apiKey), 300)
+  // 6종목/wave × 4 endpoints = 24 FMP 호출/wave
+  // Starter 300calls/min: 24calls / 5calls/sec = 4.8s 필요 → 1000ms 딜레이 (병렬 실행 ~500ms + 딜레이 1000ms ≈ 1.5s/wave)
+  const results = await batchProcess(universe, 6, sym => fetchAllMetricz(sym, apiKey), 1000)
 
   const stocks = {}
   let successCount = 0
   results.forEach((r, i) => {
     if (r.status === 'fulfilled' && r.value) {
-      stocks[SP500_UNIVERSE[i]] = r.value
+      stocks[universe[i]] = r.value
       successCount++
     }
   })
@@ -204,7 +379,7 @@ async function refreshMetriczCache(env) {
   // KV 저장: TTL 8시간 (6시간 cron + 2시간 여유)
   await kv.put(METRICZ_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
-  console.log(`✅ metricz 캐시 갱신 완료: ${successCount}/${SP500_UNIVERSE.length}종목, ${elapsed}s 소요`)
+  console.log(`✅ metricz 캐시 갱신 완료: ${successCount}/${universe.length}종목, ${elapsed}s 소요`)
 }
 
 // ── Discovery 캐시 갱신 (cron용, SP500 상위 80종목 × 4 API = 320 calls) ──
@@ -216,9 +391,10 @@ async function refreshDiscoveryCache(env) {
     return
   }
 
-  // 출처: FMP API /stable/quote (무료 플랜 확인)
+  // 출처: FMP API /stable/quote (Starter 플랜 확인)
   const BASE    = 'https://financialmodelingprep.com/stable'
-  const SYMBOLS = SP500_UNIVERSE   // 전체 180종목 분석
+  // S&P500 전종목 유니버스 (FMP constituent API → KV 캐시)
+  const SYMBOLS = await getSP500Symbols(kv, apiKey)
 
   // metricz KV에서 PE 데이터 로드 (quote pe가 null/0일 때 fallback)
   let metriczStocks = {}
@@ -408,8 +584,9 @@ function csGetGrade(css) {
 }
 
 async function csGetTop80(env) {
-  // 전체 SP500_UNIVERSE(180종목) 사용 — Stage1 병렬 처리로 timeout 방지
-  return SP500_UNIVERSE.map(s => ({ symbol: s }))
+  // S&P500 전종목 사용 (Starter 플랜 + KV 캐시) — Stage1 병렬 처리로 timeout 방지
+  const symbols = await getSP500Symbols(env.METRICZ_KV, env.FMP_API_KEY)
+  return symbols.map(s => ({ symbol: s }))
 }
 
 async function csGetTechnical(symbol, env) {
@@ -2902,8 +3079,8 @@ export default {
       // S&P 500 TOP 90 UNIVERSE
       // =============================
       async function getHedgeFundUniverse() {
-        // 📍 SP500_UNIVERSE(180종목)으로 통일 — discovery/breakout/scanner 모두 동일 유니버스 사용
-        return SP500_UNIVERSE
+        // S&P500 전종목 (FMP constituent API → KV 캐시 → fallback: 180종목)
+        return getSP500Symbols(env.METRICZ_KV, FMP)
       }
 
       // =============================
@@ -3017,129 +3194,11 @@ export default {
         }
       }
 
-      function calculateBreakoutScore(q) {
-        if (!q || !q.price) return null
-
-        const price = q.price
-        const yearHigh = q.yearHigh || price
-        const yearLow = q.yearLow || price * 0.7
-        const volume = q.volume || 0
-        const avgVolume = q.avgVolume || volume || 1
-        const dayLow = q.dayLow || price
-        const dayHigh = q.dayHigh || price
-        const priceAvg50 = q.priceAvg50 || price
-        const priceAvg200 = q.priceAvg200 || price
-        const changePct = q.changesPercentage || q.changePercentage || 0
-        const eps = q.eps || 0
-        const pe = (q.pe && q.pe > 0) ? q.pe
-                 : (price > 0 && eps > 0) ? price / eps
-                 : 0
-        const marketCap = q.marketCap || 0
-        const open = q.open || price
-        const prevClose = q.previousClose || price
-
-        // 1. 52주 고점 근접도 (20%) - 고점 대비 90%+ = 돌파 직전
-        const highPct = yearHigh > 0 ? (price / yearHigh) * 100 : 50
-        const highScore = Math.max(0, Math.min(100, (highPct - 70) * (100 / 30)))
-
-        // 2. 거래량 급증 비율 (20%) - 평균 대비 1.5배 이상이면 기관 매집
-        const volRatio = avgVolume > 0 ? volume / avgVolume : 1
-        const volScore = Math.max(0, Math.min(100, (volRatio - 0.5) * 100))
-
-        // 3. 단기 모멘텀 (15%) - 일일 변화율 기반
-        const momScore = Math.max(0, Math.min(100, (changePct + 5) * 10))
-
-        // 4. 50일 이평선 돌파 (15%) - 가격 > 50MA = 강세 추세
-        const ma50Ratio = priceAvg50 > 0 ? price / priceAvg50 : 1
-        const ma50Score = Math.max(0, Math.min(100, (ma50Ratio - 0.9) * 500))
-
-        // 5. 골든크로스 시그널 (10%) - 50MA > 200MA = 장기 강세 전환
-        const goldenRatio = priceAvg200 > 0 ? priceAvg50 / priceAvg200 : 1
-        const goldenScore = Math.max(0, Math.min(100, (goldenRatio - 0.95) * 1000))
-
-        // 6. 52주 범위 내 위치 (10%) - 연간 범위 상위권
-        const yearRange = yearHigh - yearLow
-        const yearPosition = yearRange > 0 ? (price - yearLow) / yearRange * 100 : 50
-        const rangeScore = Math.max(0, Math.min(100, yearPosition))
-
-        // 7. 일중 매수 압력 (4%) - 장중 저가 대비 현재가 위치
-        const dayRange = dayHigh - dayLow
-        const dayPosition = dayRange > 0 ? (price - dayLow) / dayRange * 100 : 50
-        const pressureScore = Math.max(0, Math.min(100, dayPosition))
-
-        // 8. 밸류에이션 (PER 기반) (10%) - 낮은 PER = 저평가 = 상승 여력
-        // pe=0이면 데이터 없음 → 중립(50점), pe>0이면 구간별 점수
-        let peScore = 50  // 기본값: 데이터 없음
-        if (pe > 0) {
-          if (pe < 15)       peScore = 90  // 저평가
-          else if (pe < 20)  peScore = 75  // 적정
-          else if (pe < 30)  peScore = 55  // 약간 고평가
-          else if (pe < 40)  peScore = 35  // 고평가
-          else               peScore = 15  // 매우 고평가
-        }
-
-        // 종합 Breakout Score (가중합) — 8개 요소 합계 100%
-        const totalScore =
-          highScore * 0.20 +
-          volScore * 0.20 +
-          momScore * 0.15 +
-          ma50Score * 0.15 +
-          goldenScore * 0.08 +
-          rangeScore * 0.08 +
-          pressureScore * 0.04 +
-          peScore * 0.10
-
-        // 시그널 분류
-        let signal, signalLabel
-        if (totalScore >= 75) { signal = 'BREAKOUT'; signalLabel = '돌파 임박' }
-        else if (totalScore >= 60) { signal = 'ACCUMULATION'; signalLabel = '매집 단계' }
-        else if (totalScore >= 45) { signal = 'NEUTRAL'; signalLabel = '중립' }
-        else { signal = 'WEAKNESS'; signalLabel = '약세' }
-
-        return {
-          symbol: q.symbol || q.name,
-          name: q.name || q.symbol,
-          price: parseFloat(price.toFixed(2)),
-          change: parseFloat(changePct.toFixed(2)),
-          pe: pe > 0 ? parseFloat(pe.toFixed(1)) : null,
-          breakoutScore: parseFloat(totalScore.toFixed(1)),
-          signal,
-          signalLabel,
-          signals: {
-            highProximity: parseFloat(highPct.toFixed(1)),
-            volumeRatio: parseFloat(volRatio.toFixed(2)),
-            momentum: parseFloat(changePct.toFixed(2)),
-            ma50Above: price > priceAvg50,
-            goldenCross: priceAvg50 > priceAvg200,
-            yearRangePosition: parseFloat(yearPosition.toFixed(1)),
-            buyPressure: parseFloat(dayPosition.toFixed(1))
-          },
-          technicals: {
-            yearHigh: parseFloat(yearHigh.toFixed(2)),
-            yearLow: parseFloat(yearLow.toFixed(2)),
-            priceAvg50: parseFloat(priceAvg50.toFixed(2)),
-            priceAvg200: parseFloat(priceAvg200.toFixed(2)),
-            volume,
-            avgVolume,
-            pe: pe > 0 ? parseFloat(pe.toFixed(1)) : null,
-            marketCap
-          },
-          components: {
-            highScore: parseFloat(highScore.toFixed(1)),
-            volScore: parseFloat(volScore.toFixed(1)),
-            momScore: parseFloat(momScore.toFixed(1)),
-            ma50Score: parseFloat(ma50Score.toFixed(1)),
-            goldenScore: parseFloat(goldenScore.toFixed(1)),
-            rangeScore: parseFloat(rangeScore.toFixed(1)),
-            pressureScore: parseFloat(pressureScore.toFixed(1)),
-            peScore: parseFloat(peScore.toFixed(1))
-          }
-        }
-      }
+      // calculateBreakoutScore → module-level 함수 사용 (클로저 범위에서도 접근 가능)
 
       async function runBreakoutDiscovery() {
         try {
-          // 1️⃣ KV 캐시 확인 (8h TTL) — 캐시 히트 시 즉시 반환
+          // KV 캐시 확인 (8h TTL) — 히트 시 즉시 반환
           const kv = env.METRICZ_KV
           if (kv) {
             try {
@@ -3154,76 +3213,11 @@ export default {
               }
             } catch(e) { console.warn('⚠️ Breakout KV 읽기 실패:', e.message) }
           }
-
-          // 2️⃣ METRICZ_KV에서 PE 데이터 로드 (ratios + key-metrics-ttm 기반 신뢰도 높은 PE)
-          let metriczPE = {}  // { AAPL: 28.5, NVDA: 45.2, ... }
-          if (kv) {
-            try {
-              const metriczRaw = await kv.get(METRICZ_KV_KEY)
-              if (metriczRaw) {
-                const metriczData = JSON.parse(metriczRaw).stocks || {}
-                for (const [sym, data] of Object.entries(metriczData)) {
-                  if (data.peRatioTTM && data.peRatioTTM > 0) metriczPE[sym] = data.peRatioTTM
-                }
-                console.log(`✅ Breakout: METRICZ_KV에서 ${Object.keys(metriczPE).length}개 PE 로드`)
-              }
-            } catch(e) { console.warn('⚠️ Breakout: METRICZ_KV PE 로드 실패:', e.message) }
-          }
-
-          // 3️⃣ 실시간 분석 — SP500_UNIVERSE 전체 180종목 (병렬 배치 처리)
-          const universe = await getHedgeFundUniverse()  // = SP500_UNIVERSE(180)
-          const stocks = universe  // 전체 180종목
-          const results = []
-          const startTime = Date.now()
-          const WAVE = 15  // 15개씩 병렬 → 타임아웃 방지
-
-          for (let i = 0; i < stocks.length; i += WAVE) {
-            const wave = stocks.slice(i, i + WAVE)
-            const waveResults = await Promise.allSettled(
-              wave.map(sym => getFullQuote(sym).then(q => {
-                if (!q) return null
-                // METRICZ_KV의 PE를 quote에 주입 (ratios/key-metrics 기반 → quote.pe보다 신뢰도 높음)
-                if (metriczPE[sym]) q.pe = metriczPE[sym]
-                return calculateBreakoutScore(q)
-              }))
-            )
-            for (const r of waveResults) {
-              if (r.status === 'fulfilled' && r.value) results.push(r.value)
-            }
-            if (i + WAVE < stocks.length) await new Promise(r => setTimeout(r, 300))
-          }
-
-          // Breakout Score 기준 내림차순 정렬
-          results.sort((a, b) => b.breakoutScore - a.breakoutScore)
-
-          const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
-
-          const breakoutResult = {
-            timestamp: new Date().toISOString(),
-            dataType: 'breakout_discovery',
-            universe_size: stocks.length,
-            analyzed: results.length,
-            execution_time_sec: parseFloat(elapsedTime),
-            top_15: results.slice(0, 15)
-          }
-
-          // 4️⃣ KV에 결과 저장 (8h TTL) — 다음 요청 즉시 반환
-          if (kv) {
-            try {
-              await kv.put(BREAKOUT_KV_KEY, JSON.stringify(breakoutResult), { expirationTtl: 8 * 3600 })
-              console.log(`✅ Breakout KV 캐시 갱신: ${results.length}종목`)
-            } catch(e) { console.warn('⚠️ Breakout KV 쓰기 실패:', e.message) }
-          }
-
-          return breakoutResult
+          // 캐시 만료/없음: module-level refreshBreakoutCache로 갱신
+          return await refreshBreakoutCache(env)
         } catch (e) {
           console.error(`❌ runBreakoutDiscovery:`, e.message)
-          return {
-            timestamp: new Date().toISOString(),
-            dataType: 'breakout_discovery',
-            error: e.message,
-            top_15: []
-          }
+          return { timestamp: new Date().toISOString(), dataType: 'breakout_discovery', error: e.message, top_15: [] }
         }
       }
 
@@ -3508,8 +3502,8 @@ export default {
       async function runAlphaScanner() {
         try {
           const startTime = Date.now()
-          const universe = await getHedgeFundUniverse()  // = SP500_UNIVERSE(180)
-          const stocks = universe  // 전체 180종목 스크리닝 (Step1 quote만, deep은 top20)
+          const universe = await getHedgeFundUniverse()  // S&P500 전종목 (FMP constituent API)
+          const stocks = universe  // 전체 종목 스크리닝 (Step1 quote만, deep은 top20)
 
           // Step 1: Macro data (1 call, shared across all stocks)
           let macroData = null
@@ -4778,10 +4772,11 @@ export default {
 
   // ── Cron 핸들러: 6시간마다 metricz 유니버스 캐시 갱신 ──────────
   async scheduled(event, env, ctx) {
-    // ⚠️ 순차 실행 필수: metricz 먼저 → discovery가 최신 PE 데이터를 metricz KV에서 읽도록
+    // ⚠️ 순차 실행 필수: metricz 먼저 → discovery/breakout이 최신 PE 데이터를 metricz KV에서 읽도록
     ctx.waitUntil((async () => {
-      await refreshMetriczCache(env)
-      await refreshDiscoveryCache(env)
+      await refreshMetriczCache(env)    // 1st: S&P500 전종목 ratios/key-metrics-ttm (PE 포함)
+      await refreshDiscoveryCache(env)  // 2nd: Alpha Discovery (metricz PE 활용)
+      await refreshBreakoutCache(env)   // 3rd: Breakout Radar (metricz PE 활용, S&P500 전종목)
     })())
   }
 }
