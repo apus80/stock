@@ -390,11 +390,23 @@ async function csGetTechnical(symbol, env) {
                     && q.price > (q.priceAvg50 || 0)
     const rsi = 50 // 중립 기본값 (RSI 계산 불가)
     let score = 0
-    if (q.price > (q.priceAvg50 || 0)) score += 5
-    if (q.price > (q.priceAvg200 || 0)) score += 5
+    const ma50 = q.priceAvg50 || 0
+    const ma200 = q.priceAvg200 || 0
+    if (q.price > ma50) score += 5
+    else if (ma50 > 0 && q.price >= ma50 * 0.95) score += 2  // MA50 5%내
+    if (q.price > ma200) score += 5
+    else if (ma200 > 0 && q.price >= ma200 * 0.93) score += 2  // MA200 7%내
     if (volRatio > 2) score += 6
-    if ((q.changePercentage || 0) > 1) score += 5   // fix: changesPercentage → changePercentage
+    else if (volRatio > 1.5) score += 3
+    const chgPct = q.changePercentage || 0
+    if (chgPct > 1) score += 5
+    else if (chgPct > 0) score += 2
+    else if (chgPct > -1) score += 1  // 소폭 하락도 부분점수
     if (isBreakout) score += 10
+    // 52주 고점 근접 (yearHigh 필드 활용)
+    const y52h = q.yearHigh || 0
+    if (y52h > 0 && q.price >= y52h * 0.85) score += 5
+    else if (y52h > 0 && q.price >= y52h * 0.75) score += 2
     return { rsi, atr_pct: 2, volumeRatio: volRatio, isBreakout, total: Math.min(score, 50) }
   }
 
@@ -429,15 +441,31 @@ async function csGetTechnical(symbol, env) {
     bbWidth < bbAvg * 0.8
 
   let score = 0
+  // MA 위치 (하락장: 부분 점수)
   if (closes[last] > ema20[last]) score += 5
+  else if (closes[last] > ema50[last]) score += 2   // EMA20 아래지만 EMA50 위: 부분점수
   if (closes[last] > ema50[last]) score += 5
-  if (rsi >= 45 && rsi <= 65) score += 6
+  else if (closes[last] > ema50[last] * 0.93) score += 2 // EMA50 7%내: 지지선 근접
+  // RSI: 30~75 범위로 확대 (하락장 RSI<45도 부분점수)
+  if (rsi >= 45 && rsi <= 65) score += 6   // 최적 구간
+  else if (rsi >= 30 && rsi < 45) score += 3  // 과매도 → 반등 기대
+  else if (rsi > 65 && rsi <= 75) score += 3  // 강한 모멘텀
+  // MACD
   if (macd > 0) score += 5
+  else if (macd > -(closes[last] * 0.002)) score += 2  // MACD 0 근접 (전환 임박)
+  // BB 수축 (변동성 압축 후 폭발 기대)
   if (bbWidth < bbAvg * 0.8) score += 4
+  // 거래량 급증
   if (volNow > volAvg * 2) score += 6
+  else if (volNow > volAvg * 1.5) score += 3
+  // ATR (변동성)
   if (atrPct > 2) score += 3
+  else if (atrPct > 1.5) score += 1
+  // 돌파 신호
   if (isBreakout) score += 10
+  // 52주/60일 고점 근접
   if (closes[last] >= high60 * 0.9) score += 5
+  else if (closes[last] >= high60 * 0.8) score += 2
 
   return { rsi, atr_pct: atrPct, volumeRatio: volNow / volAvg, isBreakout, total: Math.min(score, 50) }
 }
@@ -4423,22 +4451,22 @@ export default {
           const universe = await csGetTop80(env)
           const safeUniverse = Array.isArray(universe) ? universe : []
           const stage1 = []
-          // Stage 1: 기술적 점수 10 이상인 종목만 진행 (isBreakout 하드게이트 제거)
+          // Stage 1: 기술적 점수 8 이상인 종목만 진행 (tech 결과 보관 → Stage2 재사용)
           for (const stock of safeUniverse) {
             try {
               const tech = await csGetTechnical(stock.symbol, env)
-              if ((tech.total || 0) < 10) continue
-              stage1.push({ symbol: stock.symbol, quickScore: tech.total })
+              if ((tech.total || 0) < 8) continue
+              stage1.push({ symbol: stock.symbol, quickScore: tech.total, tech }) // tech 저장
             } catch (e) {}
           }
           const shortlist = stage1
             .sort((a, b) => b.quickScore - a.quickScore)
             .slice(0, 20)
           const stage2 = []
-          // Stage 2: 필터 통과 + CSS 점수 계산
+          // Stage 2: Stage1 tech 재사용 (더블콜 방지 → 레이트리밋/캐시 문제 해결)
           for (const stock of shortlist) {
             try {
-              const technical = await csGetTechnical(stock.symbol, env)
+              const technical = stock.tech  // Stage1에서 저장한 결과 재사용
               const smartMoney = await csGetSmartMoney(stock.symbol, technical, env)
               const catalyst = await csGetCatalyst(stock.symbol, env)
               if (!csApplyFilters({ tech: technical, catalyst })) continue
