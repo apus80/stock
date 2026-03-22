@@ -164,8 +164,9 @@
             grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
             padding: 12px;
-            background: #f8f9fa;
+            background: rgba(255, 255, 255, 0.06);
             border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .data-item {
@@ -175,7 +176,7 @@
 
         .data-label {
             font-size: 11px;
-            color: var(--text-muted);
+            color: #94a3b8;
             font-weight: 600;
             text-transform: uppercase;
             margin-bottom: 4px;
@@ -184,7 +185,7 @@
         .data-value {
             font-size: 16px;
             font-weight: 700;
-            color: var(--text-main);
+            color: #e2e8f0;
             word-break: break-word;
         }
 
@@ -251,13 +252,14 @@
         }
 
         .info-box {
-            background: #eff6ff;
+            background: rgba(129, 140, 248, 0.1);
             border-left: 4px solid var(--primary);
             padding: 12px;
             border-radius: 8px;
             margin-top: 16px;
             font-size: 12px;
             line-height: 1.5;
+            color: var(--text-main, #e2e8f0);
         }
 
         .footer {
@@ -832,7 +834,7 @@
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:rgba(16,185,129,0.12);">'
                                 + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">당일상승률</th><th style="padding:4px 6px; text-align:right;">MA50추세</th>'
                                 + '</tr></thead><tbody>';
                             scored4.forEach((s, i) => {
@@ -840,7 +842,7 @@
                                 const scC = scColor(s.score);
                                 const momC = (s.momentum||0) >= 0 ? '#10b981' : '#ef4444';
                                 const maC  = (s.ma50trend||0) >= 0 ? '#10b981' : '#ef4444';
-                                const bg = i%2===0 ? '' : 'background:#f0fdf4;';
+                                const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
@@ -849,7 +851,7 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                 <strong>🚀 단기 모멘텀 전략</strong> = 당일상승률×60% + MA50추세×40% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
@@ -864,13 +866,13 @@
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:rgba(16,185,129,0.12);">'
                                 + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th><th style="padding:4px 6px; text-align:right;">당일상승률</th>'
                                 + '</tr></thead><tbody>';
                             scored5.forEach((s, i) => {
                                 const sc = Math.round(s.score);
                                 const scC = scColor(s.score);
-                                const bg = i%2===0 ? '' : 'background:#f0fdf4;';
+                                const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
@@ -880,7 +882,7 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                 <strong>📈 중기 추세 전략</strong> = MA50추세×50% + (52주강도-50)×30% + 당일상승률×20% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
@@ -895,13 +897,13 @@
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0fdf4;">'
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:rgba(16,185,129,0.12);">'
                                 + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">거래량급증</th><th style="padding:4px 6px; text-align:right;">당일상승률</th><th style="padding:4px 6px; text-align:right;">MA50추세</th>'
                                 + '</tr></thead><tbody>';
                             scored6.forEach((s, i) => {
                                 const sc = Math.round(s.score);
                                 const scC = scColor(s.score);
-                                const bg = i%2===0 ? '' : 'background:#f0fdf4;';
+                                const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
@@ -911,7 +913,7 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                 <strong>📊 거래량 급증 전략</strong> = 거래량급증(cap±100%)×50% + 당일상승률×30% + MA50추세×20% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
@@ -927,13 +929,13 @@
                                 return { ...s, pe_sc, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#fffbeb;">'
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:rgba(245,158,11,0.12);">'
                                 + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">PER</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored7.forEach((s, i) => {
                                 const sc = Math.round(s.score);
                                 const scC = scColor(s.score);
-                                const bg = i%2===0 ? '' : 'background:#fffbeb;';
+                                const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
@@ -943,7 +945,7 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                 <strong>💰 저PER 추세 전략</strong> = 저PER점수(250/PE, max25)×40% + MA50추세×35% + (52주강도-50)×25% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
@@ -963,13 +965,13 @@
                                 return { ...s, techScore, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f0f9ff;">'
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:rgba(59,130,246,0.12);">'
                                 + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">기술점수</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored8.forEach((s, i) => {
                                 const sc = Math.round(s.score);
                                 const scC = scColor(s.score);
-                                const bg = i%2===0 ? '' : 'background:#f0f9ff;';
+                                const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
@@ -979,7 +981,7 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                 <strong>🌊 VIX 리스크 조정 전략</strong> = 기술점수 × VIX계수 | VIX: ${vix8.toFixed(1)} → 계수: ${vixAdj} | 분석: ${(data.all_stocks||data.top_20||[]).length}종목<br>
                                 기술점수 = 당일상승률×40% + MA50추세×35% + (52주강도-50)×25%
                             </div>`;
@@ -1008,13 +1010,13 @@
                                 return { ...s, techBase, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#f5f3ff;">'
+                            html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:rgba(129,140,248,0.12);">'
                                 + '<th style="padding:4px 6px; text-align:left;">종목</th><th style="padding:4px 6px; text-align:right;">총점수</th><th style="padding:4px 6px; text-align:right;">기술기반</th><th style="padding:4px 6px; text-align:right;">MA50추세</th><th style="padding:4px 6px; text-align:right;">52주강도</th>'
                                 + '</tr></thead><tbody>';
                             scored9.forEach((s, i) => {
                                 const sc = Math.round(s.score);
                                 const scC = scColor(s.score);
-                                const bg = i%2===0 ? '' : 'background:#f5f3ff;';
+                                const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
@@ -1024,7 +1026,7 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                 <strong>💧 유동성 장세 수혜</strong> = 기술기반 × 유동성계수(${liquidFactor}) × 리스크계수(${riskFactor})<br>
                                 유동성계수: Fed잔액/M2/RRP → 지수${liquidIdx.toFixed(0)}/100 | VIX: ${vix9.toFixed(1)} → 리스크계수 ${riskFactor}
                             </div>`;
@@ -1052,13 +1054,13 @@
                                 return { ...s, pe_sc10, vol_sc10, vixNorm10, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
 
-                            html = '<table style="width:100%; font-size:11px; border-collapse:collapse;"><thead><tr style="background:#fff7ed;">'
+                            html = '<table style="width:100%; font-size:11px; border-collapse:collapse;"><thead><tr style="background:rgba(251,146,60,0.12);">'
                                 + '<th style="padding:4px 5px; text-align:left;">종목</th><th style="padding:4px 5px; text-align:right;">총점수</th><th style="padding:4px 5px; text-align:right;">당일상승률</th><th style="padding:4px 5px; text-align:right;">MA50추세</th><th style="padding:4px 5px; text-align:right;">52주강도</th><th style="padding:4px 5px; text-align:right;">거래량급증</th><th style="padding:4px 5px; text-align:right;">PER</th>'
                                 + '</tr></thead><tbody>';
                             scored10.forEach((s, i) => {
                                 const sc = Math.round(s.score);
                                 const scC = scColor(s.score);
-                                const bg = i%2===0 ? '' : 'background:#fff7ed;';
+                                const bg = i%2===0 ? '' : 'background:rgba(255,255,255,0.04);';
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 5px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 5px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
@@ -1070,7 +1072,7 @@
                                 </tr>`;
                             });
                             html += '</tbody></table>';
-                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                            html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                 <strong>🚀 통합 발굴 엔진</strong> = 당일상승률×20% + MA50추세×20% + 52주강도×20% + 거래량급증×20% + PER점수×10% + VIX점수×10%<br>
                                 VIX: ${vix10.toFixed(1)} → VIX점수: ${Math.round(vixNorm10)} | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
@@ -1096,7 +1098,7 @@
                             {
                                 const top10 = scannerData.top_20.slice(0, 10);
 
-                                html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:#fee2e2;">';
+                                html = '<table style="width:100%; font-size:12px; border-collapse:collapse;"><thead><tr style="background:rgba(239,68,68,0.12);">';
                                 html += '<th style="padding:4px 6px; text-align:right;">#</th>';
                                 html += '<th style="padding:4px 6px; text-align:left;">종목</th>';
                                 html += '<th style="padding:4px 6px; text-align:right;">점수</th>';
@@ -1114,7 +1116,7 @@
                                     const str52w  = (s.str52w ?? 0).toFixed(0);
                                     const volSurge= s.volSurge != null ? s.volSurge.toFixed(0) : null;
                                     const pe      = (s.pe ?? 0).toFixed(1);
-                                    const rowBg   = i % 2 === 0 ? '' : 'background:#fef2f2;';
+                                    const rowBg   = i % 2 === 0 ? '' : 'background:rgba(255,255,255,0.04);';
                                     html += `<tr style="${rowBg}">
                                         <td style="padding:3px 6px; font-weight:700; color:#a0aec0; text-align:right;">${i + 1}</td>
                                         <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
@@ -1127,7 +1129,7 @@
                                     </tr>`;
                                 });
                                 html += '</tbody></table>';
-                                html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
+                                html += `<div class="status" style="margin-top:8px; font-size:11px; color:#94a3b8;">
                                     <strong>🔬 Alpha Score</strong> = 당일%×30% + MA50추세×25% + 52주강도×25% + 거래량×20%<br>
                                     분석: ${scannerData.analyzed || '-'}종목 (출처: FMP /stable/quote)
                                 </div>`;
