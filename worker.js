@@ -4281,6 +4281,83 @@ export default {
           response = {error: e.message, endpoint: pathname}
         }
 
+      // /metricz-debug - KV 캐시 원본값 확인 (GET ?symbols=MO,VZ,PLTR or ?all=1)
+      } else if (pathname === "/metricz-debug") {
+        try {
+          const kv = env.METRICZ_KV
+          if (!kv) {
+            response = { error: 'METRICZ_KV not configured' }
+          } else {
+            const cached = await kv.get(METRICZ_KV_KEY)
+            if (!cached) {
+              response = { error: 'KV cache empty — cron not yet run', key: METRICZ_KV_KEY }
+            } else {
+              const parsed    = JSON.parse(cached)
+              const stocks    = parsed.stocks || {}
+              const allSyms   = Object.keys(stocks)
+              const symParam  = url.searchParams.get('symbols') || url.searchParams.get('symbol') || ''
+              const showAll   = url.searchParams.get('all') === '1'
+
+              // 요청 심볼 or 전체
+              const targets = symParam
+                ? symParam.toUpperCase().split(',').map(s => s.trim()).filter(Boolean)
+                : showAll ? allSyms : allSyms.slice(0, 30)
+
+              // 각 심볼의 실제 저장 값 반환
+              const data = {}
+              targets.forEach(sym => {
+                const s = stocks[sym]
+                if (!s) { data[sym] = null; return }
+                data[sym] = {
+                  // 수익성
+                  returnOnEquityTTM:            s.returnOnEquityTTM,
+                  operatingProfitMarginTTM:     s.operatingProfitMarginTTM,
+                  returnOnAssetsTTM:            s.returnOnAssetsTTM,
+                  netProfitMarginTTM:           s.netProfitMarginTTM,
+                  // 밸류에이션
+                  peRatioTTM:                   s.peRatioTTM,
+                  priceToBookRatioTTM:          s.priceToBookRatioTTM,
+                  priceToSalesRatioTTM:         s.priceToSalesRatioTTM,
+                  enterpriseValueOverEBITDATTM: s.enterpriseValueOverEBITDATTM,
+                  freeCashFlowYieldTTM:          s.freeCashFlowYieldTTM,
+                  // 성장성
+                  revenueGrowth:                s.revenueGrowth,
+                  epsgrowth:                    s.epsgrowth,
+                  operatingIncomeGrowth:        s.operatingIncomeGrowth,
+                  // 배당·안전성
+                  dividendYieldTTM:             s.dividendYieldTTM,
+                  payoutRatioTTM:               s.payoutRatioTTM,
+                  debtEquityRatioTTM:           s.debtEquityRatioTTM,
+                  currentRatioTTM:              s.currentRatioTTM,
+                }
+              })
+
+              // null 통계
+              const metrics = ['returnOnEquityTTM','operatingProfitMarginTTM','returnOnAssetsTTM',
+                'netProfitMarginTTM','peRatioTTM','priceToBookRatioTTM','priceToSalesRatioTTM',
+                'enterpriseValueOverEBITDATTM','freeCashFlowYieldTTM','revenueGrowth','epsgrowth',
+                'operatingIncomeGrowth','dividendYieldTTM','payoutRatioTTM','debtEquityRatioTTM','currentRatioTTM']
+
+              const nullStats = {}
+              metrics.forEach(m => {
+                const total = allSyms.length
+                const nullCount = allSyms.filter(sym => stocks[sym]?.[m] == null).length
+                nullStats[m] = { null_count: nullCount, valid_count: total - nullCount, null_pct: Math.round(nullCount/total*100) + '%' }
+              })
+
+              response = {
+                cache_timestamp:  parsed.timestamp,
+                total_cached:     allSyms.length,
+                showing_symbols:  targets.length,
+                null_stats:       nullStats,
+                data,
+              }
+            }
+          }
+        } catch(e) {
+          response = { error: e.message, endpoint: pathname }
+        }
+
       // /metricz-all - 퀀트 종목 발굴 (POST, userLogic 가중치 기반 스코어링)
       } else if (pathname === "/metricz-all") {
         try {

@@ -163,7 +163,7 @@ async function fw(u,o={},t=20000){const c=new AbortController(),tm=setTimeout(()
 function lc(s){return s==='ok'?'led-ok':s==='warn'?'led-warn':s==='fail'?'led-fail':'led-wait'}
 function vd(v){if(v===undefined)return'<span class="v-null">undefined</span>';if(v===null)return'<span class="v-null">null</span>';if(typeof v==='number')return`<span class="v-num">${v}</span>`;if(typeof v==='string')return`<span class="v-str">"${v.substring(0,60)}"</span>`;if(typeof v==='boolean')return`<span class="v-num">${v}</span>`;if(Array.isArray(v))return`<span class="v-str">Array[${v.length}]</span>`;if(typeof v==='object')return`<span class="v-str">Object{${Object.keys(v).length}}</span>`;return String(v)}
 
-const S={tab:'endpoints',res:{},marketData:null,discoveryData:null,fredRes:{},testing:false,prog:0,progT:0,log:[],filter:'',sym:'AAPL',symRes:{},_rawSel:''};
+const S={tab:'endpoints',res:{},marketData:null,discoveryData:null,fredRes:{},testing:false,prog:0,progT:0,log:[],filter:'',sym:'AAPL',symRes:{},_rawSel:'',kvData:null,kvLoading:false};
 function addLog(m,t='ok'){S.log.unshift({m,t,ts:new Date().toLocaleTimeString('ko-KR')});if(S.log.length>200)S.log.pop()}
 function epUrl(ep,sym){let p=ep.path;if(ep.needsSymbol)p+=(p.includes('?')?'&':'?')+'symbol='+(sym||S.sym);return API+p}
 
@@ -738,7 +738,7 @@ function render(){
   let mfOk=0;const mfT=MARKET_FIELDS.length;if(S.marketData)MARKET_FIELDS.forEach(f=>{if(gv(S.marketData,f.p)!=null)mfOk++});
   const fredT=Object.keys(S.fredRes).length,fredOk=Object.values(S.fredRes).filter(r=>r.status==='ok').length;
   const symCount=Object.keys(S.symRes).length;
-  const tabs=[{id:'endpoints',label:'전체 엔드포인트',badge:ENDPOINTS.length},{id:'calc',label:'📐 위젯 계산식',badge:WIDGET_CALC.length},{id:'symbol',label:`🔍 종목 조회 [${S.sym}]`,badge:symCount||''},{id:'market',label:'/market 상세',badge:MARKET_FIELDS.length},{id:'discovery',label:'/discovery',badge:'20'},{id:'analysis',label:'Analysis',badge:'20'},{id:'fred',label:'FRED',badge:FRED_SERIES.length},{id:'raw',label:'Raw JSON',badge:''}];
+  const tabs=[{id:'endpoints',label:'전체 엔드포인트',badge:ENDPOINTS.length},{id:'calc',label:'📐 위젯 계산식',badge:WIDGET_CALC.length},{id:'symbol',label:`🔍 종목 조회 [${S.sym}]`,badge:symCount||''},{id:'market',label:'/market 상세',badge:MARKET_FIELDS.length},{id:'discovery',label:'/discovery',badge:'20'},{id:'analysis',label:'Analysis',badge:'20'},{id:'fred',label:'FRED',badge:FRED_SERIES.length},{id:'kvcache',label:'🗄️ KV Cache',badge:''},{id:'raw',label:'Raw JSON',badge:''}];
 
   document.getElementById('app').innerHTML=`
     <div class="hdr"><div><h1>🔬 AIInvestFlow API Debug Dashboard</h1><div class="hdr-sub">API: ${API} | EP: ${ENDPOINTS.length} | /market필드: ${mfT} | FRED: ${FRED_SERIES.length}</div></div>
@@ -764,7 +764,7 @@ function render(){
     <div class="log" style="margin-top:12px">${S.log.slice(0,50).map(l=>`<div class="log-line log-${l.t}">[${l.ts}] ${l.m}</div>`).join('')}</div>`;
 }
 
-function rPanel(){switch(S.tab){case'endpoints':return rEP();case'calc':return rCalc();case'symbol':return rSym();case'market':return rMkt();case'discovery':return rDisc();case'analysis':return rAnal();case'fred':return rFredP();case'raw':return rRaw();default:return'<div class="panel active">-</div>'}}
+function rPanel(){switch(S.tab){case'endpoints':return rEP();case'calc':return rCalc();case'symbol':return rSym();case'market':return rMkt();case'discovery':return rDisc();case'analysis':return rAnal();case'fred':return rFredP();case'kvcache':return rKvCache();case'raw':return rRaw();default:return'<div class="panel active">-</div>'}}
 
 function rEP(){
   const cats=[...new Set(ENDPOINTS.map(e=>e.cat))];
@@ -834,6 +834,61 @@ function rFredP(){
   <table style="margin-top:8px"><tr><th style="width:28px"></th><th>Series ID</th><th>값</th><th>응답</th><th>설명</th></tr>
   ${FRED_SERIES.map(sid=>{const r=S.fredRes[sid],st=r?r.status:'wait';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600">${sid}</td><td>${r?vd(r.value):'-'}</td><td>${r?r.ms+'ms':'-'}</td><td style="color:var(--muted)">${FRED_DESC[sid]||''}</td></tr>`}).join('')}
   </table></div>`;
+}
+
+// ── KV Cache 탭 ──────────────────────────────────────────────────
+async function loadKvCache(syms){
+  S.kvLoading=true;render();
+  try{
+    const url=syms?`${API}/metricz-debug?symbols=${syms}`:`${API}/metricz-debug?symbols=MO,VZ,T,PM,DUK,TXN,QCOM,ORCL,MSFT,AVGO,NVDA,AMD,PLTR,MU,AVGO,META,GOOGL,CRWD`;
+    const r=await fw(url);
+    S.kvData=r.data;
+    addLog(r.ok?`✅ KV Cache 로드: ${r.data?.total_cached||0}종목 캐시됨 (${r.ms}ms)`:`❌ KV Cache 오류: ${r.error}`);
+  }catch(e){S.kvData={error:e.message};}
+  S.kvLoading=false;render();
+}
+function rKvCache(){
+  const d=S.kvData;
+  const METRICS=['revenueGrowth','epsgrowth','operatingIncomeGrowth','dividendYieldTTM','payoutRatioTTM',
+    'returnOnEquityTTM','operatingProfitMarginTTM','returnOnAssetsTTM','netProfitMarginTTM',
+    'peRatioTTM','priceToBookRatioTTM','priceToSalesRatioTTM','enterpriseValueOverEBITDATTM',
+    'freeCashFlowYieldTTM','debtEquityRatioTTM','currentRatioTTM'];
+  const fmtV=v=>{
+    if(v==null)return`<span style="color:#ef4444;font-weight:700">null</span>`;
+    const n=parseFloat(v);
+    if(isNaN(n))return`<span style="color:#f59e0b">${v}</span>`;
+    // 비율형 지표는 % 표시 (작은 소수값)
+    if(Math.abs(n)<10)return`<span style="color:#10b981">${(n*100).toFixed(2)}%</span>`;
+    return`<span style="color:#10b981">${n.toFixed(2)}</span>`;
+  };
+  let symsHtml='';
+  if(d&&d.data){
+    const syms=Object.keys(d.data);
+    symsHtml=`<table style="font-size:11px;border-collapse:collapse;width:100%;overflow-x:auto">
+      <tr style="background:#1e293b;position:sticky;top:0"><th style="padding:4px 6px;min-width:60px">종목</th>${METRICS.map(m=>`<th style="padding:4px 4px;min-width:80px;font-size:10px">${m.replace('TTM','').replace('Ratio','R')}</th>`).join('')}</tr>
+      ${syms.map(sym=>{
+        const s=d.data[sym];
+        if(!s)return`<tr><td style="padding:3px 6px;font-weight:700;color:#94a3b8">${sym}</td><td colspan="${METRICS.length}" style="color:#ef4444;padding:3px 6px">❌ 캐시 없음</td></tr>`;
+        return`<tr style="border-bottom:1px solid #1e293b"><td style="padding:3px 6px;font-weight:700;color:#e2e8f0">${sym}</td>${METRICS.map(m=>`<td style="padding:3px 4px;text-align:right">${fmtV(s[m])}</td>`).join('')}</tr>`;
+      }).join('')}
+    </table>`;
+    // null 통계
+    const ns=d.null_stats||{};
+    symsHtml+=`<div style="margin-top:12px"><div style="color:#94a3b8;font-size:12px;font-weight:700;margin-bottom:6px">📊 전체 ${d.total_cached}종목 null 통계</div>
+      <table style="font-size:11px;border-collapse:collapse"><tr style="background:#1e293b"><th style="padding:4px 8px">지표</th><th style="padding:4px 8px">유효</th><th style="padding:4px 8px">null</th><th style="padding:4px 8px">null비율</th></tr>
+      ${Object.entries(ns).map(([m,v])=>`<tr style="border-bottom:1px solid #1e293b"><td style="padding:3px 8px;color:#cbd5e1">${m}</td><td style="padding:3px 8px;color:#10b981;text-align:right">${v.valid_count}</td><td style="padding:3px 8px;color:${v.null_count>50?'#ef4444':'#f59e0b'};text-align:right">${v.null_count}</td><td style="padding:3px 8px;color:${v.null_count>50?'#ef4444':'#f59e0b'};text-align:right">${v.null_pct}</td></tr>`).join('')}
+      </table></div>`;
+  }
+  const symInput=`<input id="kvSymIn" placeholder="MO,VZ,PLTR,NVDA..." style="background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:4px 8px;border-radius:6px;font-size:12px;width:300px">`;
+  return`<div class="panel active">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="loadKvCache()" ${S.kvLoading?'disabled':''}>▶ 기본 검증 종목 로드</button>
+      ${symInput}
+      <button class="btn" onclick="loadKvCache(document.getElementById('kvSymIn').value||undefined)" ${S.kvLoading?'disabled':''}>검색</button>
+      ${d?`<span style="color:var(--muted);font-size:11px">캐시: ${d.cache_timestamp||'-'} | ${d.total_cached||0}종목</span>`:''}
+    </div>
+    ${S.kvLoading?'<div style="color:var(--cyan);padding:20px">🔄 로딩 중...</div>':d?d.error?`<div style="color:#ef4444;padding:12px">❌ ${d.error}</div>`:symsHtml:'<div style="color:var(--muted);padding:20px;text-align:center">▶ 버튼을 눌러 KV 캐시 데이터를 확인하세요</div>'}
+  </div>`;
 }
 
 function rRaw(){
