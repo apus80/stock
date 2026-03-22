@@ -6507,8 +6507,8 @@
             10: { fn: imdLoadSentiment,       ids: ['fear','putcall'] },
             11: { fn: imdLoadSectors,         ids: ['xlk','xlf','xle','xlv','xly','xli','xlu','xlre'] },
             12: { fn: imdLoadCreditBreadth,   ids: ['hyg','lqd','vti','tlt'] },
-            13: { fn: function(){ macroIndexCache = null; macroIndexCacheTime = 0; imdLoadMacroBase(); },       ids: ['fed_rate','cpi','core_cpi_yoy','unemployment','inflation_exp','real_rates'] },
-            14: { fn: function(){ macroIndexCache = null; macroIndexCacheTime = 0; imdLoadMacroIndicators(); }, ids: ['sentiment','gdp','indpro','payems','pce_inf'] },
+            13: { fn: function(){ macroIndexCache = null; macroIndexCacheTime = 0; try{ localStorage.removeItem(MACRO_INDEX_CACHE_KEY); }catch(e){} imdLoadMacroBase(); },       ids: ['fed_rate','cpi','core_cpi_yoy','unemployment','inflation_exp','real_rates'] },
+            14: { fn: function(){ macroIndexCache = null; macroIndexCacheTime = 0; try{ localStorage.removeItem(MACRO_INDEX_CACHE_KEY); }catch(e){} imdLoadMacroIndicators(); }, ids: ['sentiment','gdp','indpro','payems','pce_inf'] },
             15: { fn: imdLoadAIMarketScore,   ids: ['ai-score-value','ai-market-state','ai-score-signals','ai-score-time'] },
             16: { fn: imdLoadMacroRiskRadar,  ids: ['macro-risk-inflation','macro-risk-liquidity','macro-risk-recession','macro-risk-market','macro-risk-time'] }
         };
