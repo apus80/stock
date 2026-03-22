@@ -527,14 +527,6 @@
             border-left-color: #ff9a56;
         }
 
-        .widget.widget-13 {
-            border-left-color: #ff6b6b;
-        }
-
-        .widget.widget-14 {
-            border-left-color: #ee5a6f;
-        }
-
         /* 에러 상태 */
         .widget-error {
             color: var(--bear);
@@ -856,29 +848,6 @@
                 logic: "ETF 대량 거래, 기관 포지셔닝, 옵션 포지션 분석",
                 meaning: "기관이 현재 매수(축적) 중인지 매도(분산) 중인지 판단",
                 usage: "축적 신호 → 강세장 신호 | 분산 신호 → 약세장 신호"
-            },
-            {
-                id: 13,
-                title: "AI Stock Ranking Engine",
-                icon: "🏆",
-                endpoint: "/analysis/stock-ranking",
-                pattern: "matrix",
-                description: "AI 기반 주식 멀티팩터 순위",
-                logic: "모멘텀, 밸류, 퀄리티, 성장성 4가지 팩터로 500개 미국주식 순위",
-                meaning: "AI가 추천하는 가장 매력적인 주식 Top 10",
-                usage: "Top 10만 추적하기 | 분기마다 리밸런싱 | 상위 3개 집중투자"
-            },
-            {
-                id: 14,
-                title: "Market Heatmap Engine",
-                icon: "🔥",
-                endpoint: "/analysis/market-heatmap",
-                pattern: "heatmap",
-                featured: true,
-                description: "시장 전체 성과 시각화",
-                logic: "주식, 채권, 원자재, 크립토, FX 등 모든 자산의 수익률 색상 코딩",
-                meaning: "한눈에 보는 글로벌 시장의 강한 자산과 약한 자산",
-                usage: "매일 아침 확인 → 강한 섹터 추적 | 약한 자산은 피하기"
             }
         ];
 
