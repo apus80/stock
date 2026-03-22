@@ -3138,25 +3138,22 @@ export default {
             } catch(e) { console.warn('⚠️ Breakout KV 읽기 실패:', e.message) }
           }
 
-          // 2️⃣ 실시간 분석 — SP500_UNIVERSE 상위 80종목 (통일된 유니버스)
+          // 2️⃣ 실시간 분석 — SP500_UNIVERSE 전체 180종목 (병렬 배치 처리)
           const universe = await getHedgeFundUniverse()  // = SP500_UNIVERSE(180)
-          const stocks = universe.slice(0, 80)  // 실시간 HTTP 타임아웃 방지용 80개 제한
+          const stocks = universe  // 전체 180종목
           const results = []
           const startTime = Date.now()
+          const WAVE = 15  // 15개씩 병렬 → 타임아웃 방지
 
-          for (let i = 0; i < stocks.length; i++) {
-            try {
-              const q = await getFullQuote(stocks[i])
-              if (!q) continue
-              const scored = calculateBreakoutScore(q)
-              if (scored) results.push(scored)
-            } catch (e) {
-              console.error(`❌ Breakout ${stocks[i]}: ${e.message}`)
+          for (let i = 0; i < stocks.length; i += WAVE) {
+            const wave = stocks.slice(i, i + WAVE)
+            const waveResults = await Promise.allSettled(
+              wave.map(sym => getFullQuote(sym).then(q => q ? calculateBreakoutScore(q) : null))
+            )
+            for (const r of waveResults) {
+              if (r.status === 'fulfilled' && r.value) results.push(r.value)
             }
-            // Rate limit 관리
-            if (i % 10 === 9) {
-              await new Promise(resolve => setTimeout(resolve, 500))
-            }
+            if (i + WAVE < stocks.length) await new Promise(r => setTimeout(r, 300))
           }
 
           // Breakout Score 기준 내림차순 정렬
