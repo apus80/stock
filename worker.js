@@ -208,7 +208,7 @@ async function refreshDiscoveryCache(env) {
         const yLow    = q.yearLow   || price * 0.7
         const yHigh   = q.yearHigh  || price * 1.3
         const vol     = q.volume    || 0
-        const avgVol  = q.avgVolume || 1
+        const avgVol  = (q.avgVolume > 0) ? q.avgVolume : (vol || 1)  // avgVol 없으면 vol 사용(surge=0)
         const pe      = q.pe        || 0
         const mom     = q.changePercentage || 0   // 당일 % 변동
 
@@ -3571,7 +3571,7 @@ export default {
               const yLow    = q.yearLow   || price * 0.7
               const yHigh   = q.yearHigh  || price * 1.3
               const vol     = q.volume    || 0
-              const avgVol  = q.avgVolume || 1
+              const avgVol  = (q.avgVolume > 0) ? q.avgVolume : (vol || 1)  // avgVol 없으면 vol 사용(surge=0)
               const pe      = q.pe        || 0
               const mom     = q.changePercentage || 0
 

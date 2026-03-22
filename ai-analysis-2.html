@@ -409,11 +409,15 @@
         }
 
         table th {
-            padding: 12px 8px;
+            padding: 10px 8px;
             text-align: left;
-            color: var(--text-light);
+            color: #475569;
             font-weight: 600;
-            background: var(--bg-tertiary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            background: #f1f5f9;
+            border-bottom: 2px solid #e2e8f0;
         }
 
         table td {
@@ -1672,10 +1676,10 @@
                                             <th>등락</th>
                                             <th style={{ minWidth: '140px' }}>Breakout Score</th>
                                             <th>시그널</th>
-                                            <th>52W고점</th>
-                                            <th>거래량비</th>
-                                            <th>50MA</th>
-                                            <th>GC</th>
+                                            <th title="현재가 ÷ 52주최고가 × 100 (%) — 100%에 가까울수록 신고가 근처">52W고점근접%</th>
+                                            <th title="현재 거래량 ÷ 평균 거래량 (x배) — 1.5x 이상이면 거래량 급증">거래량비(x)</th>
+                                            <th title="현재가가 50일 이동평균선 위에 있으면 ▲, 아래면 ▼">50MA위치</th>
+                                            <th title="50일 이평이 200일 이평을 상향돌파하면 골든크로스 ✓">골든크로스</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1729,12 +1733,12 @@
                                                     </span>
                                                 </td>
                                                 <td style={{ fontSize: '12px' }}>
-                                                    <span style={{ color: stock.signals?.highProximity >= 90 ? '#10b981' : '#94a3b8' }}>
+                                                    <span style={{ color: stock.signals?.highProximity >= 90 ? '#10b981' : '#64748b' }}>
                                                         {stock.signals?.highProximity?.toFixed(0) || '-'}%
                                                     </span>
                                                 </td>
                                                 <td style={{ fontSize: '12px' }}>
-                                                    <span style={{ color: stock.signals?.volumeRatio >= 1.5 ? '#f59e0b' : '#94a3b8' }}>
+                                                    <span style={{ color: stock.signals?.volumeRatio >= 1.5 ? '#f59e0b' : '#64748b' }}>
                                                         {stock.signals?.volumeRatio?.toFixed(1) || '-'}x
                                                     </span>
                                                 </td>
@@ -1946,26 +1950,58 @@
                     {!loading && !error && stocks.length === 0 && (
                         <div style={{ color: 'var(--text-muted)' }}>No breakout candidates</div>
                     )}
+                    {/* ── 점수 설명 범례 ── */}
+                    <div style={{ fontSize: '11px', color: '#64748b', background: '#f8fafc', borderRadius: '6px', padding: '8px 12px', marginBottom: '12px', lineHeight: '1.8' }}>
+                        <b style={{ color: '#475569' }}>점수 구성 (CSS = 0~100)</b>
+                        <span>🔵 <b>T</b>(기술 /50): RSI·MACD·BB·ATR·거래량·EMA·돌파 합산</span>
+                        <span>🟡 <b>S</b>(스마트머니 /12): 내부자·애널리스트 신호</span>
+                        <span>🟢 <b>C</b>(카탈리스트 /21): EPS서프라이즈·매출성장·FCF·PE·D/E</span>
+                        <span>CSS = (C×0.4 + T×0.35 + S×0.25) ÷ 28.9 × 100</span>
+                    </div>
                     <div className="top5-grid">
-                        {stocks.map((s, i) => (
-                            <div
-                                key={s.symbol}
-                                className="top5-card"
-                                onClick={() => window.open(`/analysis/catalyst-surge?symbol=${s.symbol}`)}
-                            >
-                                <b>#{i + 1} {s.symbol}</b><br />
-                                <br />
-                                CSS: {s.css != null ? s.css.toFixed(1) : '-'}<br />
-                                {s.grade ?? '-'}<br />
-                                <br />
-                                T:{s.breakdown?.technical ?? '-'} |
-                                S:{s.breakdown?.smartMoney ?? '-'} |
-                                C:{s.breakdown?.catalyst ?? '-'}<br />
-                                <br />
-                                📈 Breakout: <span className={s.isBreakout ? 'top5-yes' : 'top5-no'}>{s.isBreakout ? 'YES' : 'NO'}</span><br />
-                                🎯 WinRate: {s.backtest?.winRate != null ? s.backtest.winRate.toFixed(1) : '-'}%
-                            </div>
-                        ))}
+                        {stocks.map((s, i) => {
+                            const css = s.css ?? 0
+                            const cssColor = css >= 75 ? '#ef4444' : css >= 55 ? '#10b981' : css >= 40 ? '#f59e0b' : '#94a3b8'
+                            const T = s.breakdown?.technical ?? 0
+                            const S = s.breakdown?.smartMoney ?? 0
+                            const C = s.breakdown?.catalyst ?? 0
+                            const tPct = Math.round(T / 50 * 100)
+                            const sPct = Math.round(S / 12 * 100)
+                            const cPct = Math.round(C / 21 * 100)
+                            return (
+                                <div key={s.symbol} className="top5-card" style={{ cursor: 'default' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <span style={{ fontWeight: 800, fontSize: '15px', color: '#667eea' }}>#{i + 1} {s.symbol}</span>
+                                        <span style={{ fontSize: '11px', color: '#718096' }}>{s.isBreakout ? '📈 돌파' : '🔎 관찰'}</span>
+                                    </div>
+                                    <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+                                        <div style={{ fontSize: '2em', fontWeight: 900, color: cssColor, lineHeight: 1 }}>{s.css != null ? s.css.toFixed(1) : '-'}</div>
+                                        <div style={{ fontSize: '11px', color: cssColor, fontWeight: 600 }}>{s.grade ?? '-'}</div>
+                                    </div>
+                                    {/* 프로그레스 바 */}
+                                    <div style={{ background: '#e2e8f0', borderRadius: '4px', height: '5px', marginBottom: '10px' }}>
+                                        <div style={{ background: cssColor, width: `${Math.min(100, css)}%`, height: '100%', borderRadius: '4px' }} />
+                                    </div>
+                                    {/* T / S / C 분해 */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', marginBottom: '8px' }}>
+                                        {[
+                                            { label: '🔵 기술(T)', val: T, max: 50, pct: tPct, color: '#4dabf7' },
+                                            { label: '🟡 스마트(S)', val: S, max: 12, pct: sPct, color: '#fbbf24' },
+                                            { label: '🟢 촉매(C)', val: C, max: 21, pct: cPct, color: '#10b981' },
+                                        ].map(item => (
+                                            <div key={item.label} style={{ background: '#f8fafc', borderRadius: '5px', padding: '5px 4px', textAlign: 'center' }}>
+                                                <div style={{ fontSize: '9px', color: '#718096', marginBottom: '2px' }}>{item.label}</div>
+                                                <div style={{ fontWeight: 700, fontSize: '13px', color: item.color }}>{item.val !== '-' ? Number(item.val).toFixed(1) : '-'}</div>
+                                                <div style={{ fontSize: '9px', color: '#94a3b8' }}>/{item.max} ({item.pct}%)</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                        🎯 승률: <b style={{ color: '#475569' }}>{s.backtest?.winRate != null ? s.backtest.winRate.toFixed(1) + '%' : '-'}</b>
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             )
@@ -1998,7 +2034,7 @@
                     <div className="widget-header">
                         <div>
                             <div className="widget-title">6. 🔥 Catalyst Surge Analysis
-                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS = Technical×40% + SmartMoney×35% + Catalyst×25%</span>
+                                <span style={{ fontSize: '12px', color: '#718096', marginLeft: '8px', fontWeight: 'normal' }}>CSS(0~100) = 촉매(C/21)×40% + 기술(T/50)×35% + 스마트머니(S/12)×25% ÷ 28.9 × 100</span>
                             </div>
                             <div className="widget-subtitle">종목 심층 분석 (기술적 + 스마트머니 + 카탈리스트)</div>
                         </div>
@@ -2025,21 +2061,30 @@
                         <>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                                 <div className="metric-item" style={{ gridColumn: '1', textAlign: 'center', background: 'rgba(102,126,234,0.08)', borderRadius: '10px', padding: '16px' }}>
-                                    <div className="metric-label">CSS Score</div>
-                                    <div style={{ fontSize: '2em', fontWeight: '800', color: '#667eea' }}>{data.css != null ? data.css.toFixed(1) : "-"}</div>
+                                    <div className="metric-label">CSS Score (0~100)</div>
+                                    <div style={{ fontSize: '2em', fontWeight: '800', color: data.css >= 75 ? '#ef4444' : data.css >= 55 ? '#10b981' : data.css >= 40 ? '#f59e0b' : '#667eea' }}>{data.css != null ? data.css.toFixed(1) : "-"}</div>
                                     <div style={{ fontSize: '12px', color: '#718096' }}>{data.grade || "-"}</div>
+                                    <div style={{ background: '#e2e8f0', borderRadius: '4px', height: '4px', marginTop: '6px' }}>
+                                        <div style={{ background: data.css >= 75 ? '#ef4444' : data.css >= 55 ? '#10b981' : '#f59e0b', width: `${Math.min(100, data.css ?? 0)}%`, height: '100%', borderRadius: '4px' }} />
+                                    </div>
                                 </div>
-                                <div className="metric-item">
-                                    <div className="metric-label">Technical</div>
-                                    <div className="metric-value">{data.breakdown?.technical ?? "-"}</div>
+                                <div className="metric-item" style={{ textAlign: 'center' }}>
+                                    <div className="metric-label">🔵 기술(T) /50</div>
+                                    <div className="metric-value" style={{ color: '#4dabf7' }}>{data.breakdown?.technical ?? "-"}</div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>= {data.breakdown?.technical != null ? Math.round(data.breakdown.technical / 50 * 100) : '-'}%</div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>RSI·MACD·거래량·돌파</div>
                                 </div>
-                                <div className="metric-item">
-                                    <div className="metric-label">Smart Money</div>
-                                    <div className="metric-value">{data.breakdown?.smartMoney ?? "-"}</div>
+                                <div className="metric-item" style={{ textAlign: 'center' }}>
+                                    <div className="metric-label">🟡 스마트머니(S) /12</div>
+                                    <div className="metric-value" style={{ color: '#fbbf24' }}>{data.breakdown?.smartMoney ?? "-"}</div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>= {data.breakdown?.smartMoney != null ? Math.round(data.breakdown.smartMoney / 12 * 100) : '-'}%</div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>내부자·애널리스트</div>
                                 </div>
-                                <div className="metric-item">
-                                    <div className="metric-label">Catalyst</div>
-                                    <div className="metric-value">{data.breakdown?.catalyst ?? "-"}</div>
+                                <div className="metric-item" style={{ textAlign: 'center' }}>
+                                    <div className="metric-label">🟢 촉매(C) /21</div>
+                                    <div className="metric-value" style={{ color: '#10b981' }}>{data.breakdown?.catalyst ?? "-"}</div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>= {data.breakdown?.catalyst != null ? Math.round(data.breakdown.catalyst / 21 * 100) : '-'}%</div>
+                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>EPS·매출성장·FCF</div>
                                 </div>
                             </div>
 
