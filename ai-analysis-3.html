@@ -796,8 +796,9 @@
 
                     case 3:
                         // 단기 모멘텀 전략: 당일상승률×60% + MA50추세×40%
-                        if (data && data.top_20 && data.top_20.length > 0) {
-                            const scored4 = data.top_20.map(s => {
+                        if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
+                            const pool3 = data.all_stocks || data.top_20;
+                            const scored4 = pool3.map(s => {
                                 const score = (s.momentum||0) * 0.60 + (s.ma50trend||0) * 0.40;
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
@@ -820,15 +821,16 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
-                                <strong>🚀 단기 모멘텀 전략</strong> = 당일상승률×60% + MA50추세×40% | 분석: ${data.analyzed||'-'}종목
+                                <strong>🚀 단기 모멘텀 전략</strong> = 당일상승률×60% + MA50추세×40% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 4:
                         // 중기 추세 전략: MA50추세×50% + 52주강도(중앙화)×30% + 당일상승률×20%
-                        if (data && data.top_20 && data.top_20.length > 0) {
-                            const scored5 = data.top_20.map(s => {
+                        if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
+                            const pool4 = data.all_stocks || data.top_20;
+                            const scored5 = pool4.map(s => {
                                 const score = (s.ma50trend||0) * 0.50 + ((s.str52w||50) - 50) * 0.30 + (s.momentum||0) * 0.20;
                                 return { ...s, score };
                             }).sort((a, b) => b.score - a.score).slice(0, 10);
@@ -850,15 +852,16 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
-                                <strong>📈 중기 추세 전략</strong> = MA50추세×50% + (52주강도-50)×30% + 당일상승률×20% | 분석: ${data.analyzed||'-'}종목
+                                <strong>📈 중기 추세 전략</strong> = MA50추세×50% + (52주강도-50)×30% + 당일상승률×20% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 5:
                         // 거래량 급증 전략: 거래량급증×50% + 당일상승률×30% + MA50추세×20%
-                        if (data && data.top_20 && data.top_20.length > 0) {
-                            const scored6 = data.top_20.map(s => {
+                        if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
+                            const pool5 = data.all_stocks || data.top_20;
+                            const scored6 = pool5.map(s => {
                                 const volC = Math.min(100, Math.max(-30, s.volSurge||0));
                                 const score = volC * 0.50 + (s.momentum||0) * 0.30 + (s.ma50trend||0) * 0.20;
                                 return { ...s, score };
@@ -881,15 +884,16 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
-                                <strong>📊 거래량 급증 전략</strong> = 거래량급증(cap±100%)×50% + 당일상승률×30% + MA50추세×20% | 분석: ${data.analyzed||'-'}종목
+                                <strong>📊 거래량 급증 전략</strong> = 거래량급증(cap±100%)×50% + 당일상승률×30% + MA50추세×20% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 6:
                         // 저PER 추세 전략: 저PER점수×40% + MA50추세×35% + 52주강도×25%
-                        if (data && data.top_20 && data.top_20.length > 0) {
-                            const scored7 = data.top_20.map(s => {
+                        if (data && (data.all_stocks || data.top_20) && (data.all_stocks || data.top_20).length > 0) {
+                            const pool6 = data.all_stocks || data.top_20;
+                            const scored7 = pool6.map(s => {
                                 // PER이 낮을수록 높은 점수: PE 10→25, PE 20→12.5, PE 50→5, PE 없음→0
                                 const pe_sc = (s.pe > 0 && s.pe < 150) ? Math.min(25, 250 / s.pe) : 0;
                                 const score = pe_sc * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
@@ -913,19 +917,20 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
-                                <strong>💰 저PER 추세 전략</strong> = 저PER점수(250/PE, max25)×40% + MA50추세×35% + (52주강도-50)×25% | 분석: ${data.analyzed||'-'}종목
+                                <strong>💰 저PER 추세 전략</strong> = 저PER점수(250/PE, max25)×40% + MA50추세×35% + (52주강도-50)×25% | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;
 
                     case 7:
                         // VIX 리스크 조정 전략: 기술점수(당일상승률×40%+MA50×35%+52주강도×25%) × VIX계수
-                        if (market && data && data.top_20) {
+                        if (market && data && (data.all_stocks || data.top_20)) {
                             const vix8 = market.US_MARKET?.VIX?.price || 20;
                             // VIX 10→1.25, VIX 20→1.0, VIX 30→0.75, VIX 40→0.5
                             const vixAdj = parseFloat(Math.max(0.3, Math.min(1.5, 1.5 - vix8 / 40)).toFixed(2));
 
-                            const scored8 = data.top_20.map(s => {
+                            const pool7 = data.all_stocks || data.top_20;
+                            const scored8 = pool7.map(s => {
                                 const techScore = (s.momentum||0) * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
                                 const score = techScore * vixAdj;
                                 return { ...s, techScore, score };
@@ -948,7 +953,7 @@
                             });
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
-                                <strong>🌊 VIX 리스크 조정 전략</strong> = 기술점수 × VIX계수 | VIX: ${vix8.toFixed(1)} → 계수: ${vixAdj} | 분석: ${data.analyzed||'-'}종목<br>
+                                <strong>🌊 VIX 리스크 조정 전략</strong> = 기술점수 × VIX계수 | VIX: ${vix8.toFixed(1)} → 계수: ${vixAdj} | 분석: ${(data.all_stocks||data.top_20||[]).length}종목<br>
                                 기술점수 = 당일상승률×40% + MA50추세×35% + (52주강도-50)×25%
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
@@ -956,7 +961,7 @@
 
                     case 8:
                         // 유동성 장세 수혜: 기술점수 × 유동성계수(Fed/M2/RRP) × 리스크계수(VIX)
-                        if (market && data && data.top_20) {
+                        if (market && data && (data.all_stocks || data.top_20)) {
                             const fedBal9 = market.LIQUIDITY?.FED_BALANCE || 5000000;
                             const m2Val9 = market.MACRO_BASE?.M2 || 20000000;
                             const rrp9 = market.LIQUIDITY?.REVERSE_REPO || 0;
@@ -969,7 +974,8 @@
                             const riskScore9 = Math.max(10, 80 - vix9 * 2);
                             const riskFactor = parseFloat((riskScore9 / 60).toFixed(2));
 
-                            const scored9 = data.top_20.map(s => {
+                            const pool8 = data.all_stocks || data.top_20;
+                            const scored9 = pool8.map(s => {
                                 const techBase = (s.momentum||0) * 0.40 + (s.ma50trend||0) * 0.35 + ((s.str52w||50) - 50) * 0.25;
                                 const score = techBase * liquidFactor * riskFactor;
                                 return { ...s, techBase, score };
@@ -1000,12 +1006,13 @@
 
                     case 9:
                         // 통합 발굴 엔진: 당일상승률×20% + MA50×20% + 52주강도×20% + 거래량급증×20% + PER×10% + VIX×10%
-                        if (market && data && data.top_20) {
+                        if (market && data && (data.all_stocks || data.top_20)) {
                             const vix10 = market.US_MARKET?.VIX?.price || 20;
                             // VIX 점수: VIX낮을수록 높음 (VIX 10→20, VIX 20→10, VIX 30→0)
                             const vixScore10 = Math.max(0, Math.min(20, 30 - vix10));
 
-                            const scored10 = data.top_20.map(s => {
+                            const pool9 = data.all_stocks || data.top_20;
+                            const scored10 = pool9.map(s => {
                                 // PER 점수: PE 10→15, PE 20→7.5, PE 50→3, PE 없음→0
                                 const pe_sc10 = (s.pe > 0 && s.pe < 150) ? Math.min(15, 150 / s.pe) : 0;
                                 const vol_sc10 = Math.min(20, Math.max(-5, (s.volSurge||0) / 5));
@@ -1038,7 +1045,7 @@
                             html += '</tbody></table>';
                             html += `<div class="status" style="margin-top:8px; font-size:11px; color:#718096;">
                                 <strong>🚀 통합 발굴 엔진</strong> = 당일상승률×20% + MA50추세×20% + 52주강도×20% + 거래량급증×20% + PER점수×10% + VIX점수×10%<br>
-                                VIX: ${vix10.toFixed(1)} → VIX점수: ${vixScore10.toFixed(0)} | 분석: ${data.analyzed||'-'}종목
+                                VIX: ${vix10.toFixed(1)} → VIX점수: ${vixScore10.toFixed(0)} | 분석: ${(data.all_stocks||data.top_20||[]).length}종목
                             </div>`;
                         } else { html = '<div class="loading">⚠️ 데이터 없음</div>'; }
                         break;

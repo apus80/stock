@@ -39,8 +39,9 @@ const SP500_UNIVERSE = [
   'NFLX','DIS','CMCSA','T','VZ','TMUS','CHTR','WBD','EA','TTWO',
 ]
 
-const METRICZ_KV_KEY = 'metricz_universe_cache'
-const DISCOVERY_KV_KEY = 'alpha_discovery_cache'
+const METRICZ_KV_KEY    = 'metricz_universe_cache'
+const DISCOVERY_KV_KEY  = 'alpha_discovery_cache'
+const BREAKOUT_KV_KEY   = 'breakout_discovery_cache'
 
 // 낮을수록 좋은 지표 (퍼센타일 역산)
 const LOWER_IS_BETTER = new Set([
@@ -190,7 +191,7 @@ async function refreshDiscoveryCache(env) {
   // 출처: FMP API /stable/quote (무료 플랜 확인)
   // 유료 엔드포인트 제거 (key-metrics-ttm, ratios-ttm, financial-growth, profile → 모두 유료)
   const BASE    = 'https://financialmodelingprep.com/stable'
-  const SYMBOLS = SP500_UNIVERSE.slice(0, 80)
+  const SYMBOLS = SP500_UNIVERSE   // 전체 180종목 분석 (80→180 확장)
   const results = []
 
   for (let i = 0; i < SYMBOLS.length; i += 10) {
@@ -244,10 +245,19 @@ async function refreshDiscoveryCache(env) {
     if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 200))
   }
 
-  const sorted = results.sort((a, b) => b.score - a.score).slice(0, 20)
-  const payload = { timestamp: new Date().toISOString(), universe_size: SYMBOLS.length, analyzed: results.length, execution_time_sec: 0, top_20: sorted }
+  results.sort((a, b) => b.score - a.score)
+  const top_20 = results.slice(0, 20)
+  // all_stocks: 전체 분석 결과 저장 (ai-analysis-3 위젯이 각자 재정렬하여 사용)
+  const payload = {
+    timestamp: new Date().toISOString(),
+    universe_size: SYMBOLS.length,
+    analyzed: results.length,
+    execution_time_sec: 0,
+    top_20,
+    all_stocks: results   // 전체 결과 (180종목)
+  }
   await kv.put(DISCOVERY_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
-  console.log(`✅ discovery 캐시 갱신 완료: ${results.length}/${SYMBOLS.length}종목`)
+  console.log(`✅ discovery 캐시 갱신 완료: ${results.length}/${SYMBOLS.length}종목 (top_20 + all_stocks 저장)`)
 }
 
 // ── 퍼센타일 스코어링 ────────────────────────────────────────────
@@ -2759,29 +2769,8 @@ export default {
       // S&P 500 TOP 90 UNIVERSE
       // =============================
       async function getHedgeFundUniverse() {
-        // 📍 S&P 500 상위 90개 종목 (시가총액 기준)
-        // API 최적화: 각 종목당 2개 API × 90종목 = 180호출/일 (제한: 250/일)
-
-        const sp500Top90 = [
-          // 🟦 Top 10 (메가캡)
-          'AAPL', 'MSFT', 'NVDA', 'GOOG', 'AMZN', 'META', 'TSLA', 'BRK.B', 'JNJ', 'JPM',
-
-          // 🟦 11-30 (대형주)
-          'V', 'PG', 'MA', 'VISA', 'WMT', 'HD', 'MCD', 'ADBE', 'CRM', 'NFLX',
-          'PYPL', 'INTC', 'AMD', 'AVGO', 'TXN', 'QCOM', 'CSCO', 'IBM', 'ORCL', 'SAP',
-
-          // 🟦 31-60 (중형주 상위)
-          'UNH', 'AXP', 'AMGN', 'TMO', 'ABT', 'ISRG', 'CAT', 'BA', 'GE', 'HON',
-          'RTX', 'MMM', 'EATON', 'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'MU', 'COST',
-          'TJX', 'NKE', 'VZ', 'T', 'CMCSA', 'CHTR', 'TMUS', 'PLD', 'SPG', 'DLR',
-
-          // 🟦 61-90 (성장주/대표)
-          'EQIX', 'AVB', 'NEE', 'DUK', 'SO', 'D', 'LIN', 'APD', 'NEM', 'FCX',
-          'SCCO', 'CTVA', 'SBUX', 'INTU', 'ASML', 'AMAT', 'LRCX', 'CDNS', 'SNPS', 'GOOGL',
-          'TSEM', 'MSTR', 'COIN', 'SQ', 'BILL', 'OKTA', 'ZOOM', 'TEAM', 'CCI', 'TROW'
-        ]
-
-        return sp500Top90
+        // 📍 SP500_UNIVERSE(180종목)으로 통일 — discovery/breakout/scanner 모두 동일 유니버스 사용
+        return SP500_UNIVERSE
       }
 
       // =============================
@@ -3000,8 +2989,25 @@ export default {
 
       async function runBreakoutDiscovery() {
         try {
-          const universe = await getHedgeFundUniverse()
-          const stocks = universe.slice(0, 80) // S&P500 시총 상위 80종목
+          // 1️⃣ KV 캐시 확인 (8h TTL) — 캐시 히트 시 즉시 반환
+          const kv = env.METRICZ_KV
+          if (kv) {
+            try {
+              const cached = await kv.get(BREAKOUT_KV_KEY)
+              if (cached) {
+                const parsed = JSON.parse(cached)
+                const ageMs = Date.now() - new Date(parsed.timestamp).getTime()
+                if (ageMs < 8 * 3600 * 1000) {
+                  console.log(`✅ Breakout KV 캐시 히트 (${(ageMs/60000).toFixed(0)}분 전 갱신)`)
+                  return parsed
+                }
+              }
+            } catch(e) { console.warn('⚠️ Breakout KV 읽기 실패:', e.message) }
+          }
+
+          // 2️⃣ 실시간 분석 — SP500_UNIVERSE 상위 80종목 (통일된 유니버스)
+          const universe = await getHedgeFundUniverse()  // = SP500_UNIVERSE(180)
+          const stocks = universe.slice(0, 80)  // 실시간 HTTP 타임아웃 방지용 80개 제한
           const results = []
           const startTime = Date.now()
 
@@ -3025,7 +3031,7 @@ export default {
 
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
 
-          return {
+          const breakoutResult = {
             timestamp: new Date().toISOString(),
             dataType: 'breakout_discovery',
             universe_size: stocks.length,
@@ -3033,6 +3039,16 @@ export default {
             execution_time_sec: parseFloat(elapsedTime),
             top_15: results.slice(0, 15)
           }
+
+          // 3️⃣ KV에 결과 저장 (8h TTL) — 다음 요청 즉시 반환
+          if (kv) {
+            try {
+              await kv.put(BREAKOUT_KV_KEY, JSON.stringify(breakoutResult), { expirationTtl: 8 * 3600 })
+              console.log(`✅ Breakout KV 캐시 갱신: ${results.length}종목`)
+            } catch(e) { console.warn('⚠️ Breakout KV 쓰기 실패:', e.message) }
+          }
+
+          return breakoutResult
         } catch (e) {
           console.error(`❌ runBreakoutDiscovery:`, e.message)
           return {
@@ -3325,8 +3341,8 @@ export default {
       async function runAlphaScanner() {
         try {
           const startTime = Date.now()
-          const universe = await getHedgeFundUniverse()
-          const stocks = universe.slice(0, 80)
+          const universe = await getHedgeFundUniverse()  // = SP500_UNIVERSE(180)
+          const stocks = universe  // 전체 180종목 스크리닝 (Step1 quote만, deep은 top20)
 
           // Step 1: Macro data (1 call, shared across all stocks)
           let macroData = null
@@ -3523,9 +3539,13 @@ export default {
                 console.warn('⚠️ Discovery KV 캐시가 구버전 (ma50trend 없음) - 실시간 폴백으로 전환')
                 // fall through to real-time fetch
               } else {
-                // 구버전 캐시(80종목 전체)도 정렬+슬라이스 보정
+                // top_20 정렬 보정 (구버전 캐시 호환)
                 if (parsed.top_20?.length > 20) {
                   parsed.top_20 = parsed.top_20.sort((a, b) => b.score - a.score).slice(0, 20)
+                }
+                // all_stocks: 신버전 캐시에 있으면 그대로, 없으면 top_20으로 대체
+                if (!parsed.all_stocks) {
+                  parsed.all_stocks = parsed.top_20
                 }
                 return parsed
               }
@@ -3582,7 +3602,7 @@ export default {
           })
         )
         const items = results.filter(v => v).sort((a, b) => b.score - a.score)
-        return { top_20: items, analyzed: items.length, universe_size: 10, execution_time_sec: 0 }
+        return { top_20: items, all_stocks: items, analyzed: items.length, universe_size: 10, execution_time_sec: 0 }
       }
 
       // ── 심플 Macro Data (FRED 3개) ────────────────────────────────
