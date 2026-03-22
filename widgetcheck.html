@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIInvestFlow API Debug Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a;--surface:#111827;--surface2:#1e293b;--surface3:#283548;
+  --border:#334155;--text:#e2e8f0;--muted:#94a3b8;--dim:#64748b;
+  --green:#22c55e;--yellow:#eab308;--red:#ef4444;--blue:#3b82f6;--purple:#a78bfa;--cyan:#22d3ee;--orange:#f97316;
+  --font:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:12px;line-height:1.5}
+.app{max-width:1600px;margin:0 auto;padding:12px}
+.hdr{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.hdr h1{font-size:18px;font-weight:800;background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-sub{color:var(--muted);font-size:11px}
+.hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:6px 14px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);cursor:pointer;font:inherit;font-size:11px;font-weight:600;transition:all .15s}
+.btn:hover{background:var(--surface3);border-color:var(--blue)}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-sm{padding:3px 8px;font-size:10px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.sum-card .val{font-size:24px;font-weight:800}
+.sum-card .lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.sum-card.ok .val{color:var(--green)}.sum-card.warn .val{color:var(--yellow)}.sum-card.fail .val{color:var(--red)}.sum-card.info .val{color:var(--cyan)}
+.tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:8px}
+.tab{padding:6px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:11px;font-weight:600;color:var(--muted);border:1px solid transparent;border-bottom:none;transition:all .15s}
+.tab:hover{color:var(--text);background:var(--surface2)}
+.tab.active{color:var(--cyan);background:var(--surface);border-color:var(--border);border-bottom:2px solid var(--cyan)}
+.tab .badge{display:inline-block;background:var(--surface3);padding:1px 6px;border-radius:10px;font-size:9px;margin-left:4px}
+.panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:300px;max-height:75vh;overflow-y:auto}
+.panel.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:6px 8px;background:var(--surface2);color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+td{padding:5px 8px;border-bottom:1px solid rgba(51,65,85,.3);vertical-align:top}
+tr:hover td{background:rgba(59,130,246,.04)}
+.led{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.led-ok{background:var(--green);box-shadow:0 0 4px var(--green)}
+.led-warn{background:var(--yellow);box-shadow:0 0 4px var(--yellow)}
+.led-fail{background:var(--red);box-shadow:0 0 4px var(--red)}
+.led-wait{background:var(--dim);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+.v-ok{color:var(--green)}.v-warn{color:var(--yellow)}.v-fail{color:var(--red)}.v-null{color:var(--dim);font-style:italic}
+.v-num{color:var(--cyan)}.v-str{color:var(--purple)}
+.fgroup{margin-bottom:16px}
+.fgroup-title{font-size:12px;font-weight:700;color:var(--blue);padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:4px;display:flex;justify-content:space-between}
+.fgroup-title .cnt{color:var(--muted);font-weight:400;font-size:10px}
+.progress-bar{height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));transition:width .3s;border-radius:2px}
+.log{font-size:10px;color:var(--dim);max-height:120px;overflow-y:auto;padding:8px;background:var(--bg);border-radius:4px;margin-top:8px}
+.log-line{padding:1px 0}.log-ok{color:var(--green)}.log-warn{color:var(--yellow)}.log-fail{color:var(--red)}
+.search{padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font:inherit;font-size:11px;width:200px}
+.search::placeholder{color:var(--dim)}
+.sym-input{padding:5px 10px;background:var(--bg);border:1px solid var(--orange);border-radius:6px;color:var(--orange);font:inherit;font-size:13px;font-weight:800;width:90px;text-align:center;text-transform:uppercase}
+.sym-input:focus{outline:none;border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,.2)}
+.sym-bar{display:flex;gap:8px;align-items:center;padding:10px 14px;background:linear-gradient(90deg,rgba(249,115,22,.08),rgba(34,211,238,.08));border:1px solid var(--border);border-radius:8px;margin-bottom:12px;flex-wrap:wrap}
+.sym-bar label{color:var(--orange);font-weight:700;font-size:12px}
+.sym-bar .hint{color:var(--dim);font-size:10px}
+.sym-quick{padding:3px 8px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--muted);cursor:pointer}
+.sym-quick:hover{background:var(--surface3);color:var(--text);border-color:var(--cyan)}
+.field-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+.field-card-title{font-size:12px;font-weight:700;margin-bottom:8px;color:var(--cyan);display:flex;justify-content:space-between;align-items:center}
+@media(max-width:768px){.app{padding:6px}.hdr{padding:12px}.summary{grid-template-columns:repeat(2,1fr)}.tabs{gap:2px}.tab{padding:4px 8px;font-size:10px}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+const API='https://fmp-proxy.aiinvestflow.workers.dev';
+const ENDPOINTS=[
+  {id:'market',cat:'Market',path:'/market',method:'GET',desc:'핵심 시장 종합 데이터'},
+  {id:'top7',cat:'Market',path:'/top7',method:'GET',desc:'시총 Top7'},
+  {id:'feargreed',cat:'Market',path:'/feargreed',method:'GET',desc:'Fear & Greed Index'},
+  {id:'stock',cat:'Market',path:'/stock',method:'GET',desc:'개별 주식 시세',needsSymbol:true},
+  {id:'alpha',cat:'Alpha',path:'/alpha',method:'GET',desc:'Alpha Score (9인디케이터)',needsSymbol:true},
+  {id:'discovery',cat:'Alpha',path:'/alpha/discovery',method:'GET',desc:'S&P500 발굴엔진'},
+  {id:'scanner',cat:'Alpha',path:'/alpha/alpha-scanner',method:'GET',desc:'심플 퀀트 스코어링'},
+  {id:'breakout',cat:'Alpha',path:'/alpha/breakout',method:'POST',desc:'Breakout Discovery'},
+  {id:'earnings-alpha',cat:'Alpha',path:'/earnings',method:'GET',desc:'Alpha Discovery(단일)',needsSymbol:true},
+  {id:'f-earnings',cat:'Fundamentals',path:'/fundamentals/earnings',method:'GET',desc:'실적',needsSymbol:true},
+  {id:'f-growth',cat:'Fundamentals',path:'/fundamentals/growth',method:'GET',desc:'성장률',needsSymbol:true},
+  {id:'f-income',cat:'Fundamentals',path:'/fundamentals/income',method:'GET',desc:'손익계산서',needsSymbol:true},
+  {id:'f-balance',cat:'Fundamentals',path:'/fundamentals/balance',method:'GET',desc:'재무상태표',needsSymbol:true},
+  {id:'f-cashflow',cat:'Fundamentals',path:'/fundamentals/cashflow',method:'GET',desc:'현금흐름표',needsSymbol:true},
+  {id:'f-ratios',cat:'Fundamentals',path:'/fundamentals/ratios',method:'GET',desc:'PE/PB 비율',needsSymbol:true},
+  {id:'f-profile',cat:'Fundamentals',path:'/fundamentals/profile',method:'GET',desc:'회사 프로필',needsSymbol:true},
+  {id:'f-shares',cat:'Fundamentals',path:'/fundamentals/shares',method:'GET',desc:'유통주식',needsSymbol:true},
+  {id:'a-inst',cat:'Analysis',path:'/analysis/institutional-score',method:'GET',desc:'기관 시장 건강 지표'},
+  {id:'a-regime',cat:'Analysis',path:'/analysis/market-regime',method:'GET',desc:'시장 레짐'},
+  {id:'a-liquid',cat:'Analysis',path:'/analysis/liquidity-pulse',method:'GET',desc:'유동성 펄스'},
+  {id:'a-yield',cat:'Analysis',path:'/analysis/yield-curve-monitor',method:'GET',desc:'수익률곡선'},
+  {id:'a-infl',cat:'Analysis',path:'/analysis/inflation-pressure',method:'GET',desc:'인플레이션 압력'},
+  {id:'a-credit',cat:'Analysis',path:'/analysis/credit-stress',method:'GET',desc:'신용 스트레스'},
+  {id:'a-breadth',cat:'Analysis',path:'/analysis/market-breadth',method:'GET',desc:'시장 너비'},
+  {id:'a-vol',cat:'Analysis',path:'/analysis/volatility-regime',method:'GET',desc:'변동성 레짐'},
+  {id:'a-sector',cat:'Analysis',path:'/analysis/sector-rotation',method:'GET',desc:'섹터 로테이션'},
+  {id:'a-dollar',cat:'Analysis',path:'/analysis/dollar-liquidity',method:'GET',desc:'달러 유동성'},
+  {id:'a-crypto',cat:'Analysis',path:'/analysis/crypto-sentiment',method:'GET',desc:'크립토 심리'},
+  {id:'a-smart',cat:'Analysis',path:'/analysis/smart-money',method:'GET',desc:'스마트머니'},
+  {id:'a-rank',cat:'Analysis',path:'/analysis/stock-ranking',method:'GET',desc:'주식 순위'},
+  {id:'a-heat',cat:'Analysis',path:'/analysis/market-heatmap',method:'GET',desc:'히트맵'},
+  {id:'a-real',cat:'Analysis',path:'/analysis/real-rate-monitor',method:'GET',desc:'실질금리'},
+  {id:'a-fed',cat:'Analysis',path:'/analysis/fed-policy-impact',method:'GET',desc:'Fed 정책 영향'},
+  {id:'a-labor',cat:'Analysis',path:'/analysis/labor-market-health',method:'GET',desc:'노동시장'},
+  {id:'a-macro',cat:'Analysis',path:'/analysis/macro-momentum',method:'GET',desc:'매크로 모멘텀'},
+  {id:'macro',cat:'Macro',path:'/macro',method:'GET',desc:'FRED 유동성 3종'},
+  {id:'macroindex',cat:'Macro',path:'/macroindex',method:'GET',desc:'FRED 26개 시계열(3년)'},
+  {id:'cs',cat:'Catalyst',path:'/analysis/catalyst-surge',method:'GET',desc:'Catalyst Surge(개별)',needsSymbol:true},
+  {id:'cs-top5',cat:'Catalyst',path:'/analysis/catalyst-surge-top5',method:'GET',desc:'Catalyst Top5'},
+];
+
+const MARKET_FIELDS=[
+  ...['SP500','NASDAQ','DOW','SOX','RUSSELL2000','VIX'].flatMap(s=>{const b=[{g:'US_MARKET',p:`US_MARKET.${s}.price`,d:`${s} 가격`},{g:'US_MARKET',p:`US_MARKET.${s}.changePercentage`,d:`${s} 변화율`}];if(['SP500','NASDAQ','RUSSELL2000'].includes(s))b.push({g:'US_MARKET',p:`US_MARKET.${s}.volume`,d:`${s} 거래량`});return b}),
+  {g:'KOREA',p:'KOREA_MARKET.EWY.price',d:'EWY 가격'},{g:'KOREA',p:'KOREA_MARKET.EWY.changePercentage',d:'EWY 변화율'},
+  ...['HYG','LQD'].flatMap(s=>[{g:'BONDS',p:`BONDS.${s}.price`,d:`${s} 가격`},{g:'BONDS',p:`BONDS.${s}.change`,d:`${s} 변화`}]),
+  ...['BTC','ETH','SOL'].flatMap(s=>[{g:'CRYPTO',p:`CRYPTO.${s}.price`,d:`${s}`},{g:'CRYPTO',p:`CRYPTO.${s}.changePercentage`,d:`${s}%`}]),
+  ...['GOLD','SILVER','OIL'].flatMap(s=>[{g:'COMMODITIES',p:`COMMODITIES.${s}.price`,d:s},{g:'COMMODITIES',p:`COMMODITIES.${s}.changePercentage`,d:`${s}%`}]),
+  ...['USDKRW','USDJPY','EURUSD','DXY'].flatMap(s=>[{g:'FX',p:`FX.${s}.price`,d:s},{g:'FX',p:`FX.${s}.changePercentage`,d:`${s}%`}]),
+  {g:'LIQUIDITY',p:'LIQUIDITY.FED_BALANCE',d:'Fed잔액(M)'},{g:'LIQUIDITY',p:'LIQUIDITY.REVERSE_REPO',d:'역레포(B)'},{g:'LIQUIDITY',p:'LIQUIDITY.TGA',d:'TGA(M)'},
+  {g:'RATES',p:'RATES.US10Y',d:'10Y'},{g:'RATES',p:'RATES.US2Y',d:'2Y'},{g:'RATES',p:'RATES.YIELD_CURVE',d:'10Y-2Y'},
+  {g:'OPTIONS',p:'OPTIONS.PUT_CALL_RATIO',d:'P/C Ratio'},
+  ...['TECHNOLOGY','FINANCIALS','ENERGY','HEALTHCARE','CONSUMER_DISCRETIONARY','INDUSTRIALS','UTILITIES','REAL_ESTATE'].flatMap(s=>[{g:'SECTORS',p:`SECTORS.${s}.price`,d:`${s}`},{g:'SECTORS',p:`SECTORS.${s}.changePercentage`,d:`${s}%`}]),
+  ...['HIGH_YIELD','INVESTMENT_GRADE'].flatMap(s=>[{g:'CREDIT',p:`CREDIT.${s}.price`,d:s},{g:'CREDIT',p:`CREDIT.${s}.changePercentage`,d:`${s}%`}]),
+  ...['TOTAL_MARKET','LONG_TREASURY'].flatMap(s=>[{g:'BREADTH',p:`BREADTH.${s}.price`,d:s},{g:'BREADTH',p:`BREADTH.${s}.changePercentage`,d:`${s}%`}]),
+  ...['CPI','CPI_YOY','CORE_CPI_YOY','PCE_INFLATION','FED_RATE','INFLATION_EXPECTATION','UNEMPLOYMENT','M2','REAL_RATES'].map(k=>({g:'MACRO_BASE',p:`MACRO_BASE.${k}`,d:k})),
+  ...['CONSUMER_SENTIMENT','REAL_GDP','INDUSTRIAL_PRODUCTION','NONFARM_PAYROLLS','PCE_INFLATION','MFG_PMI'].map(k=>({g:'MACRO_IND',p:`MACRO_INDICATORS.${k}`,d:k})),
+  {g:'MARKET_RISK',p:'MARKET_RISK.VIX_FRED',d:'VIX(FRED)'},{g:'MARKET_RISK',p:'MARKET_RISK.HY_OAS_SPREAD',d:'HY OAS'},
+  ...['fedfunds','cpi','core_cpi','core_pce','payrolls','unemployment','us10y','us2y','sentiment','pmi'].flatMap(k=>[{g:'ECON_IND',p:`ECONOMIC_INDICATORS.${k}.current`,d:`${k} 현재`},{g:'ECON_IND',p:`ECONOMIC_INDICATORS.${k}.prev`,d:`${k} 이전`},{g:'ECON_IND',p:`ECONOMIC_INDICATORS.${k}.change`,d:`${k} 변화`}]),
+  ...['FED_UPPER','FED_LOWER','EFFR','US10Y','US2Y','REAL_RATE_10Y','MORTGAGE30'].map(k=>({g:'MI_RATES',p:`MACRO_INDEX.RATES.${k}`,d:k})),
+  ...['CPI_YOY','CORE_CPI_YOY','CORE_PCE_YOY','INFLATION_EXPECTATION_1Y'].map(k=>({g:'MI_INFL',p:`MACRO_INDEX.INFLATION.${k}`,d:k})),
+  ...['REAL_GDP','UNEMPLOYMENT','PAYEMS_CHG','INDUSTRIAL_PRODUCTION','MFG_PRODUCTION','HOUSING_STARTS','CONSUMER_SENTIMENT'].map(k=>({g:'MI_ECON',p:`MACRO_INDEX.ECONOMY.${k}`,d:k})),
+  ...['FED_BALANCE','M2_YOY','DOLLAR_INDEX','REVERSE_REPO','TGA'].map(k=>({g:'MI_LIQ',p:`MACRO_INDEX.LIQUIDITY.${k}`,d:k})),
+  ...['YIELD_CURVE','SAHM_RULE','HY_SPREAD','CORP_PROFITS_YOY'].map(k=>({g:'MI_RISK',p:`MACRO_INDEX.RISK.${k}`,d:k})),
+];
+
+const FRED_SERIES=['WALCL','RRPONTSYD','DGS10','DGS2','CPIAUCSL','UNRATE','UMCSENT','GDPC1','INDPRO','PAYEMS','PCEPILFE','WTREGEN','M2SL','T10YIE','FEDFUNDS','PCEPI','VIXCLS','BAMLH0A0HYM2','NAPM','DFEDTARU','DFEDTARL','EFFR','REAINTRATREARAT10Y','MORTGAGE30US','MICH','IPMAN','HOUST','DTWEXAFEGS','T10Y2Y','SAHMREALTIME','CP'];
+const DISC_FIELDS=['symbol','price','volume','momentum','ma50trend','str52w','volSurge','pe','score'];
+const FRED_DESC={WALCL:'Fed Balance',RRPONTSYD:'Reverse Repo',DGS10:'10Y국채',DGS2:'2Y국채',CPIAUCSL:'CPI',UNRATE:'실업률',UMCSENT:'소비자심리',GDPC1:'실질GDP',INDPRO:'산업생산',PAYEMS:'비농업고용',PCEPILFE:'근원PCE',WTREGEN:'TGA',M2SL:'M2',T10YIE:'기대인플레',FEDFUNDS:'Fed금리',PCEPI:'PCE지수',VIXCLS:'VIX(FRED)',BAMLH0A0HYM2:'HY OAS',NAPM:'ISM PMI',DFEDTARU:'Fed상단',DFEDTARL:'Fed하단',EFFR:'실효금리',REAINTRATREARAT10Y:'실질금리10Y',MORTGAGE30US:'모기지30Y',MICH:'미시간기대인플레',IPMAN:'제조업생산',HOUST:'주택착공',DTWEXAFEGS:'달러인덱스',T10Y2Y:'장단기금리차',SAHMREALTIME:'샴법칙',CP:'기업이익'};
+
+const SYM_FIELDS={
+  'stock':['symbol','price','changePercentage','change','volume','marketCap'],
+  'alpha':['data.explosiveScore','data.factors.price','data.factors.pe','data.factors.pb','data.factors.floatShares','data.factors.marketCap','data.factors.revenueGrowth','data.factors.earningsGrowth','data.metrics.momentum','data.metrics.volume','data.profile.sector','data.profile.industry'],
+  'earnings-alpha':['top_20','analyzed','universe_size','execution_time_sec'],
+  'f-earnings':['data.epsActual','data.epsEstimated','data.revenueActual','data.revenueEstimated','data.reportDate'],
+  'f-growth':['data.revenueGrowth','data.netIncomeGrowth','data.epsGrowth'],
+  'f-income':['data.revenue','data.grossProfit','data.operatingIncome','data.netIncome','data.eps','data.ebitda','data.researchAndDevelopmentExpenses','data.sellingGeneralAndAdministrativeExpenses','data.incomeBeforeTax','data.weightedAverageShsOut'],
+  'f-balance':['data.cashAndCashEquivalents','data.totalAssets','data.totalCurrentAssets','data.totalLiabilities','data.totalCurrentLiabilities','data.totalStockholdersEquity','data.longTermDebt','data.shortTermDebt','data.inventory','data.accountPayables','data.netDebt','data.totalDebt'],
+  'f-cashflow':['data.operatingCashFlow','data.freeCashFlow','data.capitalExpenditure','data.netCashProvidedByOperatingActivities','data.netCashProvidedByInvestingActivities','data.netCashProvidedByFinancingActivities','data.netDividendsPaid','data.commonStockRepurchased','data.stockBasedCompensation','data.netChangeInCash'],
+  'f-ratios':['data.priceToEarningsRatio','data.priceToBookRatio','data.pe','data.pb','data.divYield'],
+  'f-profile':['data.sector','data.industry','data.companyName','data.website','data.description'],
+  'f-shares':['data.floatShares'],
+  'cs':['css','css_raw','grade','breakdown.catalyst','breakdown.technical','breakdown.smartMoney','detail.technical.rsi','detail.technical.atr_pct','detail.technical.volumeRatio','detail.technical.isBreakout','detail.technical.total','detail.smartMoney.total','detail.catalyst.epsSurprise','detail.catalyst.revGrowth','detail.catalyst.fcfYield','detail.catalyst.de','detail.catalyst.total'],
+};
+
+function gv(o,p){return p.split('.').reduce((a,k)=>(a&&a[k]!==undefined)?a[k]:undefined,o)}
+async function fw(u,o={},t=20000){const c=new AbortController(),tm=setTimeout(()=>c.abort(),t),t0=performance.now();try{const r=await fetch(u,{...o,signal:c.signal});const ms=Math.round(performance.now()-t0);if(!r.ok)return{ok:false,status:r.status,ms,data:null,error:`HTTP ${r.status}`};const d=await r.json();return{ok:true,status:r.status,ms,data:d,error:null}}catch(e){return{ok:false,status:0,ms:Math.round(performance.now()-t0),data:null,error:e.name==='AbortError'?'TIMEOUT':e.message}}finally{clearTimeout(tm)}}
+function lc(s){return s==='ok'?'led-ok':s==='warn'?'led-warn':s==='fail'?'led-fail':'led-wait'}
+function vd(v){if(v===undefined)return'<span class="v-null">undefined</span>';if(v===null)return'<span class="v-null">null</span>';if(typeof v==='number')return`<span class="v-num">${v}</span>`;if(typeof v==='string')return`<span class="v-str">"${v.substring(0,60)}"</span>`;if(typeof v==='boolean')return`<span class="v-num">${v}</span>`;if(Array.isArray(v))return`<span class="v-str">Array[${v.length}]</span>`;if(typeof v==='object')return`<span class="v-str">Object{${Object.keys(v).length}}</span>`;return String(v)}
+
+const S={tab:'endpoints',res:{},marketData:null,discoveryData:null,fredRes:{},testing:false,prog:0,progT:0,log:[],filter:'',sym:'AAPL',symRes:{},_rawSel:''};
+function addLog(m,t='ok'){S.log.unshift({m,t,ts:new Date().toLocaleTimeString('ko-KR')});if(S.log.length>200)S.log.pop()}
+function epUrl(ep,sym){let p=ep.path;if(ep.needsSymbol)p+=(p.includes('?')?'&':'?')+'symbol='+(sym||S.sym);return API+p}
+
+async function testEp(ep){const url=epUrl(ep);const opts=ep.method==='POST'?{method:'POST'}:{};const r=await fw(url,opts);let nc=0;if(r.ok&&r.data)nc=(JSON.stringify(r.data).match(/:null/g)||[]).length;const st=!r.ok?'fail':nc>5?'warn':'ok';S.res[ep.id]={...r,nullCount:nc,status:st};if(ep.id==='market'&&r.data)S.marketData=r.data;if(ep.id==='discovery'&&r.data)S.discoveryData=r.data;addLog(`${st==='ok'?'✅':st==='warn'?'⚠️':'❌'} ${ep.path}${ep.needsSymbol?' ['+S.sym+']':''} → ${r.ms}ms${nc>0?' (null:'+nc+')':''}`,st);return st}
+async function testAll(){S.testing=true;S.prog=0;S.progT=ENDPOINTS.length;S.log=[];render();addLog('🚀 전체 테스트 시작 (심볼: '+S.sym+')');for(let i=0;i<ENDPOINTS.length;i++){S.prog=i+1;render();await testEp(ENDPOINTS[i]);await new Promise(r=>setTimeout(r,80))}addLog(`✅ 완료: ${Object.values(S.res).filter(r=>r.status==='ok').length}/${ENDPOINTS.length} 성공`);S.testing=false;render()}
+async function testFred(){S.testing=true;S.prog=0;S.progT=FRED_SERIES.length;render();addLog('🔬 FRED 시리즈 테스트');for(let i=0;i<FRED_SERIES.length;i++){const sid=FRED_SERIES[i];S.prog=i+1;const r=await fw(`${API}/?series=${sid}`);const v=r.data?.value;const st=r.ok&&v!=null?'ok':r.ok?'warn':'fail';S.fredRes[sid]={...r,value:v,status:st};addLog(`${st==='ok'?'✅':'⚠️'} FRED ${sid} → ${v??'null'} (${r.ms}ms)`,st);render();await new Promise(r=>setTimeout(r,60))}S.testing=false;addLog('✅ FRED 완료');render()}
+
+async function testSymbol(sym){
+  if(!sym)sym=S.sym;S.sym=sym.toUpperCase();S.testing=true;S.symRes={};render();
+  const eps=ENDPOINTS.filter(e=>e.needsSymbol);S.prog=0;S.progT=eps.length;
+  addLog(`🔍 종목 전체 조회: ${S.sym} (${eps.length}개 엔드포인트)`);
+  for(let i=0;i<eps.length;i++){
+    const ep=eps[i];S.prog=i+1;render();
+    const r=await fw(epUrl(ep,S.sym),ep.method==='POST'?{method:'POST'}:{});
+    const st=!r.ok?'fail':'ok';S.res[ep.id]={...r,nullCount:0,status:st};
+    const fd=(SYM_FIELDS[ep.id]||[]).map(p=>({path:p,value:gv(r.data,p),status:gv(r.data,p)!=null?'ok':'warn'}));
+    S.symRes[ep.id]={result:r,fields:fd,ep};
+    addLog(`${st==='ok'?'✅':'❌'} ${ep.path} [${S.sym}] → ${r.ms}ms`,st);
+    await new Promise(r=>setTimeout(r,80));
+  }
+  S.testing=false;S.tab='symbol';addLog(`✅ ${S.sym} 조회 완료`);render();
+}
+
+async function testOne(id){const ep=ENDPOINTS.find(e=>e.id===id);if(!ep)return;addLog(`🔄 ${ep.path}`);await testEp(ep);render()}
+
+function exportCSV(){let c='Category,Endpoint,Symbol,Status,Ms,Nulls,Error\n';ENDPOINTS.forEach(e=>{const r=S.res[e.id];if(r)c+=`${e.cat},${e.path},${e.needsSymbol?S.sym:'-'},${r.status},${r.ms},${r.nullCount||0},${r.error||''}\n`});c+='\nFRED,Status,Value,Ms,Error\n';Object.entries(S.fredRes).forEach(([s,r])=>c+=`${s},${r.status},${r.value??'null'},${r.ms},${r.error||''}\n`);const b=new Blob(['\uFEFF'+c],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`debug_${S.sym}_${Date.now()}.csv`;a.click()}
+
+// ═══ WIDGET CALCULATION MAP (분석1: 14, 분석2: 7, 분석3: 11 = 32 widgets) ═══
+const WIDGET_CALC=[
+  // ──── 분석1 (14 widgets) ─ 모두 /analysis/* 엔드포인트 ────
+  {page:'분석1',id:1,name:'Institutional Market Score',icon:'⭐',ep:'/analysis/institutional-score',
+   formula:'liquidityScore + volatilityScore + creditScore + breadthScore(18) + macroScore',
+   formulaDetail:'liq = fed>7T→18, else→15 | vol = vix<15→18, <20→14, else→10 | credit = hyg/lqd>0.98→18, else→15 | macro = yieldCurve>0.5→18, else→12',
+   inputs:[
+     {name:'fed (Fed Balance)',src:'/market',path:'LIQUIDITY.FED_BALANCE',unit:'M',transform:'÷1,000,000 = T'},
+     {name:'vix',src:'/market',path:'US_MARKET.VIX.price',unit:''},
+     {name:'hyg',src:'/market',path:'BONDS.HYG.price',unit:'$'},
+     {name:'lqd',src:'/market',path:'BONDS.LQD.price',unit:'$'},
+     {name:'yieldCurve (10Y-2Y)',src:'/market',path:'RATES.YIELD_CURVE',unit:'%'},
+   ]},
+  {page:'분석1',id:2,name:'Market Regime Engine',icon:'🎯',ep:'/analysis/market-regime',
+   formula:'trendScore + riskScore → confidence → regime',
+   formulaDetail:'trend = spy>400→70, else→55 | risk = vix<15→80, else→60 | confidence = (trend+risk)/2 | confidence>65 → spyChange>0?"Risk-On":"Risk-Off", else→"Neutral"',
+   inputs:[
+     {name:'spy (S&P500)',src:'/market',path:'US_MARKET.SP500.price',unit:'$'},
+     {name:'vix',src:'/market',path:'US_MARKET.VIX.price',unit:''},
+     {name:'spyChange',src:'/market',path:'US_MARKET.SP500.changePercentage',unit:'%'},
+   ]},
+  {page:'분석1',id:3,name:'Liquidity Pulse',icon:'💧',ep:'/analysis/liquidity-pulse',
+   formula:'score = fed기준 단계별 평가',
+   formulaDetail:'fed(T단위) > 7→85 | > 6→70 | else→50',
+   inputs:[
+     {name:'fed (Fed Balance T)',src:'/market',path:'LIQUIDITY.FED_BALANCE',unit:'M→T'},
+     {name:'rp (Reverse Repo)',src:'/market',path:'LIQUIDITY.REVERSE_REPO',unit:'B'},
+   ]},
+  {page:'분석1',id:4,name:'Yield Curve Monitor',icon:'📉',ep:'/analysis/yield-curve-monitor',
+   formula:'spread = us10y - us2y | inverted = spread<0 → recession',
+   formulaDetail:'spread<0 → recession_prob=75%, else→20%',
+   inputs:[
+     {name:'us10y',src:'/market',path:'RATES.US10Y',unit:'%'},
+     {name:'us2y',src:'/market',path:'RATES.US2Y',unit:'%'},
+     {name:'yieldCurve',src:'/market',path:'RATES.YIELD_CURVE',unit:'%'},
+   ]},
+  {page:'분석1',id:5,name:'Inflation Pressure',icon:'🌡️',ep:'/analysis/inflation-pressure',
+   formula:'CPI + T10YIE → 압력 판단',
+   formulaDetail:'FRED CPIAUCSL > 240 → "고" | else → "저"',
+   inputs:[
+     {name:'CPI 지수',src:'/market',path:'MACRO_BASE.CPI',unit:'idx'},
+     {name:'10Y 기대인플레',src:'/market',path:'MACRO_BASE.INFLATION_EXPECTATION',unit:'%'},
+   ]},
+  {page:'분석1',id:6,name:'Credit Stress',icon:'⚠️',ep:'/analysis/credit-stress',
+   formula:'spread = (hyg/lqd - 0.98) × 100',
+   formulaDetail:'spread>2→"높음" | >0→"중간" | else→"낮음"',
+   inputs:[
+     {name:'hyg',src:'/market',path:'BONDS.HYG.price',unit:'$'},
+     {name:'lqd',src:'/market',path:'BONDS.LQD.price',unit:'$'},
+   ]},
+  {page:'분석1',id:7,name:'Market Breadth',icon:'📊',ep:'/analysis/market-breadth',
+   formula:'SPY 변화율 기반 평가',
+   formulaDetail:'spy.changePercentage > 0.5 → 80, else → 50',
+   inputs:[
+     {name:'SPY 변화율',src:'/market',path:'US_MARKET.SP500.changePercentage',unit:'%'},
+     {name:'QQQ 변화율',src:'/market',path:'US_MARKET.NASDAQ.changePercentage',unit:'%'},
+   ]},
+  {page:'분석1',id:8,name:'Volatility Regime',icon:'⚡',ep:'/analysis/volatility-regime',
+   formula:'VIX 구간 판단',
+   formulaDetail:'vix<15→"Low"(공격) | <20→"Medium"(균형) | else→"High"(방어)',
+   inputs:[
+     {name:'vix',src:'/market',path:'US_MARKET.VIX.price',unit:''},
+   ]},
+  {page:'분석1',id:9,name:'Sector Rotation',icon:'🔄',ep:'/analysis/sector-rotation',
+   formula:'6개 섹터 ETF 변화율 정렬',
+   formulaDetail:'XLK,XLF,XLE,XLV,XLY,XLI changePercentage 내림차순',
+   inputs:[
+     {name:'XLK (Tech)',src:'/market',path:'SECTORS.TECHNOLOGY.changePercentage',unit:'%'},
+     {name:'XLF (Fin)',src:'/market',path:'SECTORS.FINANCIALS.changePercentage',unit:'%'},
+     {name:'XLE (Energy)',src:'/market',path:'SECTORS.ENERGY.changePercentage',unit:'%'},
+     {name:'XLV (Health)',src:'/market',path:'SECTORS.HEALTHCARE.changePercentage',unit:'%'},
+     {name:'XLY (Consumer)',src:'/market',path:'SECTORS.CONSUMER_DISCRETIONARY.changePercentage',unit:'%'},
+     {name:'XLI (Industrial)',src:'/market',path:'SECTORS.INDUSTRIALS.changePercentage',unit:'%'},
+   ]},
+  {page:'분석1',id:10,name:'Dollar Liquidity',icon:'💵',ep:'/analysis/dollar-liquidity',
+   formula:'DXY > 105 → 달러 강함',
+   formulaDetail:'DX quote → dxy>105 → "약세 자산 약함" | else → "약세 자산 강함"',
+   inputs:[
+     {name:'DXY',src:'/market',path:'FX.DXY.price',unit:''},
+     {name:'BTC 변화율',src:'/market',path:'CRYPTO.BTC.changePercentage',unit:'%'},
+   ]},
+  {page:'분석1',id:11,name:'Crypto Sentiment',icon:'🪙',ep:'/analysis/crypto-sentiment',
+   formula:'BTC 변화율 기반 심리지수',
+   formulaDetail:'btc.change>5→75 | >0→55 | else→35',
+   inputs:[
+     {name:'BTC 변화율',src:'/market',path:'CRYPTO.BTC.changePercentage',unit:'%'},
+     {name:'ETH 변화율',src:'/market',path:'CRYPTO.ETH.changePercentage',unit:'%'},
+     {name:'BTC 가격',src:'/market',path:'CRYPTO.BTC.price',unit:'$'},
+     {name:'ETH 가격',src:'/market',path:'CRYPTO.ETH.price',unit:'$'},
+   ]},
+  {page:'분석1',id:12,name:'Smart Money Signal',icon:'🤖',ep:'/analysis/smart-money',
+   formula:'SPY 거래량 기반 축적/분산',
+   formulaDetail:'spy.volume > 60M → "축적" | else → "분산" | confidence: >80M→85, >60M→70, else→50',
+   inputs:[
+     {name:'SPY 거래량',src:'/market',path:'US_MARKET.SP500.volume',unit:''},
+     {name:'QQQ 거래량',src:'/market',path:'US_MARKET.NASDAQ.volume',unit:''},
+   ]},
+  {page:'분석1',id:13,name:'Stock Ranking',icon:'🏆',ep:'/analysis/stock-ranking',
+   formula:'Top7 종목 changePercentage → score',
+   formulaDetail:'score = 50 + changePercentage × 5 → 내림차순 정렬',
+   inputs:[
+     {name:'MSFT',src:'/top7 or /market',path:'_top7',unit:'각 종목 change%'},
+   ]},
+  {page:'분석1',id:14,name:'Market Heatmap',icon:'🔥',ep:'/analysis/market-heatmap',
+   formula:'10개 자산 changePercentage → 색상',
+   formulaDetail:'SPY,QQQ,DIA,VIX,HYG,LQD,GCUSD,BTCUSD,XLK,XLF',
+   inputs:[
+     {name:'SPY 변화',src:'/market',path:'US_MARKET.SP500.changePercentage',unit:'%'},
+     {name:'QQQ 변화',src:'/market',path:'US_MARKET.NASDAQ.changePercentage',unit:'%'},
+     {name:'VIX 변화',src:'/market',path:'US_MARKET.VIX.changePercentage',unit:'%'},
+     {name:'Gold 변화',src:'/market',path:'COMMODITIES.GOLD.changePercentage',unit:'%'},
+     {name:'BTC 변화',src:'/market',path:'CRYPTO.BTC.changePercentage',unit:'%'},
+   ]},
+  // ──── 분석2 (7 widgets) ─ 복수 엔드포인트 조합 ────
+  {page:'분석2',id:1,name:'Alpha Discovery Scanner',icon:'🔍',ep:'/alpha/discovery + /analysis/market-regime + /feargreed',disc:true,
+   formula:'score = momentum×30% + ma50trend×25% + (str52w-50)×25% + volSurge×20%',
+   formulaDetail:'Worker에서 사전 계산됨 (refreshDiscoveryCache). quote기반: price,priceAvg50,priceAvg200,yearLow,yearHigh,volume,avgVolume,pe,changePercentage',
+   inputs:[
+     {name:'discovery.top_20[0].score',src:'/alpha/discovery',path:'top_20.0.score',unit:''},
+     {name:'discovery.top_20[0].momentum',src:'/alpha/discovery',path:'top_20.0.momentum',unit:'%'},
+     {name:'discovery.top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+     {name:'discovery.top_20[0].str52w',src:'/alpha/discovery',path:'top_20.0.str52w',unit:'%'},
+     {name:'discovery.top_20[0].volSurge',src:'/alpha/discovery',path:'top_20.0.volSurge',unit:'%'},
+     {name:'regime',src:'/analysis/market-regime',path:'regime',unit:''},
+     {name:'feargreed score',src:'/feargreed',path:'score',unit:'0-100'},
+   ]},
+  {page:'분석2',id:2,name:'Market Entry Gate',icon:'🚪',ep:'/analysis/market-regime + volatility-regime + credit-stress + /feargreed',
+   formula:'4개 Gate → pass/caution/block → 매수 판정',
+   formulaDetail:'Gate1: regime=Risk-On→pass | Gate2: vix<20→pass,<25→caution | Gate3: stress_level=낮음→pass | Gate4: fg 40~75→pass',
+   inputs:[
+     {name:'regime',src:'/analysis/market-regime',path:'regime',unit:''},
+     {name:'vix',src:'/analysis/volatility-regime',path:'vix',unit:''},
+     {name:'stress_level',src:'/analysis/credit-stress',path:'stress_level',unit:''},
+     {name:'feargreed score',src:'/feargreed',path:'score',unit:''},
+   ]},
+  {page:'분석2',id:3,name:'Single Stock Deep Dive',icon:'💰',ep:'/alpha?symbol=SYM + /fundamentals/* (5개)',sym:true,
+   formula:'explosiveScore(PE×30%+PB×25%+revGrowth×15%+epsGrowth×15%+momentum×15%)',
+   formulaDetail:'peScore=100-(pe/0.4) | pbScore=100-(pb/0.1) | revScore=growth×100 | momScore=momentum×1000 → 가중합 0~100',
+   inputs:[
+     {name:'explosiveScore',src:'/alpha?symbol=SYM',path:'data.explosiveScore',unit:'0-100'},
+     {name:'PE',src:'/alpha?symbol=SYM',path:'data.factors.pe',unit:'x'},
+     {name:'PB',src:'/alpha?symbol=SYM',path:'data.factors.pb',unit:'x'},
+     {name:'revenueGrowth',src:'/fundamentals/growth',path:'data.revenueGrowth',unit:''},
+     {name:'epsGrowth',src:'/fundamentals/growth',path:'data.epsGrowth',unit:''},
+     {name:'netIncome',src:'/fundamentals/income',path:'data.netIncome',unit:'$'},
+     {name:'revenue',src:'/fundamentals/income',path:'data.revenue',unit:'$'},
+     {name:'freeCashFlow',src:'/fundamentals/cashflow',path:'data.freeCashFlow',unit:'$'},
+     {name:'netDebt',src:'/fundamentals/balance',path:'data.netDebt',unit:'$'},
+     {name:'sector',src:'/fundamentals/profile',path:'data.sector',unit:''},
+   ]},
+  {page:'분석2',id:4,name:'Sector Rotation Drill Down',icon:'🔄',ep:'/analysis/sector-rotation + /alpha/discovery',
+   formula:'섹터별 변화율 정렬 → 종목 매칭',
+   formulaDetail:'rotation.rankings → w1 기준 정렬 → discovery.top_20 종목 profile.sector 매칭',
+   inputs:[
+     {name:'sector rankings',src:'/analysis/sector-rotation',path:'rankings',unit:'array'},
+     {name:'discovery top_20',src:'/alpha/discovery',path:'top_20',unit:'array'},
+   ]},
+  {page:'분석2',id:5,name:'Breakout Radar',icon:'📡',ep:'/alpha/breakout (POST)',
+   formula:'breakoutScore = 7개 지표 가중합',
+   formulaDetail:'52주고점근접×20% + 거래량급증×20% + 단기모멘텀×15% + 50MA돌파×15% + 골든크로스×10% + 52주범위위치×10% + 일중매수압력×10%',
+   inputs:[
+     {name:'top_15[0].breakoutScore',src:'/alpha/breakout',path:'top_15.0.breakoutScore',unit:'0-100'},
+     {name:'top_15[0].signals.highProximity',src:'/alpha/breakout',path:'top_15.0.signals.highProximity',unit:'%'},
+     {name:'top_15[0].signals.volumeRatio',src:'/alpha/breakout',path:'top_15.0.signals.volumeRatio',unit:'x'},
+     {name:'top_15[0].signals.momentum',src:'/alpha/breakout',path:'top_15.0.signals.momentum',unit:'%'},
+     {name:'top_15[0].signals.ma50Above',src:'/alpha/breakout',path:'top_15.0.signals.ma50Above',unit:'bool'},
+     {name:'top_15[0].signals.goldenCross',src:'/alpha/breakout',path:'top_15.0.signals.goldenCross',unit:'bool'},
+   ]},
+  {page:'분석2',id:6,name:'Catalyst Surge Top5',icon:'🔥',ep:'/analysis/catalyst-surge-top5',
+   formula:'CSS = catalyst×40% + technical×35% + smartMoney×25%',
+   formulaDetail:'CSS_MAX=28.9 → css = raw/28.9×100 | Technical(RSI,MACD,BB,ATR,EMA,Volume,Breakout)→max50 | SmartMoney(insider+analyst)→max12 | Catalyst(EPS서프+매출성장+PE+FCF+D/E)→max21',
+   inputs:[
+     {name:'[0].css',src:'/analysis/catalyst-surge-top5',path:'0.css',unit:'0-100'},
+     {name:'[0].breakdown.technical',src:'/analysis/catalyst-surge-top5',path:'0.breakdown.technical',unit:'/50'},
+     {name:'[0].breakdown.smartMoney',src:'/analysis/catalyst-surge-top5',path:'0.breakdown.smartMoney',unit:'/12'},
+     {name:'[0].breakdown.catalyst',src:'/analysis/catalyst-surge-top5',path:'0.breakdown.catalyst',unit:'/21'},
+     {name:'[0].grade',src:'/analysis/catalyst-surge-top5',path:'0.grade',unit:''},
+   ]},
+  {page:'분석2',id:7,name:'Catalyst Surge (개별)',icon:'🔥',ep:'/analysis/catalyst-surge?symbol=SYM',sym:true,
+   formula:'CSS = catalyst×40% + technical×35% + smartMoney×25% (개별종목)',
+   formulaDetail:'Technical: RSI 45-65→+6, price>EMA20→+5, MACD>0→+5, bbWidth squeeze→+4, vol>2x→+6, breakout→+10 | Catalyst: epsSurprise>5%→+6, revGrowth>5%→+5, PE<30→+3, FCF>2%→+3, D/E<1→+4',
+   inputs:[
+     {name:'css',src:'/analysis/catalyst-surge?symbol=SYM',path:'css',unit:'0-100'},
+     {name:'technical.rsi',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.technical.rsi',unit:''},
+     {name:'technical.volumeRatio',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.technical.volumeRatio',unit:'x'},
+     {name:'technical.isBreakout',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.technical.isBreakout',unit:'bool'},
+     {name:'technical.total',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.technical.total',unit:'/50'},
+     {name:'smartMoney.total',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.smartMoney.total',unit:'/12'},
+     {name:'catalyst.epsSurprise',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.catalyst.epsSurprise',unit:''},
+     {name:'catalyst.revGrowth',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.catalyst.revGrowth',unit:''},
+     {name:'catalyst.de',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.catalyst.de',unit:'x'},
+     {name:'catalyst.total',src:'/analysis/catalyst-surge?symbol=SYM',path:'detail.catalyst.total',unit:'/21'},
+   ]},
+  // ──── 분석3 (11 widgets) ─ /alpha/discovery + /market 조합 ────
+  {page:'분석3',id:1,name:'매크로 유동성',icon:'💧',ep:'/market',
+   formula:'순유동성 = Fed잔액(T) - RRP(B→T) - TGA(T)',
+   formulaDetail:'fed = LIQUIDITY.FED_BALANCE / 1e6 → T | rrp = LIQUIDITY.REVERSE_REPO → B | tga = LIQUIDITY.TGA / 1e6 → T',
+   inputs:[
+     {name:'FED_BALANCE',src:'/market',path:'LIQUIDITY.FED_BALANCE',unit:'millions'},
+     {name:'REVERSE_REPO',src:'/market',path:'LIQUIDITY.REVERSE_REPO',unit:'billions'},
+     {name:'TGA',src:'/market',path:'LIQUIDITY.TGA',unit:'millions'},
+   ]},
+  {page:'분석3',id:2,name:'섹터 성과표',icon:'📊',ep:'/market',
+   formula:'8개 섹터 ETF price + changePercentage 테이블',
+   formulaDetail:'SECTORS.{TECHNOLOGY,FINANCIALS,ENERGY,HEALTHCARE,CONSUMER_DISCRETIONARY,INDUSTRIALS,UTILITIES,REAL_ESTATE}',
+   inputs:[
+     {name:'TECHNOLOGY',src:'/market',path:'SECTORS.TECHNOLOGY.changePercentage',unit:'%'},
+     {name:'FINANCIALS',src:'/market',path:'SECTORS.FINANCIALS.changePercentage',unit:'%'},
+     {name:'ENERGY',src:'/market',path:'SECTORS.ENERGY.changePercentage',unit:'%'},
+     {name:'HEALTHCARE',src:'/market',path:'SECTORS.HEALTHCARE.changePercentage',unit:'%'},
+     {name:'CONSUMER_DISC',src:'/market',path:'SECTORS.CONSUMER_DISCRETIONARY.changePercentage',unit:'%'},
+     {name:'INDUSTRIALS',src:'/market',path:'SECTORS.INDUSTRIALS.changePercentage',unit:'%'},
+     {name:'UTILITIES',src:'/market',path:'SECTORS.UTILITIES.changePercentage',unit:'%'},
+     {name:'REAL_ESTATE',src:'/market',path:'SECTORS.REAL_ESTATE.changePercentage',unit:'%'},
+   ]},
+  {page:'분석3',id:3,name:'신용 스트레스',icon:'⚠️',ep:'/market',
+   formula:'BONDS.HYG + BONDS.LQD 테이블',
+   formulaDetail:'HYG{price,change}, LQD{price,change}',
+   inputs:[
+     {name:'HYG price',src:'/market',path:'BONDS.HYG.price',unit:'$'},
+     {name:'HYG change',src:'/market',path:'BONDS.HYG.change',unit:'%'},
+     {name:'LQD price',src:'/market',path:'BONDS.LQD.price',unit:'$'},
+     {name:'LQD change',src:'/market',path:'BONDS.LQD.change',unit:'%'},
+   ]},
+  {page:'분석3',id:4,name:'단기 모멘텀 전략',icon:'🚀',ep:'/alpha/discovery',disc:true,
+   formula:'score = momentum×60% + ma50trend×40%',
+   formulaDetail:'discovery.top_20.map → score 계산 → 정렬 Top10',
+   inputs:[
+     {name:'top_20[0].momentum',src:'/alpha/discovery',path:'top_20.0.momentum',unit:'%'},
+     {name:'top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+   ]},
+  {page:'분석3',id:5,name:'중기 추세 전략',icon:'📈',ep:'/alpha/discovery',disc:true,
+   formula:'score = ma50trend×50% + (str52w-50)×30% + momentum×20%',
+   formulaDetail:'discovery.top_20 기반 재계산',
+   inputs:[
+     {name:'top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+     {name:'top_20[0].str52w',src:'/alpha/discovery',path:'top_20.0.str52w',unit:'%'},
+     {name:'top_20[0].momentum',src:'/alpha/discovery',path:'top_20.0.momentum',unit:'%'},
+   ]},
+  {page:'분석3',id:6,name:'거래량 급증 전략',icon:'📊',ep:'/alpha/discovery',disc:true,
+   formula:'score = clamp(volSurge,-30,100)×50% + momentum×30% + ma50trend×20%',
+   formulaDetail:'volSurge = (volume/avgVolume - 1) × 100',
+   inputs:[
+     {name:'top_20[0].volSurge',src:'/alpha/discovery',path:'top_20.0.volSurge',unit:'%'},
+     {name:'top_20[0].momentum',src:'/alpha/discovery',path:'top_20.0.momentum',unit:'%'},
+     {name:'top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+   ]},
+  {page:'분석3',id:7,name:'저PER 추세 전략',icon:'💰',ep:'/alpha/discovery',disc:true,
+   formula:'score = min(25,250/PE)×40% + ma50trend×35% + (str52w-50)×25%',
+   formulaDetail:'PE 낮을수록 높은 점수: PE10→25pt, PE20→12.5pt, PE50→5pt',
+   inputs:[
+     {name:'top_20[0].pe',src:'/alpha/discovery',path:'top_20.0.pe',unit:'x'},
+     {name:'top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+     {name:'top_20[0].str52w',src:'/alpha/discovery',path:'top_20.0.str52w',unit:'%'},
+   ]},
+  {page:'분석3',id:8,name:'VIX 리스크 조정',icon:'🌊',ep:'/alpha/discovery + /market',disc:true,
+   formula:'score = techScore × vixAdj',
+   formulaDetail:'techScore = momentum×40%+ma50trend×35%+(str52w-50)×25% | vixAdj = max(0.3, min(1.5, 1.5-vix/40)) | VIX10→1.25, VIX20→1.0, VIX30→0.75',
+   inputs:[
+     {name:'VIX',src:'/market',path:'US_MARKET.VIX.price',unit:''},
+     {name:'top_20[0].momentum',src:'/alpha/discovery',path:'top_20.0.momentum',unit:'%'},
+     {name:'top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+     {name:'top_20[0].str52w',src:'/alpha/discovery',path:'top_20.0.str52w',unit:'%'},
+   ]},
+  {page:'분석3',id:9,name:'유동성 장세 수혜',icon:'💧',ep:'/alpha/discovery + /market',disc:true,
+   formula:'score = techBase × liquidFactor × riskFactor',
+   formulaDetail:'liquidIdx = (fed/5M)×50 + (m2/20M)×30 + max(0,100-rrp/1000)×20 → liquidFactor = clamp(idx/100,0.5,2.0) | riskFactor = max(10,80-vix×2)/60',
+   inputs:[
+     {name:'FED_BALANCE',src:'/market',path:'LIQUIDITY.FED_BALANCE',unit:'M'},
+     {name:'M2',src:'/market',path:'MACRO_BASE.M2',unit:'M'},
+     {name:'REVERSE_REPO',src:'/market',path:'LIQUIDITY.REVERSE_REPO',unit:'B'},
+     {name:'VIX',src:'/market',path:'US_MARKET.VIX.price',unit:''},
+     {name:'top_20[0].momentum',src:'/alpha/discovery',path:'top_20.0.momentum',unit:'%'},
+     {name:'top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+   ]},
+  {page:'분석3',id:10,name:'통합 발굴 엔진',icon:'🚀',ep:'/alpha/discovery + /market',disc:true,
+   formula:'momentum×20% + ma50trend×20% + (str52w-50)×20% + volSurge/5×20% + 150/PE×10% + (30-vix)×10%',
+   formulaDetail:'6개 팩터 균등 가중합. VIX점수 = max(0,min(20,30-vix)), PE점수 = min(15,150/pe)',
+   inputs:[
+     {name:'VIX',src:'/market',path:'US_MARKET.VIX.price',unit:''},
+     {name:'top_20[0].momentum',src:'/alpha/discovery',path:'top_20.0.momentum',unit:'%'},
+     {name:'top_20[0].ma50trend',src:'/alpha/discovery',path:'top_20.0.ma50trend',unit:'%'},
+     {name:'top_20[0].str52w',src:'/alpha/discovery',path:'top_20.0.str52w',unit:'%'},
+     {name:'top_20[0].volSurge',src:'/alpha/discovery',path:'top_20.0.volSurge',unit:'%'},
+     {name:'top_20[0].pe',src:'/alpha/discovery',path:'top_20.0.pe',unit:'x'},
+   ]},
+  {page:'분석3',id:11,name:'Alpha Scanner',icon:'🔬',ep:'/alpha/alpha-scanner',
+   formula:'fetchAlphaScannerSimple() → discovery score 재사용',
+   formulaDetail:'신버전(ma50trend有): 기존 score 사용 | 구버전: revGrowth×25% + epsGrowth×25% + roe×20% + momentum×20% - pe×10%',
+   inputs:[
+     {name:'top_20[0].score',src:'/alpha/alpha-scanner',path:'top_20.0.score',unit:''},
+     {name:'top_20[0].symbol',src:'/alpha/alpha-scanner',path:'top_20.0.symbol',unit:''},
+     {name:'analyzed',src:'/alpha/alpha-scanner',path:'analyzed',unit:''},
+   ]},
+];
+
+// resolve value for calc widget inputs (supports "top_20.0.field" paths)
+function getCalcValue(srcEpPath, fieldPath) {
+  // determine which cached data to use
+  let data = null;
+  if (srcEpPath.includes('/market')) data = S.marketData;
+  else if (srcEpPath.includes('/alpha/discovery')) data = S.discoveryData;
+  else if (srcEpPath.includes('/feargreed')) data = S.res['feargreed']?.data;
+  else if (srcEpPath.includes('/analysis/market-regime')) data = S.res['a-regime']?.data;
+  else if (srcEpPath.includes('/analysis/volatility-regime')) data = S.res['a-vol']?.data;
+  else if (srcEpPath.includes('/analysis/credit-stress')) data = S.res['a-credit']?.data;
+  else if (srcEpPath.includes('/analysis/sector-rotation')) data = S.res['a-sector']?.data;
+  else if (srcEpPath.includes('/alpha/breakout')) data = S.res['breakout']?.data;
+  else if (srcEpPath.includes('/alpha/alpha-scanner')) data = S.res['scanner']?.data;
+  else if (srcEpPath.includes('catalyst-surge-top5')) data = S.res['cs-top5']?.data;
+  else if (srcEpPath.includes('catalyst-surge')) data = S.res['cs']?.data;
+  else if (srcEpPath.includes('/alpha?symbol') || srcEpPath.includes('/alpha')) data = S.res['alpha']?.data;
+  else if (srcEpPath.includes('/fundamentals/growth')) data = S.res['f-growth']?.data;
+  else if (srcEpPath.includes('/fundamentals/income')) data = S.res['f-income']?.data;
+  else if (srcEpPath.includes('/fundamentals/balance')) data = S.res['f-balance']?.data;
+  else if (srcEpPath.includes('/fundamentals/cashflow')) data = S.res['f-cashflow']?.data;
+  else if (srcEpPath.includes('/fundamentals/profile')) data = S.res['f-profile']?.data;
+  if (!data) return undefined;
+  // handle array index paths like "top_20.0.score"
+  return fieldPath.split('.').reduce((o, k) => {
+    if (o == null) return undefined;
+    if (/^\d+$/.test(k)) return Array.isArray(o) ? o[parseInt(k)] : undefined;
+    return o[k];
+  }, data);
+}
+
+// ═══ CALC TAB STATE ═══
+S.calcSym = 'AAPL';       // 종목 위젯용 심볼
+S.calcSymData = {};        // {epId: response.data} - 종목별 캐시
+S.calcDiscTicker = '';     // discovery에서 검색할 티커
+S.calcDiscMatch = null;    // discovery에서 찾은 종목 데이터
+
+async function loadCalcData() {
+  S.testing = true; S.prog = 0; render();
+  addLog('📐 시장 데이터 로드 시작 (market+discovery+analysis)');
+  const toTest = ['market','discovery','feargreed','a-regime','a-vol','a-credit','a-sector','breakout','scanner','cs-top5'];
+  S.progT = toTest.length;
+  for (let i = 0; i < toTest.length; i++) {
+    const ep = ENDPOINTS.find(e => e.id === toTest[i]);
+    if (!ep) continue;
+    if (S.res[ep.id]?.data) { S.prog = i+1; continue; }
+    S.prog = i + 1; render();
+    await testEp(ep);
+    await new Promise(r => setTimeout(r, 80));
+  }
+  S.testing = false; S.tab = 'calc'; addLog('📐 시장 데이터 로드 완료'); render();
+}
+
+// 종목 검색: 종목 관련 위젯 데이터 로드
+async function loadCalcSymbol(sym) {
+  if (!sym) sym = S.calcSym;
+  S.calcSym = sym.toUpperCase(); S.calcSymData = {};
+  S.testing = true; render();
+  const symEps = [
+    {id:'_c_alpha', path:`/alpha?symbol=${S.calcSym}`},
+    {id:'_c_fg',    path:`/fundamentals/growth?symbol=${S.calcSym}`},
+    {id:'_c_fi',    path:`/fundamentals/income?symbol=${S.calcSym}`},
+    {id:'_c_fb',    path:`/fundamentals/balance?symbol=${S.calcSym}`},
+    {id:'_c_fc',    path:`/fundamentals/cashflow?symbol=${S.calcSym}`},
+    {id:'_c_fp',    path:`/fundamentals/profile?symbol=${S.calcSym}`},
+    {id:'_c_cs',    path:`/analysis/catalyst-surge?symbol=${S.calcSym}`},
+    {id:'_c_stock', path:`/stock?symbol=${S.calcSym}`},
+  ];
+  S.progT = symEps.length; S.prog = 0;
+  addLog(`📐🎯 종목 계산식 데이터 로드: ${S.calcSym}`);
+  for (let i = 0; i < symEps.length; i++) {
+    S.prog = i + 1; render();
+    const r = await fw(API + symEps[i].path);
+    S.calcSymData[symEps[i].id] = r.ok ? r.data : null;
+    addLog(`${r.ok ? '✅' : '❌'} ${symEps[i].path} → ${r.ms}ms`, r.ok ? 'ok' : 'fail');
+    await new Promise(r => setTimeout(r, 80));
+  }
+  S.testing = false; addLog(`📐🎯 ${S.calcSym} 종목 데이터 로드 완료`); render();
+}
+
+// discovery에서 특정 티커 검색
+function searchDiscTicker(sym) {
+  S.calcDiscTicker = sym.toUpperCase();
+  S.calcDiscMatch = null;
+  if (!S.discoveryData?.top_20) { addLog(`⚠️ discovery 데이터 없음 - 먼저 시장 데이터 로드`, 'warn'); render(); return; }
+  const found = S.discoveryData.top_20.find(s => s.symbol === S.calcDiscTicker);
+  if (found) { S.calcDiscMatch = found; addLog(`✅ Discovery에서 ${S.calcDiscTicker} 발견: score=${found.score}`, 'ok'); }
+  else { addLog(`⚠️ Discovery top_20에 ${S.calcDiscTicker} 없음 (S&P500 Top80 유니버스 한정)`, 'warn'); }
+  render();
+}
+
+// get value for calc: symbol endpoints use calcSymData
+function getCalcValueSym(srcEpPath, fieldPath) {
+  let data = null;
+  if (srcEpPath.includes('/alpha?symbol') || srcEpPath === '/alpha') data = S.calcSymData['_c_alpha'];
+  else if (srcEpPath.includes('/fundamentals/growth')) data = S.calcSymData['_c_fg'];
+  else if (srcEpPath.includes('/fundamentals/income')) data = S.calcSymData['_c_fi'];
+  else if (srcEpPath.includes('/fundamentals/balance')) data = S.calcSymData['_c_fb'];
+  else if (srcEpPath.includes('/fundamentals/cashflow')) data = S.calcSymData['_c_fc'];
+  else if (srcEpPath.includes('/fundamentals/profile')) data = S.calcSymData['_c_fp'];
+  else if (srcEpPath.includes('catalyst-surge') && !srcEpPath.includes('top5')) data = S.calcSymData['_c_cs'];
+  else if (srcEpPath.includes('/stock')) data = S.calcSymData['_c_stock'];
+  if (!data) return undefined;
+  return fieldPath.split('.').reduce((o,k)=>{ if(o==null)return undefined; if(/^\d+$/.test(k))return Array.isArray(o)?o[parseInt(k)]:undefined; return o[k]; }, data);
+}
+
+// render one widget card
+function renderCalcWidget(w, useSymData) {
+  const isSymWidget = w.sym === true;
+  const isDiscWidget = w.disc === true;
+  const inputResults = w.inputs.map(inp => {
+    let val;
+    if (useSymData && isSymWidget) { val = getCalcValueSym(inp.src, inp.path); }
+    else if (isDiscWidget && S.calcDiscMatch && inp.path.startsWith('_match.')) {
+      val = gv(S.calcDiscMatch, inp.path.replace('_match.',''));
+    } else { val = getCalcValue(inp.src, inp.path); }
+    const ok = val !== undefined && val !== null;
+    return { ...inp, val, ok };
+  });
+  const allOk = inputResults.every(r => r.ok);
+  const okCount = inputResults.filter(r => r.ok).length;
+
+  let symBar = '';
+  if (isSymWidget) {
+    symBar = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding:6px 8px;background:rgba(249,115,22,.08);border-radius:4px">
+      <span style="color:var(--orange);font-weight:700;font-size:11px">🎯 종목:</span>
+      <span style="color:var(--cyan);font-weight:800;font-size:13px">${S.calcSym}</span>
+      <span style="color:var(--dim);font-size:10px">(상단 종목 입력에서 변경)</span>
+    </div>`;
+  }
+  if (isDiscWidget) {
+    const match = S.calcDiscMatch;
+    symBar = `<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;padding:6px 8px;background:rgba(34,211,238,.06);border-radius:4px;flex-wrap:wrap">
+      <span style="color:var(--cyan);font-weight:700;font-size:11px">🔍 발굴 종목 검색:</span>
+      <input class="sym-input" style="width:70px;font-size:11px;border-color:var(--cyan);color:var(--cyan)" value="${S.calcDiscTicker}" placeholder="NVDA"
+        onkeydown="if(event.key==='Enter')searchDiscTicker(this.value)" oninput="S.calcDiscTicker=this.value.toUpperCase()">
+      <button class="btn btn-sm" style="background:var(--cyan);color:#000;border-color:var(--cyan)" onclick="searchDiscTicker(S.calcDiscTicker)">검색</button>
+      ${match ? `<span class="v-ok" style="font-size:10px">✅ ${match.symbol} 발견 (score: ${match.score}, momentum: ${match.momentum}%)</span>` : S.calcDiscTicker ? `<span class="v-warn" style="font-size:10px">top_20에 없음</span>` : ''}
+    </div>`;
+  }
+
+  return `<div class="field-card" style="border-left:3px solid ${allOk?'var(--green)':okCount>0?'var(--yellow)':'var(--red)'}">
+    <div class="field-card-title">
+      <span>${w.icon} <b>${w.name}</b> <span style="color:var(--dim);font-weight:400;font-size:10px">${w.ep.replace(/SYM/g, isSymWidget ? S.calcSym : 'SYM')}</span></span>
+      <span style="font-size:10px;color:${allOk?'var(--green)':'var(--yellow)'}">입력값 ${okCount}/${inputResults.length} OK</span>
+    </div>
+    ${symBar}
+    <div style="background:var(--surface2);padding:8px;border-radius:4px;margin-bottom:8px;font-size:11px">
+      <div style="color:var(--cyan);font-weight:700;margin-bottom:2px">📐 계산식: ${w.formula}</div>
+      <div style="color:var(--muted);font-size:10px">${w.formulaDetail}</div>
+    </div>
+    <table>
+      <tr><th style="width:24px"></th><th>입력 변수</th><th>소스 엔드포인트</th><th>필드 경로</th><th>현재 값</th><th>단위</th></tr>
+      ${inputResults.map(r => `<tr>
+        <td><span class="led ${r.ok?'led-ok':'led-warn'}"></span></td>
+        <td style="font-weight:600;font-size:10px">${r.name}</td>
+        <td style="color:var(--dim);font-size:10px">${r.src.replace(/SYM/g, isSymWidget ? S.calcSym : '')}</td>
+        <td style="font-size:10px">${r.path}</td>
+        <td>${vd(r.val)}</td>
+        <td style="color:var(--dim);font-size:10px">${r.unit}</td>
+      </tr>`).join('')}
+    </table>
+    ${isDiscWidget && S.calcDiscMatch ? renderDiscMatchDetail(w) : ''}
+  </div>`;
+}
+
+// discovery 매칭 종목 상세 (해당 위젯 계산식 적용)
+function renderDiscMatchDetail(w) {
+  const s = S.calcDiscMatch;
+  if (!s) return '';
+  // 위젯별 계산 시뮬레이션
+  const wid = w.page + '-' + w.id;
+  let calcResult = '';
+  const mom = s.momentum||0, ma50 = s.ma50trend||0, str = s.str52w||50, vol = s.volSurge||0, pe = s.pe||0;
+  if (wid === '분석3-4') {
+    const sc = mom*0.60 + ma50*0.40;
+    calcResult = `<b>score = ${mom.toFixed(2)}×60% + ${ma50.toFixed(2)}×40% = <span class="v-num">${sc.toFixed(2)}</span></b>`;
+  } else if (wid === '분석3-5') {
+    const sc = ma50*0.50 + (str-50)*0.30 + mom*0.20;
+    calcResult = `<b>score = ${ma50.toFixed(2)}×50% + (${str.toFixed(1)}-50)×30% + ${mom.toFixed(2)}×20% = <span class="v-num">${sc.toFixed(2)}</span></b>`;
+  } else if (wid === '분석3-6') {
+    const vc = Math.min(100,Math.max(-30,vol));
+    const sc = vc*0.50 + mom*0.30 + ma50*0.20;
+    calcResult = `<b>score = clamp(${vol.toFixed(0)})×50% + ${mom.toFixed(2)}×30% + ${ma50.toFixed(2)}×20% = <span class="v-num">${sc.toFixed(2)}</span></b>`;
+  } else if (wid === '분석3-7') {
+    const pe_sc = (pe>0&&pe<150)?Math.min(25,250/pe):0;
+    const sc = pe_sc*0.40 + ma50*0.35 + (str-50)*0.25;
+    calcResult = `<b>score = min(25,250/${pe.toFixed(1)})×40% + ${ma50.toFixed(2)}×35% + (${str.toFixed(1)}-50)×25% = <span class="v-num">${sc.toFixed(2)}</span></b>`;
+  } else if (wid === '분석3-10') {
+    const vix = S.marketData?.US_MARKET?.VIX?.price||20;
+    const vixSc = Math.max(0,Math.min(20,30-vix));
+    const pe_sc = (pe>0&&pe<150)?Math.min(15,150/pe):0;
+    const vol_sc = Math.min(20,Math.max(-5,vol/5));
+    const sc = mom*0.20 + ma50*0.20 + (str-50)*0.20 + vol_sc*0.20 + pe_sc*0.10 + vixSc*0.10;
+    calcResult = `<b>score = ${mom.toFixed(2)}×20% + ${ma50.toFixed(2)}×20% + (${str.toFixed(1)}-50)×20% + ${vol_sc.toFixed(1)}×20% + ${pe_sc.toFixed(1)}×10% + ${vixSc.toFixed(1)}(VIX=${vix.toFixed(1)})×10% = <span class="v-num">${sc.toFixed(2)}</span></b>`;
+  }
+  return `<div style="margin-top:8px;padding:8px;background:rgba(34,211,238,.06);border:1px solid var(--cyan);border-radius:6px;font-size:11px">
+    <div style="color:var(--cyan);font-weight:700;margin-bottom:4px">📊 ${s.symbol} 계산 시뮬레이션</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:4px 12px;margin-bottom:6px">
+      <div><span style="color:var(--muted)">momentum:</span> <span class="v-num">${mom.toFixed(2)}%</span></div>
+      <div><span style="color:var(--muted)">ma50trend:</span> <span class="v-num">${ma50.toFixed(2)}%</span></div>
+      <div><span style="color:var(--muted)">str52w:</span> <span class="v-num">${str.toFixed(1)}%</span></div>
+      <div><span style="color:var(--muted)">volSurge:</span> <span class="v-num">${vol.toFixed(0)}%</span></div>
+      <div><span style="color:var(--muted)">pe:</span> <span class="v-num">${pe.toFixed(1)}</span></div>
+      <div><span style="color:var(--muted)">price:</span> <span class="v-num">${(s.price||0).toFixed(2)}</span></div>
+    </div>
+    ${calcResult ? `<div style="padding:4px 8px;background:var(--bg);border-radius:4px">${calcResult}</div>` : ''}
+  </div>`;
+}
+
+function rCalc() {
+  const pages = ['분석1','분석2','분석3'];
+  const hasData = S.marketData || S.discoveryData;
+  const hasSymData = Object.keys(S.calcSymData).length > 0;
+  return `<div class="panel active">
+    <!-- 시장 데이터 로드 -->
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="loadCalcData()" ${S.testing?'disabled':''}>📐 시장 데이터 로드</button>
+      <span class="hint" style="color:var(--dim);font-size:10px">/market + /discovery + /analysis + /feargreed + /breakout + /scanner</span>
+    </div>
+    <!-- 종목 검색 (분석2,3의 종목 위젯용) -->
+    <div class="sym-bar" style="margin-bottom:12px">
+      <label style="color:var(--orange)">🎯 종목 계산식 검증</label>
+      <input class="sym-input" id="calcSymIn" value="${S.calcSym}" placeholder="AAPL" onkeydown="if(event.key==='Enter')loadCalcSymbol(this.value)">
+      <button class="btn btn-primary" onclick="loadCalcSymbol(document.getElementById('calcSymIn').value)" ${S.testing?'disabled':''}>종목 로드 (alpha + fundamentals + catalyst)</button>
+      ${hasSymData ? `<span class="v-ok" style="font-size:10px">✅ ${S.calcSym} 데이터 로드됨</span>` : `<span style="color:var(--dim);font-size:10px">종목 위젯의 실제 값을 확인하려면 티커 입력</span>`}
+      <div style="display:flex;gap:4px;margin-left:auto;flex-wrap:wrap">${['AAPL','NVDA','TSLA','MSFT','AMD','PLTR','AVGO','DDOG'].map(s=>`<button class="sym-quick" onclick="document.getElementById('calcSymIn').value='${s}';loadCalcSymbol('${s}')">${s}</button>`).join('')}</div>
+    </div>
+    ${!hasData ? '<div style="text-align:center;padding:30px;color:var(--muted)">먼저 "시장 데이터 로드" 버튼을 눌러주세요</div>' : ''}
+    ${pages.map(page => {
+      const widgets = WIDGET_CALC.filter(w => w.page === page);
+      return `<div class="fgroup">
+        <div class="fgroup-title" style="font-size:14px;color:var(--purple)">${page} <span class="cnt">${widgets.length}개 위젯</span></div>
+        ${widgets.map(w => renderCalcWidget(w, hasSymData)).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function render(){
+  const res=S.res,total=Object.keys(res).length;
+  const okC=Object.values(res).filter(r=>r.status==='ok').length,warnC=Object.values(res).filter(r=>r.status==='warn').length,failC=Object.values(res).filter(r=>r.status==='fail').length;
+  const avgMs=total>0?Math.round(Object.values(res).reduce((a,r)=>a+r.ms,0)/total):0;
+  let mfOk=0;const mfT=MARKET_FIELDS.length;if(S.marketData)MARKET_FIELDS.forEach(f=>{if(gv(S.marketData,f.p)!=null)mfOk++});
+  const fredT=Object.keys(S.fredRes).length,fredOk=Object.values(S.fredRes).filter(r=>r.status==='ok').length;
+  const symCount=Object.keys(S.symRes).length;
+  const tabs=[{id:'endpoints',label:'전체 엔드포인트',badge:ENDPOINTS.length},{id:'calc',label:'📐 위젯 계산식',badge:WIDGET_CALC.length},{id:'symbol',label:`🔍 종목 조회 [${S.sym}]`,badge:symCount||''},{id:'market',label:'/market 상세',badge:MARKET_FIELDS.length},{id:'discovery',label:'/discovery',badge:'20'},{id:'analysis',label:'Analysis',badge:'20'},{id:'fred',label:'FRED',badge:FRED_SERIES.length},{id:'raw',label:'Raw JSON',badge:''}];
+
+  document.getElementById('app').innerHTML=`
+    <div class="hdr"><div><h1>🔬 AIInvestFlow API Debug Dashboard</h1><div class="hdr-sub">API: ${API} | EP: ${ENDPOINTS.length} | /market필드: ${mfT} | FRED: ${FRED_SERIES.length}</div></div>
+    <div class="hdr-actions"><button class="btn btn-primary" onclick="testAll()" ${S.testing?'disabled':''}>${S.testing?`⏳ ${S.prog}/${S.progT}`:'▶ 전체 테스트'}</button><button class="btn" onclick="testFred()" ${S.testing?'disabled':''}>🔬 FRED</button><button class="btn" onclick="exportCSV()">📥 CSV</button></div></div>
+    <div class="sym-bar">
+      <label>🎯 종목 검색</label>
+      <input class="sym-input" id="symIn" value="${S.sym}" placeholder="AAPL" onkeydown="if(event.key==='Enter'){testSymbol(this.value)}">
+      <button class="btn btn-primary" onclick="testSymbol(document.getElementById('symIn').value)" ${S.testing?'disabled':''}>검색 (${ENDPOINTS.filter(e=>e.needsSymbol).length}개 EP 한번에 호출)</button>
+      <span class="hint">stock + alpha + fundamentals(8) + catalyst-surge + earnings 전부 호출</span>
+      <div style="display:flex;gap:4px;margin-left:auto;flex-wrap:wrap">${['AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD','PLTR','AVGO','DDOG','CRWD'].map(s=>`<button class="sym-quick" onclick="document.getElementById('symIn').value='${s}';testSymbol('${s}')">${s}</button>`).join('')}</div>
+    </div>
+    ${S.testing?`<div class="progress-bar"><div class="progress-fill" style="width:${(S.prog/S.progT*100).toFixed(0)}%"></div></div>`:''}
+    <div class="summary">
+      <div class="sum-card ok"><div class="val">${okC}</div><div class="lbl">성공</div></div>
+      <div class="sum-card warn"><div class="val">${warnC}</div><div class="lbl">경고</div></div>
+      <div class="sum-card fail"><div class="val">${failC}</div><div class="lbl">실패</div></div>
+      <div class="sum-card info"><div class="val">${avgMs}ms</div><div class="lbl">평균응답</div></div>
+      <div class="sum-card ${mfOk===mfT?'ok':'warn'}"><div class="val">${mfOk}/${mfT}</div><div class="lbl">/market</div></div>
+      <div class="sum-card ${fredOk===fredT?'ok':'warn'}"><div class="val">${fredOk}/${fredT}</div><div class="lbl">FRED</div></div>
+    </div>
+    <div class="tabs">${tabs.map(t=>`<div class="tab ${S.tab===t.id?'active':''}" onclick="S.tab='${t.id}';render()">${t.label}${t.badge?`<span class="badge">${t.badge}</span>`:''}</div>`).join('')}</div>
+    ${rPanel()}
+    <div class="log" style="margin-top:12px">${S.log.slice(0,50).map(l=>`<div class="log-line log-${l.t}">[${l.ts}] ${l.m}</div>`).join('')}</div>`;
+}
+
+function rPanel(){switch(S.tab){case'endpoints':return rEP();case'calc':return rCalc();case'symbol':return rSym();case'market':return rMkt();case'discovery':return rDisc();case'analysis':return rAnal();case'fred':return rFredP();case'raw':return rRaw();default:return'<div class="panel active">-</div>'}}
+
+function rEP(){
+  const cats=[...new Set(ENDPOINTS.map(e=>e.cat))];
+  return`<div class="panel active"><input class="search" placeholder="검색..." oninput="S.filter=this.value;render()" style="margin-bottom:8px">
+  ${cats.map(cat=>{const eps=ENDPOINTS.filter(e=>e.cat===cat&&(!S.filter||e.path.includes(S.filter)||e.desc.includes(S.filter)));if(!eps.length)return'';
+    return`<div class="fgroup"><div class="fgroup-title">${cat}<span class="cnt">${eps.length}</span></div>
+    <table><tr><th style="width:28px"></th><th>엔드포인트</th><th>설명</th><th style="width:55px">응답</th><th style="width:45px">Null</th><th style="width:40px"></th></tr>
+    ${eps.map(ep=>{const r=S.res[ep.id],st=r?r.status:'wait';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600;color:${st==='fail'?'var(--red)':st==='warn'?'var(--yellow)':'var(--text)'}">${ep.method!=='GET'?`<span style="color:var(--orange)">[${ep.method}]</span> `:''}${ep.path}${ep.needsSymbol?` <span style="color:var(--orange);font-size:10px">[${S.sym}]</span>`:''}</td><td style="color:var(--muted)">${ep.desc}</td><td>${r?r.ms+'ms':'-'}</td><td>${r?(r.nullCount>0?`<span class="v-warn">${r.nullCount}</span>`:'<span class="v-ok">0</span>'):'-'}</td><td><button class="btn btn-sm" onclick="testOne('${ep.id}')" ${S.testing?'disabled':''}>▶</button></td></tr>`}).join('')}
+    </table></div>`}).join('')}</div>`;
+}
+
+function rSym(){
+  const entries=Object.entries(S.symRes);
+  if(!entries.length)return`<div class="panel active"><div style="text-align:center;padding:40px;color:var(--muted)">상단 검색바에서 티커 입력 후 Enter<br><br>12개 symbol 엔드포인트의 <b>모든 필드</b>를 한 번에 검증합니다<br><br><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px">${['NVDA','TSLA','AAPL','PLTR'].map(s=>`<button class="btn btn-primary" onclick="testSymbol('${s}')">🔍 ${s} 테스트</button>`).join('')}</div></div></div>`;
+  return`<div class="panel active">
+    <div style="margin-bottom:12px;font-size:14px;font-weight:800;color:var(--orange)">🎯 ${S.sym} — ${entries.length}개 엔드포인트 상세 결과</div>
+    ${entries.map(([epId,{result:r,fields,ep}])=>{
+      const st=r.ok?'ok':'fail';const okF=fields.filter(f=>f.status==='ok').length;
+      return`<div class="field-card">
+        <div class="field-card-title"><span><span class="led ${lc(st)}"></span> ${ep.path}?symbol=${S.sym} <span style="color:var(--dim);font-weight:400;font-size:10px">${ep.desc} | ${r.ms}ms</span></span><span style="font-size:10px;color:${okF===fields.length?'var(--green)':'var(--yellow)'}">${okF}/${fields.length} OK</span></div>
+        ${r.error?`<div style="color:var(--red);font-size:11px;margin-bottom:6px">❌ ${r.error}</div>`:''}
+        ${fields.length?`<table><tr><th style="width:24px"></th><th>필드 경로</th><th>값</th><th>타입</th></tr>
+        ${fields.map(f=>`<tr><td><span class="led ${lc(f.status)}"></span></td><td style="font-weight:600;font-size:10px">${f.path}</td><td>${vd(f.value)}</td><td style="color:var(--dim);font-size:10px">${f.value!=null?typeof f.value:'-'}</td></tr>`).join('')}</table>`
+        :`<pre style="font-size:9px;color:var(--cyan);max-height:200px;overflow:auto;background:var(--surface2);padding:8px;border-radius:4px">${r.data?JSON.stringify(r.data,null,2):'null'}</pre>`}
+      </div>`}).join('')}
+  </div>`;
+}
+
+function rMkt(){
+  const d=S.marketData;if(!d)return`<div class="panel active"><div style="text-align:center;padding:40px;color:var(--muted)"><button class="btn btn-primary" onclick="testOne('market')">▶ /market 호출</button></div></div>`;
+  const groups=[...new Set(MARKET_FIELDS.map(f=>f.g))];
+  return`<div class="panel active"><div style="margin-bottom:8px;display:flex;gap:8px;align-items:center;justify-content:space-between"><input class="search" placeholder="필드 검색..." oninput="S.filter=this.value;render()"><button class="btn" onclick="testOne('market')">🔄 재호출</button></div>
+  ${groups.map(g=>{const fs=MARKET_FIELDS.filter(f=>f.g===g&&(!S.filter||f.p.toLowerCase().includes(S.filter.toLowerCase())));if(!fs.length)return'';const gOk=fs.filter(f=>gv(d,f.p)!=null).length;
+    return`<div class="fgroup"><div class="fgroup-title">${g}<span class="cnt">${gOk}/${fs.length} OK</span></div>
+    <table><tr><th style="width:24px"></th><th>필드</th><th>값</th><th>타입</th><th>설명</th></tr>
+    ${fs.map(f=>{const v=gv(d,f.p),st=v!=null?'ok':'warn';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-size:10px;font-weight:600">${f.p}</td><td>${vd(v)}</td><td style="color:var(--dim);font-size:10px">${v!=null?typeof v:'-'}</td><td style="color:var(--muted);font-size:10px">${f.d}</td></tr>`}).join('')}
+    </table></div>`}).join('')}</div>`;
+}
+
+function rDisc(){
+  const d=S.discoveryData;if(!d)return`<div class="panel active"><div style="text-align:center;padding:40px;color:var(--muted)"><button class="btn btn-primary" onclick="testOne('discovery')">▶ /alpha/discovery 호출</button></div></div>`;
+  const t20=d.top_20||[];
+  return`<div class="panel active"><div style="margin-bottom:8px;color:var(--muted);font-size:11px">analyzed:${d.analyzed||'-'} | universe:${d.universe_size||'-'} | top_20:${t20.length}</div>
+  <table><tr><th>#</th>${DISC_FIELDS.map(f=>`<th>${f}</th>`).join('')}<th>상태</th></tr>
+  ${t20.map((s,i)=>{const nulls=DISC_FIELDS.filter(f=>s[f]==null);const st=nulls.length===0?'ok':nulls.length<=2?'warn':'fail';return`<tr><td>${i+1}</td>${DISC_FIELDS.map(f=>`<td>${vd(s[f])}</td>`).join('')}<td><span class="led ${lc(st)}"></span>${nulls.length>0?`<span class="v-warn" style="font-size:10px">null:${nulls.join(',')}</span>`:'<span class="v-ok" style="font-size:10px">OK</span>'}</td></tr>`}).join('')}
+  </table></div>`;
+}
+
+function rAnal(){
+  const eps=ENDPOINTS.filter(e=>e.cat==='Analysis'||e.cat==='Catalyst');
+  const kf={'a-inst':['score','signal','components'],'a-regime':['regime','confidence','signal'],'a-liquid':['score','signal','components'],'a-yield':['spread','inverted','signal'],'a-infl':['pressure','signal','metrics'],'a-credit':['stress_level','signal','spread'],'a-breadth':['score','signal','components'],'a-vol':['vix','regime','confidence'],'a-sector':['all_sectors','rankings'],'a-dollar':['dxy','signal','metrics'],'a-crypto':['score','signal','components'],'a-smart':['signal','regime','confidence'],'a-rank':['ranking','items'],'a-heat':['assets','categories'],'a-real':['policy','signal','metrics'],'a-fed':['policy_stance','signal'],'a-labor':['score','trend','signal'],'a-macro':['score','signal','components'],'cs':['css','grade','breakdown'],'cs-top5':[]};
+  return`<div class="panel active"><table><tr><th style="width:28px"></th><th>엔드포인트</th><th>설명</th><th>응답</th><th>핵심필드</th></tr>
+  ${eps.map(ep=>{const r=S.res[ep.id],st=r?r.status:'wait';const fields=kf[ep.id]||[];let fc='-';if(r&&r.data){fc=fields.map(f=>{const v=r.data[f],ok=v!=null;return`<span class="${ok?'v-ok':'v-fail'}">${f}:${ok?'✓':'✗'}</span>`}).join(' ')}
+    return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600">${ep.path}${ep.needsSymbol?` <span style="color:var(--orange)">[${S.sym}]</span>`:''}</td><td style="color:var(--muted)">${ep.desc}</td><td>${r?r.ms+'ms':'-'}</td><td style="font-size:10px">${fc}</td></tr>`}).join('')}
+  </table></div>`;
+}
+
+function rFredP(){
+  return`<div class="panel active"><button class="btn btn-primary" onclick="testFred()" ${S.testing?'disabled':''}>▶ FRED 전체 (${FRED_SERIES.length}개)</button><span style="color:var(--muted);font-size:10px;margin-left:8px">/?series=ID 개별호출</span>
+  <table style="margin-top:8px"><tr><th style="width:28px"></th><th>Series ID</th><th>값</th><th>응답</th><th>설명</th></tr>
+  ${FRED_SERIES.map(sid=>{const r=S.fredRes[sid],st=r?r.status:'wait';return`<tr><td><span class="led ${lc(st)}"></span></td><td style="font-weight:600">${sid}</td><td>${r?vd(r.value):'-'}</td><td>${r?r.ms+'ms':'-'}</td><td style="color:var(--muted)">${FRED_DESC[sid]||''}</td></tr>`}).join('')}
+  </table></div>`;
+}
+
+function rRaw(){
+  const opts=ENDPOINTS.filter(e=>S.res[e.id]).map(e=>`<option value="${e.id}" ${e.id===S._rawSel?'selected':''}>${e.path}${e.needsSymbol?' ['+S.sym+']':''}</option>`).join('');
+  const r=S._rawSel?S.res[S._rawSel]:null;
+  return`<div class="panel active"><select class="search" style="width:350px" onchange="S._rawSel=this.value;render()"><option value="">-- 선택 --</option>${opts}</select>
+  ${r&&r.data?`<pre style="background:var(--bg);padding:12px;border-radius:6px;font-size:10px;max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--cyan);margin-top:8px">${JSON.stringify(r.data,null,2)}</pre>`:'<div style="color:var(--muted);padding:20px;text-align:center">데이터 없음</div>'}
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
