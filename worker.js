@@ -97,42 +97,53 @@ async function fmpGet(url) {
   }
 }
 
-// 종목 전체 지표 fetch (ratios-ttm + key-metrics-ttm + financial-growth + quote)
+// 종목 전체 지표 fetch
+// ✅ /stable/ratios        (무료 플랜 동작 확인 - getRatios 함수에서 검증)
+// ✅ /stable/financial-growth (부분 동작)
+// ✅ /stable/quote         (무료 플랜 기본)
+// ❌ /stable/ratios-ttm    → 무료 플랜에서 핵심 필드(ROE/ROA/PE/debtEquity 등) 미반환
+// ❌ /stable/key-metrics-ttm → 유료 전용 (EV/EBITDA 등 100% null)
 async function fetchAllMetricz(sym, apiKey) {
   const BASE = 'https://financialmodelingprep.com/stable'
-  const [rd, kmd, gd, qd] = await Promise.allSettled([
-    fmpGet(`${BASE}/ratios-ttm?symbol=${sym}&apikey=${apiKey}`),
-    fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),
-    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`),
-    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),
+  // 4→3 엔드포인트: 720→540 API콜 → 레이트리밋 완화
+  const [rd, gd, qd] = await Promise.allSettled([
+    fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),          // 수익성+밸류+배당+건전성
+    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`), // 성장성
+    fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),            // beta, name, pe fallback
   ])
 
-  const r  = rd.status  === 'fulfilled' ? (rd.value  ? (Array.isArray(rd.value)  ? rd.value[0]  : rd.value)  : null) : null
-  const km = kmd.status === 'fulfilled' ? (kmd.value ? (Array.isArray(kmd.value) ? kmd.value[0] : kmd.value) : null) : null
-  const g  = gd.status  === 'fulfilled' ? (gd.value  ? (Array.isArray(gd.value)  ? gd.value[0]  : gd.value)  : null) : null
-  const q  = qd.status  === 'fulfilled' ? (qd.value  ? (Array.isArray(qd.value)  ? qd.value[0]  : qd.value)  : null) : null
+  // 배열 응답 → 최신 데이터(index 0)
+  const r = rd.status === 'fulfilled' ? (rd.value ? (Array.isArray(rd.value) ? rd.value[0] : rd.value) : null) : null
+  const g = gd.status === 'fulfilled' ? (gd.value ? (Array.isArray(gd.value) ? gd.value[0] : gd.value) : null) : null
+  const q = qd.status === 'fulfilled' ? (qd.value ? (Array.isArray(qd.value) ? qd.value[0] : qd.value) : null) : null
+
+  // /stable/ratios 필드명 (TTM suffix 없음 - 연간 최신 데이터)
+  // 무료 플랜 실제 반환 필드 기반 매핑
+  const pePrimary = r?.priceEarningsRatio || r?.priceEarningsRatioTTM || r?.peRatioTTM || r?.peRatio
+  const pbPrimary = r?.priceToBookRatio   || r?.priceToBookRatioTTM
+  const psPrimary = r?.priceToSalesRatio  || r?.priceToSalesRatioTTM
 
   return {
     symbol: sym,
     name:   q?.name ?? sym,
-    // 수익성
-    returnOnEquityTTM:            r?.returnOnEquityTTM            ?? null,
-    operatingProfitMarginTTM:     r?.operatingProfitMarginTTM     ?? null,
-    returnOnAssetsTTM:            r?.returnOnAssetsTTM            ?? null,
-    netProfitMarginTTM:           r?.netProfitMarginTTM           ?? null,
-    // 밸류에이션 (ratios)
-    peRatioTTM:                   (r?.peRatioTTM    && r.peRatioTTM    > 0) ? r.peRatioTTM    : null,
-    priceToBookRatioTTM:          (r?.priceToBookRatioTTM && r.priceToBookRatioTTM > 0) ? r.priceToBookRatioTTM : null,
-    priceToSalesRatioTTM:         (r?.priceToSalesRatioTTM && r.priceToSalesRatioTTM > 0) ? r.priceToSalesRatioTTM : null,
+    // 수익성 (/stable/ratios → 필드명: TTM suffix 없음)
+    returnOnEquityTTM:            r?.returnOnEquity            ?? r?.returnOnEquityTTM            ?? null,
+    operatingProfitMarginTTM:     r?.operatingProfitMargin     ?? r?.operatingProfitMarginTTM     ?? null,
+    returnOnAssetsTTM:            r?.returnOnAssets            ?? r?.returnOnAssetsTTM            ?? null,
+    netProfitMarginTTM:           r?.netProfitMargin           ?? r?.netProfitMarginTTM           ?? null,
+    // 밸류에이션
+    peRatioTTM:                   (pePrimary && pePrimary > 0) ? pePrimary : (q?.pe && q.pe > 0 ? q.pe : null),
+    priceToBookRatioTTM:          (pbPrimary && pbPrimary > 0) ? pbPrimary : null,
+    priceToSalesRatioTTM:         (psPrimary && psPrimary > 0) ? psPrimary : null,
     // 배당·건전성
-    dividendYieldTTM:             r?.dividendYieldTTM  ?? null,
-    payoutRatioTTM:               r?.payoutRatioTTM    ?? null,
-    debtEquityRatioTTM:           (r?.debtEquityRatioTTM && r.debtEquityRatioTTM > 0) ? r.debtEquityRatioTTM : null,
-    currentRatioTTM:              r?.currentRatioTTM   ?? null,
-    // 밸류에이션 (key-metrics)
-    enterpriseValueOverEBITDATTM: (km?.enterpriseValueOverEBITDATTM && km.enterpriseValueOverEBITDATTM > 0) ? km.enterpriseValueOverEBITDATTM : null,
-    freeCashFlowYieldTTM:          km?.freeCashFlowYieldTTM ?? null,
-    // 성장성
+    dividendYieldTTM:             r?.dividendYield   ?? r?.dividendYieldTTM   ?? null,
+    payoutRatioTTM:               r?.payoutRatio     ?? r?.payoutRatioTTM     ?? null,
+    debtEquityRatioTTM:           (() => { const v = r?.debtEquityRatio ?? r?.debtEquityRatioTTM; return (v && v > 0) ? v : null })(),
+    currentRatioTTM:              r?.currentRatio    ?? r?.currentRatioTTM    ?? null,
+    // EV/EBITDA·FCF: key-metrics-ttm 유료 전용 → quote 대체
+    enterpriseValueOverEBITDATTM: r?.enterpriseValueMultiple ?? null,
+    freeCashFlowYieldTTM:         r?.freeCashFlowYield       ?? null,
+    // 성장성 (/stable/financial-growth)
     revenueGrowth:                g?.revenueGrowth         ?? null,
     epsgrowth:                    g?.epsgrowth ?? g?.epsGrowth ?? g?.earningsGrowth ?? null,
     operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? null,
@@ -143,7 +154,7 @@ async function fetchAllMetricz(sym, apiKey) {
 }
 
 // ── KV 캐시 갱신 (cron용) ───────────────────────────────────────
-// 20종목씩 묶어 병렬 fetch → wave당 최대 80 API call
+// 15종목씩 묶어 병렬 fetch → wave당 최대 45 API call (3 endpoints × 15)
 async function refreshMetriczCache(env) {
   const apiKey = env.FMP_API_KEY
   const kv     = env.METRICZ_KV
@@ -152,11 +163,11 @@ async function refreshMetriczCache(env) {
     return
   }
 
-  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 20종목(80 calls)`)
+  console.log(`🔄 metricz 캐시 갱신 시작: ${SP500_UNIVERSE.length}개 종목, wave당 15종목(45 calls)`)
   const startTime = Date.now()
 
-  // 20종목/wave: 20 × 4 endpoints = 80 FMP 호출/wave
-  const results = await batchProcess(SP500_UNIVERSE, 20, sym => fetchAllMetricz(sym, apiKey))
+  // 15종목/wave: 15 × 3 endpoints = 45 FMP 호출/wave (20×4=80 → 15×3=45로 레이트리밋 완화)
+  const results = await batchProcess(SP500_UNIVERSE, 15, sym => fetchAllMetricz(sym, apiKey))
 
   const stocks = {}
   let successCount = 0
