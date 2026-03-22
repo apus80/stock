@@ -3155,7 +3155,22 @@ export default {
             } catch(e) { console.warn('⚠️ Breakout KV 읽기 실패:', e.message) }
           }
 
-          // 2️⃣ 실시간 분석 — SP500_UNIVERSE 전체 180종목 (병렬 배치 처리)
+          // 2️⃣ METRICZ_KV에서 PE 데이터 로드 (ratios + key-metrics-ttm 기반 신뢰도 높은 PE)
+          let metriczPE = {}  // { AAPL: 28.5, NVDA: 45.2, ... }
+          if (kv) {
+            try {
+              const metriczRaw = await kv.get(METRICZ_KV_KEY)
+              if (metriczRaw) {
+                const metriczData = JSON.parse(metriczRaw).stocks || {}
+                for (const [sym, data] of Object.entries(metriczData)) {
+                  if (data.peRatioTTM && data.peRatioTTM > 0) metriczPE[sym] = data.peRatioTTM
+                }
+                console.log(`✅ Breakout: METRICZ_KV에서 ${Object.keys(metriczPE).length}개 PE 로드`)
+              }
+            } catch(e) { console.warn('⚠️ Breakout: METRICZ_KV PE 로드 실패:', e.message) }
+          }
+
+          // 3️⃣ 실시간 분석 — SP500_UNIVERSE 전체 180종목 (병렬 배치 처리)
           const universe = await getHedgeFundUniverse()  // = SP500_UNIVERSE(180)
           const stocks = universe  // 전체 180종목
           const results = []
@@ -3165,7 +3180,12 @@ export default {
           for (let i = 0; i < stocks.length; i += WAVE) {
             const wave = stocks.slice(i, i + WAVE)
             const waveResults = await Promise.allSettled(
-              wave.map(sym => getFullQuote(sym).then(q => q ? calculateBreakoutScore(q) : null))
+              wave.map(sym => getFullQuote(sym).then(q => {
+                if (!q) return null
+                // METRICZ_KV의 PE를 quote에 주입 (ratios/key-metrics 기반 → quote.pe보다 신뢰도 높음)
+                if (metriczPE[sym]) q.pe = metriczPE[sym]
+                return calculateBreakoutScore(q)
+              }))
             )
             for (const r of waveResults) {
               if (r.status === 'fulfilled' && r.value) results.push(r.value)
@@ -3187,7 +3207,7 @@ export default {
             top_15: results.slice(0, 15)
           }
 
-          // 3️⃣ KV에 결과 저장 (8h TTL) — 다음 요청 즉시 반환
+          // 4️⃣ KV에 결과 저장 (8h TTL) — 다음 요청 즉시 반환
           if (kv) {
             try {
               await kv.put(BREAKOUT_KV_KEY, JSON.stringify(breakoutResult), { expirationTtl: 8 * 3600 })
