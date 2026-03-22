@@ -1,5 +1,5 @@
 {
-  name = "fmp-proxy",
+  "name": "fmp-proxyr",
   "version": "1.0.0",
   "scripts": {
     "deploy": "wrangler deploy"
