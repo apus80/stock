@@ -1855,6 +1855,67 @@ export default {
             dates: mfgPmiDates,
             values: mfgPmiValues
           },
+          // ── debug dashboard 기대 키 별칭 (widgetcheck.html ECON_IND 필드명 호환) ──
+          payrolls: {
+            label: 'Nonfarm Payrolls',
+            icon: '👥',
+            unit: 'K',
+            current: getLast(payemsValues),
+            prev: getSecondLast(payemsValues),
+            change: (getLast(payemsValues) && getSecondLast(payemsValues))
+              ? parseFloat((getLast(payemsValues) - getSecondLast(payemsValues)).toFixed(0))
+              : null
+          },
+          unemployment: {
+            label: 'Unemployment Rate',
+            icon: '📉',
+            unit: '%',
+            current: getLast(unrateValues),
+            prev: getSecondLast(unrateValues),
+            change: (getLast(unrateValues) && getSecondLast(unrateValues))
+              ? parseFloat((getLast(unrateValues) - getSecondLast(unrateValues)).toFixed(3))
+              : null
+          },
+          us10y: {
+            label: '10Y Treasury Yield',
+            icon: '📊',
+            unit: '%',
+            current: getLast(dgs10Values),
+            prev: getSecondLast(dgs10Values),
+            change: (getLast(dgs10Values) && getSecondLast(dgs10Values))
+              ? parseFloat((getLast(dgs10Values) - getSecondLast(dgs10Values)).toFixed(3))
+              : null
+          },
+          us2y: {
+            label: '2Y Treasury Yield',
+            icon: '📊',
+            unit: '%',
+            current: getLast(dgs2Values),
+            prev: getSecondLast(dgs2Values),
+            change: (getLast(dgs2Values) && getSecondLast(dgs2Values))
+              ? parseFloat((getLast(dgs2Values) - getSecondLast(dgs2Values)).toFixed(3))
+              : null
+          },
+          sentiment: {
+            label: 'Consumer Sentiment',
+            icon: '😊',
+            unit: 'idx',
+            current: getLast(umsentValues),
+            prev: getSecondLast(umsentValues),
+            change: (getLast(umsentValues) && getSecondLast(umsentValues))
+              ? parseFloat((getLast(umsentValues) - getSecondLast(umsentValues)).toFixed(2))
+              : null
+          },
+          pmi: {
+            label: 'Manufacturing PMI',
+            icon: '🔧',
+            unit: '',
+            current: getLast(mfgPmiValues),
+            prev: getSecondLast(mfgPmiValues),
+            change: (getLast(mfgPmiValues) && getSecondLast(mfgPmiValues))
+              ? parseFloat((getLast(mfgPmiValues) - getSecondLast(mfgPmiValues)).toFixed(2))
+              : null
+          },
         }
       }
 
@@ -4202,7 +4263,12 @@ export default {
       }
       // FRED 단일 시리즈 조회 (?series=WALCL 형태) — 루트 경로보다 먼저 처리
       else if (series) {
-        const fredData = await fredGet(series)
+        // 타임아웃 15초, 실패 시 1회 재시도 (2초 대기)
+        let fredData = await fredGet(series, null, 15000)
+        if (!fredData || fredData.length === 0) {
+          await new Promise(r => setTimeout(r, 2000))
+          fredData = await fredGet(series, null, 15000)
+        }
         const raw = getLatestValue(fredData)
         const value = convertFredValue(series, raw)
 
