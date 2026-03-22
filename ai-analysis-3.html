@@ -889,7 +889,7 @@
                                 html += `<tr style="${bg}">
                                     <td style="padding:3px 6px; font-weight:800;">${s.symbol}</td>
                                     <td style="padding:3px 6px; color:${scC}; font-weight:700; text-align:right;">${sc}</td>
-                                    <td style="padding:3px 6px; text-align:right; color:${(s.volSurge||0)>=0?'#10b981':'#ef4444'};">${(s.volSurge||0) >= 0 ? '+' : ''}${(s.volSurge||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 6px; text-align:right; color:${s.volSurge!=null?(s.volSurge>=0?'#10b981':'#ef4444'):'#a0aec0'};">${s.volSurge!=null?((s.volSurge>=0?'+':'')+s.volSurge.toFixed(0)+'%'):'-'}</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
                                     <td style="padding:3px 6px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
                                 </tr>`;
@@ -1049,7 +1049,7 @@
                                     <td style="padding:3px 5px; text-align:right; color:${(s.momentum||0)>=0?'#10b981':'#ef4444'};">${(s.momentum||0) >= 0 ? '+' : ''}${(s.momentum||0).toFixed(2)}%</td>
                                     <td style="padding:3px 5px; text-align:right; color:${(s.ma50trend||0)>=0?'#10b981':'#ef4444'};">${(s.ma50trend||0) >= 0 ? '+' : ''}${(s.ma50trend||0).toFixed(2)}%</td>
                                     <td style="padding:3px 5px; text-align:right;">${(s.str52w||0).toFixed(0)}%</td>
-                                    <td style="padding:3px 5px; text-align:right; color:${(s.volSurge||0)>=0?'#10b981':'#ef4444'};">${(s.volSurge||0) >= 0 ? '+' : ''}${(s.volSurge||0).toFixed(0)}%</td>
+                                    <td style="padding:3px 5px; text-align:right; color:${s.volSurge!=null?(s.volSurge>=0?'#10b981':'#ef4444'):'#a0aec0'};">${s.volSurge!=null?((s.volSurge>=0?'+':'')+s.volSurge.toFixed(0)+'%'):'-'}</td>
                                     <td style="padding:3px 5px; text-align:right;">${s.pe > 0 ? s.pe.toFixed(1) : '-'}</td>
                                 </tr>`;
                             });
@@ -1096,7 +1096,7 @@
                                     const mom     = (s.momentum ?? 0).toFixed(1);
                                     const ma50    = (s.ma50trend ?? 0).toFixed(1);
                                     const str52w  = (s.str52w ?? 0).toFixed(0);
-                                    const volSurge= (s.volSurge ?? 0).toFixed(0);
+                                    const volSurge= s.volSurge != null ? s.volSurge.toFixed(0) : null;
                                     const pe      = (s.pe ?? 0).toFixed(1);
                                     const rowBg   = i % 2 === 0 ? '' : 'background:#fef2f2;';
                                     html += `<tr style="${rowBg}">
@@ -1106,7 +1106,7 @@
                                         <td style="padding:3px 6px; text-align:right; color:${parseFloat(mom)>=0?'#10b981':'#ef4444'};">${mom}%</td>
                                         <td style="padding:3px 6px; text-align:right; color:${parseFloat(ma50)>=0?'#10b981':'#ef4444'};">${ma50}%</td>
                                         <td style="padding:3px 6px; text-align:right;">${str52w}%</td>
-                                        <td style="padding:3px 6px; text-align:right; color:${parseFloat(volSurge)>=0?'#10b981':'#ef4444'};">${volSurge}%</td>
+                                        <td style="padding:3px 6px; text-align:right; color:${volSurge!=null?(parseFloat(volSurge)>=0?'#10b981':'#ef4444'):'#a0aec0'};">${volSurge!=null?((parseFloat(volSurge)>=0?'+':'')+volSurge+'%'):'-'}</td>
                                         <td style="padding:3px 6px; text-align:right;">${pe > 0 ? pe : '-'}</td>
                                     </tr>`;
                                 });
