@@ -842,7 +842,7 @@ async function csGetBacktest(symbol, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     try {
       const FMP = env.FMP_API_KEY
       const FRED = env.FRED_KEY
@@ -4558,23 +4558,50 @@ export default {
           response = { error: e.message, endpoint: pathname }
         }
 
-      // /metricz-refresh - metricz KV 캐시 수동 갱신
+      // /metricz-refresh - metricz KV 캐시 수동 갱신 (백그라운드 실행, 즉시 202 응답)
+      } else if (pathname === "/metricz-refresh") {
         try {
-          const t0 = Date.now()
-          await refreshMetriczCache(env)
-          const elapsed = ((Date.now() - t0) / 1000).toFixed(1)
-          const kv = env.METRICZ_KV
-          let count = 0
-          if (kv) {
-            const cached = await kv.get(METRICZ_KV_KEY)
-            if (cached) count = Object.keys(JSON.parse(cached).stocks || {}).length
-          }
-          response = { ok: true, message: `metricz 캐시 갱신 완료`, stocks_cached: count, elapsed_sec: parseFloat(elapsed) }
+          // ~503종목 처리에 약 2분 소요 → Worker HTTP 30초 타임아웃 초과
+          // ctx.waitUntil()로 백그라운드에서 실행하고 즉시 202 응답 반환
+          ctx.waitUntil(refreshMetriczCache(env))
+          response = { ok: true, message: `metricz 캐시 갱신 시작됨 (백그라운드 실행, 약 2분 소요)`, note: `완료 확인은 /metricz-debug?all=1 로 확인` }
+          return new Response(JSON.stringify(response), { status: 202, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
         } catch(e) {
           response = { error: e.message, endpoint: pathname }
         }
 
       // /metricz-debug - KV 캐시 원본값 확인 (GET ?symbols=MO,VZ,PLTR or ?all=1)
+      } else if (pathname === "/metricz-rawtest") {
+        // FMP API 원본 응답 확인 — 필드명 검증용
+        // 사용: /metricz-rawtest?symbol=AAPL
+        try {
+          const sym = (url.searchParams.get('symbol') || 'AAPL').toUpperCase()
+          const apiKey = env.FMP_API_KEY
+          const BASE = 'https://financialmodelingprep.com/stable'
+          const [rd, kd, gd, qd] = await Promise.allSettled([
+            fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),
+            fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),
+            fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`),
+            fmpGet(`${BASE}/quote?symbol=${sym}&apikey=${apiKey}`),
+          ])
+          const r = rd.status === 'fulfilled' ? rd.value : { error: rd.reason?.message }
+          const k = kd.status === 'fulfilled' ? kd.value : { error: kd.reason?.message }
+          const g = gd.status === 'fulfilled' ? gd.value : { error: gd.reason?.message }
+          const q = qd.status === 'fulfilled' ? qd.value : { error: qd.reason?.message }
+          response = {
+            symbol: sym,
+            ratios_raw:       r,  // /stable/ratios
+            keyMetrics_raw:   k,  // /stable/key-metrics-ttm
+            growth_raw:       g,  // /stable/financial-growth
+            quote_raw:        q,  // /stable/quote
+            ratios_fields:    r && !r.error ? Object.keys(Array.isArray(r) ? (r[0]||{}) : r) : null,
+            keyMetrics_fields:k && !k.error ? Object.keys(Array.isArray(k) ? (k[0]||{}) : k) : null,
+            growth_fields:    g && !g.error ? Object.keys(Array.isArray(g) ? (g[0]||{}) : g) : null,
+          }
+        } catch(e) {
+          response = { error: e.message }
+        }
+
       } else if (pathname === "/metricz-debug") {
         try {
           const kv = env.METRICZ_KV
