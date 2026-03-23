@@ -339,27 +339,24 @@ async function fmpGet(url, retries = 2) {
   return null
 }
 
-// 종목 전체 지표 fetch (Starter 플랜 기준, 2 endpoints로 최적화)
+// 종목 전체 지표 fetch (Starter 플랜 기준, 3 endpoints)
 // ✅ /stable/ratios            PE, PB, PS, currentRatio, margins, dividendYield, debt ratios
 // ✅ /stable/key-metrics-ttm   ROE, ROA, payoutRatio, debtEquity, EV/EBITDA, FCF yield
-// ⚠️ growth/quote는 선택적 (subrequest 예산에 따라)
-async function fetchAllMetricz(sym, apiKey, includeGrowth = false) {
+// ✅ /stable/financial-growth  revenueGrowth, epsGrowth, operatingIncomeGrowth
+async function fetchAllMetricz(sym, apiKey) {
   const BASE = 'https://financialmodelingprep.com/stable'
-  // 핵심 2 엔드포인트만 호출 (subrequest 절약: 4→2)
-  const calls = [
+  // 3 엔드포인트 병렬 호출 (chunk 15종목 × 3 = 45 subrequests < 50 한도)
+  const settled = await Promise.allSettled([
     fmpGet(`${BASE}/ratios?symbol=${sym}&apikey=${apiKey}`),               // PE/PB/PS/margins/currentRatio/dividendYield
     fmpGet(`${BASE}/key-metrics-ttm?symbol=${sym}&apikey=${apiKey}`),      // ROE/ROA/payoutRatio/debtEquity/EV/FCF
-  ]
-  if (includeGrowth) {
-    calls.push(fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`))
-  }
+    fmpGet(`${BASE}/financial-growth?symbol=${sym}&apikey=${apiKey}`),     // 성장성
+  ])
 
-  const settled = await Promise.allSettled(calls)
   const unwrap = (s) => s.status === 'fulfilled' && s.value ? (Array.isArray(s.value) ? s.value[0] : s.value) : null
 
   const r = unwrap(settled[0])  // ratios
   const k = unwrap(settled[1])  // key-metrics-ttm
-  const g = includeGrowth ? unwrap(settled[2]) : null  // financial-growth (선택)
+  const g = unwrap(settled[2])  // financial-growth
 
   // PE: ratios.priceToEarningsRatio 우선, key-metrics-ttm fallback
   const pbPrimary = r?.priceToBookRatio   || r?.pb || r?.priceToBookRatioTTM
@@ -397,7 +394,7 @@ async function fetchAllMetricz(sym, apiKey, includeGrowth = false) {
                                   ?? r?.enterpriseValueMultiple ?? null,
     freeCashFlowYieldTTM:         k?.freeCashFlowYieldTTM ?? k?.freeCashFlowYield
                                   ?? r?.freeCashFlowYield ?? null,
-    // 성장성 (/stable/financial-growth — includeGrowth=true일 때만)
+    // 성장성 (/stable/financial-growth)
     revenueGrowth:                g?.revenueGrowth         ?? null,
     epsgrowth:                    g?.epsGrowth ?? g?.epsgrowth ?? g?.earningsGrowth ?? null,
     operatingIncomeGrowth:        g?.operatingIncomeGrowth ?? g?.operatingCashFlowGrowth ?? null,
@@ -423,8 +420,8 @@ async function refreshMetriczCache(env, chunkIndex = -1) {
   const universe = await getSP500Symbols(kv, apiKey)
   const startTime = Date.now()
 
-  // chunk 설정: 20종목/chunk × 2endpoints = 40 subrequests (50한도 이내)
-  const CHUNK_SIZE = 20
+  // chunk 설정: 15종목/chunk × 3endpoints = 45 subrequests (50한도 이내)
+  const CHUNK_SIZE = 15
   const totalChunks = Math.ceil(universe.length / CHUNK_SIZE)
 
   // 기존 KV 데이터 로드 (chunk 모드에서 병합용)
@@ -454,11 +451,11 @@ async function refreshMetriczCache(env, chunkIndex = -1) {
   }
 
   const targetSymbols = universe.slice(startIdx, endIdx)
-  console.log(`🔄 metricz 캐시 갱신: ${targetSymbols.length}종목 (${startIdx}~${endIdx-1}), chunk=${chunkIndex}, 2 endpoints/stock`)
+  console.log(`🔄 metricz 캐시 갱신: ${targetSymbols.length}종목 (${startIdx}~${endIdx-1}), chunk=${chunkIndex}, 3 endpoints/stock`)
 
-  // 5종목/wave × 2endpoints = 10 calls/wave, 2000ms 딜레이
-  // rate: 10/2 × 60 = 300 calls/min → Starter 한도 이내
-  const results = await batchProcess(targetSymbols, 5, sym => fetchAllMetricz(sym, apiKey), 2000)
+  // 3종목/wave × 3endpoints = 9 calls/wave, 2000ms 딜레이
+  // rate: 9/2 × 60 = 270 calls/min → Starter 300 한도 이내
+  const results = await batchProcess(targetSymbols, 3, sym => fetchAllMetricz(sym, apiKey), 2000)
 
   // 기존 데이터에 새 데이터 병합
   let newSuccess = 0
@@ -5049,7 +5046,7 @@ function updateBar(cur,total){const p=Math.round(cur/total*100);const b=document
         if (!kv || !apiKey) return
 
         const universe = await getSP500Symbols(kv, apiKey)
-        const CHUNK_SIZE = 20
+        const CHUNK_SIZE = 15
         const totalChunks = Math.ceil(universe.length / CHUNK_SIZE)
 
         // KV에서 현재 chunk 포인터 읽기
