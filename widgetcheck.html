@@ -857,17 +857,21 @@ async function loadKvCache(syms){
   S.kvLoading=false;render();
 }
 async function refreshKvCache(){
-  if(!confirm('⚠️ 180종목 × 4 FMP API 호출 — 약 60~120초 소요됩니다. 진행할까요?'))return;
-  S.kvLoading=true;S.kvData=null;addLog('🔄 캐시 갱신 시작 (최대 2분 대기)...');render();
+  if(!confirm('⚠️ S&P500 전종목 metricz 갱신 — chunk 순차 처리합니다. 진행할까요?'))return;
+  S.kvLoading=true;S.kvData=null;addLog('📡 캐시 갱신 시작 (최대 2분 대기)...');render();
   try{
-    const r=await fw(`${API}/metricz-refresh`,{},150000);
-    if(r.ok&&r.data?.ok){
-      addLog(`✅ 갱신 완료: ${r.data.stocks_cached}종목, ${r.data.elapsed_sec}초 소요`,'ok');
-      await loadKvCache();
-    } else {
-      addLog(`❌ 갱신 실패: ${r.data?.error||r.error||'unknown'}`,'fail');
-      S.kvData={error:r.data?.error||r.error||'갱신 실패'};
+    let totalChunks=25,totalSuccess=0;
+    for(let i=0;i<100;i++){
+      const r=await fw(`${API}/metricz-refresh?chunk=${i}`,{},30000);
+      if(!r.ok||!r.data?.ok){addLog(`❌ chunk ${i} 실패: ${r.data?.error||'unknown'}`,'fail');break}
+      if(i===0&&r.data.totalChunks)totalChunks=r.data.totalChunks;
+      totalSuccess+=r.data.success||0;
+      addLog(`✅ chunk ${i+1}/${totalChunks}: ${r.data.success}/${r.data.total} success`,'ok');
+      if(i+1>=totalChunks)break;
+      await new Promise(r=>setTimeout(r,1500));
     }
+    addLog(`✅ 갱신 완료: ${totalSuccess}종목`,'ok');
+    await loadKvCache();
   }catch(e){addLog(`❌ ${e.message}`,'fail');S.kvData={error:e.message};}
   S.kvLoading=false;render();
 }
