@@ -4622,37 +4622,87 @@ export default {
           response = { error: e.message, endpoint: pathname }
         }
 
-      // /metricz-refresh - metricz KV 캐시 수동 갱신 (chunk 지원)
+      // /metricz-refresh - metricz KV 캐시 수동 갱신 (단일 chunk만)
       // ?chunk=0 : chunk 0만 처리 (20종목, ~40 subrequests)
-      // ?chunk=all : 모든 chunk를 순차 실행 (paid plan 전용)
-      // (파라미터 없음) : chunk=all 기본값
+      // 전체 갱신은 /metricz-refresh-all 사용 (브라우저에서 순차 호출)
       } else if (pathname === "/metricz-refresh") {
         try {
           const chunkParam = url.searchParams.get('chunk')
-          if (chunkParam !== null && chunkParam !== 'all') {
-            // 단일 chunk 처리 (동기, 결과 반환)
-            const chunkIdx = parseInt(chunkParam) || 0
-            const result = await refreshMetriczCache(env, chunkIdx)
-            response = { ok: true, ...result, message: `chunk ${chunkIdx} 갱신 완료` }
-          } else {
-            // 전체 순차 처리: chunk 0부터 끝까지
-            ctx.waitUntil((async () => {
-              const universe = await getSP500Symbols(env.METRICZ_KV, env.FMP_API_KEY)
-              const totalChunks = Math.ceil(universe.length / 20)
-              console.log(`🔄 metricz 전체 갱신: ${universe.length}종목, ${totalChunks} chunks`)
-              for (let i = 0; i < totalChunks; i++) {
-                const r = await refreshMetriczCache(env, i)
-                console.log(`  chunk ${i}/${totalChunks}: ${r.success}/${r.total} 성공`)
-                if (i < totalChunks - 1) await new Promise(resolve => setTimeout(resolve, 1000))
-              }
-              console.log(`✅ metricz 전체 갱신 완료: ${totalChunks} chunks`)
-            })())
-            response = { ok: true, message: `metricz 전체 갱신 시작 (백그라운드)`, note: `완료 확인: /metricz-debug?all=1` }
-            return new Response(JSON.stringify(response), { status: 202, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } })
-          }
+          const chunkIdx = parseInt(chunkParam) || 0
+          const result = await refreshMetriczCache(env, chunkIdx)
+          response = { ok: true, ...result, message: `chunk ${chunkIdx} 갱신 완료` }
         } catch(e) {
           response = { error: e.message, endpoint: pathname }
         }
+
+      // /metricz-refresh-all - 전체 갱신 (브라우저 순차 호출 방식)
+      // 각 chunk가 별도 HTTP 요청 → subrequest 한도 문제 회피
+      } else if (pathname === "/metricz-refresh-all") {
+        const workerHost = url.origin
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Metricz Full Refresh</title>
+<style>
+body{background:#0a0e17;color:#e0e0e0;font-family:'Courier New',monospace;padding:20px;max-width:800px;margin:0 auto}
+h2{color:#00d4aa}
+.log{background:#111;border:1px solid #333;border-radius:8px;padding:15px;margin:10px 0;max-height:500px;overflow-y:auto;font-size:13px}
+.ok{color:#00d4aa}.err{color:#ff6b6b}.warn{color:#ffd93d}.info{color:#6bc5f7}
+.progress{background:#222;border-radius:10px;height:24px;margin:15px 0;overflow:hidden}
+.progress-bar{background:linear-gradient(90deg,#00d4aa,#00b894);height:100%;transition:width 0.5s;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:#000}
+button{background:#00d4aa;color:#000;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;margin:10px 5px}
+button:hover{background:#00e6b8}button:disabled{background:#444;color:#666;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}
+.stat{background:#1a1f2e;padding:12px;border-radius:8px;text-align:center}
+.stat-val{font-size:24px;font-weight:bold;color:#00d4aa}
+.stat-label{font-size:11px;color:#888;margin-top:4px}
+</style></head><body>
+<h2>⚡ Metricz Full Refresh</h2>
+<div class="stats">
+<div class="stat"><div class="stat-val" id="sChunk">0/0</div><div class="stat-label">Chunks</div></div>
+<div class="stat"><div class="stat-val" id="sSuccess">0</div><div class="stat-label">Success</div></div>
+<div class="stat"><div class="stat-val" id="sCumul">0</div><div class="stat-label">Cumulative</div></div>
+</div>
+<div class="progress"><div class="progress-bar" id="pBar" style="width:0%">0%</div></div>
+<button id="btnStart" onclick="startRefresh()">🚀 Start Full Refresh</button>
+<button id="btnStop" onclick="stopRefresh()" disabled>⏹ Stop</button>
+<div class="log" id="log"></div>
+<script>
+const BASE='${workerHost}';let running=false,stopped=false;
+function log(msg,cls='info'){const d=document.getElementById('log');const t=new Date().toLocaleTimeString();d.innerHTML+='<div class="'+cls+'">['+t+'] '+msg+'</div>';d.scrollTop=d.scrollHeight}
+async function startRefresh(){
+  if(running)return;running=true;stopped=false;
+  document.getElementById('btnStart').disabled=true;document.getElementById('btnStop').disabled=false;
+  log('📡 Getting universe size...','info');
+  let totalChunks=25;
+  try{
+    const r=await fetch(BASE+'/metricz-refresh?chunk=0');const d=await r.json();
+    if(d.totalChunks)totalChunks=d.totalChunks;
+    log('✅ Chunk 0: '+d.success+'/'+d.total+' success, cumulative: '+d.cumulative,'ok');
+    document.getElementById('sChunk').textContent='1/'+totalChunks;
+    document.getElementById('sSuccess').textContent=d.success;
+    document.getElementById('sCumul').textContent=d.cumulative;
+    updateBar(1,totalChunks);
+  }catch(e){log('❌ Chunk 0 failed: '+e.message,'err')}
+  let totalSuccess=0;
+  for(let i=1;i<totalChunks;i++){
+    if(stopped){log('⏹ Stopped by user','warn');break}
+    await new Promise(r=>setTimeout(r,2000));
+    try{
+      const r=await fetch(BASE+'/metricz-refresh?chunk='+i);const d=await r.json();
+      totalSuccess+=d.success||0;
+      log('✅ Chunk '+i+'/'+totalChunks+': '+d.success+'/'+d.total+' success','ok');
+      document.getElementById('sChunk').textContent=(i+1)+'/'+totalChunks;
+      document.getElementById('sSuccess').textContent=totalSuccess;
+      document.getElementById('sCumul').textContent=d.cumulative||'?';
+      updateBar(i+1,totalChunks);
+    }catch(e){log('❌ Chunk '+i+' failed: '+e.message,'err')}
+  }
+  log('🏁 Full refresh complete!','ok');
+  running=false;document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true;
+}
+function stopRefresh(){stopped=true}
+function updateBar(cur,total){const p=Math.round(cur/total*100);const b=document.getElementById('pBar');b.style.width=p+'%';b.textContent=p+'%'}
+</script></body></html>`;
+        return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html;charset=utf-8', 'Access-Control-Allow-Origin': '*' } })
 
       // /metricz-debug - KV 캐시 원본값 확인 (GET ?symbols=MO,VZ,PLTR or ?all=1)
       } else if (pathname === "/metricz-rawtest") {
@@ -4987,25 +5037,47 @@ export default {
     }
   },
 
-  // ── Cron 핸들러: 6시간마다 metricz 유니버스 캐시 갱신 ──────────
+  // ── Cron 핸들러: 매 실행마다 metricz 1 chunk 처리 (subrequest 한도 대응) ──
+  // Cloudflare Workers subrequest 한도: Free=50, Paid=1000
+  // chunk당 20종목 × 2 endpoints = 40 subrequests → 한도 이내
+  // KV에 chunk 포인터 저장 → 매 cron마다 다음 chunk → 전체 순환 완료 후 discovery/breakout
   async scheduled(event, env, ctx) {
-    // ⚠️ 순차 실행: metricz chunks → discovery → breakout
     ctx.waitUntil((async () => {
       try {
-        // 1st: metricz 전종목 chunk 단위 갱신 (20종목/chunk × 2 endpoints = 40 subrequests)
-        const universe = await getSP500Symbols(env.METRICZ_KV, env.FMP_API_KEY)
-        const totalChunks = Math.ceil(universe.length / 20)
-        console.log(`🔄 Cron metricz: ${universe.length}종목, ${totalChunks} chunks`)
-        for (let i = 0; i < totalChunks; i++) {
-          await refreshMetriczCache(env, i)
-          if (i < totalChunks - 1) await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-        console.log(`✅ Cron metricz 완료: ${totalChunks} chunks`)
+        const kv = env.METRICZ_KV
+        const apiKey = env.FMP_API_KEY
+        if (!kv || !apiKey) return
 
-        // 2nd: Alpha Discovery (metricz PE 활용)
-        await refreshDiscoveryCache(env)
-        // 3rd: Breakout Radar (metricz PE 활용)
-        await refreshBreakoutCache(env)
+        const universe = await getSP500Symbols(kv, apiKey)
+        const CHUNK_SIZE = 20
+        const totalChunks = Math.ceil(universe.length / CHUNK_SIZE)
+
+        // KV에서 현재 chunk 포인터 읽기
+        let chunkPtr = 0
+        try {
+          const ptr = await kv.get('METRICZ_CHUNK_PTR')
+          if (ptr) chunkPtr = parseInt(ptr) || 0
+        } catch(e) {}
+
+        // 범위 초과 → 0으로 리셋 (한 사이클 완료)
+        if (chunkPtr >= totalChunks) chunkPtr = 0
+
+        console.log(`🔄 Cron: chunk ${chunkPtr}/${totalChunks} (${universe.length}종목)`)
+        const result = await refreshMetriczCache(env, chunkPtr)
+        console.log(`✅ Cron chunk ${chunkPtr}: ${result.success}/${result.total} 성공, 누적 ${result.cumulative}`)
+
+        // 다음 chunk 포인터 저장
+        const nextPtr = chunkPtr + 1
+        await kv.put('METRICZ_CHUNK_PTR', String(nextPtr), { expirationTtl: 24 * 3600 })
+
+        // 전체 사이클 완료 시 discovery/breakout 갱신
+        if (nextPtr >= totalChunks) {
+          console.log(`🏁 metricz 전체 사이클 완료 → discovery/breakout 갱신`)
+          await refreshDiscoveryCache(env)
+          await refreshBreakoutCache(env)
+          // 포인터 리셋
+          await kv.put('METRICZ_CHUNK_PTR', '0', { expirationTtl: 24 * 3600 })
+        }
       } catch(e) {
         console.error('❌ Cron 실행 에러:', e.message)
       }

@@ -4,9 +4,10 @@ workers_dev = true
 account_id = "05ba87763e81af6206c77d3bd3d79d84"
 compatibility_date = "2025-09-27"
 
-# ── Cron: 6시간마다 metricz 유니버스 캐시 갱신 (4회/일) ──
+# ── Cron: 15분마다 metricz 1 chunk 갱신 (25 chunks → ~6시간 전체 사이클) ──
+# 각 chunk = 20종목 × 2 endpoints = 40 subrequests (Workers 한도 이내)
 [triggers]
-crons = ["0 */6 * * *"]
+crons = ["*/15 * * * *"]
 
 # ── KV: metricz 종목 데이터 캐시 ──
 # 아래 id는 `wrangler kv:namespace create METRICZ_KV` 실행 후 교체
