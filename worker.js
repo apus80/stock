@@ -238,17 +238,25 @@ function calculateBreakoutScore(q) {
   }
 }
 
-// ── Breakout 캐시 갱신 (module-level — cron + 실시간 fallback 공용) ──────────
+// ── Breakout 캐시 갱신 (chunk 지원 — subrequest 한도 대응) ──────────
 // 출처: FMP /stable/quote (Starter 플랜) + METRICZ_KV PE 주입
-async function refreshBreakoutCache(env) {
+// chunk당 40종목 × 1 quote = 40 subrequests (50한도 이내)
+async function refreshBreakoutCache(env, chunkIndex = 0) {
   const kv = env.METRICZ_KV
   const apiKey = env.FMP_API_KEY
-  if (!apiKey || !kv) return null
+  if (!apiKey || !kv) return { success: 0, total: 0 }
 
-  // S&P500 전종목 유니버스 (FMP constituent API → KV 캐시)
   const stocks = await getSP500Symbols(kv, apiKey)
+  const CHUNK_SIZE = 40
+  const totalChunks = Math.ceil(stocks.length / CHUNK_SIZE)
 
-  // METRICZ_KV에서 PE 로드 (ratios + key-metrics-ttm 기반, 신뢰도 높음)
+  if (chunkIndex >= totalChunks) return { success: 0, total: stocks.length, chunk: chunkIndex, totalChunks, done: true }
+
+  const startIdx = chunkIndex * CHUNK_SIZE
+  const endIdx = Math.min(startIdx + CHUNK_SIZE, stocks.length)
+  const targetSymbols = stocks.slice(startIdx, endIdx)
+
+  // METRICZ_KV에서 PE 로드
   let metriczPE = {}
   try {
     const metriczRaw = await kv.get(METRICZ_KV_KEY)
@@ -257,48 +265,56 @@ async function refreshBreakoutCache(env) {
       for (const [sym, data] of Object.entries(metriczData)) {
         if (data.peRatioTTM && data.peRatioTTM > 0) metriczPE[sym] = data.peRatioTTM
       }
-      console.log(`✅ Breakout: metricz PE ${Object.keys(metriczPE).length}개 로드`)
     }
-  } catch(e) { console.warn('⚠️ Breakout metricz PE 로드 실패:', e.message) }
+  } catch(e) {}
 
-  const results = []
+  // 기존 KV 결과 로드 (chunk 병합)
+  let allResults = []
+  try {
+    const existing = await kv.get(BREAKOUT_KV_KEY)
+    if (existing) {
+      const parsed = JSON.parse(existing)
+      allResults = parsed.all_results || []
+    }
+  } catch(e) {}
+
+  // 기존 결과에서 현재 chunk 심볼 제거 (새 데이터로 교체)
+  const targetSet = new Set(targetSymbols)
+  allResults = allResults.filter(r => !targetSet.has(r.symbol))
+
   const startTime = Date.now()
-  const WAVE = 15  // 15개씩 병렬, 300ms 딜레이 → Starter 300calls/min 준수
+  const newResults = await batchProcess(targetSymbols, 8, async (sym) => {
+    try {
+      const qRaw = await fmpGet(`https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${apiKey}`, 1)
+      const q = Array.isArray(qRaw) ? qRaw[0] : qRaw
+      if (!q?.price) return null
+      if (metriczPE[sym]) q.pe = metriczPE[sym]
+      return calculateBreakoutScore(q)
+    } catch { return null }
+  }, 1500)
 
-  for (let i = 0; i < stocks.length; i += WAVE) {
-    const wave = stocks.slice(i, i + WAVE)
-    const waveResults = await Promise.allSettled(wave.map(async sym => {
-      try {
-        const r = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=${sym}&apikey=${apiKey}`)
-        if (!r.ok) return null
-        const j = await r.json()
-        const q = Array.isArray(j) ? j[0] : j
-        if (!q?.price) return null
-        if (metriczPE[sym]) q.pe = metriczPE[sym]  // METRICZ_KV PE 주입
-        return calculateBreakoutScore(q)
-      } catch { return null }
-    }))
-    for (const r of waveResults) {
-      if (r.status === 'fulfilled' && r.value) results.push(r.value)
+  let chunkSuccess = 0
+  for (const r of newResults) {
+    if (r.status === 'fulfilled' && r.value) {
+      allResults.push(r.value)
+      chunkSuccess++
     }
-    if (i + WAVE < stocks.length) await new Promise(r => setTimeout(r, 300))
   }
 
-  results.sort((a, b) => b.breakoutScore - a.breakoutScore)
+  allResults.sort((a, b) => b.breakoutScore - a.breakoutScore)
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
   const breakoutResult = {
     timestamp: new Date().toISOString(),
     dataType: 'breakout_discovery',
     universe_size: stocks.length,
-    analyzed: results.length,
+    analyzed: allResults.length,
     execution_time_sec: parseFloat(elapsed),
-    top_15: results.slice(0, 15)
+    top_15: allResults.slice(0, 15),
+    all_results: allResults
   }
-  try {
-    await kv.put(BREAKOUT_KV_KEY, JSON.stringify(breakoutResult), { expirationTtl: 8 * 3600 })
-    console.log(`✅ Breakout KV 갱신: ${results.length}/${stocks.length}종목, ${elapsed}s`)
-  } catch(e) { console.warn('⚠️ Breakout KV 쓰기 실패:', e.message) }
-  return breakoutResult
+  await kv.put(BREAKOUT_KV_KEY, JSON.stringify(breakoutResult), { expirationTtl: 12 * 3600 })
+  console.log(`✅ Breakout chunk ${chunkIndex}: ${chunkSuccess}/${targetSymbols.length}, 누적 ${allResults.length}종목`)
+  return { success: chunkSuccess, total: targetSymbols.length, chunk: chunkIndex, totalChunks, cumulative: allResults.length }
 }
 
 // 단일 종목 FMP fetch 헬퍼 (타임아웃 9초)
@@ -487,99 +503,114 @@ async function refreshMetriczCache(env, chunkIndex = -1) {
 }
 
 // ── Discovery 캐시 갱신 (cron용, SP500 상위 80종목 × 4 API = 320 calls) ──
-async function refreshDiscoveryCache(env) {
+// ── Discovery 캐시 갱신 (chunk 지원 — subrequest 한도 대응) ──
+// chunk당 40종목 × 1 quote = 40 subrequests (50한도 이내)
+async function refreshDiscoveryCache(env, chunkIndex = 0) {
   const apiKey = env.FMP_API_KEY
   const kv     = env.METRICZ_KV
   if (!apiKey || !kv) {
     console.error('❌ refreshDiscoveryCache: FMP_API_KEY 또는 METRICZ_KV 없음')
-    return
+    return { success: 0, total: 0 }
   }
 
-  // 출처: FMP API /stable/quote (Starter 플랜 확인)
   const BASE    = 'https://financialmodelingprep.com/stable'
-  // S&P500 전종목 유니버스 (FMP constituent API → KV 캐시)
   const SYMBOLS = await getSP500Symbols(kv, apiKey)
+  const CHUNK_SIZE = 40
+  const totalChunks = Math.ceil(SYMBOLS.length / CHUNK_SIZE)
 
-  // metricz KV에서 PE 데이터 로드 (quote pe가 null/0일 때 fallback)
+  if (chunkIndex >= totalChunks) return { success: 0, total: SYMBOLS.length, chunk: chunkIndex, totalChunks, done: true }
+
+  const startIdx = chunkIndex * CHUNK_SIZE
+  const endIdx = Math.min(startIdx + CHUNK_SIZE, SYMBOLS.length)
+  const targetSymbols = SYMBOLS.slice(startIdx, endIdx)
+
+  // metricz KV에서 PE 데이터 로드
   let metriczStocks = {}
   try {
     const metriczRaw = await kv.get(METRICZ_KV_KEY)
     if (metriczRaw) metriczStocks = JSON.parse(metriczRaw).stocks || {}
-  } catch(e) { console.warn('metricz KV 로드 실패 (PE fallback 없음):', e.message) }
+  } catch(e) {}
 
-  const results = []
+  // 기존 KV 결과 로드 (chunk 병합)
+  let allResults = []
+  try {
+    const existing = await kv.get(DISCOVERY_KV_KEY)
+    if (existing) {
+      const parsed = JSON.parse(existing)
+      allResults = parsed.all_stocks || []
+    }
+  } catch(e) {}
 
-  for (let i = 0; i < SYMBOLS.length; i += 10) {
-    const wave = SYMBOLS.slice(i, i + 10)
-    const waveResults = await Promise.allSettled(wave.map(async (symbol) => {
-      try {
-        const qRaw = await fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`)
-        const q = Array.isArray(qRaw) ? (qRaw[0] || {}) : (qRaw || {})
-        if (!q.price) return null
+  // 기존 결과에서 현재 chunk 심볼 제거 (새 데이터로 교체)
+  const targetSet = new Set(targetSymbols)
+  allResults = allResults.filter(r => !targetSet.has(r.symbol))
 
-        const price   = q.price    || 0
-        const ma50    = q.priceAvg50  || price
-        const ma200   = q.priceAvg200 || price
-        const yLow    = q.yearLow   || price * 0.7
-        const yHigh   = q.yearHigh  || price * 1.3
-        const vol     = q.volume    || 0
-        const avgVol  = (q.avgVolume > 0) ? q.avgVolume : null  // null이면 비교 불가
-        const mom     = q.changePercentage || 0   // 당일 % 변동
+  const startTime = Date.now()
+  let chunkSuccess = 0
 
-        // PE: quote.pe → price/eps 계산 → metricz KV fallback
-        const peFromQuote   = (q.pe && q.pe > 0) ? q.pe
-                            : (price > 0 && q.eps && q.eps > 0) ? price / q.eps   // price÷eps 계산
-                            : 0
-        const peFromMetricz = metriczStocks[symbol]?.peRatioTTM > 0 ? metriczStocks[symbol].peRatioTTM : 0
-        const pe = peFromQuote > 0 ? peFromQuote : peFromMetricz
+  const newResults = await batchProcess(targetSymbols, 8, async (symbol) => {
+    try {
+      const qRaw = await fmpGet(`${BASE}/quote?symbol=${symbol}&apikey=${apiKey}`, 1)
+      const q = Array.isArray(qRaw) ? (qRaw[0] || {}) : (qRaw || {})
+      if (!q.price) return null
 
-        // 기술적 지표 (모두 % 단위)
-        const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0
-        const range      = yHigh - yLow
-        const str52w     = range > 0 ? (price - yLow) / range * 100 : 50
+      const price   = q.price    || 0
+      const ma50    = q.priceAvg50  || price
+      const ma200   = q.priceAvg200 || price
+      const yLow    = q.yearLow   || price * 0.7
+      const yHigh   = q.yearHigh  || price * 1.3
+      const vol     = q.volume    || 0
+      const avgVol  = (q.avgVolume > 0) ? q.avgVolume : null
+      const mom     = q.changePercentage || 0
 
-        // 거래량 급증: vol=0 또는 avgVol 없으면 null (장 마감/주말 판단 불가)
-        const volSurge = (vol > 0 && avgVol > 0) ? (vol / avgVol - 1) * 100 : null
+      const peFromQuote   = (q.pe && q.pe > 0) ? q.pe
+                          : (price > 0 && q.eps && q.eps > 0) ? price / q.eps
+                          : 0
+      const peFromMetricz = metriczStocks[symbol]?.peRatioTTM > 0 ? metriczStocks[symbol].peRatioTTM : 0
+      const pe = peFromQuote > 0 ? peFromQuote : peFromMetricz
 
-        // 종합 점수 (volSurge 없으면 0으로 처리)
-        const vsScore = volSurge != null ? Math.min(50, Math.max(-20, volSurge)) : 0
-        const score = mom       * 0.30
-                    + ma50trend * 0.25
-                    + (str52w - 50) * 0.25
-                    + vsScore       * 0.20
+      const ma50trend  = ma50  > 0 ? (price - ma50)  / ma50  * 100 : 0
+      const range      = yHigh - yLow
+      const str52w     = range > 0 ? (price - yLow) / range * 100 : 50
+      const volSurge = (vol > 0 && avgVol > 0) ? (vol / avgVol - 1) * 100 : null
+      const vsScore = volSurge != null ? Math.min(50, Math.max(-20, volSurge)) : 0
+      const score = mom       * 0.30
+                  + ma50trend * 0.25
+                  + (str52w - 50) * 0.25
+                  + vsScore       * 0.20
 
-        return {
-          symbol,
-          price,
-          volume: vol,
-          momentum:   parseFloat(mom.toFixed(2)),
-          ma50trend:  parseFloat(ma50trend.toFixed(2)),
-          str52w:     parseFloat(str52w.toFixed(1)),
-          volSurge:   volSurge != null ? parseFloat(volSurge.toFixed(1)) : null,  // 장 마감 시 null
-          pe:         parseFloat((pe || 0).toFixed(1)),
-          score:      parseFloat(score.toFixed(2))
-        }
-      } catch {
-        return null
+      return {
+        symbol, price, volume: vol,
+        momentum:   parseFloat(mom.toFixed(2)),
+        ma50trend:  parseFloat(ma50trend.toFixed(2)),
+        str52w:     parseFloat(str52w.toFixed(1)),
+        volSurge:   volSurge != null ? parseFloat(volSurge.toFixed(1)) : null,
+        pe:         parseFloat((pe || 0).toFixed(1)),
+        score:      parseFloat(score.toFixed(2))
       }
-    }))
-    results.push(...waveResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(v => v))
-    if (i + 10 < SYMBOLS.length) await new Promise(r => setTimeout(r, 200))
+    } catch { return null }
+  }, 1500)
+
+  for (const r of newResults) {
+    if (r.status === 'fulfilled' && r.value) {
+      allResults.push(r.value)
+      chunkSuccess++
+    }
   }
 
-  results.sort((a, b) => b.score - a.score)
-  const top_20 = results.slice(0, 20)
-  // all_stocks: 전체 분석 결과 저장 (ai-analysis-3 위젯이 각자 재정렬하여 사용)
+  allResults.sort((a, b) => b.score - a.score)
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
   const payload = {
     timestamp: new Date().toISOString(),
     universe_size: SYMBOLS.length,
-    analyzed: results.length,
-    execution_time_sec: 0,
-    top_20,
-    all_stocks: results   // 전체 결과 (180종목)
+    analyzed: allResults.length,
+    execution_time_sec: parseFloat(elapsed),
+    top_20: allResults.slice(0, 20),
+    all_stocks: allResults
   }
-  await kv.put(DISCOVERY_KV_KEY, JSON.stringify(payload), { expirationTtl: 8 * 3600 })
-  console.log(`✅ discovery 캐시 갱신 완료: ${results.length}/${SYMBOLS.length}종목 (top_20 + all_stocks 저장)`)
+  await kv.put(DISCOVERY_KV_KEY, JSON.stringify(payload), { expirationTtl: 12 * 3600 })
+  console.log(`✅ Discovery chunk ${chunkIndex}: ${chunkSuccess}/${targetSymbols.length}, 누적 ${allResults.length}종목`)
+  return { success: chunkSuccess, total: targetSymbols.length, chunk: chunkIndex, totalChunks, cumulative: allResults.length }
 }
 
 // ── 퍼센타일 스코어링 ────────────────────────────────────────────
@@ -4632,74 +4663,97 @@ export default {
           response = { error: e.message, endpoint: pathname }
         }
 
-      // /metricz-refresh-all - 전체 갱신 (브라우저 순차 호출 방식)
+      // /metricz-refresh-all - 전체 갱신 (Metricz + Discovery + Breakout)
       // 각 chunk가 별도 HTTP 요청 → subrequest 한도 문제 회피
       } else if (pathname === "/metricz-refresh-all") {
         const workerHost = url.origin
         const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Metricz Full Refresh</title>
+<title>InvestFlow Full Refresh</title>
 <style>
 body{background:#0a0e17;color:#e0e0e0;font-family:'Courier New',monospace;padding:20px;max-width:800px;margin:0 auto}
 h2{color:#00d4aa}
-.log{background:#111;border:1px solid #333;border-radius:8px;padding:15px;margin:10px 0;max-height:500px;overflow-y:auto;font-size:13px}
+.log{background:#111;border:1px solid #333;border-radius:8px;padding:15px;margin:10px 0;max-height:400px;overflow-y:auto;font-size:13px}
 .ok{color:#00d4aa}.err{color:#ff6b6b}.warn{color:#ffd93d}.info{color:#6bc5f7}
-.progress{background:#222;border-radius:10px;height:24px;margin:15px 0;overflow:hidden}
-.progress-bar{background:linear-gradient(90deg,#00d4aa,#00b894);height:100%;transition:width 0.5s;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:#000}
+.progress{background:#222;border-radius:10px;height:24px;margin:10px 0;overflow:hidden}
+.progress-bar{height:100%;transition:width 0.5s;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:#000}
+.pb-metricz{background:linear-gradient(90deg,#00d4aa,#00b894)}
+.pb-discovery{background:linear-gradient(90deg,#6bc5f7,#3498db)}
+.pb-breakout{background:linear-gradient(90deg,#ffd93d,#f39c12)}
 button{background:#00d4aa;color:#000;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;margin:10px 5px}
 button:hover{background:#00e6b8}button:disabled{background:#444;color:#666;cursor:not-allowed}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}
 .stat{background:#1a1f2e;padding:12px;border-radius:8px;text-align:center}
-.stat-val{font-size:24px;font-weight:bold;color:#00d4aa}
+.stat-val{font-size:20px;font-weight:bold;color:#00d4aa}
 .stat-label{font-size:11px;color:#888;margin-top:4px}
+.phase{font-size:16px;font-weight:bold;margin:15px 0 5px;color:#ffd93d}
 </style></head><body>
-<h2>⚡ Metricz Full Refresh</h2>
+<h2>⚡ InvestFlow Full Refresh</h2>
 <div class="stats">
+<div class="stat"><div class="stat-val" id="sPhase">-</div><div class="stat-label">Phase</div></div>
 <div class="stat"><div class="stat-val" id="sChunk">0/0</div><div class="stat-label">Chunks</div></div>
 <div class="stat"><div class="stat-val" id="sSuccess">0</div><div class="stat-label">Success</div></div>
-<div class="stat"><div class="stat-val" id="sCumul">0</div><div class="stat-label">Cumulative</div></div>
 </div>
-<div class="progress"><div class="progress-bar" id="pBar" style="width:0%">0%</div></div>
+<div class="phase" id="phaseLabel">Ready</div>
+<div class="progress"><div class="progress-bar pb-metricz" id="pBar" style="width:0%">0%</div></div>
 <button id="btnStart" onclick="startRefresh()">🚀 Start Full Refresh</button>
 <button id="btnStop" onclick="stopRefresh()" disabled>⏹ Stop</button>
 <div class="log" id="log"></div>
 <script>
 const BASE='${workerHost}';let running=false,stopped=false;
 function log(msg,cls='info'){const d=document.getElementById('log');const t=new Date().toLocaleTimeString();d.innerHTML+='<div class="'+cls+'">['+t+'] '+msg+'</div>';d.scrollTop=d.scrollHeight}
+function updateBar(cur,total,cls){const p=Math.round(cur/total*100);const b=document.getElementById('pBar');b.style.width=p+'%';b.textContent=p+'%';b.className='progress-bar '+cls}
+async function runChunks(endpoint,label,barCls){
+  document.getElementById('phaseLabel').textContent=label;
+  document.getElementById('sPhase').textContent=label;
+  log('📡 '+label+' 시작...','info');
+  let totalChunks=1,totalSuccess=0;
+  for(let i=0;;i++){
+    if(stopped){log('⏹ Stopped','warn');return false}
+    if(i>0)await new Promise(r=>setTimeout(r,2000));
+    try{
+      const r=await fetch(BASE+'/'+endpoint+'?chunk='+i);const d=await r.json();
+      if(i===0&&d.totalChunks)totalChunks=d.totalChunks;
+      if(d.done)break;
+      totalSuccess+=d.success||0;
+      log('✅ '+label+' '+(i+1)+'/'+totalChunks+': '+d.success+'/'+d.total+' success','ok');
+      document.getElementById('sChunk').textContent=(i+1)+'/'+totalChunks;
+      document.getElementById('sSuccess').textContent=totalSuccess;
+      updateBar(i+1,totalChunks,barCls);
+      if(i+1>=totalChunks)break;
+    }catch(e){log('❌ '+label+' chunk '+i+': '+e.message,'err')}
+  }
+  log('✅ '+label+' 완료: '+totalSuccess+'종목','ok');
+  return true
+}
 async function startRefresh(){
   if(running)return;running=true;stopped=false;
   document.getElementById('btnStart').disabled=true;document.getElementById('btnStop').disabled=false;
-  log('📡 Getting universe size...','info');
-  let totalChunks=25;
-  try{
-    const r=await fetch(BASE+'/metricz-refresh?chunk=0');const d=await r.json();
-    if(d.totalChunks)totalChunks=d.totalChunks;
-    log('✅ Chunk 0: '+d.success+'/'+d.total+' success, cumulative: '+d.cumulative,'ok');
-    document.getElementById('sChunk').textContent='1/'+totalChunks;
-    document.getElementById('sSuccess').textContent=d.success;
-    document.getElementById('sCumul').textContent=d.cumulative;
-    updateBar(1,totalChunks);
-  }catch(e){log('❌ Chunk 0 failed: '+e.message,'err')}
-  let totalSuccess=0;
-  for(let i=1;i<totalChunks;i++){
-    if(stopped){log('⏹ Stopped by user','warn');break}
-    await new Promise(r=>setTimeout(r,2000));
-    try{
-      const r=await fetch(BASE+'/metricz-refresh?chunk='+i);const d=await r.json();
-      totalSuccess+=d.success||0;
-      log('✅ Chunk '+i+'/'+totalChunks+': '+d.success+'/'+d.total+' success','ok');
-      document.getElementById('sChunk').textContent=(i+1)+'/'+totalChunks;
-      document.getElementById('sSuccess').textContent=totalSuccess;
-      document.getElementById('sCumul').textContent=d.cumulative||'?';
-      updateBar(i+1,totalChunks);
-    }catch(e){log('❌ Chunk '+i+' failed: '+e.message,'err')}
-  }
-  log('🏁 Full refresh complete!','ok');
+  const ok1=await runChunks('metricz-refresh','Metricz','pb-metricz');
+  if(ok1&&!stopped){const ok2=await runChunks('discovery-refresh','Discovery','pb-discovery');
+  if(ok2&&!stopped)await runChunks('breakout-refresh','Breakout','pb-breakout')}
+  log('🏁 All phases complete!','ok');
+  document.getElementById('phaseLabel').textContent='Complete!';
   running=false;document.getElementById('btnStart').disabled=false;document.getElementById('btnStop').disabled=true;
 }
 function stopRefresh(){stopped=true}
-function updateBar(cur,total){const p=Math.round(cur/total*100);const b=document.getElementById('pBar');b.style.width=p+'%';b.textContent=p+'%'}
 </script></body></html>`;
         return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html;charset=utf-8', 'Access-Control-Allow-Origin': '*' } })
+
+      // /breakout-refresh - Breakout 캐시 chunk 갱신
+      } else if (pathname === "/breakout-refresh") {
+        try {
+          const chunkIdx = parseInt(url.searchParams.get('chunk')) || 0
+          const result = await refreshBreakoutCache(env, chunkIdx)
+          response = { ok: true, ...result, message: `breakout chunk ${chunkIdx} 갱신 완료` }
+        } catch(e) { response = { error: e.message, endpoint: pathname } }
+
+      // /discovery-refresh - Discovery 캐시 chunk 갱신
+      } else if (pathname === "/discovery-refresh") {
+        try {
+          const chunkIdx = parseInt(url.searchParams.get('chunk')) || 0
+          const result = await refreshDiscoveryCache(env, chunkIdx)
+          response = { ok: true, ...result, message: `discovery chunk ${chunkIdx} 갱신 완료` }
+        } catch(e) { response = { error: e.message, endpoint: pathname } }
 
       // /metricz-debug - KV 캐시 원본값 확인 (GET ?symbols=MO,VZ,PLTR or ?all=1)
       } else if (pathname === "/metricz-rawtest") {
@@ -5034,10 +5088,11 @@ function updateBar(cur,total){const p=Math.round(cur/total*100);const b=document
     }
   },
 
-  // ── Cron 핸들러: 매 실행마다 metricz 1 chunk 처리 (subrequest 한도 대응) ──
-  // Cloudflare Workers subrequest 한도: Free=50, Paid=1000
-  // chunk당 20종목 × 2 endpoints = 40 subrequests → 한도 이내
-  // KV에 chunk 포인터 저장 → 매 cron마다 다음 chunk → 전체 순환 완료 후 discovery/breakout
+  // ── Cron 핸들러: 매 15분마다 1 chunk 처리 (3-phase 순환) ──
+  // Phase 1: metricz (34 chunks, 15종목/chunk × 3 endpoints = 45 subrequests)
+  // Phase 2: discovery (13 chunks, 40종목/chunk × 1 quote = 40 subrequests)
+  // Phase 3: breakout (13 chunks, 40종목/chunk × 1 quote = 40 subrequests)
+  // 전체 사이클: ~60 chunks × 15분 = ~15시간
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
       try {
@@ -5045,35 +5100,46 @@ function updateBar(cur,total){const p=Math.round(cur/total*100);const b=document
         const apiKey = env.FMP_API_KEY
         if (!kv || !apiKey) return
 
-        const universe = await getSP500Symbols(kv, apiKey)
-        const CHUNK_SIZE = 15
-        const totalChunks = Math.ceil(universe.length / CHUNK_SIZE)
-
-        // KV에서 현재 chunk 포인터 읽기
-        let chunkPtr = 0
+        // KV에서 현재 phase/chunk 포인터 읽기
+        // 형식: "phase:chunk" (예: "metricz:5", "discovery:3", "breakout:10")
+        let phase = 'metricz', chunkPtr = 0
         try {
-          const ptr = await kv.get('METRICZ_CHUNK_PTR')
-          if (ptr) chunkPtr = parseInt(ptr) || 0
+          const ptr = await kv.get('CRON_PHASE_PTR')
+          if (ptr) {
+            const parts = ptr.split(':')
+            phase = parts[0] || 'metricz'
+            chunkPtr = parseInt(parts[1]) || 0
+          }
         } catch(e) {}
 
-        // 범위 초과 → 0으로 리셋 (한 사이클 완료)
-        if (chunkPtr >= totalChunks) chunkPtr = 0
+        console.log(`🔄 Cron: phase=${phase}, chunk=${chunkPtr}`)
+        let result
 
-        console.log(`🔄 Cron: chunk ${chunkPtr}/${totalChunks} (${universe.length}종목)`)
-        const result = await refreshMetriczCache(env, chunkPtr)
-        console.log(`✅ Cron chunk ${chunkPtr}: ${result.success}/${result.total} 성공, 누적 ${result.cumulative}`)
-
-        // 다음 chunk 포인터 저장
-        const nextPtr = chunkPtr + 1
-        await kv.put('METRICZ_CHUNK_PTR', String(nextPtr), { expirationTtl: 24 * 3600 })
-
-        // 전체 사이클 완료 시 discovery/breakout 갱신
-        if (nextPtr >= totalChunks) {
-          console.log(`🏁 metricz 전체 사이클 완료 → discovery/breakout 갱신`)
-          await refreshDiscoveryCache(env)
-          await refreshBreakoutCache(env)
-          // 포인터 리셋
-          await kv.put('METRICZ_CHUNK_PTR', '0', { expirationTtl: 24 * 3600 })
+        if (phase === 'metricz') {
+          result = await refreshMetriczCache(env, chunkPtr)
+          console.log(`✅ Cron metricz chunk ${chunkPtr}: ${result.success}/${result.total}`)
+          if (chunkPtr + 1 >= (result.totalChunks || 34)) {
+            await kv.put('CRON_PHASE_PTR', 'discovery:0', { expirationTtl: 24 * 3600 })
+          } else {
+            await kv.put('CRON_PHASE_PTR', `metricz:${chunkPtr + 1}`, { expirationTtl: 24 * 3600 })
+          }
+        } else if (phase === 'discovery') {
+          result = await refreshDiscoveryCache(env, chunkPtr)
+          console.log(`✅ Cron discovery chunk ${chunkPtr}: ${result.success}/${result.total}`)
+          if (chunkPtr + 1 >= (result.totalChunks || 13)) {
+            await kv.put('CRON_PHASE_PTR', 'breakout:0', { expirationTtl: 24 * 3600 })
+          } else {
+            await kv.put('CRON_PHASE_PTR', `discovery:${chunkPtr + 1}`, { expirationTtl: 24 * 3600 })
+          }
+        } else if (phase === 'breakout') {
+          result = await refreshBreakoutCache(env, chunkPtr)
+          console.log(`✅ Cron breakout chunk ${chunkPtr}: ${result.success}/${result.total}`)
+          if (chunkPtr + 1 >= (result.totalChunks || 13)) {
+            await kv.put('CRON_PHASE_PTR', 'metricz:0', { expirationTtl: 24 * 3600 })
+            console.log(`🏁 전체 사이클 완료 → metricz:0부터 재시작`)
+          } else {
+            await kv.put('CRON_PHASE_PTR', `breakout:${chunkPtr + 1}`, { expirationTtl: 24 * 3600 })
+          }
         }
       } catch(e) {
         console.error('❌ Cron 실행 에러:', e.message)
